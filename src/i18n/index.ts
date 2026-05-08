@@ -4,21 +4,37 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import esCommon from './es/common.json';
 import esAuth from './es/auth.json';
 import esNav from './es/nav.json';
+import esOnboarding from './es/onboarding.json';
+import esMetricas from './es/metricas.json';
 import enCommon from './en/common.json';
 import enAuth from './en/auth.json';
 import enNav from './en/nav.json';
+import enOnboarding from './en/onboarding.json';
+import enMetricas from './en/metricas.json';
 
 void i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
-      es: { common: esCommon, auth: esAuth, nav: esNav },
-      en: { common: enCommon, auth: enAuth, nav: enNav },
+      es: {
+        common: esCommon,
+        auth: esAuth,
+        nav: esNav,
+        onboarding: esOnboarding,
+        metricas: esMetricas,
+      },
+      en: {
+        common: enCommon,
+        auth: enAuth,
+        nav: enNav,
+        onboarding: enOnboarding,
+        metricas: enMetricas,
+      },
     },
     fallbackLng: 'es',
     supportedLngs: ['es', 'en'],
-    ns: ['common', 'auth', 'nav'],
+    ns: ['common', 'auth', 'nav', 'onboarding', 'metricas'],
     defaultNS: 'common',
     interpolation: { escapeValue: false },
     detection: {

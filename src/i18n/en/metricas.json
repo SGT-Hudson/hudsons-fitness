@@ -1,0 +1,43 @@
+{
+  "pageTitle": "Progress",
+  "fields": {
+    "date": "Date",
+    "weightKg": "Weight (kg)",
+    "bodyFatPct": "Body fat %",
+    "musclePct": "Muscle %",
+    "waterPct": "Water %",
+    "notes": "Notes"
+  },
+  "latest": {
+    "title": "Latest measurement",
+    "loading": "Loading…",
+    "emptyDescription": "You haven't logged any measurement yet.",
+    "logFirst": "Log first measurement",
+    "logToday": "Log today",
+    "editToday": "Edit today's",
+    "measuredToday": "Logged today",
+    "measuredOn": "Logged on {{date}}",
+    "stale": {
+      "prefix": "No measurement today.",
+      "today": "taken today",
+      "yesterday": "yesterday",
+      "daysAgo": "{{count}} days ago",
+      "usingValues": "using the latest value"
+    }
+  },
+  "list": {
+    "title": "Recent measurements",
+    "empty": "No measurements yet.",
+    "actions": "Actions",
+    "deleteConfirm": "Delete this measurement? This cannot be undone."
+  },
+  "dialog": {
+    "newTitle": "New measurement",
+    "editTitle": "Edit measurement",
+    "subtitle": "Only weight is required.",
+    "prefillHint": "Pre-filled from your last measurement. Edit anything that changed."
+  },
+  "errors": {
+    "weightRequired": "Weight is required."
+  }
+}

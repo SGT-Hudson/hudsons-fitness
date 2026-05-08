@@ -15,7 +15,6 @@ export type Database = {
       body_measurements: {
         Row: {
           body_fat_pct: number | null;
-          bone_kg: number | null;
           created_at: string;
           id: string;
           measured_on: string;
@@ -27,7 +26,6 @@ export type Database = {
         };
         Insert: {
           body_fat_pct?: number | null;
-          bone_kg?: number | null;
           created_at?: string;
           id?: string;
           measured_on: string;
@@ -39,7 +37,6 @@ export type Database = {
         };
         Update: {
           body_fat_pct?: number | null;
-          bone_kg?: number | null;
           created_at?: string;
           id?: string;
           measured_on?: string;
@@ -450,6 +447,7 @@ export type Database = {
       profiles: {
         Row: {
           birth_date: string | null;
+          bone_kg: number | null;
           created_at: string;
           display_name: string | null;
           height_cm: number | null;
@@ -463,6 +461,7 @@ export type Database = {
         };
         Insert: {
           birth_date?: string | null;
+          bone_kg?: number | null;
           created_at?: string;
           display_name?: string | null;
           height_cm?: number | null;
@@ -476,6 +475,7 @@ export type Database = {
         };
         Update: {
           birth_date?: string | null;
+          bone_kg?: number | null;
           created_at?: string;
           display_name?: string | null;
           height_cm?: number | null;
@@ -605,7 +605,6 @@ export type Database = {
       body_measurements_smoothed: {
         Row: {
           body_fat_pct: number | null;
-          bone_kg: number | null;
           created_at: string | null;
           id: string | null;
           measured_on: string | null;
@@ -624,3 +623,15 @@ export type Database = {
     CompositeTypes: Record<string, never>;
   };
 };
+
+type DefaultSchema = Database['public'];
+
+export type Tables<
+  Name extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views']),
+> = (DefaultSchema['Tables'] & DefaultSchema['Views'])[Name] extends { Row: infer R } ? R : never;
+
+export type TablesInsert<Name extends keyof DefaultSchema['Tables']> =
+  DefaultSchema['Tables'][Name] extends { Insert: infer I } ? I : never;
+
+export type TablesUpdate<Name extends keyof DefaultSchema['Tables']> =
+  DefaultSchema['Tables'][Name] extends { Update: infer U } ? U : never;

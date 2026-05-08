@@ -1,0 +1,23 @@
+{
+  "title": "Initial setup",
+  "subtitle": "A few basics to compute your targets. Asked only once.",
+  "submit": "Get started",
+  "sex": {
+    "label": "Sex",
+    "placeholder": "Select…",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other / prefer not to say"
+  },
+  "birthDate": "Date of birth",
+  "heightCm": "Height (cm)",
+  "initialWeightKg": "Current weight (kg)",
+  "boneKg": {
+    "label": "Bone weight (kg)",
+    "estimate": "Estimate",
+    "help": "Bone weight barely changes over time, so we only ask once. Editable in Settings."
+  },
+  "errors": {
+    "required": "Fill in all fields."
+  }
+}

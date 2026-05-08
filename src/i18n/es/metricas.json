@@ -1,0 +1,43 @@
+{
+  "pageTitle": "Progreso",
+  "fields": {
+    "date": "Fecha",
+    "weightKg": "Peso (kg)",
+    "bodyFatPct": "% grasa",
+    "musclePct": "% músculo",
+    "waterPct": "% agua",
+    "notes": "Notas"
+  },
+  "latest": {
+    "title": "Última medición",
+    "loading": "Cargando…",
+    "emptyDescription": "Aún no has registrado ninguna medición.",
+    "logFirst": "Registrar primera medición",
+    "logToday": "Registrar hoy",
+    "editToday": "Editar de hoy",
+    "measuredToday": "Registrada hoy",
+    "measuredOn": "Registrada el {{date}}",
+    "stale": {
+      "prefix": "Sin medición hoy.",
+      "today": "tomada hoy",
+      "yesterday": "ayer",
+      "daysAgo": "hace {{count}} días",
+      "usingValues": "se usa el último valor registrado"
+    }
+  },
+  "list": {
+    "title": "Mediciones recientes",
+    "empty": "No hay mediciones todavía.",
+    "actions": "Acciones",
+    "deleteConfirm": "¿Borrar esta medición? No se puede deshacer."
+  },
+  "dialog": {
+    "newTitle": "Nueva medición",
+    "editTitle": "Editar medición",
+    "subtitle": "Solo el peso es obligatorio.",
+    "prefillHint": "Pre-rellenado con tu última medición. Edita lo que cambie."
+  },
+  "errors": {
+    "weightRequired": "El peso es obligatorio."
+  }
+}
