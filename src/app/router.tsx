@@ -9,6 +9,7 @@ import { OnboardingPage } from '@/pages/OnboardingPage';
 import { DiarioPage } from '@/pages/DiarioPage';
 import { PlanificadorPage } from '@/pages/PlanificadorPage';
 import { PlantillasPage } from '@/pages/PlantillasPage';
+import { PlantillaEditorPage } from '@/pages/PlantillaEditorPage';
 import { RecetasPage } from '@/pages/RecetasPage';
 import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
@@ -82,6 +83,8 @@ export function AppRouter() {
             <Route path="/diario/:date" element={<DiarioPage />} />
             <Route path="/planificador" element={<PlanificadorPage />} />
             <Route path="/menus" element={<PlantillasPage />} />
+            <Route path="/menus/nuevo" element={<PlantillaEditorPage />} />
+            <Route path="/menus/:id" element={<PlantillaEditorPage />} />
             <Route path="/recetas" element={<RecetasPage />} />
             <Route path="/recetas/nuevo" element={<RecetaEditorPage />} />
             <Route path="/recetas/:id" element={<RecetaEditorPage />} />

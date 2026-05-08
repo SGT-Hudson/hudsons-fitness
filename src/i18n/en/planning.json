@@ -1,0 +1,94 @@
+{
+  "days": {
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "sun": "Sun"
+  },
+  "slot": {
+    "add": "Add recipe",
+    "remove": "Remove"
+  },
+  "picker": {
+    "addTitle": "Add recipe",
+    "editTitle": "Edit recipe",
+    "subtitle": "Pick a recipe and servings for this slot.",
+    "recipe": "Recipe",
+    "servings": "Servings",
+    "errors": {
+      "pickRecipe": "Pick a recipe.",
+      "servings": "Servings must be greater than 0."
+    }
+  },
+  "list": {
+    "pageTitle": "Templates",
+    "newTemplate": "New template",
+    "description": "Templates are reusable menus you apply to your active week. Define the schedule once, vary later.",
+    "empty": "No templates yet. Create one and you can apply it to the planner.",
+    "deleteConfirm": "Delete template \"{{name}}\"? Active weeks already based on it won't change.",
+    "autoBadge": "Auto",
+    "autoBadgeTooltip": "Auto-generated when closing a divergent week",
+    "slots_one": "{{count}} slot",
+    "slots_other": "{{count}} slots",
+    "slots": "{{count}} slots",
+    "meals_one": "{{count}} meal/day",
+    "meals_other": "{{count}} meals/day",
+    "updated": "Updated {{date}}"
+  },
+  "editor": {
+    "newTitle": "New template",
+    "editTitle": "Edit template",
+    "name": "Name",
+    "namePlaceholder": "e.g. Base week, Summer cut…",
+    "mealTimes": "Default meal times",
+    "mealTimesHint": "Sets the meal hours used for every day of the week.",
+    "addMeal": "Add meal",
+    "removeMeal": "Remove",
+    "errors": {
+      "nameRequired": "Give the template a name.",
+      "timesRequired": "Need at least one meal time."
+    }
+  },
+  "planner": {
+    "pageTitle": "Planner",
+    "weekOf": "Week of {{date}}",
+    "applyTemplate": "Apply template",
+    "swapTemplate": "Swap template",
+    "saveAsTemplate": "Save as template",
+    "needTemplate": "Create a template first",
+    "basedOn": "Based on \"{{name}}\"",
+    "diverged": "Modified",
+    "empty": {
+      "noTemplates": "No templates yet. Create one first so you can apply it here.",
+      "hasTemplates": "This week is empty. Apply one of your templates to get started.",
+      "applyCta": "Apply template",
+      "createCta": "Create first template"
+    }
+  },
+  "week": {
+    "noSlots": "No meals planned."
+  },
+  "apply": {
+    "title": "Apply template",
+    "subtitle": "Applies from {{date}} onward. Earlier days are kept as-is.",
+    "template": "Template",
+    "placeholder": "Pick a template…",
+    "noTemplates": "You have no templates yet.",
+    "submit": "Apply",
+    "errors": {
+      "pickTemplate": "Pick a template."
+    }
+  },
+  "save": {
+    "title": "Save week as template",
+    "subtitle": "Snapshot the current slots. Reuse it on any week later.",
+    "name": "Name",
+    "defaultName": "Template — week of {{date}}",
+    "errors": {
+      "nameRequired": "Give the template a name."
+    }
+  }
+}

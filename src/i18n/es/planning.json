@@ -1,0 +1,94 @@
+{
+  "days": {
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mié",
+    "thu": "Jue",
+    "fri": "Vie",
+    "sat": "Sáb",
+    "sun": "Dom"
+  },
+  "slot": {
+    "add": "Añadir receta",
+    "remove": "Quitar"
+  },
+  "picker": {
+    "addTitle": "Añadir receta",
+    "editTitle": "Editar receta",
+    "subtitle": "Elige la receta y las raciones para este hueco.",
+    "recipe": "Receta",
+    "servings": "Raciones",
+    "errors": {
+      "pickRecipe": "Elige una receta.",
+      "servings": "Las raciones deben ser mayores que 0."
+    }
+  },
+  "list": {
+    "pageTitle": "Plantillas",
+    "newTemplate": "Nueva plantilla",
+    "description": "Las plantillas son menús reutilizables que aplicas a tu semana activa. Define el calendario una vez, varía después.",
+    "empty": "Aún no tienes plantillas. Crea la primera y se podrá aplicar al planificador.",
+    "deleteConfirm": "¿Borrar la plantilla \"{{name}}\"? Las semanas activas que vinieran de ella no se ven afectadas.",
+    "autoBadge": "Auto",
+    "autoBadgeTooltip": "Generada automáticamente al cerrar una semana divergente",
+    "slots_one": "{{count}} hueco",
+    "slots_other": "{{count}} huecos",
+    "slots": "{{count}} huecos",
+    "meals_one": "{{count}} comida/día",
+    "meals_other": "{{count}} comidas/día",
+    "updated": "Actualizada {{date}}"
+  },
+  "editor": {
+    "newTitle": "Nueva plantilla",
+    "editTitle": "Editar plantilla",
+    "name": "Nombre",
+    "namePlaceholder": "p. ej. Semana base, Cut verano…",
+    "mealTimes": "Horarios por defecto",
+    "mealTimesHint": "Define las horas de las comidas que se aplican a todos los días.",
+    "addMeal": "Añadir comida",
+    "removeMeal": "Quitar",
+    "errors": {
+      "nameRequired": "Pon un nombre a la plantilla.",
+      "timesRequired": "Necesitas al menos un horario."
+    }
+  },
+  "planner": {
+    "pageTitle": "Planificador",
+    "weekOf": "Semana del {{date}}",
+    "applyTemplate": "Aplicar plantilla",
+    "swapTemplate": "Cambiar plantilla",
+    "saveAsTemplate": "Guardar como plantilla",
+    "needTemplate": "Crea una plantilla primero",
+    "basedOn": "Basada en \"{{name}}\"",
+    "diverged": "Modificada",
+    "empty": {
+      "noTemplates": "Aún no tienes plantillas. Crea una primero para poder aplicarla aquí.",
+      "hasTemplates": "Esta semana está vacía. Aplica una de tus plantillas para empezar.",
+      "applyCta": "Aplicar plantilla",
+      "createCta": "Crear primera plantilla"
+    }
+  },
+  "week": {
+    "noSlots": "Sin comidas planificadas."
+  },
+  "apply": {
+    "title": "Aplicar plantilla",
+    "subtitle": "Se aplicará desde {{date}} en adelante. Los días anteriores no se tocan.",
+    "template": "Plantilla",
+    "placeholder": "Elige una plantilla…",
+    "noTemplates": "No tienes plantillas todavía.",
+    "submit": "Aplicar",
+    "errors": {
+      "pickTemplate": "Elige una plantilla."
+    }
+  },
+  "save": {
+    "title": "Guardar semana como plantilla",
+    "subtitle": "Snapshot de los huecos actuales. Podrás reutilizarla en cualquier semana.",
+    "name": "Nombre",
+    "defaultName": "Plantilla — semana del {{date}}",
+    "errors": {
+      "nameRequired": "Pon un nombre a la plantilla."
+    }
+  }
+}
