@@ -10,6 +10,7 @@ import { DiarioPage } from '@/pages/DiarioPage';
 import { PlanificadorPage } from '@/pages/PlanificadorPage';
 import { PlantillasPage } from '@/pages/PlantillasPage';
 import { RecetasPage } from '@/pages/RecetasPage';
+import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
 import { ProgresoPage } from '@/pages/ProgresoPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
@@ -82,6 +83,8 @@ export function AppRouter() {
             <Route path="/planificador" element={<PlanificadorPage />} />
             <Route path="/menus" element={<PlantillasPage />} />
             <Route path="/recetas" element={<RecetasPage />} />
+            <Route path="/recetas/nuevo" element={<RecetaEditorPage />} />
+            <Route path="/recetas/:id" element={<RecetaEditorPage />} />
             <Route path="/ingredientes" element={<IngredientesPage />} />
             <Route path="/progreso" element={<ProgresoPage />} />
             <Route path="/objetivos" element={<ObjetivosPage />} />

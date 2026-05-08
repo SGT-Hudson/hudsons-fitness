@@ -1,0 +1,63 @@
+{
+  "pageTitle": "Recetas",
+  "newRecipe": "Nueva receta",
+  "searchPlaceholder": "Buscar receta…",
+  "view": {
+    "grid": "Vista de cuadrícula",
+    "list": "Vista de lista"
+  },
+  "list": {
+    "empty": "Aún no has creado ninguna receta. Pulsa \"Nueva receta\" para empezar.",
+    "noMatch": "Ninguna receta coincide con la búsqueda.",
+    "servings_one": "{{count}} ración",
+    "servings_other": "{{count}} raciones",
+    "ingredients_one": "{{count}} ingrediente",
+    "ingredients_other": "{{count}} ingredientes",
+    "updated": "Actualizada {{date}}",
+    "deleteConfirm": "¿Borrar la receta \"{{name}}\"? Se conserva en el histórico de comidas pero ya no aparecerá en la lista."
+  },
+  "editor": {
+    "newTitle": "Nueva receta",
+    "editTitle": "Editar receta",
+    "loading": "Cargando…"
+  },
+  "form": {
+    "name": "Nombre",
+    "servings": "Raciones",
+    "description": "Descripción",
+    "instructions": "Instrucciones",
+    "ingredients": "Ingredientes",
+    "addRow": "Añadir ingrediente",
+    "quantity": "Cantidad",
+    "perServing": "Por ración",
+    "units": "ud"
+  },
+  "macros": {
+    "title": "Macros",
+    "label": "Macros",
+    "total": "Totales",
+    "perServing": "Por ración",
+    "kcal": "Calorías",
+    "protein": "Proteína",
+    "carbs": "Carbohidratos",
+    "fat": "Grasa",
+    "fiber": "Fibra"
+  },
+  "actions": {
+    "duplicate": "Duplicar"
+  },
+  "autocomplete": {
+    "placeholder": "Buscar ingrediente…",
+    "searching": "Buscando…",
+    "noResults": "Sin resultados.",
+    "createNew": "+ Crear \"{{name}}\"",
+    "change": "Cambiar"
+  },
+  "errors": {
+    "nameRequired": "Ponle un nombre a la receta.",
+    "servingsInvalid": "Las raciones deben ser mayores que 0.",
+    "noIngredients": "Añade al menos un ingrediente.",
+    "rowMissingIngredient": "Hay filas sin ingrediente seleccionado.",
+    "rowInvalidQuantity": "Hay filas con cantidad inválida o vacía."
+  }
+}
