@@ -1,0 +1,16 @@
+{
+  "appName": "Hudson's Fitness",
+  "loading": "Cargando…",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "edit": "Editar",
+  "create": "Crear",
+  "search": "Buscar",
+  "language": "Idioma",
+  "es": "Español",
+  "en": "Inglés",
+  "errors": {
+    "generic": "Algo ha ido mal. Inténtalo de nuevo."
+  }
+}
