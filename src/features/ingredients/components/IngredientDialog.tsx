@@ -35,6 +35,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   mode: Mode;
   initial?: Ingredient | null;
+  defaultName?: string;
   onSaved?: (ingredient: Ingredient) => void;
 }
 
@@ -47,7 +48,14 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
-export function IngredientDialog({ open, onOpenChange, mode, initial, onSaved }: Props) {
+export function IngredientDialog({
+  open,
+  onOpenChange,
+  mode,
+  initial,
+  defaultName,
+  onSaved,
+}: Props) {
   const { t } = useTranslation('ingredientes');
   const { t: tCommon } = useTranslation('common');
   const isEdit = mode === 'edit';
@@ -68,15 +76,22 @@ export function IngredientDialog({ open, onOpenChange, mode, initial, onSaved }:
     if (!open) return;
     setError(null);
     setPickedOFF(null);
-    setOffQuery('');
     if (isEdit && initial) {
       setTab('manual');
       setForm(ingredientToForm(initial));
+      setOffQuery('');
     } else {
-      setTab('off');
-      setForm(emptyForm);
+      const seed = defaultName?.trim() ?? '';
+      if (seed.length >= 3) {
+        setTab('off');
+        setOffQuery(seed);
+      } else {
+        setTab(seed === '' ? 'off' : 'manual');
+        setOffQuery('');
+      }
+      setForm({ ...emptyForm, name: seed });
     }
-  }, [open, isEdit, initial]);
+  }, [open, isEdit, initial, defaultName]);
 
   const submitting = create.isPending || importOFF.isPending || update.isPending;
 

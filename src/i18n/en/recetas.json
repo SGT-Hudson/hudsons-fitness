@@ -1,0 +1,63 @@
+{
+  "pageTitle": "Recipes",
+  "newRecipe": "New recipe",
+  "searchPlaceholder": "Search recipe…",
+  "view": {
+    "grid": "Grid view",
+    "list": "List view"
+  },
+  "list": {
+    "empty": "You haven't created any recipes yet. Click \"New recipe\" to get started.",
+    "noMatch": "No recipes match your search.",
+    "servings_one": "{{count}} serving",
+    "servings_other": "{{count}} servings",
+    "ingredients_one": "{{count}} ingredient",
+    "ingredients_other": "{{count}} ingredients",
+    "updated": "Updated {{date}}",
+    "deleteConfirm": "Delete recipe \"{{name}}\"? It stays in your meal history but no longer appears in the list."
+  },
+  "editor": {
+    "newTitle": "New recipe",
+    "editTitle": "Edit recipe",
+    "loading": "Loading…"
+  },
+  "form": {
+    "name": "Name",
+    "servings": "Servings",
+    "description": "Description",
+    "instructions": "Instructions",
+    "ingredients": "Ingredients",
+    "addRow": "Add ingredient",
+    "quantity": "Quantity",
+    "perServing": "Per serving",
+    "units": "units"
+  },
+  "macros": {
+    "title": "Macros",
+    "label": "Macros",
+    "total": "Totals",
+    "perServing": "Per serving",
+    "kcal": "Calories",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat",
+    "fiber": "Fiber"
+  },
+  "actions": {
+    "duplicate": "Duplicate"
+  },
+  "autocomplete": {
+    "placeholder": "Search ingredient…",
+    "searching": "Searching…",
+    "noResults": "No results.",
+    "createNew": "+ Create \"{{name}}\"",
+    "change": "Change"
+  },
+  "errors": {
+    "nameRequired": "Give your recipe a name.",
+    "servingsInvalid": "Servings must be greater than 0.",
+    "noIngredients": "Add at least one ingredient.",
+    "rowMissingIngredient": "Some rows have no ingredient selected.",
+    "rowInvalidQuantity": "Some rows have an invalid or empty quantity."
+  }
+}

@@ -522,6 +522,7 @@ export type Database = {
       recipes: {
         Row: {
           created_at: string;
+          deleted_at: string | null;
           description: string | null;
           id: string;
           instructions: string | null;
@@ -533,6 +534,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          deleted_at?: string | null;
           description?: string | null;
           id?: string;
           instructions?: string | null;
@@ -544,6 +546,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          deleted_at?: string | null;
           description?: string | null;
           id?: string;
           instructions?: string | null;
@@ -618,7 +621,19 @@ export type Database = {
         Relationships: [];
       };
     };
-    Functions: Record<string, never>;
+    Functions: {
+      save_recipe: {
+        Args: {
+          p_recipe_id: string | null;
+          p_name: string;
+          p_servings: number;
+          p_description: string | null;
+          p_instructions: string | null;
+          p_ingredients: Json;
+        };
+        Returns: string;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
