@@ -1,0 +1,23 @@
+{
+  "title": "Configuración inicial",
+  "subtitle": "Necesitamos unos datos básicos para calcular tus objetivos. Solo se piden una vez.",
+  "submit": "Empezar",
+  "sex": {
+    "label": "Sexo",
+    "placeholder": "Selecciona…",
+    "male": "Hombre",
+    "female": "Mujer",
+    "other": "Otro / prefiero no decir"
+  },
+  "birthDate": "Fecha de nacimiento",
+  "heightCm": "Altura (cm)",
+  "initialWeightKg": "Peso actual (kg)",
+  "boneKg": {
+    "label": "Peso óseo (kg)",
+    "estimate": "Estimar",
+    "help": "El peso óseo apenas cambia con el tiempo, así que solo lo pedimos una vez. Editable en Ajustes."
+  },
+  "errors": {
+    "required": "Completa todos los campos."
+  }
+}
