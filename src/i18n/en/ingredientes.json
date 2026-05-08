@@ -1,0 +1,56 @@
+{
+  "pageTitle": "Ingredients",
+  "description": "Shared library. What you add becomes available to all users. You can only edit or delete what you created.",
+  "newIngredient": "New ingredient",
+  "searchPlaceholder": "Search by name or brand…",
+  "tabs": {
+    "off": "Search (OpenFoodFacts)",
+    "manual": "Manual",
+    "imported": "Imported",
+    "importedSoon": "Coming soon — barcode scanner"
+  },
+  "dialog": {
+    "createTitle": "New ingredient",
+    "createSubtitle": "Search OpenFoodFacts or enter macros manually.",
+    "editTitle": "Edit ingredient",
+    "editSubtitle": "Changes affect the shared library."
+  },
+  "off": {
+    "searchPlaceholder": "e.g. greek yogurt",
+    "minChars": "Type at least 3 characters to search.",
+    "noResults": "No results.",
+    "adjustHint": "Review and adjust macros if needed before saving."
+  },
+  "form": {
+    "name": "Name",
+    "brand": "Brand",
+    "unitType": "Unit",
+    "unitGram": "Grams (macros per 100 g)",
+    "unitUnit": "Unit (macros per unit)",
+    "macrosLabel": "Macros {{suffix}}",
+    "perUnit": "per unit",
+    "per100g": "per 100 g",
+    "kcal": "Kcal",
+    "protein": "Protein (g)",
+    "carbs": "Carbs (g)",
+    "fat": "Fat (g)",
+    "fiber": "Fiber (g)"
+  },
+  "list": {
+    "empty": "No results.",
+    "perUnit": "/ unit",
+    "per100g": "/ 100 g",
+    "deleteConfirm": "Delete this ingredient? Recipes that use it will block the deletion.",
+    "readOnly": "Read-only"
+  },
+  "source": {
+    "system": "System ingredient",
+    "systemShort": "System",
+    "openfoodfacts": "Imported from OpenFoodFacts",
+    "manual": "Manual entry",
+    "manualShort": "Manual"
+  },
+  "errors": {
+    "invalid": "Check the fields. Some are missing or invalid."
+  }
+}

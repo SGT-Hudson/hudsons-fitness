@@ -1,58 +1,68 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/lib/supabase';
+import { Plus, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { IngredientList } from '@/features/ingredients/components/IngredientList';
+import { IngredientDialog } from '@/features/ingredients/components/IngredientDialog';
+import { useLocalIngredientSearch } from '@/features/ingredients/hooks';
+import type { Ingredient } from '@/features/ingredients/api';
 
 export function IngredientesPage() {
-  const { t } = useTranslation('nav');
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['ingredients', 'all'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ingredients')
-        .select('id, name, brand, unit_type, kcal_per_unit, source')
-        .order('name')
-        .limit(50);
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { t } = useTranslation('ingredientes');
+  const [query, setQuery] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Ingredient | null>(null);
+
+  const search = useLocalIngredientSearch(query, 50);
+
+  function openCreate() {
+    setEditing(null);
+    setDialogOpen(true);
+  }
+
+  function openEdit(ing: Ingredient) {
+    setEditing(ing);
+    setDialogOpen(true);
+  }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-3xl font-bold tracking-tight">{t('ingredientes')}</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Biblioteca compartida</CardTitle>
-          <CardDescription>
-            Ingredientes seed del sistema. La búsqueda completa y la importación de OpenFoodFacts
-            llegan en la siguiente iteración.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading && <p className="text-sm text-muted-foreground">Cargando…</p>}
-          {error && (
-            <p className="text-sm text-destructive">Error: {(error as Error).message}</p>
-          )}
-          {data && (
-            <ul className="divide-y">
-              {data.map((ing) => (
-                <li key={ing.id} className="py-2 flex items-center justify-between gap-4">
-                  <div>
-                    <span className="font-medium">{ing.name}</span>
-                    {ing.brand && (
-                      <span className="text-muted-foreground ml-2 text-sm">{ing.brand}</span>
-                    )}
-                  </div>
-                  <div className="text-sm text-muted-foreground tabular-nums">
-                    {ing.kcal_per_unit} kcal / {ing.unit_type === 'unit' ? 'ud' : '100 g'}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
+        <Button onClick={openCreate}>
+          <Plus className="h-4 w-4" />
+          {t('newIngredient')}
+        </Button>
+      </div>
+
+      <p className="text-sm text-muted-foreground">{t('description')}</p>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          className="pl-9"
+          placeholder={t('searchPlaceholder')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      <IngredientList
+        ingredients={search.data ?? []}
+        loading={search.isLoading}
+        onEdit={openEdit}
+      />
+
+      <IngredientDialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditing(null);
+        }}
+        mode={editing ? 'edit' : 'create'}
+        initial={editing}
+      />
     </div>
   );
 }

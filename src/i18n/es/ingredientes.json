@@ -1,0 +1,56 @@
+{
+  "pageTitle": "Ingredientes",
+  "description": "Biblioteca compartida. Lo que añadas estará disponible para todos los usuarios. Solo puedes editar o borrar lo que tú creaste.",
+  "newIngredient": "Nuevo ingrediente",
+  "searchPlaceholder": "Buscar por nombre o marca…",
+  "tabs": {
+    "off": "Buscar (OpenFoodFacts)",
+    "manual": "Manual",
+    "imported": "Importado",
+    "importedSoon": "Próximamente — escáner de código de barras"
+  },
+  "dialog": {
+    "createTitle": "Nuevo ingrediente",
+    "createSubtitle": "Busca en OpenFoodFacts o introduce los macros a mano.",
+    "editTitle": "Editar ingrediente",
+    "editSubtitle": "Los cambios afectan a la biblioteca compartida."
+  },
+  "off": {
+    "searchPlaceholder": "ej. yogur griego natural",
+    "minChars": "Escribe al menos 3 caracteres para buscar.",
+    "noResults": "No se encontraron resultados.",
+    "adjustHint": "Comprueba y ajusta los macros si lo necesitas antes de guardar."
+  },
+  "form": {
+    "name": "Nombre",
+    "brand": "Marca",
+    "unitType": "Unidad",
+    "unitGram": "Gramos (macros por 100 g)",
+    "unitUnit": "Unidad (macros por unidad)",
+    "macrosLabel": "Macros {{suffix}}",
+    "perUnit": "por unidad",
+    "per100g": "por 100 g",
+    "kcal": "Kcal",
+    "protein": "Proteína (g)",
+    "carbs": "Carbohidratos (g)",
+    "fat": "Grasa (g)",
+    "fiber": "Fibra (g)"
+  },
+  "list": {
+    "empty": "Sin resultados.",
+    "perUnit": "/ ud",
+    "per100g": "/ 100 g",
+    "deleteConfirm": "¿Borrar este ingrediente? Las recetas que lo usen impedirán el borrado.",
+    "readOnly": "Solo lectura"
+  },
+  "source": {
+    "system": "Ingrediente del sistema",
+    "systemShort": "Sistema",
+    "openfoodfacts": "Importado de OpenFoodFacts",
+    "manual": "Creado a mano",
+    "manualShort": "Manual"
+  },
+  "errors": {
+    "invalid": "Revisa los campos. Faltan datos o hay valores no válidos."
+  }
+}

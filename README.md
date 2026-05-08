@@ -41,9 +41,9 @@ The repo is Vite-ready: `vercel.json` includes the SPA fallback rewrite and asse
 
 5. Click **Deploy**.
 
-Once deployed, copy the production URL (e.g. `https://hudsons-fitness.vercel.app`) and update Supabase auth so signup confirmation emails redirect to it:
+Once deployed, copy the production URL (e.g. `https://hudsonfitness.vercel.app`) and update Supabase auth so signup confirmation emails redirect to it:
 
 1. Open the Supabase dashboard → **Authentication → URL Configuration**.
 2. Set **Site URL** to your Vercel production URL.
-3. Add the Vercel preview pattern to **Redirect URLs**: `https://hudsons-fitness-*.vercel.app/**` (so PR previews work too).
+3. Add the Vercel preview pattern to **Redirect URLs**: `https://hudsonfitness-*.vercel.app/**` (so PR previews work too).
 4. Save.
