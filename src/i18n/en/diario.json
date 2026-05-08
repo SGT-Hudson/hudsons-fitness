@@ -1,0 +1,79 @@
+{
+  "pageTitle": "Diary",
+  "addEntry": "Add entry",
+  "addToMeal": "Add to this meal",
+  "loading": "Loading…",
+  "empty": {
+    "message": "Nothing logged today yet.",
+    "cta": "Log first meal"
+  },
+  "date": {
+    "previous": "Previous day",
+    "next": "Next day",
+    "today": "Today"
+  },
+  "mealType": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "snack": "Snack",
+    "dinner": "Dinner",
+    "other": "Other"
+  },
+  "totals": {
+    "title": "Daily totals",
+    "kcal": "Calories",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat",
+    "fiber": "Fiber",
+    "targetsHint": "Once you have an active phase, daily targets and per-macro progress bars will show here."
+  },
+  "entry": {
+    "edit": "Edit entry",
+    "fromPlan": "From plan",
+    "recipeDeleted": "(recipe deleted)"
+  },
+  "tabs": {
+    "recipe": "Recipe",
+    "ingredient": "Ingredient",
+    "custom": "Manual"
+  },
+  "fields": {
+    "mealType": "Meal",
+    "recipe": "Recipe",
+    "ingredient": "Ingredient",
+    "servings": "Servings",
+    "quantity": "Quantity",
+    "customName": "Name",
+    "kcal": "Kcal",
+    "protein": "Protein (g)",
+    "carbs": "Carbs (g)",
+    "fat": "Fat (g)",
+    "fiber": "Fiber (g)",
+    "notes": "Notes"
+  },
+  "units": {
+    "unit": "units"
+  },
+  "autocomplete": {
+    "recipePlaceholder": "Search recipe…",
+    "loading": "Loading…",
+    "noResults": "No matches.",
+    "recipeEmpty": "You have no recipes. Go to /recetas to create one.",
+    "change": "Change"
+  },
+  "dialog": {
+    "newTitle": "New entry",
+    "editTitle": "Edit entry",
+    "subtitle": "Log what you ate. A recipe, a single ingredient, or type macros directly.",
+    "deleteConfirm": "Delete this diary entry?"
+  },
+  "errors": {
+    "pickRecipe": "Pick a recipe.",
+    "pickIngredient": "Pick an ingredient.",
+    "servingsInvalid": "Servings must be greater than 0.",
+    "quantityInvalid": "Quantity must be greater than 0.",
+    "customNameRequired": "Add a name.",
+    "customKcalRequired": "Calories are required."
+  }
+}

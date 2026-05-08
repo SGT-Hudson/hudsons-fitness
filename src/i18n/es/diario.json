@@ -1,0 +1,79 @@
+{
+  "pageTitle": "Diario",
+  "addEntry": "Añadir comida",
+  "addToMeal": "Añadir a esta comida",
+  "loading": "Cargando…",
+  "empty": {
+    "message": "Aún no has registrado nada hoy.",
+    "cta": "Registrar primera comida"
+  },
+  "date": {
+    "previous": "Día anterior",
+    "next": "Día siguiente",
+    "today": "Hoy"
+  },
+  "mealType": {
+    "breakfast": "Desayuno",
+    "lunch": "Comida",
+    "snack": "Snack",
+    "dinner": "Cena",
+    "other": "Otro"
+  },
+  "totals": {
+    "title": "Totales del día",
+    "kcal": "Calorías",
+    "protein": "Proteína",
+    "carbs": "Carbohidratos",
+    "fat": "Grasa",
+    "fiber": "Fibra",
+    "targetsHint": "Cuando tengas una fase activa, aquí verás los objetivos diarios y la barra de progreso por macro."
+  },
+  "entry": {
+    "edit": "Editar entrada",
+    "fromPlan": "Del plan",
+    "recipeDeleted": "(receta eliminada)"
+  },
+  "tabs": {
+    "recipe": "Receta",
+    "ingredient": "Ingrediente",
+    "custom": "Manual"
+  },
+  "fields": {
+    "mealType": "Comida",
+    "recipe": "Receta",
+    "ingredient": "Ingrediente",
+    "servings": "Raciones",
+    "quantity": "Cantidad",
+    "customName": "Nombre",
+    "kcal": "Kcal",
+    "protein": "Proteína (g)",
+    "carbs": "Carbohidratos (g)",
+    "fat": "Grasa (g)",
+    "fiber": "Fibra (g)",
+    "notes": "Notas"
+  },
+  "units": {
+    "unit": "ud"
+  },
+  "autocomplete": {
+    "recipePlaceholder": "Buscar receta…",
+    "loading": "Cargando…",
+    "noResults": "Sin coincidencias.",
+    "recipeEmpty": "No tienes recetas. Ve a /recetas y crea una.",
+    "change": "Cambiar"
+  },
+  "dialog": {
+    "newTitle": "Nueva comida",
+    "editTitle": "Editar comida",
+    "subtitle": "Registra qué has comido. Una receta, un ingrediente suelto, o introduce los macros a mano.",
+    "deleteConfirm": "¿Borrar esta entrada del diario?"
+  },
+  "errors": {
+    "pickRecipe": "Selecciona una receta.",
+    "pickIngredient": "Selecciona un ingrediente.",
+    "servingsInvalid": "Las raciones deben ser mayores que 0.",
+    "quantityInvalid": "La cantidad debe ser mayor que 0.",
+    "customNameRequired": "Pon un nombre.",
+    "customKcalRequired": "Las calorías son obligatorias."
+  }
+}
