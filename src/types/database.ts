@@ -633,6 +633,31 @@ export type Database = {
         };
         Returns: string;
       };
+      save_template: {
+        Args: {
+          p_template_id: string | null;
+          p_name: string;
+          p_same_schedule_all_days: boolean;
+          p_default_meal_times: string[];
+          p_slots: Json;
+          p_day_times?: Json;
+        };
+        Returns: string;
+      };
+      apply_template_to_week: {
+        Args: {
+          p_template_id: string;
+          p_target_date: string;
+        };
+        Returns: string;
+      };
+      save_week_as_template: {
+        Args: {
+          p_week_id: string;
+          p_name: string;
+        };
+        Returns: string;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
