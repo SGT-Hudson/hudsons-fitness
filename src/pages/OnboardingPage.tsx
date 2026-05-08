@@ -183,8 +183,8 @@ export function OnboardingPage() {
                   type="number"
                   inputMode="decimal"
                   required
-                  min={1}
-                  max={10}
+                  min={0.5}
+                  max={20}
                   step="0.01"
                   value={boneKg}
                   onChange={(e) => setBoneKg(e.target.value)}
