@@ -1,6 +1,6 @@
 # Hudson's Fitness — Handoff
 
-> Status as of: Sprint 7 — Progreso gráficas (in progress on `claude/implement-fitness-architecture-DrnGF`).
+> Status as of: Sprint 8 — Toasts (in progress on `claude/implement-fitness-architecture-DrnGF`).
 
 ## Quick status
 
@@ -26,20 +26,14 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 | 9   | Sprint 5 fix                         | Align phases code with DB schema (kcal_mode/fiber_mode enums, fat_pct fraction↔percent)                  |
 | 10  | Sprint 6 — Settings completos        | Language toggle (persisted to `profiles.language`), biometrics editor (sex/birth_date/height/bone), sign out |
 | 11  | Sprint 7 — Progreso gráficas         | WeightChart (raw + MA5) and CompositionChart (% stacked w/ linear interpolation); shared 30d/90d/1y/all pills |
+| 12  | Sprint 7 fix                         | Composition chart Y-axis capped at 100%; body fat moved to bottom of stack                               |
+| 13  | Sprint 8 — Toasts                    | shadcn toast/toaster/useToast; success/destructive variants; wired into all mutation hooks via toast-helpers |
 
 ---
 
 ## Pending for v1 (recommended order)
 
-### 1. Toasts / feedback — **MEDIUM** (next sprint)
-
-All mutations are silent. Add toast system:
-
-- `@radix-ui/react-toast` already in package.json
-- Need to add `src/components/ui/toast.tsx` + `toaster.tsx` from shadcn, wrap App with `<Toaster />`
-- Then surface success/error from every mutation (create/update/delete)
-
-### 2. Edge Functions + pg_cron — **MEDIUM**
+### 1. Edge Functions + pg_cron — **MEDIUM** (next sprint)
 
 For real historical data:
 
@@ -48,16 +42,16 @@ For real historical data:
 - `recalculate-tdee` — computes TDEE from weight delta + intake; writes to `tdee_estimates`
 - Without these, the `kcal_mode: 'tdee_delta'` phase mode in Objetivos returns `null` targets
 
-### 3. Diario ↔ Plan integration — **LOW-MEDIUM**
+### 2. Diario ↔ Plan integration — **LOW-MEDIUM**
 
 When user opens `/diario/:date`, if no meal_logs exist for that day but plan slots do, optionally materialize them as logs (architecture §6.6 flow D). Decide: auto-materialize on open, or button "Aplicar plan a este día"?
 
-### 4. GDPR — **LOW**
+### 3. GDPR — **LOW**
 
 - Dont do this part: "Download my data" Edge Function (JSON export of all user-scoped tables)
 - "Delete account" flow
 
-### 5. Polish — **LOW**
+### 4. Polish — **LOW**
 
 - Loading skeletons (currently just text "loading…")
 - Dark mode toggle (CSS vars already set up, just need a switcher)
@@ -79,8 +73,9 @@ When user opens `/diario/:date`, if no meal_logs exist for that day but plan slo
 - **Units**: metric-only (kg, cm). No kg↔lb conversion in app. `profiles.units` column exists but is not surfaced in UI and is not used; treat as legacy.
 - **Language toggle**: Settings only (no header switcher in main app — header switcher remains on OnboardingPage since it precedes Settings access).
 - **`initial_weight_kg`**: read-only after onboarding (historical anchor for progress charts).
-- **Charts**: composition chart shows interpolated values between measurements with data (user decision). Weight chart shows raw daily line + thick MA5 overlay. Time range pills 30d/90d/1y/all default to 90d.
-- **Sprint order**: Fundamentos → Métricas → Polish/Deploy → 2A Ingredientes → 2B Recetas → 3 Diario → 4 Plantillas/Planificador → 5 Objetivos/Fases → 6 Settings → 7 Progreso gráficas → (next: Toasts)
+- **Charts**: composition chart shows interpolated values between measurements with data (user decision). Weight chart shows raw daily line + thick MA5 overlay. Time range pills 30d/90d/1y/all default to 90d. Composition Y-axis capped at 100%.
+- **Toasts**: fired from mutation hooks (not from pages) via `@/lib/toast-helpers` (`toastSaved`, `toastDeleted`, `toastCreated`, `toastApplied`, `toastError`). Defaults: success 4 s, destructive 7 s, max 3 stacked. High-frequency planner slot add/update mutations only fire on error to avoid noise.
+- **Sprint order**: Fundamentos → Métricas → Polish/Deploy → 2A Ingredientes → 2B Recetas → 3 Diario → 4 Plantillas/Planificador → 5 Objetivos/Fases → 6 Settings → 7 Progreso gráficas → 8 Toasts → (next: Edge Functions + pg_cron)
 
 ---
 
@@ -216,13 +211,14 @@ src/
 
 Paste this prompt:
 
-> Continua Hudson's Fitness donde lo dejamos. Lee `HANDOFF.md` en la raíz del repo para el estado completo. Próximo sprint: **Toasts / feedback** (sistema de toasts shadcn, mensajes de éxito/error en todas las mutaciones). El repo está en `SGT-Hudson/hudsons-fitness`, branch `claude/implement-fitness-architecture-DrnGF`. Empieza confirmando el plan y luego procede.
+> Continua Hudson's Fitness donde lo dejamos. Lee `HANDOFF.md` en la raíz del repo para el estado completo. Próximo sprint: **Edge Functions + pg_cron** (`daily-nutrition-snapshot`, `weekly-rollover`, `recalculate-tdee`). El repo está en `SGT-Hudson/hudsons-fitness`, branch `claude/implement-fitness-architecture-DrnGF`. Empieza confirmando el plan y luego procede.
 
-The new session will read the file and pick up from Sprint 8 (Toasts).
+The new session will read the file and pick up from Sprint 9 (Edge Functions).
 
 ---
 
 ## Open questions for next session
 
-- **Toast variants**: ¿solo success/error, o también info/warning?
-- **Auto-dismiss timing**: ¿4s para success, 7s para error? (defaults razonables)
+- **Edge function language**: `supabase functions` defaults a Deno/TS; ¿OK o se prefiere Node?
+- **TDEE backfill**: ¿calcular histórico desde `start_date` la primera vez que corre, o solo desde el día anterior en adelante?
+- **Cron timezone**: pg_cron corre en UTC por defecto. ¿Programar a las hora UTC equivalente a 02:00 / 03:00 CET, o usar AT TIME ZONE en SQL?

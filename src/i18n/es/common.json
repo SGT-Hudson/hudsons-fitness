@@ -12,5 +12,13 @@
   "en": "Inglés",
   "errors": {
     "generic": "Algo ha ido mal. Inténtalo de nuevo."
+  },
+  "toasts": {
+    "saved": "Guardado",
+    "deleted": "Eliminado",
+    "created": "Creado",
+    "applied": "Aplicado",
+    "errorTitle": "Algo ha ido mal",
+    "errorGeneric": "Inténtalo de nuevo en unos segundos."
   }
 }

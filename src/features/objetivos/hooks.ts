@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { toastError, toastSaved } from '@/lib/toast-helpers';
 import { fetchGoal, upsertGoal, type GoalInput } from './api';
 
 const KEYS = {
@@ -22,6 +23,8 @@ export function useUpsertGoal() {
     mutationFn: (input: GoalInput) => upsertGoal(user!.id, input),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['goals'] });
+      toastSaved();
     },
+    onError: toastError,
   });
 }

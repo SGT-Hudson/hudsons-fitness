@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
 import type { TablesUpdate } from '@/types/database';
+import { toastCreated, toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
 import {
   createPhase,
   deletePhase,
@@ -40,7 +41,9 @@ export function useCreatePhase() {
     mutationFn: (input: PhaseInput) => createPhase(user!.id, input),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['phases'] });
+      toastCreated();
     },
+    onError: toastError,
   });
 }
 
@@ -51,7 +54,9 @@ export function useUpdatePhase() {
       updatePhase(id, patch),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['phases'] });
+      toastSaved();
     },
+    onError: toastError,
   });
 }
 
@@ -61,6 +66,8 @@ export function useDeletePhase() {
     mutationFn: (id: string) => deletePhase(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['phases'] });
+      toastDeleted();
     },
+    onError: toastError,
   });
 }

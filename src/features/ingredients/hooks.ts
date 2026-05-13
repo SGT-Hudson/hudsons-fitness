@@ -13,6 +13,7 @@ import {
 import type { OFFSearchResult } from '@/lib/openfoodfacts';
 import { searchOpenFoodFacts } from '@/lib/openfoodfacts';
 import type { TablesUpdate } from '@/types/database';
+import { toastCreated, toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
 
 export function useIngredients(limit = 100) {
   return useQuery({
@@ -46,7 +47,9 @@ export function useCreateManualIngredient() {
     mutationFn: (input: ManualIngredientInput) => createManualIngredient(user!.id, input),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['ingredients'] });
+      toastCreated();
     },
+    onError: toastError,
   });
 }
 
@@ -63,7 +66,9 @@ export function useImportFromOFF() {
     }) => importIngredientFromOFF(user!.id, product, overrides),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['ingredients'] });
+      toastCreated();
     },
+    onError: toastError,
   });
 }
 
@@ -77,7 +82,9 @@ export function useUpdateIngredient() {
         old?.map((i) => (i.id === next.id ? next : i)),
       );
       void qc.invalidateQueries({ queryKey: ['ingredients'] });
+      toastSaved();
     },
+    onError: toastError,
   });
 }
 
@@ -87,6 +94,8 @@ export function useDeleteIngredient() {
     mutationFn: (id: string) => deleteIngredient(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['ingredients'] });
+      toastDeleted();
     },
+    onError: toastError,
   });
 }

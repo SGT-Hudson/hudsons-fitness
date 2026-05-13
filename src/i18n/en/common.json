@@ -12,5 +12,13 @@
   "en": "English",
   "errors": {
     "generic": "Something went wrong. Please try again."
+  },
+  "toasts": {
+    "saved": "Saved",
+    "deleted": "Deleted",
+    "created": "Created",
+    "applied": "Applied",
+    "errorTitle": "Something went wrong",
+    "errorGeneric": "Please try again in a few seconds."
   }
 }

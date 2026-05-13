@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
 import {
   fetchRecipe,
   listRecipes,
@@ -31,7 +32,9 @@ export function useSaveRecipe() {
     mutationFn: (payload: SaveRecipePayload) => saveRecipe(payload),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['recipes'] });
+      toastSaved();
     },
+    onError: toastError,
   });
 }
 
@@ -41,6 +44,8 @@ export function useSoftDeleteRecipe() {
     mutationFn: (recipeId: string) => softDeleteRecipe(recipeId),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['recipes'] });
+      toastDeleted();
     },
+    onError: toastError,
   });
 }

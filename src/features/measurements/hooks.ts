@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
 import {
   deleteMeasurement,
   fetchLatestMeasurement,
@@ -63,7 +64,9 @@ export function useUpsertMeasurement() {
     mutationFn: (input: MeasurementInput) => upsertMeasurement(user!.id, input),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['measurements'] });
+      toastSaved();
     },
+    onError: toastError,
   });
 }
 
@@ -73,6 +76,8 @@ export function useDeleteMeasurement() {
     mutationFn: (id: string) => deleteMeasurement(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['measurements'] });
+      toastDeleted();
     },
+    onError: toastError,
   });
 }
