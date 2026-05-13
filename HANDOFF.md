@@ -13,56 +13,80 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 
 ## Done (8 PRs merged)
 
-| # | Sprint | Content |
-|---|---|---|
-| 1 | Fundamentos | Auth, profile, layout, router, i18n base |
-| 2 | Sprint 1 — Métricas | `body_measurements`, ProgresoPage list, LatestMeasurementCard with stale banner |
-| 3 | Polish/Deploy | Vercel SPA rewrite, ErrorBoundary, bone weight bug fix (max 20kg) |
-| 4 | (combined with #3) | Sprint 2A Ingredientes |
-| 5 | Sprint 2B — Recetas | Soft-delete recipes, live macros panel, save_recipe RPC |
-| 6 | Sprint 3 — Diario | Meal logs grouped by mealtype, DateNavigator, DayTotalsCard, 3-mode entry (recipe / ingredient / custom) |
-| 7 | Sprint 4 — Plantillas + Planificador | Templates with 7×N grid, ApplyTemplateDialog, SaveAsTemplateDialog, divergence tracking |
-| 8 | Sprint 5 — Objetivos/Fases | Goal singleton, phases CRUD, `computePhaseTargets`, DayTotalsCard targets+progress bars |
+| #   | Sprint                               | Content                                                                                                  |
+| --- | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| 1   | Fundamentos                          | Auth, profile, layout, router, i18n base                                                                 |
+| 2   | Sprint 1 — Métricas                  | `body_measurements`, ProgresoPage list, LatestMeasurementCard with stale banner                          |
+| 3   | Polish/Deploy                        | Vercel SPA rewrite, ErrorBoundary, bone weight bug fix (max 20kg)                                        |
+| 4   | (combined with #3)                   | Sprint 2A Ingredientes                                                                                   |
+| 5   | Sprint 2B — Recetas                  | Soft-delete recipes, live macros panel, save_recipe RPC                                                  |
+| 6   | Sprint 3 — Diario                    | Meal logs grouped by mealtype, DateNavigator, DayTotalsCard, 3-mode entry (recipe / ingredient / custom) |
+| 7   | Sprint 4 — Plantillas + Planificador | Templates with 7×N grid, ApplyTemplateDialog, SaveAsTemplateDialog, divergence tracking                  |
+| 8   | Sprint 5 — Objetivos/Fases           | Goal singleton, phases CRUD, `computePhaseTargets`, DayTotalsCard targets+progress bars                  |
 
 ---
 
 ## Pending for v1 (recommended order)
 
+### 0. Check sprint 5, code is not working as expected — **HIGH** (immediate)
+
+- Cant save plans, error from supabase:
+  could be related to `meal_plan_template_slots` having `time TIME` column with precision 3, and some input value having more than 3 decimal places in seconds, causing numeric overflow. Need to verify input values and possibly adjust column type or input formatting.
+  {
+  "code": "22003",
+  "details": "A field with precision 4, scale 3 must round to an absolute value less than 10^1.",
+  "hint": null,
+  "message": "numeric field overflow"
+  }
+
+Also, go over the code from this last sprint and check for any other issues or edge cases that might have been missed during development.
+
 ### 1. Settings completos — **HIGH** (next sprint)
+
 Currently SettingsPage only edits `display_name`. Need:
+
 - **Language toggle**: ES/EN switcher that calls `i18n.changeLanguage()` AND saves to `profiles.language`
 - **Units toggle**: kg/lb selector saved to `profiles.units`; affects display in ProgresoPage, OnboardingPage, MeasurementDialog
 - **Edit biometrics**: sex, birth_date, height_cm, initial_weight_kg, bone_kg (all already in `profiles`)
 - **Account section**: email (read-only), sign out
 
 ### 2. Progreso — gráficas — **HIGH**
+
 ProgresoPage shows list + LatestMeasurementCard. Add:
+
 - Weight trend chart with 5-day MA (view `body_measurements_smoothed` already exists, has `weight_kg_5day_avg` col)
 - Body composition stacked area chart (body_fat_pct, muscle_pct, water_pct over time)
 - (Optional) consumed vs planned kcal chart from `daily_nutrition_history` (needs Edge Function first)
 - `recharts` already installed.
 
 ### 3. Toasts / feedback — **MEDIUM**
+
 All mutations are silent. Add toast system:
+
 - `@radix-ui/react-toast` already in package.json
 - Need to add `src/components/ui/toast.tsx` + `toaster.tsx` from shadcn, wrap App with `<Toaster />`
 - Then surface success/error from every mutation (create/update/delete)
 
 ### 4. Edge Functions + pg_cron — **MEDIUM**
+
 For real historical data:
+
 - `daily-nutrition-snapshot` — runs 02:00 CET, populates `daily_nutrition_history` for previous day from `meal_logs` (consumed) + plan slots (planned). Required for kcal trend chart.
 - `weekly-rollover` — runs Mon 03:00 CET, archives weeks
 - `recalculate-tdee` — computes TDEE from weight delta + intake; writes to `tdee_estimates`
 - Without these, the `kcal_mode: 'tdee_delta'` phase mode in Objetivos returns `null` targets
 
 ### 5. Diario ↔ Plan integration — **LOW-MEDIUM**
+
 When user opens `/diario/:date`, if no meal_logs exist for that day but plan slots do, optionally materialize them as logs (architecture §6.6 flow D). Decide: auto-materialize on open, or button "Aplicar plan a este día"?
 
 ### 6. GDPR — **LOW**
-- "Download my data" Edge Function (JSON export of all user-scoped tables)
+
+- Dont do this part: "Download my data" Edge Function (JSON export of all user-scoped tables)
 - "Delete account" flow
 
 ### 7. Polish — **LOW**
+
 - Loading skeletons (currently just text "loading…")
 - Dark mode toggle (CSS vars already set up, just need a switcher)
 - PWA manifest + service worker (offline support)
@@ -104,13 +128,17 @@ Planning: `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_temp
 ## Project conventions
 
 ### Forms
+
 - **react-hook-form WITHOUT zodResolver** — `@hookform/resolvers` is NOT installed; use built-in validation via `register('field', { required, min, max, validate })` and `Controller` for shadcn Select/Textarea
 - Form values typed as plain `type FormValues = { ... }` — no `z.infer<>` (zod is installed but unused)
 
 ### Badges
+
 - No `Badge` component in `src/components/ui/`. Use inline Tailwind:
   ```tsx
-  <span className="inline-flex items-center text-xs px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground">…</span>
+  <span className="inline-flex items-center text-xs px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground">
+    …
+  </span>
   ```
 - Variants:
   - primary: `bg-primary text-primary-foreground`
@@ -118,23 +146,28 @@ Planning: `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_temp
   - outline: `border border-border text-muted-foreground`
 
 ### shadcn components available (`src/components/ui/`)
+
 button, card, dialog, input, label, select, tabs, textarea
 **Missing**: badge, toast (need to add for v1), sheet, popover (radix popover IS installed)
 
 ### Data layer
+
 - API in `src/features/<feature>/api.ts` — pure functions calling `supabase.from(...)`
 - Hooks in `src/features/<feature>/hooks.ts` — `useQuery` / `useMutation` wrappers with auth + queryClient invalidation
 - Types: import `Tables<'name'>`, `TablesInsert<'name'>`, `TablesUpdate<'name'>` from `@/types/database`
 
 ### i18n
+
 - 10 namespaces: common, auth, nav, onboarding, metricas, ingredientes, recetas, diario, planning, objetivos
 - Register new namespace in `src/i18n/index.ts` (resources + ns array)
 - Use `t('key', { var: value })` for interpolation; pluralization via `_one` / `_other` keys
 
 ### Routes
+
 All defined in `src/app/router.tsx`. Auth gates: `RequireAuth` → `RequireOnboarded` → `AppLayout`.
 
 ### Macros type
+
 **camelCase** — `{ kcal, proteinG, carbsG, fatG, fiberG }` (NOT snake_case)
 Defined in `@/features/recipes/macros.ts` along with `roundMacro`, `computeRecipeMacros`.
 

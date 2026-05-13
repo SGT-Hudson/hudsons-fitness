@@ -214,8 +214,7 @@ export function ObjetivosPage() {
 
                         <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
                           <span>
-                            {phase.kcal_mode === 'fixed' && `${phase.kcal_value} kcal`}
-                            {phase.kcal_mode === 'per_kg' && `${phase.kcal_value} kcal/kg`}
+                            {phase.kcal_mode === 'absolute' && `${phase.kcal_value} kcal`}
                             {phase.kcal_mode === 'tdee_delta' &&
                               `${t('phases.summary.tdeePrefix')} ${phase.kcal_value > 0 ? '+' : ''}${phase.kcal_value} kcal`}
                           </span>
@@ -223,11 +222,11 @@ export function ObjetivosPage() {
                             {phase.protein_g_per_kg} g/kg {t('phases.summary.protein')}
                           </span>
                           <span>
-                            {phase.fat_pct_of_kcal}% {t('phases.summary.fat')}
+                            {Math.round(phase.fat_pct_of_kcal * 100)}% {t('phases.summary.fat')}
                           </span>
                           <span>
                             {phase.fiber_value}
-                            {phase.fiber_mode === 'per_kg' ? 'g/kg' : 'g'}{' '}
+                            {phase.fiber_mode === 'per_1000_kcal' ? 'g/1000kcal' : 'g'}{' '}
                             {t('phases.summary.fiber')}
                           </span>
                         </div>
