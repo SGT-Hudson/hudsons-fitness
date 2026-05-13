@@ -39,5 +39,28 @@
   },
   "errors": {
     "weightRequired": "Weight is required."
+  },
+  "charts": {
+    "empty": "Not enough data to render the chart yet.",
+    "range": {
+      "label": "Time range",
+      "30d": "30d",
+      "90d": "90d",
+      "1y": "1y",
+      "all": "All"
+    },
+    "weight": {
+      "title": "Weight trend",
+      "raw": "Daily weight",
+      "ma5": "5-day moving avg"
+    },
+    "composition": {
+      "title": "Body composition",
+      "bodyFat": "Body fat %",
+      "muscle": "Muscle %",
+      "water": "Water %",
+      "empty": "Log body fat, muscle or water to see this chart.",
+      "help": "Values are linearly interpolated between measurements with data."
+    }
   }
 }

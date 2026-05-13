@@ -1,6 +1,6 @@
 # Hudson's Fitness — Handoff
 
-> Status as of: Sprint 6 — Settings completos (in progress on `claude/implement-fitness-architecture-DrnGF`).
+> Status as of: Sprint 7 — Progreso gráficas (in progress on `claude/implement-fitness-architecture-DrnGF`).
 
 ## Quick status
 
@@ -25,21 +25,13 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 | 8   | Sprint 5 — Objetivos/Fases           | Goal singleton, phases CRUD, `computePhaseTargets`, DayTotalsCard targets+progress bars                  |
 | 9   | Sprint 5 fix                         | Align phases code with DB schema (kcal_mode/fiber_mode enums, fat_pct fraction↔percent)                  |
 | 10  | Sprint 6 — Settings completos        | Language toggle (persisted to `profiles.language`), biometrics editor (sex/birth_date/height/bone), sign out |
+| 11  | Sprint 7 — Progreso gráficas         | WeightChart (raw + MA5) and CompositionChart (% stacked w/ linear interpolation); shared 30d/90d/1y/all pills |
 
 ---
 
 ## Pending for v1 (recommended order)
 
-### 1. Progreso — gráficas — **HIGH** (next sprint)
-
-ProgresoPage shows list + LatestMeasurementCard. Add:
-
-- Weight trend chart with 5-day MA (view `body_measurements_smoothed` already exists, has `weight_kg_5day_avg` col)
-- Body composition stacked area chart (body_fat_pct, muscle_pct, water_pct over time)
-- (Optional) consumed vs planned kcal chart from `daily_nutrition_history` (needs Edge Function first)
-- `recharts` already installed.
-
-### 2. Toasts / feedback — **MEDIUM**
+### 1. Toasts / feedback — **MEDIUM** (next sprint)
 
 All mutations are silent. Add toast system:
 
@@ -47,7 +39,7 @@ All mutations are silent. Add toast system:
 - Need to add `src/components/ui/toast.tsx` + `toaster.tsx` from shadcn, wrap App with `<Toaster />`
 - Then surface success/error from every mutation (create/update/delete)
 
-### 3. Edge Functions + pg_cron — **MEDIUM**
+### 2. Edge Functions + pg_cron — **MEDIUM**
 
 For real historical data:
 
@@ -56,21 +48,21 @@ For real historical data:
 - `recalculate-tdee` — computes TDEE from weight delta + intake; writes to `tdee_estimates`
 - Without these, the `kcal_mode: 'tdee_delta'` phase mode in Objetivos returns `null` targets
 
-### 4. Diario ↔ Plan integration — **LOW-MEDIUM**
+### 3. Diario ↔ Plan integration — **LOW-MEDIUM**
 
 When user opens `/diario/:date`, if no meal_logs exist for that day but plan slots do, optionally materialize them as logs (architecture §6.6 flow D). Decide: auto-materialize on open, or button "Aplicar plan a este día"?
 
-### 5. GDPR — **LOW**
+### 4. GDPR — **LOW**
 
 - Dont do this part: "Download my data" Edge Function (JSON export of all user-scoped tables)
 - "Delete account" flow
 
-### 6. Polish — **LOW**
+### 5. Polish — **LOW**
 
 - Loading skeletons (currently just text "loading…")
 - Dark mode toggle (CSS vars already set up, just need a switcher)
 - PWA manifest + service worker (offline support)
-- Code splitting (current bundle ~233 KB gzipped)
+- Code splitting — bundle now ~344 KB gzipped after recharts. Split recharts via `manualChunks` is the easy win.
 
 ---
 
@@ -87,7 +79,8 @@ When user opens `/diario/:date`, if no meal_logs exist for that day but plan slo
 - **Units**: metric-only (kg, cm). No kg↔lb conversion in app. `profiles.units` column exists but is not surfaced in UI and is not used; treat as legacy.
 - **Language toggle**: Settings only (no header switcher in main app — header switcher remains on OnboardingPage since it precedes Settings access).
 - **`initial_weight_kg`**: read-only after onboarding (historical anchor for progress charts).
-- **Sprint order**: Fundamentos → Métricas → Polish/Deploy → 2A Ingredientes → 2B Recetas → 3 Diario → 4 Plantillas/Planificador → 5 Objetivos/Fases → 6 Settings → (next: Progreso gráficas)
+- **Charts**: composition chart shows interpolated values between measurements with data (user decision). Weight chart shows raw daily line + thick MA5 overlay. Time range pills 30d/90d/1y/all default to 90d.
+- **Sprint order**: Fundamentos → Métricas → Polish/Deploy → 2A Ingredientes → 2B Recetas → 3 Diario → 4 Plantillas/Planificador → 5 Objetivos/Fases → 6 Settings → 7 Progreso gráficas → (next: Toasts)
 
 ---
 
@@ -223,13 +216,13 @@ src/
 
 Paste this prompt:
 
-> Continua Hudson's Fitness donde lo dejamos. Lee `HANDOFF.md` en la raíz del repo para el estado completo. Próximo sprint: **Progreso — gráficas** (weight trend con MA5, composición corporal stacked area). El repo está en `SGT-Hudson/hudsons-fitness`, branch `claude/implement-fitness-architecture-DrnGF`. Empieza confirmando el plan y luego procede.
+> Continua Hudson's Fitness donde lo dejamos. Lee `HANDOFF.md` en la raíz del repo para el estado completo. Próximo sprint: **Toasts / feedback** (sistema de toasts shadcn, mensajes de éxito/error en todas las mutaciones). El repo está en `SGT-Hudson/hudsons-fitness`, branch `claude/implement-fitness-architecture-DrnGF`. Empieza confirmando el plan y luego procede.
 
-The new session will read the file and pick up from Sprint 7 (Progreso gráficas).
+The new session will read the file and pick up from Sprint 8 (Toasts).
 
 ---
 
 ## Open questions for next session
 
-- **Charts library config**: `recharts` is installed but no theme set up — use existing CSS vars (`--primary`, etc.) via inline `stroke="hsl(var(--primary))"`?
-- **Composition chart**: stacked area with body_fat_pct/muscle_pct/water_pct — what to do with measurements that only have weight (most fields nullable)? Skip vs interpolate?
+- **Toast variants**: ¿solo success/error, o también info/warning?
+- **Auto-dismiss timing**: ¿4s para success, 7s para error? (defaults razonables)
