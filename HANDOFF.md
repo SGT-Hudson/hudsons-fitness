@@ -1,6 +1,6 @@
 # Hudson's Fitness — Handoff
 
-> Status as of: end of Sprint 5 (Objetivos/Fases), PR #8 merged to `main`.
+> Status as of: Sprint 5 fix (PR #9 merged to `main`). Sprint 5 phases form now works against the DB.
 
 ## Quick status
 
@@ -11,7 +11,7 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 
 ---
 
-## Done (8 PRs merged)
+## Done (9 PRs merged)
 
 | #   | Sprint                               | Content                                                                                                  |
 | --- | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
@@ -23,23 +23,11 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 | 6   | Sprint 3 — Diario                    | Meal logs grouped by mealtype, DateNavigator, DayTotalsCard, 3-mode entry (recipe / ingredient / custom) |
 | 7   | Sprint 4 — Plantillas + Planificador | Templates with 7×N grid, ApplyTemplateDialog, SaveAsTemplateDialog, divergence tracking                  |
 | 8   | Sprint 5 — Objetivos/Fases           | Goal singleton, phases CRUD, `computePhaseTargets`, DayTotalsCard targets+progress bars                  |
+| 9   | Sprint 5 fix                         | Align phases code with DB schema (kcal_mode/fiber_mode enums, fat_pct fraction↔percent)                  |
 
 ---
 
 ## Pending for v1 (recommended order)
-
-### 0. Check sprint 5, code is not working as expected — **HIGH** (immediate)
-
-- Cant save plans, error from supabase:
-  could be related to `meal_plan_template_slots` having `time TIME` column with precision 3, and some input value having more than 3 decimal places in seconds, causing numeric overflow. Need to verify input values and possibly adjust column type or input formatting.
-  {
-  "code": "22003",
-  "details": "A field with precision 4, scale 3 must round to an absolute value less than 10^1.",
-  "hint": null,
-  "message": "numeric field overflow"
-  }
-
-Also, go over the code from this last sprint and check for any other issues or edge cases that might have been missed during development.
 
 ### 1. Settings completos — **HIGH** (next sprint)
 
@@ -122,6 +110,16 @@ Planning: `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_temp
 **RPCs** (4): `save_recipe`, `save_template`, `apply_template_to_week`, `save_week_as_template` — all SECURITY INVOKER, all atomic over multiple tables
 
 **Extensions**: `pg_trgm`, `btree_gist` in `extensions` schema (not public)
+
+### `phases` schema gotchas (learned from PR #9)
+
+- `kcal_mode`: CHECK in (`'absolute'`, `'tdee_delta'`) — no `'fixed'`/`'per_kg'`
+- `fiber_mode`: CHECK in (`'fixed_g'`, `'per_1000_kcal'`)
+- `fat_pct_of_kcal`: `numeric(4,3)` — stored as **fraction** (0.10–0.60), not percent. UI converts at form boundary.
+- Non-overlapping date ranges enforced via `EXCLUDE USING gist (user_id WITH =, daterange(...))` — overlapping phases will fail
+- Canonical macro math lives in `src/lib/macros.ts` (`computeDailyMacroTargets`). `features/phases/targets.ts` is a thin wrapper around it.
+
+> Before writing a form that inserts into any table, check `pg_constraint` for CHECK constraints and column `numeric_precision`/`numeric_scale` — `types/database.ts` types numeric enums as plain `string` and won't catch drift.
 
 ---
 
