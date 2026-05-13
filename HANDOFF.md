@@ -1,6 +1,6 @@
 # Hudson's Fitness — Handoff
 
-> Status as of: end of Sprint 5 (Objetivos/Fases), PR #8 merged to `main`.
+> Status as of: Sprint 6 — Settings completos (in progress on `claude/implement-fitness-architecture-DrnGF`).
 
 ## Quick status
 
@@ -11,7 +11,7 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 
 ---
 
-## Done (8 PRs merged)
+## Done (9 PRs merged)
 
 | #   | Sprint                               | Content                                                                                                  |
 | --- | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
@@ -23,34 +23,14 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 | 6   | Sprint 3 — Diario                    | Meal logs grouped by mealtype, DateNavigator, DayTotalsCard, 3-mode entry (recipe / ingredient / custom) |
 | 7   | Sprint 4 — Plantillas + Planificador | Templates with 7×N grid, ApplyTemplateDialog, SaveAsTemplateDialog, divergence tracking                  |
 | 8   | Sprint 5 — Objetivos/Fases           | Goal singleton, phases CRUD, `computePhaseTargets`, DayTotalsCard targets+progress bars                  |
+| 9   | Sprint 5 fix                         | Align phases code with DB schema (kcal_mode/fiber_mode enums, fat_pct fraction↔percent)                  |
+| 10  | Sprint 6 — Settings completos        | Language toggle (persisted to `profiles.language`), biometrics editor (sex/birth_date/height/bone), sign out |
 
 ---
 
 ## Pending for v1 (recommended order)
 
-### 0. Check sprint 5, code is not working as expected — **HIGH** (immediate)
-
-- Cant save plans, error from supabase:
-  could be related to `meal_plan_template_slots` having `time TIME` column with precision 3, and some input value having more than 3 decimal places in seconds, causing numeric overflow. Need to verify input values and possibly adjust column type or input formatting.
-  {
-  "code": "22003",
-  "details": "A field with precision 4, scale 3 must round to an absolute value less than 10^1.",
-  "hint": null,
-  "message": "numeric field overflow"
-  }
-
-Also, go over the code from this last sprint and check for any other issues or edge cases that might have been missed during development.
-
-### 1. Settings completos — **HIGH** (next sprint)
-
-Currently SettingsPage only edits `display_name`. Need:
-
-- **Language toggle**: ES/EN switcher that calls `i18n.changeLanguage()` AND saves to `profiles.language`
-- **Units toggle**: kg/lb selector saved to `profiles.units`; affects display in ProgresoPage, OnboardingPage, MeasurementDialog
-- **Edit biometrics**: sex, birth_date, height_cm, initial_weight_kg, bone_kg (all already in `profiles`)
-- **Account section**: email (read-only), sign out
-
-### 2. Progreso — gráficas — **HIGH**
+### 1. Progreso — gráficas — **HIGH** (next sprint)
 
 ProgresoPage shows list + LatestMeasurementCard. Add:
 
@@ -59,7 +39,7 @@ ProgresoPage shows list + LatestMeasurementCard. Add:
 - (Optional) consumed vs planned kcal chart from `daily_nutrition_history` (needs Edge Function first)
 - `recharts` already installed.
 
-### 3. Toasts / feedback — **MEDIUM**
+### 2. Toasts / feedback — **MEDIUM**
 
 All mutations are silent. Add toast system:
 
@@ -67,7 +47,7 @@ All mutations are silent. Add toast system:
 - Need to add `src/components/ui/toast.tsx` + `toaster.tsx` from shadcn, wrap App with `<Toaster />`
 - Then surface success/error from every mutation (create/update/delete)
 
-### 4. Edge Functions + pg_cron — **MEDIUM**
+### 3. Edge Functions + pg_cron — **MEDIUM**
 
 For real historical data:
 
@@ -76,16 +56,16 @@ For real historical data:
 - `recalculate-tdee` — computes TDEE from weight delta + intake; writes to `tdee_estimates`
 - Without these, the `kcal_mode: 'tdee_delta'` phase mode in Objetivos returns `null` targets
 
-### 5. Diario ↔ Plan integration — **LOW-MEDIUM**
+### 4. Diario ↔ Plan integration — **LOW-MEDIUM**
 
 When user opens `/diario/:date`, if no meal_logs exist for that day but plan slots do, optionally materialize them as logs (architecture §6.6 flow D). Decide: auto-materialize on open, or button "Aplicar plan a este día"?
 
-### 6. GDPR — **LOW**
+### 5. GDPR — **LOW**
 
 - Dont do this part: "Download my data" Edge Function (JSON export of all user-scoped tables)
 - "Delete account" flow
 
-### 7. Polish — **LOW**
+### 6. Polish — **LOW**
 
 - Loading skeletons (currently just text "loading…")
 - Dark mode toggle (CSS vars already set up, just need a switcher)
@@ -104,7 +84,10 @@ When user opens `/diario/:date`, if no meal_logs exist for that day but plan slo
 - **Ingredient duplicates**: tolerate (no dedup in MVP)
 - **Recipe photos**: postponed to v1.1
 - **Vercel URL**: `hudsonfitness.vercel.app` (not `hudsons-fitness`)
-- **Sprint order**: Fundamentos → Métricas → Polish/Deploy → 2A Ingredientes → 2B Recetas → 3 Diario → 4 Plantillas/Planificador → 5 Objetivos/Fases → (next: Settings)
+- **Units**: metric-only (kg, cm). No kg↔lb conversion in app. `profiles.units` column exists but is not surfaced in UI and is not used; treat as legacy.
+- **Language toggle**: Settings only (no header switcher in main app — header switcher remains on OnboardingPage since it precedes Settings access).
+- **`initial_weight_kg`**: read-only after onboarding (historical anchor for progress charts).
+- **Sprint order**: Fundamentos → Métricas → Polish/Deploy → 2A Ingredientes → 2B Recetas → 3 Diario → 4 Plantillas/Planificador → 5 Objetivos/Fases → 6 Settings → (next: Progreso gráficas)
 
 ---
 
@@ -122,6 +105,16 @@ Planning: `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_temp
 **RPCs** (4): `save_recipe`, `save_template`, `apply_template_to_week`, `save_week_as_template` — all SECURITY INVOKER, all atomic over multiple tables
 
 **Extensions**: `pg_trgm`, `btree_gist` in `extensions` schema (not public)
+
+### `phases` schema gotchas (learned from PR #9)
+
+- `kcal_mode`: CHECK in (`'absolute'`, `'tdee_delta'`) — no `'fixed'`/`'per_kg'`
+- `fiber_mode`: CHECK in (`'fixed_g'`, `'per_1000_kcal'`)
+- `fat_pct_of_kcal`: `numeric(4,3)` — stored as **fraction** (0.10–0.60), not percent. UI converts at form boundary.
+- Non-overlapping date ranges enforced via `EXCLUDE USING gist (user_id WITH =, daterange(...))` — overlapping phases will fail
+- Canonical macro math lives in `src/lib/macros.ts` (`computeDailyMacroTargets`). `features/phases/targets.ts` is a thin wrapper around it.
+
+> Before writing a form that inserts into any table, check `pg_constraint` for CHECK constraints and column `numeric_precision`/`numeric_scale` — `types/database.ts` types numeric enums as plain `string` and won't catch drift.
 
 ---
 
@@ -230,14 +223,13 @@ src/
 
 Paste this prompt:
 
-> Continúo Hudson's Fitness donde lo dejamos. Lee `HANDOFF.md` en la raíz del repo para el estado completo. Próximo sprint: **Settings completos** (toggle idioma, toggle unidades, editar biometría). El repo está en `SGT-Hudson/hudsons-fitness`, branch `claude/implement-fitness-architecture-DrnGF`. Empieza confirmando el plan y luego procede.
+> Continua Hudson's Fitness donde lo dejamos. Lee `HANDOFF.md` en la raíz del repo para el estado completo. Próximo sprint: **Progreso — gráficas** (weight trend con MA5, composición corporal stacked area). El repo está en `SGT-Hudson/hudsons-fitness`, branch `claude/implement-fitness-architecture-DrnGF`. Empieza confirmando el plan y luego procede.
 
-The new session will read the file and pick up from Sprint 6 (Settings).
+The new session will read the file and pick up from Sprint 7 (Progreso gráficas).
 
 ---
 
 ## Open questions for next session
 
-- **Language toggle UX**: dropdown in header AND in Settings, or just Settings?
-- **Units conversion**: store everything in metric (current) and convert at display? Or store in chosen units? (Recommend: metric in DB, convert at display)
 - **Charts library config**: `recharts` is installed but no theme set up — use existing CSS vars (`--primary`, etc.) via inline `stroke="hsl(var(--primary))"`?
+- **Composition chart**: stacked area with body_fat_pct/muscle_pct/water_pct — what to do with measurements that only have weight (most fields nullable)? Skip vs interpolate?

@@ -1,0 +1,43 @@
+{
+  "title": "Settings",
+  "profile": {
+    "title": "Profile",
+    "description": "Basic account details.",
+    "displayName": "Name"
+  },
+  "language": {
+    "title": "Language",
+    "description": "Interface language.",
+    "es": "Spanish",
+    "en": "English"
+  },
+  "biometrics": {
+    "title": "Biometrics",
+    "description": "Physical data used to compute targets and body composition.",
+    "sex": "Sex",
+    "sexMale": "Male",
+    "sexFemale": "Female",
+    "sexOther": "Other / prefer not to say",
+    "birthDate": "Date of birth",
+    "heightCm": "Height (cm)",
+    "boneKg": "Bone weight (kg)",
+    "boneKgHelp": "Barely changes over time; adjust only if you have a more accurate value.",
+    "initialWeightKg": "Initial weight (kg)",
+    "initialWeightKgHelp": "Historical anchor set during onboarding. Not editable."
+  },
+  "account": {
+    "title": "Account",
+    "description": "Session and login details.",
+    "email": "Email",
+    "signOut": "Sign out"
+  },
+  "actions": {
+    "save": "Save",
+    "saved": "Saved",
+    "saving": "Saving…"
+  },
+  "errors": {
+    "required": "Please fill in all fields.",
+    "saveFailed": "Could not save changes."
+  }
+}
