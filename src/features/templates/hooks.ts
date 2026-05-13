@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
 import {
   deleteTemplate,
   fetchTemplate,
@@ -31,7 +32,9 @@ export function useSaveTemplate() {
     mutationFn: (payload: SaveTemplatePayload) => saveTemplate(payload),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['templates'] });
+      toastSaved();
     },
+    onError: toastError,
   });
 }
 
@@ -41,6 +44,8 @@ export function useDeleteTemplate() {
     mutationFn: (id: string) => deleteTemplate(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['templates'] });
+      toastDeleted();
     },
+    onError: toastError,
   });
 }

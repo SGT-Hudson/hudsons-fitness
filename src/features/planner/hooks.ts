@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
 import {
+  toastApplied,
+  toastDeleted,
+  toastError,
+  toastSaved,
+} from '@/lib/toast-helpers';
+import {
   addWeekSlot,
   applyTemplateToWeek,
   deleteWeekSlot,
@@ -25,7 +31,9 @@ export function useApplyTemplateToWeek() {
       applyTemplateToWeek(templateId, targetDate),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['planner'] });
+      toastApplied();
     },
+    onError: toastError,
   });
 }
 
@@ -36,7 +44,9 @@ export function useSaveWeekAsTemplate() {
       saveWeekAsTemplate(weekId, name),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['templates'] });
+      toastSaved();
     },
+    onError: toastError,
   });
 }
 
@@ -47,6 +57,7 @@ export function useAddWeekSlot() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['planner'] });
     },
+    onError: toastError,
   });
 }
 
@@ -58,6 +69,7 @@ export function useUpdateWeekSlot() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['planner'] });
     },
+    onError: toastError,
   });
 }
 
@@ -67,6 +79,8 @@ export function useDeleteWeekSlot() {
     mutationFn: (id: string) => deleteWeekSlot(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['planner'] });
+      toastDeleted();
     },
+    onError: toastError,
   });
 }

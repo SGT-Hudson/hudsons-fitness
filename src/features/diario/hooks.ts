@@ -8,6 +8,7 @@ import {
   type CreateMealLogInput,
 } from './api';
 import type { TablesUpdate } from '@/types/database';
+import { toastCreated, toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
 
 export function useMealLogsForDay(loggedOn: string) {
   const { user } = useAuth();
@@ -25,7 +26,9 @@ export function useCreateMealLog() {
     mutationFn: (input: CreateMealLogInput) => createMealLog(user!.id, input),
     onSuccess: (_data, variables) => {
       void qc.invalidateQueries({ queryKey: ['meal_logs', user?.id, variables.loggedOn] });
+      toastCreated();
     },
+    onError: toastError,
   });
 }
 
@@ -37,7 +40,9 @@ export function useUpdateMealLog() {
       updateMealLog(id, patch),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['meal_logs', user?.id] });
+      toastSaved();
     },
+    onError: toastError,
   });
 }
 
@@ -48,6 +53,8 @@ export function useDeleteMealLog() {
     mutationFn: (id: string) => deleteMealLog(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['meal_logs', user?.id] });
+      toastDeleted();
     },
+    onError: toastError,
   });
 }
