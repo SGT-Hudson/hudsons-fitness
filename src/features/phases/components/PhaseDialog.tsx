@@ -26,11 +26,11 @@ type FormValues = {
   phase_type: 'cut' | 'maintenance' | 'bulk';
   start_date: string;
   end_date: string;
-  kcal_mode: 'fixed' | 'per_kg' | 'tdee_delta';
+  kcal_mode: 'absolute' | 'tdee_delta';
   kcal_value: number;
   protein_g_per_kg: number;
-  fat_pct_of_kcal: number;
-  fiber_mode: 'fixed' | 'per_kg';
+  fat_pct_input: number; // percent in UI (10–60); stored as fraction in DB
+  fiber_mode: 'fixed_g' | 'per_1000_kcal';
   fiber_value: number;
   notes: string;
 };
@@ -40,11 +40,11 @@ const DEFAULTS: FormValues = {
   phase_type: 'maintenance',
   start_date: new Date().toISOString().slice(0, 10),
   end_date: '',
-  kcal_mode: 'fixed',
+  kcal_mode: 'absolute',
   kcal_value: 2000,
   protein_g_per_kg: 1.6,
-  fat_pct_of_kcal: 25,
-  fiber_mode: 'fixed',
+  fat_pct_input: 25,
+  fiber_mode: 'fixed_g',
   fiber_value: 30,
   notes: '',
 };
@@ -84,7 +84,7 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
         kcal_mode: phase.kcal_mode as FormValues['kcal_mode'],
         kcal_value: phase.kcal_value,
         protein_g_per_kg: phase.protein_g_per_kg,
-        fat_pct_of_kcal: phase.fat_pct_of_kcal,
+        fat_pct_input: Math.round(phase.fat_pct_of_kcal * 100),
         fiber_mode: phase.fiber_mode as FormValues['fiber_mode'],
         fiber_value: phase.fiber_value,
         notes: phase.notes ?? '',
@@ -103,7 +103,7 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
       kcal_mode: values.kcal_mode,
       kcal_value: values.kcal_value,
       protein_g_per_kg: values.protein_g_per_kg,
-      fat_pct_of_kcal: values.fat_pct_of_kcal,
+      fat_pct_of_kcal: values.fat_pct_input / 100,
       fiber_mode: values.fiber_mode,
       fiber_value: values.fiber_value,
       notes: values.notes || null,
@@ -112,16 +112,14 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
   }
 
   const kcalSuffix =
-    kcalMode === 'fixed'
+    kcalMode === 'absolute'
       ? t('phases.form.kcalValueFixed')
-      : kcalMode === 'per_kg'
-        ? t('phases.form.kcalValuePerKg')
-        : t('phases.form.kcalValueDelta');
+      : t('phases.form.kcalValueDelta');
 
   const fiberSuffix =
-    fiberMode === 'fixed'
+    fiberMode === 'fixed_g'
       ? t('phases.form.fiberValueFixed')
-      : t('phases.form.fiberValuePerKg');
+      : t('phases.form.fiberValuePer1000Kcal');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -209,8 +207,7 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fixed">{t('phases.kcalMode.fixed')}</SelectItem>
-                        <SelectItem value="per_kg">{t('phases.kcalMode.per_kg')}</SelectItem>
+                        <SelectItem value="absolute">{t('phases.kcalMode.absolute')}</SelectItem>
                         <SelectItem value="tdee_delta">
                           {t('phases.kcalMode.tdee_delta')}
                         </SelectItem>
@@ -266,13 +263,13 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
               step="1"
               min="10"
               max="60"
-              {...register('fat_pct_of_kcal', {
+              {...register('fat_pct_input', {
                 valueAsNumber: true,
                 min: { value: 10, message: t('phases.form.errors.fat') },
                 max: { value: 60, message: t('phases.form.errors.fat') },
               })}
             />
-            {errors.fat_pct_of_kcal && (
+            {errors.fat_pct_input && (
               <p className="text-xs text-destructive">{t('phases.form.errors.fat')}</p>
             )}
           </div>
@@ -291,8 +288,10 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fixed">{t('phases.fiberMode.fixed')}</SelectItem>
-                        <SelectItem value="per_kg">{t('phases.fiberMode.per_kg')}</SelectItem>
+                        <SelectItem value="fixed_g">{t('phases.fiberMode.fixed_g')}</SelectItem>
+                        <SelectItem value="per_1000_kcal">
+                          {t('phases.fiberMode.per_1000_kcal')}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   )}

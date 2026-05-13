@@ -32,13 +32,12 @@
       "bulk": "Bulk"
     },
     "kcalMode": {
-      "fixed": "Fixed",
-      "per_kg": "Per kg lean mass",
+      "absolute": "Fixed",
       "tdee_delta": "TDEE delta"
     },
     "fiberMode": {
-      "fixed": "Fixed (g/day)",
-      "per_kg": "Per kg bodyweight"
+      "fixed_g": "Fixed (g/day)",
+      "per_1000_kcal": "Per 1000 kcal"
     },
     "summary": {
       "protein": "protein",
@@ -57,14 +56,13 @@
       "kcal": "Calories",
       "kcalMode": "Mode",
       "kcalValueFixed": "kcal/day",
-      "kcalValuePerKg": "kcal/kg lean mass",
       "kcalValueDelta": "kcal (+ surplus)",
       "protein": "Protein (g/kg lean mass)",
       "fat": "Fat (% of kcal)",
       "fiber": "Fiber",
       "fiberMode": "Mode",
       "fiberValueFixed": "g/day",
-      "fiberValuePerKg": "g/kg bodyweight",
+      "fiberValuePer1000Kcal": "g/1000 kcal",
       "notes": "Notes (optional)",
       "save": "Save",
       "errors": {

@@ -32,13 +32,12 @@
       "bulk": "Volumen"
     },
     "kcalMode": {
-      "fixed": "Fijo",
-      "per_kg": "Por kg masa magra",
+      "absolute": "Fijo",
       "tdee_delta": "Delta TDEE"
     },
     "fiberMode": {
-      "fixed": "Fijo (g/día)",
-      "per_kg": "Por kg de peso"
+      "fixed_g": "Fijo (g/día)",
+      "per_1000_kcal": "Por 1000 kcal"
     },
     "summary": {
       "protein": "prot.",
@@ -57,14 +56,13 @@
       "kcal": "Calorías",
       "kcalMode": "Modo",
       "kcalValueFixed": "kcal/día",
-      "kcalValuePerKg": "kcal/kg masa magra",
       "kcalValueDelta": "kcal (+ superávit)",
       "protein": "Proteína (g/kg masa magra)",
       "fat": "Grasa (% de kcal)",
       "fiber": "Fibra",
       "fiberMode": "Modo",
       "fiberValueFixed": "g/día",
-      "fiberValuePerKg": "g/kg de peso",
+      "fiberValuePer1000Kcal": "g/1000 kcal",
       "notes": "Notas (opcional)",
       "save": "Guardar",
       "errors": {
