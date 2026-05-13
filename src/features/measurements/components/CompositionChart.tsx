@@ -116,6 +116,7 @@ export function CompositionChart() {
                   minTickGap={32}
                 />
                 <YAxis
+                  domain={[0, 100]}
                   tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   width={48}
                   tickFormatter={(v: number) => `${v}%`}
@@ -143,19 +144,19 @@ export function CompositionChart() {
                 <Area
                   type="monotone"
                   stackId="1"
-                  dataKey="muscle"
-                  stroke="hsl(var(--primary))"
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.55}
+                  dataKey="bodyFat"
+                  stroke="hsl(var(--destructive))"
+                  fill="hsl(var(--destructive))"
+                  fillOpacity={0.45}
                   isAnimationActive={false}
                 />
                 <Area
                   type="monotone"
                   stackId="1"
-                  dataKey="bodyFat"
-                  stroke="hsl(var(--destructive))"
-                  fill="hsl(var(--destructive))"
-                  fillOpacity={0.45}
+                  dataKey="muscle"
+                  stroke="hsl(var(--primary))"
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.55}
                   isAnimationActive={false}
                 />
                 <Area
