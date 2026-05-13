@@ -11,6 +11,9 @@ import { MealLogDialog } from '@/features/diario/components/MealLogDialog';
 import { useMealLogsForDay } from '@/features/diario/hooks';
 import { computeMealLogMacros, sumMacros } from '@/features/diario/macros';
 import { MEAL_TYPE_ORDER, type MealLogWithJoins, type MealType } from '@/features/diario/api';
+import { useLatestMeasurement } from '@/features/measurements/hooks';
+import { useActivePhase } from '@/features/phases/hooks';
+import { computePhaseTargets } from '@/features/phases/targets';
 import { isoDate } from '@/lib/dates';
 
 function isValidDate(s: string): boolean {
@@ -29,6 +32,8 @@ export function DiarioPage() {
   const [editing, setEditing] = useState<MealLogWithJoins | null>(null);
 
   const logs = useMealLogsForDay(date);
+  const latestMeasurement = useLatestMeasurement();
+  const activePhase = useActivePhase();
 
   function changeDate(newDate: string) {
     navigate(newDate === today ? '/diario' : `/diario/${newDate}`);
@@ -57,6 +62,17 @@ export function DiarioPage() {
     [logs.data],
   );
 
+  const targets = useMemo(() => {
+    if (!activePhase.data || !latestMeasurement.data?.weight_kg) return undefined;
+    return (
+      computePhaseTargets(
+        activePhase.data,
+        latestMeasurement.data.weight_kg,
+        latestMeasurement.data.body_fat_pct,
+      ) ?? undefined
+    );
+  }, [activePhase.data, latestMeasurement.data]);
+
   function openNew(mealType: MealType) {
     setEditing(null);
     setDialogMealType(mealType);
@@ -83,7 +99,7 @@ export function DiarioPage() {
 
       <DateNavigator date={date} onChange={changeDate} />
 
-      <DayTotalsCard totals={totals} />
+      <DayTotalsCard totals={totals} targets={targets} />
 
       {logs.isLoading ? (
         <Card>
