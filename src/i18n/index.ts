@@ -11,6 +11,7 @@ import esRecetas from './es/recetas.json';
 import esDiario from './es/diario.json';
 import esPlanning from './es/planning.json';
 import esObjetivos from './es/objetivos.json';
+import esSettings from './es/settings.json';
 import enCommon from './en/common.json';
 import enAuth from './en/auth.json';
 import enNav from './en/nav.json';
@@ -21,6 +22,7 @@ import enRecetas from './en/recetas.json';
 import enDiario from './en/diario.json';
 import enPlanning from './en/planning.json';
 import enObjetivos from './en/objetivos.json';
+import enSettings from './en/settings.json';
 
 void i18n
   .use(LanguageDetector)
@@ -38,6 +40,7 @@ void i18n
         diario: esDiario,
         planning: esPlanning,
         objetivos: esObjetivos,
+        settings: esSettings,
       },
       en: {
         common: enCommon,
@@ -50,11 +53,12 @@ void i18n
         diario: enDiario,
         planning: enPlanning,
         objetivos: enObjetivos,
+        settings: enSettings,
       },
     },
     fallbackLng: 'es',
     supportedLngs: ['es', 'en'],
-    ns: ['common', 'auth', 'nav', 'onboarding', 'metricas', 'ingredientes', 'recetas', 'diario', 'planning', 'objetivos'],
+    ns: ['common', 'auth', 'nav', 'onboarding', 'metricas', 'ingredientes', 'recetas', 'diario', 'planning', 'objetivos', 'settings'],
     defaultNS: 'common',
     interpolation: { escapeValue: false },
     detection: {

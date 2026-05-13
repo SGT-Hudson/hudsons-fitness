@@ -1,0 +1,43 @@
+{
+  "title": "Ajustes",
+  "profile": {
+    "title": "Perfil",
+    "description": "Datos básicos de tu cuenta.",
+    "displayName": "Nombre"
+  },
+  "language": {
+    "title": "Idioma",
+    "description": "Idioma de la interfaz.",
+    "es": "Español",
+    "en": "Inglés"
+  },
+  "biometrics": {
+    "title": "Biometría",
+    "description": "Datos físicos usados para calcular objetivos y composición corporal.",
+    "sex": "Sexo",
+    "sexMale": "Hombre",
+    "sexFemale": "Mujer",
+    "sexOther": "Otro / prefiero no decir",
+    "birthDate": "Fecha de nacimiento",
+    "heightCm": "Altura (cm)",
+    "boneKg": "Peso óseo (kg)",
+    "boneKgHelp": "Apenas cambia con el tiempo; ajústalo solo si tienes un valor más preciso.",
+    "initialWeightKg": "Peso inicial (kg)",
+    "initialWeightKgHelp": "Ancla histórica fijada en el onboarding. No editable."
+  },
+  "account": {
+    "title": "Cuenta",
+    "description": "Sesión y datos de acceso.",
+    "email": "Correo electrónico",
+    "signOut": "Cerrar sesión"
+  },
+  "actions": {
+    "save": "Guardar",
+    "saved": "Guardado",
+    "saving": "Guardando…"
+  },
+  "errors": {
+    "required": "Completa todos los campos.",
+    "saveFailed": "No se ha podido guardar."
+  }
+}
