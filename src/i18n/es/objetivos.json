@@ -1,0 +1,81 @@
+{
+  "pageTitle": "Objetivos",
+  "goal": {
+    "title": "Meta de composición",
+    "targetBf": "Grasa corporal objetivo",
+    "edit": "Editar meta",
+    "setGoal": "Definir meta",
+    "noGoalHint": "Define tu objetivo de grasa corporal para seguir el progreso.",
+    "dialog": {
+      "title": "Meta de composición corporal",
+      "targetBf": "Grasa corporal objetivo (%)",
+      "notes": "Notas (opcional)",
+      "save": "Guardar"
+    },
+    "errors": {
+      "targetBf": "El % debe estar entre 3 y 50."
+    }
+  },
+  "phases": {
+    "title": "Fases",
+    "new": "Nueva fase",
+    "empty": "Sin fases. Crea la primera para definir tus etapas de nutrición.",
+    "active": "Activa",
+    "past": "Pasada",
+    "upcoming": "Próxima",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Eliminar la fase \"{{name}}\"?",
+    "edit": "Editar",
+    "type": {
+      "cut": "Corte",
+      "maintenance": "Mantenimiento",
+      "bulk": "Volumen"
+    },
+    "kcalMode": {
+      "fixed": "Fijo",
+      "per_kg": "Por kg masa magra",
+      "tdee_delta": "Delta TDEE"
+    },
+    "fiberMode": {
+      "fixed": "Fijo (g/día)",
+      "per_kg": "Por kg de peso"
+    },
+    "summary": {
+      "protein": "prot.",
+      "fat": "grasa",
+      "fiber": "fibra",
+      "tdeePrefix": "TDEE"
+    },
+    "form": {
+      "newTitle": "Nueva fase",
+      "editTitle": "Editar fase",
+      "name": "Nombre",
+      "namePlaceholder": "ej. Corte verano 2025",
+      "type": "Tipo",
+      "startDate": "Fecha inicio",
+      "endDate": "Fecha fin (opcional)",
+      "kcal": "Calorías",
+      "kcalMode": "Modo",
+      "kcalValueFixed": "kcal/día",
+      "kcalValuePerKg": "kcal/kg masa magra",
+      "kcalValueDelta": "kcal (+ superávit)",
+      "protein": "Proteína (g/kg masa magra)",
+      "fat": "Grasa (% de kcal)",
+      "fiber": "Fibra",
+      "fiberMode": "Modo",
+      "fiberValueFixed": "g/día",
+      "fiberValuePerKg": "g/kg de peso",
+      "notes": "Notas (opcional)",
+      "save": "Guardar",
+      "errors": {
+        "nameRequired": "Pon un nombre a la fase.",
+        "startDateRequired": "La fecha de inicio es obligatoria.",
+        "kcalValue": "El valor debe ser mayor que 0.",
+        "protein": "La proteína debe ser mayor que 0.",
+        "fat": "La grasa debe estar entre 10 y 60.",
+        "fiberValue": "El valor debe ser mayor que 0.",
+        "dateRange": "La fecha fin debe ser posterior al inicio."
+      }
+    }
+  }
+}

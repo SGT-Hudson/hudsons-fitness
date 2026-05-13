@@ -1,0 +1,81 @@
+{
+  "pageTitle": "Goals",
+  "goal": {
+    "title": "Body composition target",
+    "targetBf": "Target body fat",
+    "edit": "Edit goal",
+    "setGoal": "Set goal",
+    "noGoalHint": "Set a body fat target to track your progress.",
+    "dialog": {
+      "title": "Body composition target",
+      "targetBf": "Target body fat (%)",
+      "notes": "Notes (optional)",
+      "save": "Save"
+    },
+    "errors": {
+      "targetBf": "% must be between 3 and 50."
+    }
+  },
+  "phases": {
+    "title": "Phases",
+    "new": "New phase",
+    "empty": "No phases yet. Create one to define your nutrition stages.",
+    "active": "Active",
+    "past": "Past",
+    "upcoming": "Upcoming",
+    "delete": "Delete",
+    "deleteConfirm": "Delete phase \"{{name}}\"?",
+    "edit": "Edit",
+    "type": {
+      "cut": "Cut",
+      "maintenance": "Maintenance",
+      "bulk": "Bulk"
+    },
+    "kcalMode": {
+      "fixed": "Fixed",
+      "per_kg": "Per kg lean mass",
+      "tdee_delta": "TDEE delta"
+    },
+    "fiberMode": {
+      "fixed": "Fixed (g/day)",
+      "per_kg": "Per kg bodyweight"
+    },
+    "summary": {
+      "protein": "protein",
+      "fat": "fat",
+      "fiber": "fiber",
+      "tdeePrefix": "TDEE"
+    },
+    "form": {
+      "newTitle": "New phase",
+      "editTitle": "Edit phase",
+      "name": "Name",
+      "namePlaceholder": "e.g. Summer cut 2025",
+      "type": "Type",
+      "startDate": "Start date",
+      "endDate": "End date (optional)",
+      "kcal": "Calories",
+      "kcalMode": "Mode",
+      "kcalValueFixed": "kcal/day",
+      "kcalValuePerKg": "kcal/kg lean mass",
+      "kcalValueDelta": "kcal (+ surplus)",
+      "protein": "Protein (g/kg lean mass)",
+      "fat": "Fat (% of kcal)",
+      "fiber": "Fiber",
+      "fiberMode": "Mode",
+      "fiberValueFixed": "g/day",
+      "fiberValuePerKg": "g/kg bodyweight",
+      "notes": "Notes (optional)",
+      "save": "Save",
+      "errors": {
+        "nameRequired": "Give the phase a name.",
+        "startDateRequired": "Start date is required.",
+        "kcalValue": "Value must be greater than 0.",
+        "protein": "Protein must be greater than 0.",
+        "fat": "Fat must be between 10 and 60.",
+        "fiberValue": "Value must be greater than 0.",
+        "dateRange": "End date must be after start date."
+      }
+    }
+  }
+}
