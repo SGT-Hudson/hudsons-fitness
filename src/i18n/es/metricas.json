@@ -39,5 +39,28 @@
   },
   "errors": {
     "weightRequired": "El peso es obligatorio."
+  },
+  "charts": {
+    "empty": "Aún no hay datos suficientes para mostrar la gráfica.",
+    "range": {
+      "label": "Rango temporal",
+      "30d": "30d",
+      "90d": "90d",
+      "1y": "1a",
+      "all": "Todo"
+    },
+    "weight": {
+      "title": "Tendencia de peso",
+      "raw": "Peso diario",
+      "ma5": "Media móvil 5 días"
+    },
+    "composition": {
+      "title": "Composición corporal",
+      "bodyFat": "% grasa",
+      "muscle": "% músculo",
+      "water": "% agua",
+      "empty": "Registra grasa, músculo o agua para ver esta gráfica.",
+      "help": "Valores interpolados linealmente entre mediciones con datos."
+    }
   }
 }

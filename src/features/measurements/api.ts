@@ -2,6 +2,22 @@ import { supabase } from '@/lib/supabase';
 import type { Tables, TablesInsert } from '@/types/database';
 
 export type BodyMeasurement = Tables<'body_measurements'>;
+export type SmoothedMeasurement = Tables<'body_measurements_smoothed'>;
+
+export async function fetchSmoothedMeasurements(
+  userId: string,
+  fromDate: string | null,
+): Promise<SmoothedMeasurement[]> {
+  let query = supabase
+    .from('body_measurements_smoothed')
+    .select('*')
+    .eq('user_id', userId)
+    .order('measured_on', { ascending: true });
+  if (fromDate) query = query.gte('measured_on', fromDate);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
 
 export interface MeasurementInput {
   measured_on: string;

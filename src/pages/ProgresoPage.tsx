@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CompositionChart } from '@/features/measurements/components/CompositionChart';
 import { LatestMeasurementCard } from '@/features/measurements/components/LatestMeasurementCard';
 import { MeasurementDialog } from '@/features/measurements/components/MeasurementDialog';
 import { MeasurementsList } from '@/features/measurements/components/MeasurementsList';
+import { WeightChart } from '@/features/measurements/components/WeightChart';
 import {
   useLatestMeasurement,
   useRecentMeasurements,
@@ -48,6 +50,10 @@ export function ProgresoPage() {
         onLogToday={openForToday}
         onEditToday={openForToday}
       />
+
+      <WeightChart />
+
+      <CompositionChart />
 
       <MeasurementsList
         measurements={recentQuery.data ?? []}
