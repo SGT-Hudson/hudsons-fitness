@@ -36,6 +36,7 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 | 19  | Sprint 14 — Dark mode                | `ThemeProvider` (light/dark/system, localStorage `hf-theme`); FOUC-prevention inline script in `index.html`; toggle in Settings Appearance card |
 | 20  | Sprint 15 — PWA                      | `vite-plugin-pwa` with workbox generateSW; manifest (HF monogram SVG icon, theme color `#16a34a`, standalone); Supabase requests bypass cache (NetworkOnly) |
 | 21  | Sprint 16 — GDPR delete-account      | Edge function `delete-account` verifies caller JWT then `auth.admin.deleteUser`; CASCADE cleans user data. Two-step email-confirm dialog in Settings |
+| 22  | Sprint 17 — Review fixes             | TDEE wired to frontend (`features/tdee`) so `tdee_delta` phases show targets; lean-mass protein behavior documented in PhaseDialog + architecture; 7 sites switched from UTC slice to `isoDate()`; ingredient delete maps Postgres FK 23503 to friendly "in use" toast |
 
 ---
 
