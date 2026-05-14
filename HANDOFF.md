@@ -1,6 +1,6 @@
 # Hudson's Fitness — Handoff
 
-> Status as of: Sprint 9 — Edge Functions + pg_cron (on `claude/implement-fitness-architecture-DrnGF`).
+> Status as of: Sprint 10 — Diario ↔ Plan integration (on `claude/implement-fitness-architecture-DrnGF`).
 
 ## Quick status
 
@@ -29,21 +29,18 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 | 12  | Sprint 7 fix                         | Composition chart Y-axis capped at 100%; body fat moved to bottom of stack                               |
 | 13  | Sprint 8 — Toasts                    | shadcn toast/toaster/useToast; success/destructive variants; wired into all mutation hooks via toast-helpers |
 | 14  | Sprint 9 — Edge Functions + cron     | `daily-nutrition-snapshot`, `weekly-rollover`, `recalculate-tdee` (Deno), pg_cron + pg_net jobs, admin RPC `apply_template_to_week_admin` |
+| 15  | Sprint 10 — Diario ↔ Plan            | Plan slots auto-materialize as `from_plan` meal_logs (idempotent via `plan_week_slot_id` dedup) on DiarioPage load; same logic added to `daily-nutrition-snapshot` for days never opened |
 
 ---
 
 ## Pending for v1 (recommended order)
 
-### 1. Diario ↔ Plan integration — **LOW-MEDIUM**
-
-When user opens `/diario/:date`, if no meal_logs exist for that day but plan slots do, optionally materialize them as logs (architecture §6.6 flow D). Decide: auto-materialize on open, or button "Aplicar plan a este día"?
-
-### 2. GDPR — **LOW**
+### 1. GDPR — **LOW**
 
 - Dont do this part: "Download my data" Edge Function (JSON export of all user-scoped tables)
 - "Delete account" flow
 
-### 3. Polish — **LOW**
+### 2. Polish — **LOW**
 
 - Loading skeletons (currently just text "loading…")
 - Dark mode toggle (CSS vars already set up, just need a switcher)
@@ -67,7 +64,8 @@ When user opens `/diario/:date`, if no meal_logs exist for that day but plan slo
 - **`initial_weight_kg`**: read-only after onboarding (historical anchor for progress charts).
 - **Charts**: composition chart shows interpolated values between measurements with data (user decision). Weight chart shows raw daily line + thick MA5 overlay. Time range pills 30d/90d/1y/all default to 90d. Composition Y-axis capped at 100%.
 - **Toasts**: fired from mutation hooks (not from pages) via `@/lib/toast-helpers` (`toastSaved`, `toastDeleted`, `toastCreated`, `toastApplied`, `toastError`). Defaults: success 4 s, destructive 7 s, max 3 stacked. High-frequency planner slot add/update mutations only fire on error to avoid noise.
-- **Sprint order**: Fundamentos → Métricas → Polish/Deploy → 2A Ingredientes → 2B Recetas → 3 Diario → 4 Plantillas/Planificador → 5 Objetivos/Fases → 6 Settings → 7 Progreso gráficas → 8 Toasts → 9 Edge Functions + pg_cron → (next: Diario↔Plan integration or chart for `daily_nutrition_history`)
+- **Sprint order**: Fundamentos → Métricas → Polish/Deploy → 2A Ingredientes → 2B Recetas → 3 Diario → 4 Plantillas/Planificador → 5 Objetivos/Fases → 6 Settings → 7 Progreso gráficas → 8 Toasts → 9 Edge Functions + pg_cron → 10 Diario↔Plan → (next: kcal-history chart on Progreso, or Polish: code-splitting + skeletons)
+- **Plan = default truth**: any active-week slot for a date is automatically materialized into a `meal_log` with `from_plan=true` and `plan_week_slot_id=<slot.id>`. Dedup is by `plan_week_slot_id` so a deleted from_plan log is *not* recreated on reload. Two trigger points: (a) DiarioPage on mount/date-change via `useMaterializePlan`, (b) `daily-nutrition-snapshot` cron, so days never opened still have logs by the time history is computed. Slot→meal_type mapping uses `MEAL_TYPE_ORDER[meal_index]` (anything beyond index 4 falls back to `'other'`).
 - **Edge functions runtime**: Deno + TypeScript (Supabase default). Shared code lives in `supabase/functions/_shared/`.
 - **Cron schedules** (UTC): daily-nutrition-snapshot `0 1 * * *`, weekly-rollover `0 2 * * 1`, recalculate-tdee `0 3 * * *`. DST not corrected (1h drift summer/winter is acceptable for off-peak jobs).
 - **TDEE math**: 14-day window, ≥10 days of intake required, 7700 kcal/kg, ±3-day tolerance for boundary weight measurements.

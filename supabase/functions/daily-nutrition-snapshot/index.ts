@@ -2,10 +2,12 @@
 //
 // Cron: 0 1 * * * UTC (≈ 02:00 CET / 03:00 CEST).
 //
-// For each profile, computes planned vs consumed macros for `previousDayInTZ`
-// (Madrid) and upserts into public.daily_nutrition_history. POST body may
-// include `{ "date": "YYYY-MM-DD" }` to recompute a specific day; otherwise
-// defaults to yesterday.
+// For each profile, runs the same plan-materialization the Diario page does
+// (so days that were never opened still get from_plan meal_logs created),
+// then computes planned vs consumed macros for previousDayInTZ (Madrid) and
+// upserts into public.daily_nutrition_history. POST body may include
+// `{ "date": "YYYY-MM-DD" }` to recompute a specific day; otherwise defaults
+// to yesterday.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import {
@@ -18,6 +20,9 @@ import {
   type MacrosTotals,
   type RecipeRow,
 } from '../_shared/macros.ts';
+
+// Mirror of MEAL_TYPE_ORDER in src/features/diario/api.ts.
+const MEAL_TYPE_ORDER = ['breakfast', 'lunch', 'snack', 'dinner', 'other'] as const;
 
 interface SlotRow {
   servings: number | string;
@@ -76,10 +81,16 @@ Deno.serve(async (req) => {
     });
   }
 
-  const results: Array<{ user_id: string; ok: boolean; error?: string }> = [];
+  const results: Array<{
+    user_id: string;
+    ok: boolean;
+    materialized?: number;
+    error?: string;
+  }> = [];
 
   for (const profile of profiles ?? []) {
     try {
+      const materialized = await materializePlanForDate(supabase, profile.id, targetDate);
       const { planned, hadActivePlan } = await computePlanned(supabase, profile.id, targetDate);
       const consumed = await computeConsumed(supabase, profile.id, targetDate);
 
@@ -105,7 +116,7 @@ Deno.serve(async (req) => {
           { onConflict: 'user_id,logged_on' },
         );
       if (upsertError) throw upsertError;
-      results.push({ user_id: profile.id, ok: true });
+      results.push({ user_id: profile.id, ok: true, materialized });
     } catch (err) {
       results.push({
         user_id: profile.id,
@@ -119,6 +130,66 @@ Deno.serve(async (req) => {
     headers: { 'Content-Type': 'application/json' },
   });
 });
+
+// Server-side mirror of materializePlanForDate in src/features/diario/api.ts.
+// Idempotent: only inserts logs for slots whose plan_week_slot_id is not yet
+// represented in meal_logs for that date.
+async function materializePlanForDate(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  date: string,
+): Promise<number> {
+  const { data: weeks, error: weekError } = await supabase
+    .from('meal_plan_weeks')
+    .select('id')
+    .eq('user_id', userId)
+    .lte('week_start', date)
+    .order('week_start', { ascending: false })
+    .limit(1);
+  if (weekError) throw weekError;
+  if (!weeks || weeks.length === 0) return 0;
+
+  const { data: slots, error: slotsError } = await supabase
+    .from('meal_plan_week_slots')
+    .select('id, meal_index, recipe_id, servings')
+    .eq('plan_week_id', weeks[0].id)
+    .eq('date', date);
+  if (slotsError) throw slotsError;
+  if (!slots || slots.length === 0) return 0;
+
+  const { data: existing, error: existingError } = await supabase
+    .from('meal_logs')
+    .select('plan_week_slot_id')
+    .eq('user_id', userId)
+    .eq('logged_on', date)
+    .not('plan_week_slot_id', 'is', null);
+  if (existingError) throw existingError;
+  const used = new Set((existing ?? []).map((r) => r.plan_week_slot_id as string));
+
+  const missing = (
+    slots as Array<{
+      id: string;
+      meal_index: number;
+      recipe_id: string;
+      servings: number | string;
+    }>
+  ).filter((s) => !used.has(s.id));
+  if (missing.length === 0) return 0;
+
+  const rows = missing.map((s) => ({
+    user_id: userId,
+    logged_on: date,
+    meal_type: MEAL_TYPE_ORDER[s.meal_index] ?? 'other',
+    recipe_id: s.recipe_id,
+    servings: Number(s.servings),
+    from_plan: true,
+    plan_week_slot_id: s.id,
+  }));
+
+  const { error: insertError } = await supabase.from('meal_logs').insert(rows);
+  if (insertError) throw insertError;
+  return rows.length;
+}
 
 async function computePlanned(
   supabase: ReturnType<typeof createClient>,
