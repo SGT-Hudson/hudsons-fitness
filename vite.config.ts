@@ -1,9 +1,43 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
+import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'icon.svg'],
+      manifest: {
+        name: "Hudson's Fitness",
+        short_name: 'Hudson',
+        description: 'Bilingual fitness tracker — macros, recipes, meal plans, body composition.',
+        theme_color: '#16a34a',
+        background_color: '#0f172a',
+        display: 'standalone',
+        start_url: '/',
+        scope: '/',
+        lang: 'es',
+        icons: [
+          { src: '/icon.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
+          { src: '/icon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
+          { src: '/icon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/, /^\/auth/],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.origin.includes('supabase.co'),
+            handler: 'NetworkOnly',
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
