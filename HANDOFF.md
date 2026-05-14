@@ -1,6 +1,6 @@
 # Hudson's Fitness — Handoff
 
-> Status as of: Sprint 8 — Toasts (in progress on `claude/implement-fitness-architecture-DrnGF`).
+> Status as of: Sprint 10 — Diario ↔ Plan integration (on `claude/implement-fitness-architecture-DrnGF`).
 
 ## Quick status
 
@@ -28,30 +28,19 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 | 11  | Sprint 7 — Progreso gráficas         | WeightChart (raw + MA5) and CompositionChart (% stacked w/ linear interpolation); shared 30d/90d/1y/all pills |
 | 12  | Sprint 7 fix                         | Composition chart Y-axis capped at 100%; body fat moved to bottom of stack                               |
 | 13  | Sprint 8 — Toasts                    | shadcn toast/toaster/useToast; success/destructive variants; wired into all mutation hooks via toast-helpers |
+| 14  | Sprint 9 — Edge Functions + cron     | `daily-nutrition-snapshot`, `weekly-rollover`, `recalculate-tdee` (Deno), pg_cron + pg_net jobs, admin RPC `apply_template_to_week_admin` |
+| 15  | Sprint 10 — Diario ↔ Plan            | Plan slots auto-materialize as `from_plan` meal_logs (idempotent via `plan_week_slot_id` dedup) on DiarioPage load; same logic added to `daily-nutrition-snapshot` for days never opened |
 
 ---
 
 ## Pending for v1 (recommended order)
 
-### 1. Edge Functions + pg_cron — **MEDIUM** (next sprint)
-
-For real historical data:
-
-- `daily-nutrition-snapshot` — runs 02:00 CET, populates `daily_nutrition_history` for previous day from `meal_logs` (consumed) + plan slots (planned). Required for kcal trend chart.
-- `weekly-rollover` — runs Mon 03:00 CET, archives weeks
-- `recalculate-tdee` — computes TDEE from weight delta + intake; writes to `tdee_estimates`
-- Without these, the `kcal_mode: 'tdee_delta'` phase mode in Objetivos returns `null` targets
-
-### 2. Diario ↔ Plan integration — **LOW-MEDIUM**
-
-When user opens `/diario/:date`, if no meal_logs exist for that day but plan slots do, optionally materialize them as logs (architecture §6.6 flow D). Decide: auto-materialize on open, or button "Aplicar plan a este día"?
-
-### 3. GDPR — **LOW**
+### 1. GDPR — **LOW**
 
 - Dont do this part: "Download my data" Edge Function (JSON export of all user-scoped tables)
 - "Delete account" flow
 
-### 4. Polish — **LOW**
+### 2. Polish — **LOW**
 
 - Loading skeletons (currently just text "loading…")
 - Dark mode toggle (CSS vars already set up, just need a switcher)
@@ -75,7 +64,12 @@ When user opens `/diario/:date`, if no meal_logs exist for that day but plan slo
 - **`initial_weight_kg`**: read-only after onboarding (historical anchor for progress charts).
 - **Charts**: composition chart shows interpolated values between measurements with data (user decision). Weight chart shows raw daily line + thick MA5 overlay. Time range pills 30d/90d/1y/all default to 90d. Composition Y-axis capped at 100%.
 - **Toasts**: fired from mutation hooks (not from pages) via `@/lib/toast-helpers` (`toastSaved`, `toastDeleted`, `toastCreated`, `toastApplied`, `toastError`). Defaults: success 4 s, destructive 7 s, max 3 stacked. High-frequency planner slot add/update mutations only fire on error to avoid noise.
-- **Sprint order**: Fundamentos → Métricas → Polish/Deploy → 2A Ingredientes → 2B Recetas → 3 Diario → 4 Plantillas/Planificador → 5 Objetivos/Fases → 6 Settings → 7 Progreso gráficas → 8 Toasts → (next: Edge Functions + pg_cron)
+- **Sprint order**: Fundamentos → Métricas → Polish/Deploy → 2A Ingredientes → 2B Recetas → 3 Diario → 4 Plantillas/Planificador → 5 Objetivos/Fases → 6 Settings → 7 Progreso gráficas → 8 Toasts → 9 Edge Functions + pg_cron → 10 Diario↔Plan → (next: kcal-history chart on Progreso, or Polish: code-splitting + skeletons)
+- **Plan = default truth**: any active-week slot for a date is automatically materialized into a `meal_log` with `from_plan=true` and `plan_week_slot_id=<slot.id>`. Dedup is by `plan_week_slot_id` so a deleted from_plan log is *not* recreated on reload. Two trigger points: (a) DiarioPage on mount/date-change via `useMaterializePlan`, (b) `daily-nutrition-snapshot` cron, so days never opened still have logs by the time history is computed. Slot→meal_type mapping uses `MEAL_TYPE_ORDER[meal_index]` (anything beyond index 4 falls back to `'other'`).
+- **Edge functions runtime**: Deno + TypeScript (Supabase default). Shared code lives in `supabase/functions/_shared/`.
+- **Cron schedules** (UTC): daily-nutrition-snapshot `0 1 * * *`, weekly-rollover `0 2 * * 1`, recalculate-tdee `0 3 * * *`. DST not corrected (1h drift summer/winter is acceptable for off-peak jobs).
+- **TDEE math**: 14-day window, ≥10 days of intake required, 7700 kcal/kg, ±3-day tolerance for boundary weight measurements.
+- **Cron auth**: cron→edge-function uses service-role key from Vault (`cron_service_role_key`). Operator must run `vault.create_secret(<key>, 'cron_service_role_key')` once before jobs do anything useful — until then, `cron.job_run_details` will show the helper raising "secret not set".
 
 ---
 
@@ -211,14 +205,15 @@ src/
 
 Paste this prompt:
 
-> Continua Hudson's Fitness donde lo dejamos. Lee `HANDOFF.md` en la raíz del repo para el estado completo. Próximo sprint: **Edge Functions + pg_cron** (`daily-nutrition-snapshot`, `weekly-rollover`, `recalculate-tdee`). El repo está en `SGT-Hudson/hudsons-fitness`, branch `claude/implement-fitness-architecture-DrnGF`. Empieza confirmando el plan y luego procede.
-
-The new session will read the file and pick up from Sprint 9 (Edge Functions).
+> Continua Hudson's Fitness donde lo dejamos. Lee `HANDOFF.md` en la raíz del repo para el estado completo. Sprint 9 (Edge Functions + pg_cron) está hecho y desplegado; el siguiente paso natural es la **integración Diario ↔ Plan** o una **gráfica de kcal histórico** sobre `daily_nutrition_history`. El repo está en `SGT-Hudson/hudsons-fitness`, branch `claude/implement-fitness-architecture-DrnGF`. Empieza confirmando el plan y luego procede.
 
 ---
 
-## Open questions for next session
+## Sprint 9 operator notes
 
-- **Edge function language**: `supabase functions` defaults a Deno/TS; ¿OK o se prefiere Node?
-- **TDEE backfill**: ¿calcular histórico desde `start_date` la primera vez que corre, o solo desde el día anterior en adelante?
-- **Cron timezone**: pg_cron corre en UTC por defecto. ¿Programar a las hora UTC equivalente a 02:00 / 03:00 CET, o usar AT TIME ZONE en SQL?
+- Migration `20260514120000_sprint9_cron_and_jobs.sql` already applied to project `upvraruehzurbetzrxov`.
+- Three edge functions deployed (`daily-nutrition-snapshot`, `weekly-rollover`, `recalculate-tdee`), three cron jobs scheduled.
+- **Action required once**: in the Supabase SQL editor, run
+  `select vault.create_secret('<service_role_key>', 'cron_service_role_key');`
+  Until this is set, every cron firing will raise "Vault secret cron_service_role_key not set" (visible in `select * from cron.job_run_details order by start_time desc`).
+- Manual smoke test commands and full operator guide are in `supabase/README.md`.

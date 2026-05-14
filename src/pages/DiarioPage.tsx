@@ -8,7 +8,7 @@ import { DateNavigator } from '@/features/diario/components/DateNavigator';
 import { DayTotalsCard } from '@/features/diario/components/DayTotalsCard';
 import { MealLogEntry } from '@/features/diario/components/MealLogEntry';
 import { MealLogDialog } from '@/features/diario/components/MealLogDialog';
-import { useMealLogsForDay } from '@/features/diario/hooks';
+import { useMaterializePlan, useMealLogsForDay } from '@/features/diario/hooks';
 import { computeMealLogMacros, sumMacros } from '@/features/diario/macros';
 import { MEAL_TYPE_ORDER, type MealLogWithJoins, type MealType } from '@/features/diario/api';
 import { useLatestMeasurement } from '@/features/measurements/hooks';
@@ -34,6 +34,19 @@ export function DiarioPage() {
   const logs = useMealLogsForDay(date);
   const latestMeasurement = useLatestMeasurement();
   const activePhase = useActivePhase();
+  const materialize = useMaterializePlan();
+
+  // The plan is the default truth: any active-week slot for this date that
+  // hasn't been materialized into a meal_log yet gets one inserted with
+  // from_plan=true. Idempotent on the server side, but we also gate per
+  // (date, mutation status) on the client so we don't fire multiple times
+  // while the page is in view. Logs must have finished loading first — running
+  // before we know what's already there would race with the dedup check.
+  const materializeMutate = materialize.mutate;
+  useEffect(() => {
+    if (logs.isLoading || logs.isError) return;
+    materializeMutate(date);
+  }, [date, logs.isLoading, logs.isError, materializeMutate]);
 
   function changeDate(newDate: string) {
     navigate(newDate === today ? '/diario' : `/diario/${newDate}`);

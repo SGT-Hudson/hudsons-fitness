@@ -4,6 +4,7 @@ import {
   createMealLog,
   deleteMealLog,
   fetchMealLogsForDay,
+  materializePlanForDate,
   updateMealLog,
   type CreateMealLogInput,
 } from './api';
@@ -41,6 +42,24 @@ export function useUpdateMealLog() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['meal_logs', user?.id] });
       toastSaved();
+    },
+    onError: toastError,
+  });
+}
+
+// Auto-fired by DiarioPage on mount/date change. Idempotent — see
+// materializePlanForDate. Silent on success (no toast: this is background
+// behavior the user didn't trigger), but surfaces errors via toast so a real
+// failure isn't swallowed.
+export function useMaterializePlan() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (loggedOn: string) => materializePlanForDate(user!.id, loggedOn),
+    onSuccess: (inserted, loggedOn) => {
+      if (inserted > 0) {
+        void qc.invalidateQueries({ queryKey: ['meal_logs', user?.id, loggedOn] });
+      }
     },
     onError: toastError,
   });
