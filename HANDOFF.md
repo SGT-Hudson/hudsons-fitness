@@ -1,6 +1,6 @@
 # Hudson's Fitness — Handoff
 
-> Status as of: Sprint 10 — Diario ↔ Plan integration (on `claude/implement-fitness-architecture-DrnGF`).
+> Status as of: Sprint 16 — GDPR delete-account (on `claude/implement-fitness-architecture-DrnGF`). v1 punch list complete.
 
 ## Quick status
 
@@ -11,7 +11,7 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 
 ---
 
-## Done (9 PRs merged)
+## Done (15 PRs merged)
 
 | #   | Sprint                               | Content                                                                                                  |
 | --- | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
@@ -30,22 +30,25 @@ Supabase project: `upvraruehzurbetzrxov` (EU Frankfurt, free tier).
 | 13  | Sprint 8 — Toasts                    | shadcn toast/toaster/useToast; success/destructive variants; wired into all mutation hooks via toast-helpers |
 | 14  | Sprint 9 — Edge Functions + cron     | `daily-nutrition-snapshot`, `weekly-rollover`, `recalculate-tdee` (Deno), pg_cron + pg_net jobs, admin RPC `apply_template_to_week_admin` |
 | 15  | Sprint 10 — Diario ↔ Plan            | Plan slots auto-materialize as `from_plan` meal_logs (idempotent via `plan_week_slot_id` dedup) on DiarioPage load; same logic added to `daily-nutrition-snapshot` for days never opened |
+| 16  | Sprint 11 — Progreso macros chart    | `MacrosChart` on /progreso reading `daily_nutrition_history`; macro selector (kcal/protein/carbs/fat/fiber), planned + consumed + active-phase target reference line, gaps broken at nulls |
+| 17  | Sprint 12 — Code splitting           | `manualChunks` (recharts/supabase/i18n/radix/react-vendor/react-query) + `/progreso` lazy-loaded. First-paint JS 351 KB → 69 KB gz; recharts deferred until /progreso |
+| 18  | Sprint 13 — Loading skeletons        | New `Skeleton` primitive; replaces "Cargando…" text on Diario, Recetas, Planificador, Plantillas |
+| 19  | Sprint 14 — Dark mode                | `ThemeProvider` (light/dark/system, localStorage `hf-theme`); FOUC-prevention inline script in `index.html`; toggle in Settings Appearance card |
+| 20  | Sprint 15 — PWA                      | `vite-plugin-pwa` with workbox generateSW; manifest (HF monogram SVG icon, theme color `#16a34a`, standalone); Supabase requests bypass cache (NetworkOnly) |
+| 21  | Sprint 16 — GDPR delete-account      | Edge function `delete-account` verifies caller JWT then `auth.admin.deleteUser`; CASCADE cleans user data. Two-step email-confirm dialog in Settings |
 
 ---
 
-## Pending for v1 (recommended order)
+## Pending for v1
 
-### 1. GDPR — **LOW**
+✅ All v1 work complete as of Sprint 16. Next candidate areas (post-v1):
 
-- Dont do this part: "Download my data" Edge Function (JSON export of all user-scoped tables)
-- "Delete account" flow
+- **Recipe photos** (postponed at MVP)
+- **OFF mass import** for ingredients beyond per-row search
+- **Mobile-specific UX polish** (touch targets, swipe nav on /diario)
+- **Observability** — track edge-function errors / cron failures somewhere visible
 
-### 2. Polish — **LOW**
-
-- Loading skeletons (currently just text "loading…")
-- Dark mode toggle (CSS vars already set up, just need a switcher)
-- PWA manifest + service worker (offline support)
-- Code splitting — bundle now ~344 KB gzipped after recharts. Split recharts via `manualChunks` is the easy win.
+Note: macros chart on /progreso will look mostly empty until `daily_nutrition_history` accumulates entries (cron started Sprint 9).
 
 ---
 
@@ -205,7 +208,7 @@ src/
 
 Paste this prompt:
 
-> Continua Hudson's Fitness donde lo dejamos. Lee `HANDOFF.md` en la raíz del repo para el estado completo. Sprint 9 (Edge Functions + pg_cron) está hecho y desplegado; el siguiente paso natural es la **integración Diario ↔ Plan** o una **gráfica de kcal histórico** sobre `daily_nutrition_history`. El repo está en `SGT-Hudson/hudsons-fitness`, branch `claude/implement-fitness-architecture-DrnGF`. Empieza confirmando el plan y luego procede.
+> Continua Hudson's Fitness donde lo dejamos. Lee `HANDOFF.md` en la raíz del repo para el estado completo. La v1 está completa hasta Sprint 16 (delete-account GDPR). El repo está en `SGT-Hudson/hudsons-fitness`, branch `claude/implement-fitness-architecture-DrnGF`. Pregúntame qué quiero hacer ahora.
 
 ---
 
@@ -213,7 +216,13 @@ Paste this prompt:
 
 - Migration `20260514120000_sprint9_cron_and_jobs.sql` already applied to project `upvraruehzurbetzrxov`.
 - Three edge functions deployed (`daily-nutrition-snapshot`, `weekly-rollover`, `recalculate-tdee`), three cron jobs scheduled.
-- **Action required once**: in the Supabase SQL editor, run
-  `select vault.create_secret('<service_role_key>', 'cron_service_role_key');`
-  Until this is set, every cron firing will raise "Vault secret cron_service_role_key not set" (visible in `select * from cron.job_run_details order by start_time desc`).
+- Vault secret `cron_service_role_key` already created (otherwise `cron.job_run_details` would surface "secret not set").
 - Manual smoke test commands and full operator guide are in `supabase/README.md`.
+
+## Sprint 16 operator notes
+
+- Edge function `delete-account` lives in `supabase/functions/delete-account/`. Deploy with:
+  `supabase functions deploy delete-account` (project `upvraruehzurbetzrxov`).
+- Uses standard env vars only: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`. No vault secret needed.
+- CASCADE chain: `auth.users.id` → `profiles.id` → all user-scoped tables. Deleting the auth user removes everything atomically.
+- UI is already wired (destructive button in /settings → Account). Without the deployment, the dialog will toast an error from `supabase.functions.invoke`.
