@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { DateNavigator } from '@/features/diario/components/DateNavigator';
 import { DayTotalsCard } from '@/features/diario/components/DayTotalsCard';
 import { MealLogEntry } from '@/features/diario/components/MealLogEntry';
@@ -14,6 +15,7 @@ import { MEAL_TYPE_ORDER, type MealLogWithJoins, type MealType } from '@/feature
 import { useLatestMeasurement } from '@/features/measurements/hooks';
 import { useActivePhase } from '@/features/phases/hooks';
 import { computePhaseTargets } from '@/features/phases/targets';
+import { useLatestTdee } from '@/features/tdee/hooks';
 import { isoDate } from '@/lib/dates';
 
 function isValidDate(s: string): boolean {
@@ -34,6 +36,7 @@ export function DiarioPage() {
   const logs = useMealLogsForDay(date);
   const latestMeasurement = useLatestMeasurement();
   const activePhase = useActivePhase();
+  const latestTdee = useLatestTdee();
   const materialize = useMaterializePlan();
 
   // The plan is the default truth: any active-week slot for this date that
@@ -82,9 +85,10 @@ export function DiarioPage() {
         activePhase.data,
         latestMeasurement.data.weight_kg,
         latestMeasurement.data.body_fat_pct,
+        latestTdee.data?.estimated_tdee_kcal ?? null,
       ) ?? undefined
     );
-  }, [activePhase.data, latestMeasurement.data]);
+  }, [activePhase.data, latestMeasurement.data, latestTdee.data]);
 
   function openNew(mealType: MealType) {
     setEditing(null);
@@ -115,11 +119,17 @@ export function DiarioPage() {
       <DayTotalsCard totals={totals} targets={targets} />
 
       {logs.isLoading ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            {t('loading')}
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <Card key={i}>
+              <CardContent className="py-4 space-y-3">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : isEmpty ? (
         <Card>
           <CardContent className="py-10 text-center space-y-3">

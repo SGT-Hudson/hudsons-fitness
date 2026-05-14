@@ -11,6 +11,14 @@
     "es": "Spanish",
     "en": "English"
   },
+  "appearance": {
+    "title": "Appearance",
+    "description": "Choose the visual theme.",
+    "theme": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
   "biometrics": {
     "title": "Biometrics",
     "description": "Physical data used to compute targets and body composition.",
@@ -29,7 +37,17 @@
     "title": "Account",
     "description": "Session and login details.",
     "email": "Email",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "delete": {
+      "button": "Delete account",
+      "title": "Delete account",
+      "description": "This action is permanent and cannot be undone.",
+      "warning": "Your profile, measurements, recipes, meal logs, templates and all associated data will be erased. This is not reversible.",
+      "confirmLabel": "Type {{email}} to confirm",
+      "cancel": "Cancel",
+      "confirm": "Delete permanently",
+      "deleting": "Deleting…"
+    }
   },
   "actions": {
     "save": "Save",

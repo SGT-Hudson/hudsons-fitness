@@ -12,6 +12,7 @@
   "birthDate": "Fecha de nacimiento",
   "heightCm": "Altura (cm)",
   "initialWeightKg": "Peso actual (kg)",
+  "initialWeightWarning": "Esta medición queda fijada como referencia histórica y no se puede editar después. Pésate antes de continuar — no introduzcas un valor aproximado.",
   "boneKg": {
     "label": "Peso óseo (kg)",
     "estimate": "Estimar",

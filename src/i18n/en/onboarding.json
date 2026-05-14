@@ -12,6 +12,7 @@
   "birthDate": "Date of birth",
   "heightCm": "Height (cm)",
   "initialWeightKg": "Current weight (kg)",
+  "initialWeightWarning": "This measurement is locked in as your historical anchor and cannot be edited later. Weigh yourself before continuing — don't enter an approximate value.",
   "boneKg": {
     "label": "Bone weight (kg)",
     "estimate": "Estimate",

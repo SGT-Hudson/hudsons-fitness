@@ -5,6 +5,7 @@ import { LayoutGrid, List, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useRecipes, useSoftDeleteRecipe } from '@/features/recipes/hooks';
 import { formatDate, type Locale } from '@/lib/dates';
 import { cn } from '@/lib/utils';
@@ -90,7 +91,17 @@ export function RecetasPage() {
       </div>
 
       {recipes.isLoading ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">{tCommon('loading')}</p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <Card key={i}>
+              <CardContent className="py-4 space-y-2">
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-3 w-3/4" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : filtered.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">

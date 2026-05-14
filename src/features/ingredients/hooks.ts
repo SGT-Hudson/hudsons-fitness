@@ -4,6 +4,7 @@ import {
   createManualIngredient,
   deleteIngredient,
   importIngredientFromOFF,
+  IngredientInUseError,
   listIngredients,
   searchLocalIngredients,
   updateIngredient,
@@ -14,6 +15,8 @@ import type { OFFSearchResult } from '@/lib/openfoodfacts';
 import { searchOpenFoodFacts } from '@/lib/openfoodfacts';
 import type { TablesUpdate } from '@/types/database';
 import { toastCreated, toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
+import i18n from '@/i18n';
+import { toast } from '@/hooks/use-toast';
 
 export function useIngredients(limit = 100) {
   return useQuery({
@@ -96,6 +99,16 @@ export function useDeleteIngredient() {
       void qc.invalidateQueries({ queryKey: ['ingredients'] });
       toastDeleted();
     },
-    onError: toastError,
+    onError: (err) => {
+      if (err instanceof IngredientInUseError) {
+        toast({
+          variant: 'destructive',
+          title: i18n.t('ingredientes:errors.inUseTitle'),
+          description: i18n.t('ingredientes:errors.inUseDescription'),
+        });
+        return;
+      }
+      toastError(err);
+    },
   });
 }

@@ -61,6 +61,21 @@
       "water": "% agua",
       "empty": "Registra grasa, músculo o agua para ver esta gráfica.",
       "help": "Valores interpolados linealmente entre mediciones con datos."
+    },
+    "macros": {
+      "title": "Nutrición diaria",
+      "selectorLabel": "Macro a mostrar",
+      "planned": "Planificado",
+      "consumed": "Consumido",
+      "target": "Objetivo",
+      "empty": "Aún no hay historial de nutrición. Las gráficas aparecerán cuando el cron diario genere datos.",
+      "macro": {
+        "kcal": "kcal",
+        "protein": "Proteína",
+        "carbs": "Carbohidratos",
+        "fat": "Grasa",
+        "fiber": "Fibra"
+      }
     }
   }
 }

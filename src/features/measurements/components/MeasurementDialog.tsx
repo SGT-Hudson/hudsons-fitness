@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useUpsertMeasurement } from '../hooks';
+import { isoDate } from '@/lib/dates';
 import type { BodyMeasurement } from '../api';
 
 interface Props {
@@ -104,7 +105,7 @@ export function MeasurementDialog({
               id="measuredOn"
               type="date"
               required
-              max={new Date().toISOString().slice(0, 10)}
+              max={isoDate()}
               value={measuredOn}
               onChange={(e) => setMeasuredOn(e.target.value)}
               disabled={!!existing}

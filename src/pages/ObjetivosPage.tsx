@@ -23,7 +23,7 @@ import {
 } from '@/features/phases/hooks';
 import { PhaseDialog } from '@/features/phases/components/PhaseDialog';
 import type { Phase, PhaseInput } from '@/features/phases/api';
-import { formatDate, type Locale } from '@/lib/dates';
+import { formatDate, isoDate, type Locale } from '@/lib/dates';
 
 type GoalForm = {
   target_body_fat_pct: number;
@@ -46,7 +46,7 @@ function phaseStatus(phase: Phase, today: string): 'active' | 'past' | 'upcoming
 export function ObjetivosPage() {
   const { t, i18n } = useTranslation('objetivos');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = isoDate();
 
   // ── Goal ──────────────────────────────────────────────────────────────────
   const goal = useGoal();

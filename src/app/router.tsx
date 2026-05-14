@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useProfile } from '@/features/profile/hooks';
@@ -13,9 +14,12 @@ import { PlantillaEditorPage } from '@/pages/PlantillaEditorPage';
 import { RecetasPage } from '@/pages/RecetasPage';
 import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
-import { ProgresoPage } from '@/pages/ProgresoPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+
+const ProgresoPage = lazy(() =>
+  import('@/pages/ProgresoPage').then((m) => ({ default: m.ProgresoPage })),
+);
 
 function FullPageLoader() {
   return <div className="p-8 text-muted-foreground">…</div>;
@@ -89,7 +93,14 @@ export function AppRouter() {
             <Route path="/recetas/nuevo" element={<RecetaEditorPage />} />
             <Route path="/recetas/:id" element={<RecetaEditorPage />} />
             <Route path="/ingredientes" element={<IngredientesPage />} />
-            <Route path="/progreso" element={<ProgresoPage />} />
+            <Route
+              path="/progreso"
+              element={
+                <Suspense fallback={<FullPageLoader />}>
+                  <ProgresoPage />
+                </Suspense>
+              }
+            />
             <Route path="/objetivos" element={<ObjetivosPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>

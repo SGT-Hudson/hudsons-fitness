@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { isoDate } from '@/lib/dates';
 import type { Phase, PhaseInput } from '../api';
 
 type FormValues = {
@@ -38,7 +39,7 @@ type FormValues = {
 const DEFAULTS: FormValues = {
   name: '',
   phase_type: 'maintenance',
-  start_date: new Date().toISOString().slice(0, 10),
+  start_date: isoDate(),
   end_date: '',
   kcal_mode: 'absolute',
   kcal_value: 2000,
@@ -90,7 +91,7 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
         notes: phase.notes ?? '',
       });
     } else {
-      reset({ ...DEFAULTS, start_date: new Date().toISOString().slice(0, 10) });
+      reset({ ...DEFAULTS, start_date: isoDate() });
     }
   }, [open, phase, reset]);
 
@@ -249,6 +250,7 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
                 min: { value: 0.1, message: t('phases.form.errors.protein') },
               })}
             />
+            <p className="text-xs text-muted-foreground">{t('phases.form.proteinHelp')}</p>
             {errors.protein_g_per_kg && (
               <p className="text-xs text-destructive">{t('phases.form.errors.protein')}</p>
             )}

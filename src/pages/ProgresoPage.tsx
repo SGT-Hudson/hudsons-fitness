@@ -5,6 +5,7 @@ import { LatestMeasurementCard } from '@/features/measurements/components/Latest
 import { MeasurementDialog } from '@/features/measurements/components/MeasurementDialog';
 import { MeasurementsList } from '@/features/measurements/components/MeasurementsList';
 import { WeightChart } from '@/features/measurements/components/WeightChart';
+import { MacrosChart } from '@/features/progreso/components/MacrosChart';
 import {
   useLatestMeasurement,
   useRecentMeasurements,
@@ -54,6 +55,8 @@ export function ProgresoPage() {
       <WeightChart />
 
       <CompositionChart />
+
+      <MacrosChart />
 
       <MeasurementsList
         measurements={recentQuery.data ?? []}

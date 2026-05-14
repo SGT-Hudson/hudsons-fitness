@@ -17,6 +17,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { isProfileOnboarded } from '@/features/profile/api';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
 import { estimateBoneKg } from '@/lib/macros';
+import { isoDate } from '@/lib/dates';
 import { differenceInYears, parseISO } from 'date-fns';
 
 type Sex = 'male' | 'female' | 'other';
@@ -129,40 +130,44 @@ export function OnboardingPage() {
                   id="birthDate"
                   type="date"
                   required
-                  max={new Date().toISOString().slice(0, 10)}
+                  max={isoDate()}
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="heightCm">{t('heightCm')}</Label>
-                  <Input
-                    id="heightCm"
-                    type="number"
-                    inputMode="decimal"
-                    required
-                    min={100}
-                    max={250}
-                    step="0.1"
-                    value={heightCm}
-                    onChange={(e) => setHeightCm(e.target.value)}
-                  />
+              <div className="space-y-2">
+                <Label htmlFor="heightCm">{t('heightCm')}</Label>
+                <Input
+                  id="heightCm"
+                  type="number"
+                  inputMode="decimal"
+                  required
+                  min={100}
+                  max={250}
+                  step="0.1"
+                  value={heightCm}
+                  onChange={(e) => setHeightCm(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="initialWeightKg">{t('initialWeightKg')}</Label>
+                <div
+                  role="alert"
+                  className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-200"
+                >
+                  {t('initialWeightWarning')}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="initialWeightKg">{t('initialWeightKg')}</Label>
-                  <Input
-                    id="initialWeightKg"
-                    type="number"
-                    inputMode="decimal"
-                    required
-                    min={20}
-                    max={400}
-                    step="0.1"
-                    value={initialWeightKg}
-                    onChange={(e) => setInitialWeightKg(e.target.value)}
-                  />
-                </div>
+                <Input
+                  id="initialWeightKg"
+                  type="number"
+                  inputMode="decimal"
+                  required
+                  min={20}
+                  max={400}
+                  step="0.1"
+                  value={initialWeightKg}
+                  onChange={(e) => setInitialWeightKg(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">

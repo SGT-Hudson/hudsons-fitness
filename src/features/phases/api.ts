@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { isoDate } from '@/lib/dates';
 import type { Tables, TablesInsert, TablesUpdate } from '@/types/database';
 
 export type Phase = Tables<'phases'>;
@@ -15,7 +16,7 @@ export async function listPhases(userId: string): Promise<Phase[]> {
 }
 
 export async function fetchActivePhase(userId: string): Promise<Phase | null> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = isoDate();
   const { data, error } = await supabase
     .from('phases')
     .select('*')

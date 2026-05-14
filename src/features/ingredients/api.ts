@@ -131,7 +131,20 @@ export async function updateIngredient(
   return data;
 }
 
+export class IngredientInUseError extends Error {
+  constructor() {
+    super('ingredient_in_use');
+    this.name = 'IngredientInUseError';
+  }
+}
+
 export async function deleteIngredient(id: string): Promise<void> {
   const { error } = await supabase.from('ingredients').delete().eq('id', id);
-  if (error) throw error;
+  if (error) {
+    // Postgres foreign_key_violation — recipe_ingredients still references this row.
+    if ((error as { code?: string }).code === '23503') {
+      throw new IngredientInUseError();
+    }
+    throw error;
+  }
 }
