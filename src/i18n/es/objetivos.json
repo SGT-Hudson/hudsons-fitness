@@ -58,6 +58,7 @@
       "kcalValueFixed": "kcal/día",
       "kcalValueDelta": "kcal (+ superávit)",
       "protein": "Proteína (g/kg masa magra)",
+      "proteinHelp": "Multiplicado por tu masa magra (peso × (1 − % grasa)). Si no tienes % de grasa registrado, se usa tu peso total.",
       "fat": "Grasa (% de kcal)",
       "fiber": "Fibra",
       "fiberMode": "Modo",

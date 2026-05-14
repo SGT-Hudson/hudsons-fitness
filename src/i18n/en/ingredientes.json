@@ -51,6 +51,8 @@
     "manualShort": "Manual"
   },
   "errors": {
-    "invalid": "Check the fields. Some are missing or invalid."
+    "invalid": "Check the fields. Some are missing or invalid.",
+    "inUseTitle": "Ingredient in use",
+    "inUseDescription": "Cannot delete because a recipe is still using it. Remove it from the affected recipes first."
   }
 }

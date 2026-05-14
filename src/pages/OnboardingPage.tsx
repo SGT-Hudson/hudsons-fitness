@@ -17,6 +17,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { isProfileOnboarded } from '@/features/profile/api';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
 import { estimateBoneKg } from '@/lib/macros';
+import { isoDate } from '@/lib/dates';
 import { differenceInYears, parseISO } from 'date-fns';
 
 type Sex = 'male' | 'female' | 'other';
@@ -129,7 +130,7 @@ export function OnboardingPage() {
                   id="birthDate"
                   type="date"
                   required
-                  max={new Date().toISOString().slice(0, 10)}
+                  max={isoDate()}
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
                 />

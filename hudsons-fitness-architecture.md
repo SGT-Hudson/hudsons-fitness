@@ -519,7 +519,9 @@ function computeDailyMacroTargets(opts: {
     ? phase.kcal_value
     : estimatedTDEE + phase.kcal_value;  // delta is signed (-500 for cut)
 
-  // 2. Protein (g) — driven by current bodyweight
+  // 2. Protein (g) — driven by current lean mass (weight × (1 − body_fat_pct)).
+  //    Falls back to current bodyweight when body_fat_pct is missing.
+  //    The phase form is labelled "g/kg lean mass" to make this explicit.
   const proteinG = weightKg * phase.protein_g_per_kg;
   const proteinKcal = proteinG * 4;
 

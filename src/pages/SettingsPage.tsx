@@ -15,6 +15,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
 import { useTheme, type Theme } from '@/features/theme/ThemeProvider';
 import { DeleteAccountDialog } from '@/features/account/components/DeleteAccountDialog';
+import { isoDate } from '@/lib/dates';
 
 type Sex = 'male' | 'female' | 'other';
 type Lang = 'es' | 'en';
@@ -204,7 +205,7 @@ export function SettingsPage() {
                 id="birthDate"
                 type="date"
                 required
-                max={new Date().toISOString().slice(0, 10)}
+                max={isoDate()}
                 value={birthDate}
                 onChange={(e) => setBirthDate(e.target.value)}
               />

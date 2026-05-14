@@ -15,6 +15,7 @@ import { MEAL_TYPE_ORDER, type MealLogWithJoins, type MealType } from '@/feature
 import { useLatestMeasurement } from '@/features/measurements/hooks';
 import { useActivePhase } from '@/features/phases/hooks';
 import { computePhaseTargets } from '@/features/phases/targets';
+import { useLatestTdee } from '@/features/tdee/hooks';
 import { isoDate } from '@/lib/dates';
 
 function isValidDate(s: string): boolean {
@@ -35,6 +36,7 @@ export function DiarioPage() {
   const logs = useMealLogsForDay(date);
   const latestMeasurement = useLatestMeasurement();
   const activePhase = useActivePhase();
+  const latestTdee = useLatestTdee();
   const materialize = useMaterializePlan();
 
   // The plan is the default truth: any active-week slot for this date that
@@ -83,9 +85,10 @@ export function DiarioPage() {
         activePhase.data,
         latestMeasurement.data.weight_kg,
         latestMeasurement.data.body_fat_pct,
+        latestTdee.data?.estimated_tdee_kcal ?? null,
       ) ?? undefined
     );
-  }, [activePhase.data, latestMeasurement.data]);
+  }, [activePhase.data, latestMeasurement.data, latestTdee.data]);
 
   function openNew(mealType: MealType) {
     setEditing(null);

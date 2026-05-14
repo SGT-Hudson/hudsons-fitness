@@ -17,6 +17,7 @@ import { TimeRangePills } from '@/features/measurements/components/TimeRangePill
 import { type TimeRange } from '@/features/measurements/hooks';
 import { useActivePhase } from '@/features/phases/hooks';
 import { computePhaseTargets } from '@/features/phases/targets';
+import { useLatestTdee } from '@/features/tdee/hooks';
 import type { Macros } from '@/features/recipes/macros';
 import { formatDate, type Locale } from '@/lib/dates';
 import { cn } from '@/lib/utils';
@@ -82,6 +83,7 @@ export function MacrosChart() {
   const history = useDailyNutritionHistory(range);
   const activePhase = useActivePhase();
   const latest = useLatestMeasurement();
+  const latestTdee = useLatestTdee();
 
   const cols = COLUMNS[macro];
 
@@ -104,10 +106,11 @@ export function MacrosChart() {
       activePhase.data,
       latest.data.weight_kg,
       latest.data.body_fat_pct,
+      latestTdee.data?.estimated_tdee_kcal ?? null,
     );
     if (!targets) return null;
     return targets[cols.target];
-  }, [activePhase.data, latest.data, cols.target]);
+  }, [activePhase.data, latest.data, latestTdee.data, cols.target]);
 
   const unitSuffix = cols.unit === 'kcal' ? ' kcal' : ' g';
 
