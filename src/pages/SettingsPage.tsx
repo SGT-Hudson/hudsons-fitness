@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
 import { useTheme, type Theme } from '@/features/theme/ThemeProvider';
+import { DeleteAccountDialog } from '@/features/account/components/DeleteAccountDialog';
 
 type Sex = 'male' | 'female' | 'other';
 type Lang = 'es' | 'en';
@@ -28,6 +29,7 @@ export function SettingsPage() {
   const { data: profile, isLoading } = useProfile();
   const update = useUpdateProfile();
   const { theme, setTheme } = useTheme();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const [displayName, setDisplayName] = useState('');
   const [language, setLanguage] = useState<Lang>('es');
@@ -269,11 +271,18 @@ export function SettingsPage() {
             <Label htmlFor="email">{t('account.email')}</Label>
             <Input id="email" value={user?.email ?? ''} disabled />
           </div>
-          <Button variant="outline" onClick={() => void signOut()}>
-            {t('account.signOut')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => void signOut()}>
+              {t('account.signOut')}
+            </Button>
+            <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+              {t('account.delete.button')}
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </div>
   );
 }

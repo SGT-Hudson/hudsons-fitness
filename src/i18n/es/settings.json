@@ -37,7 +37,17 @@
     "title": "Cuenta",
     "description": "Sesión y datos de acceso.",
     "email": "Correo electrónico",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "delete": {
+      "button": "Eliminar cuenta",
+      "title": "Eliminar cuenta",
+      "description": "Esta acción es definitiva y no se puede deshacer.",
+      "warning": "Se borrarán tu perfil, mediciones, recetas, comidas registradas, plantillas y todos los datos asociados. No es reversible.",
+      "confirmLabel": "Escribe {{email}} para confirmar",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar definitivamente",
+      "deleting": "Eliminando…"
+    }
   },
   "actions": {
     "save": "Guardar",
