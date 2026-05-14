@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useDeleteTemplate, useTemplates } from '@/features/templates/hooks';
 import { formatDate, type Locale } from '@/lib/dates';
 
@@ -32,7 +33,17 @@ export function PlantillasPage() {
       <p className="text-sm text-muted-foreground">{t('list.description')}</p>
 
       {templates.isLoading ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">{tCommon('loading')}</p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="py-4 space-y-2">
+                <Skeleton className="h-5 w-1/2" />
+                <Skeleton className="h-3 w-3/4" />
+                <Skeleton className="h-3 w-1/3" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : (templates.data ?? []).length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">

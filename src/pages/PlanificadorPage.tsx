@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeftRight, FileBox, Save, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ApplyTemplateDialog } from '@/features/planning/components/ApplyTemplateDialog';
 import { SaveAsTemplateDialog } from '@/features/planning/components/SaveAsTemplateDialog';
 import { WeekGrid } from '@/features/planning/components/WeekGrid';
@@ -20,7 +21,6 @@ import { formatDate, isoDate, mondayOf, type Locale } from '@/lib/dates';
 
 export function PlanificadorPage() {
   const { t, i18n } = useTranslation('planning');
-  const { t: tCommon } = useTranslation('common');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
 
   const today = isoDate();
@@ -104,8 +104,13 @@ export function PlanificadorPage() {
 
       {week.isLoading ? (
         <Card>
-          <CardContent className="py-10 text-center text-muted-foreground">
-            {tCommon('loading')}
+          <CardContent className="py-6 space-y-3">
+            <Skeleton className="h-6 w-40" />
+            <div className="grid grid-cols-7 gap-2">
+              {Array.from({ length: 21 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
           </CardContent>
         </Card>
       ) : isEmpty ? (

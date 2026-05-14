@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { DateNavigator } from '@/features/diario/components/DateNavigator';
 import { DayTotalsCard } from '@/features/diario/components/DayTotalsCard';
 import { MealLogEntry } from '@/features/diario/components/MealLogEntry';
@@ -115,11 +116,17 @@ export function DiarioPage() {
       <DayTotalsCard totals={totals} targets={targets} />
 
       {logs.isLoading ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            {t('loading')}
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <Card key={i}>
+              <CardContent className="py-4 space-y-3">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : isEmpty ? (
         <Card>
           <CardContent className="py-10 text-center space-y-3">
