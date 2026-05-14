@@ -61,6 +61,21 @@
       "water": "Water %",
       "empty": "Log body fat, muscle or water to see this chart.",
       "help": "Values are linearly interpolated between measurements with data."
+    },
+    "macros": {
+      "title": "Daily nutrition",
+      "selectorLabel": "Macro to display",
+      "planned": "Planned",
+      "consumed": "Consumed",
+      "target": "Target",
+      "empty": "No nutrition history yet. Charts will appear once the daily cron has populated data.",
+      "macro": {
+        "kcal": "kcal",
+        "protein": "Protein",
+        "carbs": "Carbs",
+        "fat": "Fat",
+        "fiber": "Fiber"
+      }
     }
   }
 }
