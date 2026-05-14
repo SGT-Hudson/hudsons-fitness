@@ -11,6 +11,14 @@
     "es": "Español",
     "en": "Inglés"
   },
+  "appearance": {
+    "title": "Apariencia",
+    "description": "Elige el tema visual.",
+    "theme": "Tema",
+    "system": "Sistema",
+    "light": "Claro",
+    "dark": "Oscuro"
+  },
   "biometrics": {
     "title": "Biometría",
     "description": "Datos físicos usados para calcular objetivos y composición corporal.",

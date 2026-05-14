@@ -11,6 +11,14 @@
     "es": "Spanish",
     "en": "English"
   },
+  "appearance": {
+    "title": "Appearance",
+    "description": "Choose the visual theme.",
+    "theme": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
   "biometrics": {
     "title": "Biometrics",
     "description": "Physical data used to compute targets and body composition.",

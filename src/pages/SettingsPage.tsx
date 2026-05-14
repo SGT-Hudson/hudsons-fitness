@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
+import { useTheme, type Theme } from '@/features/theme/ThemeProvider';
 
 type Sex = 'male' | 'female' | 'other';
 type Lang = 'es' | 'en';
@@ -26,6 +27,7 @@ export function SettingsPage() {
   const { user, signOut } = useAuth();
   const { data: profile, isLoading } = useProfile();
   const update = useUpdateProfile();
+  const { theme, setTheme } = useTheme();
 
   const [displayName, setDisplayName] = useState('');
   const [language, setLanguage] = useState<Lang>('es');
@@ -148,6 +150,28 @@ export function SettingsPage() {
             {savedSection === 'language' && !update.isPending && (
               <p className="text-sm text-muted-foreground">{t('actions.saved')}</p>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('appearance.title')}</CardTitle>
+          <CardDescription>{t('appearance.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-w-xs">
+            <Label htmlFor="theme">{t('appearance.theme')}</Label>
+            <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
+              <SelectTrigger id="theme">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="system">{t('appearance.system')}</SelectItem>
+                <SelectItem value="light">{t('appearance.light')}</SelectItem>
+                <SelectItem value="dark">{t('appearance.dark')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
