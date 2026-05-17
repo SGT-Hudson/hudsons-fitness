@@ -16,6 +16,8 @@ Hudson's Fitness has 15 tables, all RLS-enabled. Per-user tables follow the stan
 
 ## Tables
 
+Schema and column lists below are authoritative from `src/types/database.ts` — hand-written today to mirror the live Supabase database, and slated to become generated from the real DB per D-A8/R-04. The legacy `hudsons-fitness-architecture.md` spec has drifted and is being retired; it must not be trusted for column lists wherever it conflicts with `src/types/database.ts` (it is still used here only for human-readable column purpose and the RLS / RPC / view / extension / flow narrative).
+
 ### `profiles`
 
 Extends Supabase's built-in `auth.users`. One row per user (`id` is the FK to `auth.users(id)`).
@@ -31,8 +33,13 @@ Extends Supabase's built-in `auth.users`. One row per user (`id` is the FK to `a
 | `sex` | `text`, check in (`'male'`, `'female'`, `'other'`) |
 | `birth_date` | `date` |
 | `height_cm` | `numeric(5,1)` |
+| `bone_kg` | `numeric(4,2)` — absolute bone mass in kg (smart-scale convention) |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
+
+> ⚠ Changing — see R-03 (D-A6)
+
+The `bone_kg` column lives here on `profiles` (a single per-user value), not on `body_measurements`. It is dead and slated for removal along with its onboarding/settings/gate/i18n surfaces.
 
 > ⚠ Changing — see R-14 (D-E3)
 
@@ -51,11 +58,10 @@ One body-composition entry per user per day (`unique (user_id, measured_on)`). I
 | `body_fat_pct` | `numeric(4,2)` (0–100) |
 | `muscle_pct` | `numeric(4,2)` |
 | `water_pct` | `numeric(4,2)` |
-| `bone_kg` | `numeric(4,2)` — absolute bone mass in kg (smart-scale convention) |
 | `notes` | `text` |
 | `created_at` | `timestamptz` not null default `now()` |
 
-Note: `bone_kg` here on `body_measurements` is a measurement column and is distinct from the `profiles`-level bone field discussed under `profiles`. The moving average is exposed via a view (see Views).
+Note: there is no `bone_kg` column here — bone mass is stored once per user on `profiles` (see `profiles`). The weight moving average is exposed via a view (see Views).
 
 ### `ingredients` (shared library)
 
@@ -94,6 +100,7 @@ Per-user (private), referencing the shared ingredient library. `unique (user_id,
 | `description` | `text` |
 | `instructions` | `text` |
 | `photo_url` | `text` |
+| `deleted_at` | `timestamptz` (null = live; soft-delete marker, partial unique index `where deleted_at is null`) |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
 
