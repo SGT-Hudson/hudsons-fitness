@@ -34,12 +34,25 @@ const sexInput = z
   .enum(['male', 'female', 'other', ''])
   .pipe(z.enum(['male', 'female', 'other']));
 
+// Per the R-09 convention (see templates/schema.ts) the issue `message`
+// carries a STABLE CODE the page maps to a localized string — NOT English
+// copy. A blank required field still emits the `required` code (so the
+// existing combined "fill in all fields" copy is preserved); a non-empty
+// value outside the declared bound emits the distinct `range` code so the
+// form can surface a range-specific message. The rejection set is unchanged
+// (blank/non-finite still fails) — only which message is shown.
 /** string `<input>` value → bounded number; blank/non-finite fails the bound. */
 const numericString = (min: number, max: number) =>
-  z
-    .string()
-    .transform((s) => Number(s))
-    .pipe(z.number().min(min).max(max));
+  z.string().superRefine((s, ctx) => {
+    if (s.trim() === '') {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'required' });
+      return;
+    }
+    const n = Number(s);
+    if (!Number.isFinite(n) || n < min || n > max) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'range' });
+    }
+  }).transform((s) => Number(s));
 
 export const onboardingFormSchema = z.object({
   sex: sexInput,

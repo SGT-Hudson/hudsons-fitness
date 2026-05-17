@@ -38,7 +38,8 @@
     "prefillHint": "Pre-rellenado con tu última medición. Edita lo que cambie."
   },
   "errors": {
-    "weightRequired": "El peso es obligatorio."
+    "weightRequired": "El peso es obligatorio.",
+    "outOfRange": "Debe estar entre {{min}} y {{max}}."
   },
   "charts": {
     "empty": "Aún no hay datos suficientes para mostrar la gráfica.",

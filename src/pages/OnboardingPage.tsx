@@ -120,10 +120,17 @@ export function OnboardingPage() {
     }
   }
 
-  // Preserve the prior UX: the page showed one combined `t('errors.required')`
-  // line only after a submit attempt with missing/invalid fields (never
-  // per-field, never before first submit).
-  const showRequired = isSubmitted && Object.keys(errors).length > 0;
+  // Preserve the prior UX: combined message line(s) only after a submit
+  // attempt, never per-field, never before first submit. The schema now tags
+  // an out-of-bound numeric value with the distinct `range` code (vs the
+  // `required` code for a blank field), so a non-empty out-of-range value
+  // surfaces a range-specific line instead of the misleading "fill in all
+  // fields" copy. Enforcement (which values submit) is unchanged.
+  const errorList = Object.values(errors);
+  const showRange =
+    isSubmitted && errorList.some((e) => e?.message === 'range');
+  const showRequired =
+    isSubmitted && errorList.some((e) => e?.message !== 'range');
 
   return (
     <div className="min-h-dvh flex items-center justify-center p-4">
@@ -225,6 +232,7 @@ export function OnboardingPage() {
                 <p className="text-xs text-muted-foreground">{t('boneKg.help')}</p>
               </div>
               {showRequired && <p className="text-sm text-destructive">{t('errors.required')}</p>}
+              {showRange && <p className="text-sm text-destructive">{t('errors.outOfRange')}</p>}
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={update.isPending}>
                 {update.isPending ? tCommon('loading') : t('submit')}

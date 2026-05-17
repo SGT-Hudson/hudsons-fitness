@@ -98,10 +98,18 @@ export function SettingsPage() {
     });
   }
 
-  // Preserve the prior combined "required" message for biometrics: shown only
-  // after a submit attempt with a missing/invalid field, never per-field.
+  // Combined biometrics message line(s): shown only after a submit attempt,
+  // never per-field. The schema now tags an out-of-bound numeric value with
+  // the distinct `range` code (vs `required` for a blank field), so an
+  // out-of-range value surfaces a range-specific line instead of the
+  // misleading "fill in all fields" copy. Enforcement is unchanged.
+  const bioErrorList = Object.values(bioForm.formState.errors);
+  const bioRange =
+    bioForm.formState.isSubmitted &&
+    bioErrorList.some((e) => e?.message === 'range');
   const bioRequired =
-    bioForm.formState.isSubmitted && Object.keys(bioForm.formState.errors).length > 0;
+    bioForm.formState.isSubmitted &&
+    bioErrorList.some((e) => e?.message !== 'range');
 
   if (isLoading || !profile) {
     return <p className="text-sm text-muted-foreground">{tCommon('loading')}</p>;
@@ -273,6 +281,9 @@ export function SettingsPage() {
             </div>
             {bioRequired && (
               <p className="text-sm text-destructive">{t('errors.required')}</p>
+            )}
+            {bioRange && (
+              <p className="text-sm text-destructive">{t('errors.outOfRange')}</p>
             )}
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={update.isPending}>

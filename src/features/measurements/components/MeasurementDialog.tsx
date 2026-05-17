@@ -47,6 +47,20 @@ export function MeasurementDialog({
   const upsert = useUpsertMeasurement();
   const [error, setError] = useState<string | null>(null);
 
+  // The schema emits a stable issue code (R-09 convention): 'weightRequired'
+  // for a blank required field, 'range' for a non-empty out-of-bound value.
+  // Map each to its localized message so an out-of-range value no longer
+  // surfaces the misleading "weight is required" copy.
+  function fieldError(
+    code: string | undefined,
+    min: number,
+    max: number,
+  ): string | null {
+    if (!code) return null;
+    if (code === 'range') return t('errors.outOfRange', { min, max });
+    return t(`errors.${code}`);
+  }
+
   const {
     register,
     handleSubmit,
@@ -130,7 +144,9 @@ export function MeasurementDialog({
                 {...register('weight_kg')}
               />
               {errors.weight_kg && (
-                <p className="text-xs text-destructive">{t('errors.weightRequired')}</p>
+                <p className="text-xs text-destructive">
+                  {fieldError(errors.weight_kg.message, 20, 400)}
+                </p>
               )}
             </div>
             <div className="space-y-2">
@@ -144,6 +160,11 @@ export function MeasurementDialog({
                 step="0.1"
                 {...register('body_fat_pct')}
               />
+              {errors.body_fat_pct && (
+                <p className="text-xs text-destructive">
+                  {fieldError(errors.body_fat_pct.message, 0, 70)}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="musclePct">{t('fields.musclePct')}</Label>
@@ -156,6 +177,11 @@ export function MeasurementDialog({
                 step="0.1"
                 {...register('muscle_pct')}
               />
+              {errors.muscle_pct && (
+                <p className="text-xs text-destructive">
+                  {fieldError(errors.muscle_pct.message, 0, 100)}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="waterPct">{t('fields.waterPct')}</Label>
@@ -168,6 +194,11 @@ export function MeasurementDialog({
                 step="0.1"
                 {...register('water_pct')}
               />
+              {errors.water_pct && (
+                <p className="text-xs text-destructive">
+                  {fieldError(errors.water_pct.message, 0, 100)}
+                </p>
+              )}
             </div>
           </div>
           <div className="space-y-2">
