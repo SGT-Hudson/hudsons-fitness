@@ -245,7 +245,8 @@ export function ObjetivosPage() {
                               `${t('phases.summary.tdeePrefix')} ${phase.kcal_value > 0 ? '+' : ''}${phase.kcal_value} kcal`}
                           </span>
                           <span>
-                            {phase.protein_g_per_kg} g/kg {t('phases.summary.protein')}
+                            {phase.protein_g_per_kg} g/kg {t('phases.summary.protein')}{' '}
+                            {t('phases.summary.proteinBasisLean')}
                           </span>
                           <span>
                             {Math.round(fractionToPct(phase.fat_pct_of_kcal))}% {t('phases.summary.fat')}

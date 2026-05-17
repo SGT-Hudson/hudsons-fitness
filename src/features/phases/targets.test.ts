@@ -2,8 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { computePhaseTargets } from './targets';
 import type { Phase } from './api';
 
-// Characterization tests for the phase-targets wrapper (D-F1 / R-16).
-// Verifies: tdee_delta null-guard, lean-mass substitution, integer rounding.
+// Tests for the thin phase-targets wrapper (D-F1 / R-16).
+// Verifies: tdee_delta null-guard, that it passes TRUE bodyweight + bf% +
+// phaseType through to the canonical fn (which owns the protein rule per
+// D-B1 / R-05 — see macros.test.ts for the full protein matrix), and integer
+// rounding. The protein assertions were updated for the D-B1 behavior change.
 
 function phase(overrides: Partial<Phase> = {}): Phase {
   return {
@@ -35,18 +38,29 @@ describe('computePhaseTargets', () => {
     ).toBeNull();
   });
 
-  it('uses raw weight when bodyFatPct is null/undefined', () => {
+  it('bf% absent → 1.6 g/kg bodyweight fallback (D-B1; was raw weight × g/kg)', () => {
     const r = computePhaseTargets(phase(), 80, null, null);
     expect(r).not.toBeNull();
-    // proteinG = round(80 * 2) = 160
-    expect(r!.proteinG).toBe(160);
+    // D-B1: no bf% → proteinG = round(80 * 1.6) = 128 (stored 2 g/kg ignored)
+    expect(r!.proteinG).toBe(128);
     expect(r!.kcal).toBe(2000);
   });
 
-  it('substitutes lean mass for weight when bodyFatPct is provided', () => {
+  it('bf% present → lean mass × the phase stored protein_g_per_kg (D-B1)', () => {
     // lean = 80 * (1 - 25/100) = 60 ; proteinG = round(60 * 2) = 120
     const r = computePhaseTargets(phase(), 80, 25, null);
     expect(r!.proteinG).toBe(120);
+  });
+
+  it('bf% present, no stored protein_g_per_kg → phase-aware table default (D-B1)', () => {
+    // cut table = 2.4 ; lean = 80 * 0.8 = 64 ; round(64 * 2.4) = 154
+    const r = computePhaseTargets(
+      phase({ phase_type: 'cut', protein_g_per_kg: null as unknown as number }),
+      80,
+      20,
+      null,
+    );
+    expect(r!.proteinG).toBe(154);
   });
 
   it('rounds every macro to an integer', () => {

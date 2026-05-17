@@ -26,7 +26,9 @@
     "carbs": "Carbs",
     "fat": "Fat",
     "fiber": "Fiber",
-    "targetsHint": "Once you have an active phase, daily targets and per-macro progress bars will show here."
+    "targetsHint": "Once you have an active phase, daily targets and per-macro progress bars will show here.",
+    "proteinBasisLean": "× lean mass",
+    "proteinBasisFallback": "1.6 g/kg bodyweight — add a body-fat % for a phase-tuned target"
   },
   "entry": {
     "edit": "Edit entry",

@@ -20,7 +20,11 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { isoDate } from '@/lib/dates';
-import { fractionToPct, pctToFraction } from '@/lib/macros';
+import {
+  fractionToPct,
+  pctToFraction,
+  PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM,
+} from '@/lib/macros';
 import type { Phase, PhaseInput } from '../api';
 
 type FormValues = {
@@ -44,7 +48,7 @@ const DEFAULTS: FormValues = {
   end_date: '',
   kcal_mode: 'absolute',
   kcal_value: 2000,
-  protein_g_per_kg: 1.6,
+  protein_g_per_kg: PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM.maintenance,
   fat_pct_input: 25,
   fiber_mode: 'fixed_g',
   fiber_value: 30,
@@ -82,11 +86,28 @@ export function PhaseDialog({
     watch,
     reset,
     getValues,
-    formState: { errors },
+    setValue,
+    formState: { errors, dirtyFields },
   } = useForm<FormValues>({ defaultValues: DEFAULTS });
 
   const kcalMode = watch('kcal_mode');
   const fiberMode = watch('fiber_mode');
+  const phaseType = watch('phase_type');
+
+  // On phase_type change, pre-fill protein_g_per_kg from the phase-aware
+  // lean-mass table (D-B1) — but only when the user has NOT manually touched
+  // the protein field, so an explicit override is never clobbered. Existing
+  // phases keep their stored value: editing one marks no field dirty until
+  // touched, but `reset()` below seeds `protein_g_per_kg` from the row, so
+  // `dirtyFields.protein_g_per_kg` stays false and the table does not
+  // overwrite a stored override unless the user changes the type themselves.
+  const tableDefault = PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM[phaseType];
+  useEffect(() => {
+    if (!open || notesOnly) return;
+    if (dirtyFields.protein_g_per_kg) return;
+    if (phase) return; // never retroactively re-anchor an existing phase
+    setValue('protein_g_per_kg', tableDefault);
+  }, [open, notesOnly, phase, phaseType, tableDefault, dirtyFields, setValue]);
 
   useEffect(() => {
     if (!open) return;
@@ -298,7 +319,12 @@ export function PhaseDialog({
                 min: { value: 0.1, message: t('phases.form.errors.protein') },
               })}
             />
-            <p className="text-xs text-muted-foreground">{t('phases.form.proteinHelp')}</p>
+            <p className="text-xs text-muted-foreground">
+              {t('phases.form.proteinHelp', {
+                type: t(`phases.type.${phaseType}`),
+                default: tableDefault,
+              })}
+            </p>
             {errors.protein_g_per_kg && (
               <p className="text-xs text-destructive">{t('phases.form.errors.protein')}</p>
             )}

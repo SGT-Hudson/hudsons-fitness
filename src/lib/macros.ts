@@ -5,7 +5,13 @@ export type PhaseType = 'cut' | 'maintenance' | 'bulk';
 export interface PhaseInputs {
   kcal_mode: KcalMode;
   kcal_value: number;
-  protein_g_per_kg: number;
+  /**
+   * Per-phase protein override, in g/kg of **lean mass**. Always populated
+   * for real phases (pre-filled from {@link PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM}
+   * at create time per D-B1); nullable here so the canonical fn can still fall
+   * back to the phase-type table if it is ever absent.
+   */
+  protein_g_per_kg?: number | null;
   fat_pct_of_kcal: number;
   fiber_mode: FiberMode;
   fiber_value: number;
@@ -26,6 +32,27 @@ export function pctToFraction(pct: number): number {
   return pct / 100;
 }
 
+/**
+ * Phase-aware protein defaults, in **g per kg of lean body mass** (D-B1).
+ * These pre-fill `phases.protein_g_per_kg` at phase-create time (the column
+ * is the per-phase override / snapshot — no separate profile or snapshot
+ * column exists; D-B2 reversed). Anchored to the Helms et al. FFM range for
+ * deficit muscle retention (~2.3–3.1 g/kg FFM), tapering with surplus.
+ */
+export const PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM: Record<PhaseType, number> = {
+  cut: 2.4,
+  maintenance: 2.0,
+  bulk: 1.8,
+};
+
+/**
+ * No-body-fat-% fallback, in **g per kg of total bodyweight** (D-B1). The
+ * most recognized literature bodyweight guideline; the mild under-target vs
+ * the lean-mass path for a bf%-less cutter is a deliberate nudge to log a
+ * body-fat %. Switched automatically/data-driven on bf% presence — no toggle.
+ */
+export const PROTEIN_FALLBACK_G_PER_KG_BODYWEIGHT = 1.6;
+
 export interface MacroTargets {
   kcal: number;
   proteinG: number;
@@ -34,19 +61,38 @@ export interface MacroTargets {
   fiberG: number;
 }
 
+/**
+ * Canonical daily macro targets. This function **owns the protein rule**
+ * (D-B1): given true scale `weightKg`, the phase, and optionally the latest
+ * `bodyFatPct`, it decides the protein basis itself —
+ *  - bf% present → `lean = weight × (1 − bf%/100)`, then
+ *    `protein = lean × (phase.protein_g_per_kg ??
+ *    PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM[phaseType])`;
+ *  - bf% absent  → `protein = weight × PROTEIN_FALLBACK_G_PER_KG_BODYWEIGHT`.
+ * No misnamed lean-mass-fed `weightKg`: callers always pass true bodyweight.
+ * kcal / fat / carb / fiber math is unchanged.
+ */
 export function computeDailyMacroTargets(opts: {
   weightKg: number;
+  bodyFatPct?: number | null;
+  phaseType: PhaseType;
   phase: PhaseInputs;
   estimatedTDEE: number;
 }): MacroTargets {
-  const { weightKg, phase, estimatedTDEE } = opts;
+  const { weightKg, bodyFatPct, phaseType, phase, estimatedTDEE } = opts;
 
   const kcal =
     phase.kcal_mode === 'absolute'
       ? phase.kcal_value
       : estimatedTDEE + phase.kcal_value;
 
-  const proteinG = weightKg * phase.protein_g_per_kg;
+  const proteinG =
+    bodyFatPct != null
+      ? weightKg *
+        (1 - bodyFatPct / 100) *
+        (phase.protein_g_per_kg ??
+          PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM[phaseType])
+      : weightKg * PROTEIN_FALLBACK_G_PER_KG_BODYWEIGHT;
   const proteinKcal = proteinG * 4;
 
   const fatKcal = kcal * phase.fat_pct_of_kcal;
