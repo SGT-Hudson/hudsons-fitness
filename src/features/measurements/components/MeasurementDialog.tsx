@@ -1,4 +1,6 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -13,6 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useUpsertMeasurement } from '../hooks';
+import {
+  measurementFormSchema,
+  type MeasurementFormValues,
+  type ParsedMeasurementForm,
+} from '../schema';
 import { isoDate } from '@/lib/dates';
 import type { BodyMeasurement } from '../api';
 
@@ -28,13 +35,6 @@ function toInput(value: number | null | undefined): string {
   return value === null || value === undefined ? '' : String(value);
 }
 
-function parseOptional(value: string): number | null {
-  const trimmed = value.trim();
-  if (trimmed === '') return null;
-  const n = Number(trimmed);
-  return Number.isFinite(n) ? n : null;
-}
-
 export function MeasurementDialog({
   open,
   onOpenChange,
@@ -45,43 +45,51 @@ export function MeasurementDialog({
   const { t } = useTranslation('metricas');
   const { t: tCommon } = useTranslation('common');
   const upsert = useUpsertMeasurement();
-
-  const [measuredOn, setMeasuredOn] = useState(defaultDate);
-  const [weightKg, setWeightKg] = useState('');
-  const [bodyFatPct, setBodyFatPct] = useState('');
-  const [musclePct, setMusclePct] = useState('');
-  const [waterPct, setWaterPct] = useState('');
-  const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<MeasurementFormValues, unknown, ParsedMeasurementForm>({
+    resolver: zodResolver(measurementFormSchema),
+    defaultValues: {
+      measured_on: defaultDate,
+      weight_kg: '',
+      body_fat_pct: '',
+      muscle_pct: '',
+      water_pct: '',
+      notes: '',
+    },
+  });
 
   useEffect(() => {
     if (!open) return;
     setError(null);
     const source = existing ?? prefillFrom ?? null;
-    setMeasuredOn(existing?.measured_on ?? defaultDate);
-    setWeightKg(toInput(source?.weight_kg));
-    setBodyFatPct(toInput(source?.body_fat_pct));
-    setMusclePct(toInput(source?.muscle_pct));
-    setWaterPct(toInput(source?.water_pct));
-    setNotes(existing?.notes ?? '');
-  }, [open, existing, prefillFrom, defaultDate]);
+    reset({
+      measured_on: existing?.measured_on ?? defaultDate,
+      // Inputs are strings; the schema coerces weight and turns blank optional
+      // fields → null at parse time (matching the old parseOptional behavior).
+      weight_kg: toInput(source?.weight_kg),
+      body_fat_pct: toInput(source?.body_fat_pct),
+      muscle_pct: toInput(source?.muscle_pct),
+      water_pct: toInput(source?.water_pct),
+      notes: existing?.notes ?? '',
+    });
+  }, [open, existing, prefillFrom, defaultDate, reset]);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function onSubmit(values: ParsedMeasurementForm) {
     setError(null);
-    const weight = parseOptional(weightKg);
-    if (weight === null) {
-      setError(t('errors.weightRequired'));
-      return;
-    }
     try {
       await upsert.mutateAsync({
-        measured_on: measuredOn,
-        weight_kg: weight,
-        body_fat_pct: parseOptional(bodyFatPct),
-        muscle_pct: parseOptional(musclePct),
-        water_pct: parseOptional(waterPct),
-        notes: notes.trim() === '' ? null : notes.trim(),
+        measured_on: values.measured_on,
+        weight_kg: values.weight_kg,
+        body_fat_pct: values.body_fat_pct,
+        muscle_pct: values.muscle_pct,
+        water_pct: values.water_pct,
+        notes: values.notes.trim() === '' ? null : values.notes.trim(),
       });
       onOpenChange(false);
     } catch (err) {
@@ -98,17 +106,15 @@ export function MeasurementDialog({
             {prefillFrom && !existing ? t('dialog.prefillHint') : t('dialog.subtitle')}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="measuredOn">{t('fields.date')}</Label>
             <Input
               id="measuredOn"
               type="date"
-              required
               max={isoDate()}
-              value={measuredOn}
-              onChange={(e) => setMeasuredOn(e.target.value)}
               disabled={!!existing}
+              {...register('measured_on')}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -118,13 +124,14 @@ export function MeasurementDialog({
                 id="weightKg"
                 type="number"
                 inputMode="decimal"
-                required
                 min={20}
                 max={400}
                 step="0.1"
-                value={weightKg}
-                onChange={(e) => setWeightKg(e.target.value)}
+                {...register('weight_kg')}
               />
+              {errors.weight_kg && (
+                <p className="text-xs text-destructive">{t('errors.weightRequired')}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="bodyFatPct">{t('fields.bodyFatPct')}</Label>
@@ -135,8 +142,7 @@ export function MeasurementDialog({
                 min={0}
                 max={70}
                 step="0.1"
-                value={bodyFatPct}
-                onChange={(e) => setBodyFatPct(e.target.value)}
+                {...register('body_fat_pct')}
               />
             </div>
             <div className="space-y-2">
@@ -148,8 +154,7 @@ export function MeasurementDialog({
                 min={0}
                 max={100}
                 step="0.1"
-                value={musclePct}
-                onChange={(e) => setMusclePct(e.target.value)}
+                {...register('muscle_pct')}
               />
             </div>
             <div className="space-y-2">
@@ -161,19 +166,13 @@ export function MeasurementDialog({
                 min={0}
                 max={100}
                 step="0.1"
-                value={waterPct}
-                onChange={(e) => setWaterPct(e.target.value)}
+                {...register('water_pct')}
               />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="notes">{t('fields.notes')}</Label>
-            <Textarea
-              id="notes"
-              rows={3}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+            <Textarea id="notes" rows={3} {...register('notes')} />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>

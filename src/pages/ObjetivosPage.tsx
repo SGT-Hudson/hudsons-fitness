@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,12 +27,10 @@ import { PhaseDialog } from '@/features/phases/components/PhaseDialog';
 import { useLatestMeasurement } from '@/features/measurements/hooks';
 import { fractionToPct } from '@/lib/macros';
 import type { Phase, PhaseInput } from '@/features/phases/api';
+import { goalFormSchema, type GoalFormValues } from '@/features/objetivos/schema';
 import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
 
-type GoalForm = {
-  target_body_fat_pct: number;
-  notes: string;
-};
+type GoalForm = GoalFormValues;
 
 function phaseStatus(phase: Phase, today: string): 'active' | 'past' | 'upcoming' {
   if (phase.start_date > today) return 'upcoming';
@@ -70,6 +69,7 @@ export function ObjetivosPage() {
   const [goalOpen, setGoalOpen] = useState(false);
 
   const goalForm = useForm<GoalForm>({
+    resolver: zodResolver(goalFormSchema),
     defaultValues: { target_body_fat_pct: 15, notes: '' },
   });
 
@@ -328,12 +328,7 @@ export function ObjetivosPage() {
                 step="0.1"
                 min="3"
                 max="50"
-                {...goalForm.register('target_body_fat_pct', {
-                  valueAsNumber: true,
-                  min: { value: 3, message: t('goal.errors.targetBf') },
-                  max: { value: 50, message: t('goal.errors.targetBf') },
-                  required: true,
-                })}
+                {...goalForm.register('target_body_fat_pct', { valueAsNumber: true })}
               />
               {goalForm.formState.errors.target_body_fat_pct && (
                 <p className="text-xs text-destructive">{t('goal.errors.targetBf')}</p>

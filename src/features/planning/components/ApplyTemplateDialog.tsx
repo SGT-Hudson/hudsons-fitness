@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -18,6 +20,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTemplates } from '@/features/templates/hooks';
+import {
+  applyTemplateFormSchema,
+  type ApplyTemplateFormValues,
+} from '../schema';
 import { formatDate, type Locale } from '@/lib/dates';
 
 interface Props {
@@ -39,28 +45,36 @@ export function ApplyTemplateDialog({
   const { t: tCommon } = useTranslation('common');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
   const templates = useTemplates();
-  const [templateId, setTemplateId] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ApplyTemplateFormValues>({
+    resolver: zodResolver(applyTemplateFormSchema),
+    defaultValues: { templateId: '' },
+  });
 
   useEffect(() => {
     if (open) {
       setError(null);
-      setTemplateId('');
+      reset({ templateId: '' });
     }
-  }, [open]);
+  }, [open, reset]);
 
-  async function handleSubmit() {
-    if (!templateId) {
-      setError(t('apply.errors.pickTemplate'));
-      return;
-    }
+  async function onValid(values: ApplyTemplateFormValues) {
+    setError(null);
     try {
-      await onApply(templateId);
+      await onApply(values.templateId);
       onOpenChange(false);
     } catch (err) {
       setError((err as Error).message);
     }
   }
+
+  // Parity: the page showed t('apply.errors.pickTemplate') when none picked.
+  const pickError = errors.templateId ? t('apply.errors.pickTemplate') : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -73,35 +87,45 @@ export function ApplyTemplateDialog({
             })}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="apply-template">{t('apply.template')}</Label>
-            <Select value={templateId} onValueChange={setTemplateId}>
-              <SelectTrigger id="apply-template">
-                <SelectValue placeholder={t('apply.placeholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {(templates.data ?? []).map((tpl) => (
-                  <SelectItem key={tpl.id} value={tpl.id}>
-                    {tpl.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {(templates.data ?? []).length === 0 && (
-              <p className="text-xs text-muted-foreground">{t('apply.noTemplates')}</p>
+        <form onSubmit={handleSubmit(onValid)}>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="apply-template">{t('apply.template')}</Label>
+              <Controller
+                control={control}
+                name="templateId"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="apply-template">
+                      <SelectValue placeholder={t('apply.placeholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(templates.data ?? []).map((tpl) => (
+                        <SelectItem key={tpl.id} value={tpl.id}>
+                          {tpl.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {(templates.data ?? []).length === 0 && (
+                <p className="text-xs text-muted-foreground">{t('apply.noTemplates')}</p>
+              )}
+            </div>
+            {(pickError || error) && (
+              <p className="text-sm text-destructive">{pickError ?? error}</p>
             )}
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            {tCommon('cancel')}
-          </Button>
-          <Button type="button" onClick={() => void handleSubmit()} disabled={busy}>
-            {busy ? tCommon('loading') : t('apply.submit')}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              {tCommon('cancel')}
+            </Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? tCommon('loading') : t('apply.submit')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

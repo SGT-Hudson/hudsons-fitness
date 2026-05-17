@@ -15,11 +15,11 @@ tracked in `roadmap.md`).
 
 ## Forms
 
-- Use `react-hook-form` with `zod` via `@hookform/resolvers` `zodResolver` (D-C2).
-- Co-locate the schema per feature at `src/features/<x>/schema.ts` (D-C3).
-- Derive the form type via `z.infer<typeof schema>`; no hand-written `type FormValues` (D-C3). (Today forms are RHF without `zodResolver`; `@hookform/resolvers` not installed; migration pending.)
-
-> ⚠ Changing — see R-09
+- Every form uses `react-hook-form` with `zod` via `@hookform/resolvers` `zodResolver` (D-C2).
+- Co-locate the schema per feature at `src/features/<x>/schema.ts`; page-level forms with no page feature folder put their schema in the most natural feature module (e.g. Login/Signup → `features/auth/schema.ts`, Onboarding/Settings biometrics → `features/profile/schema.ts`, the goal dialog → `features/objetivos/schema.ts`, the template editor → `features/templates/schema.ts`) (D-C3).
+- Derive the form type from the schema via `z.infer<typeof schema>` (or `z.input`/`z.output` when the schema transforms string inputs to numbers — declare the resolver's output type as the third `useForm` generic); never a hand-written `type FormValues = { ... }` (D-C3).
+- `register('field', { valueAsNumber })` / `Controller` for shadcn Select/Textarea; numeric string inputs are coerced inside the schema, so the field stays string-typed. Validity is the schema's job; localized error copy stays in the component (zod messages map to existing i18n keys — no raw English).
+- Single-control, instant-apply settings (the Settings language + theme Selects) are controlled `<Select>`s, not RHF forms — they have no validated submit (theme is localStorage-only per D-F6).
 
 ## Types & macros
 

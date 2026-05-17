@@ -8,17 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ingredientFormSchema, type IngredientFormValues } from '../schema';
 
-export interface IngredientFormState {
-  name: string;
-  brand: string;
-  unit_type: 'gram' | 'unit';
-  kcal_per_unit: string;
-  protein_g_per_unit: string;
-  carbs_g_per_unit: string;
-  fat_g_per_unit: string;
-  fiber_g_per_unit: string;
-}
+// The form state is the zod schema's *input* (string-valued) shape — the
+// single source of truth now lives in ../schema.ts (D-C2/D-C3, R-09). This
+// presentational sub-component still takes value/onChange because it is reused
+// across the OFF / manual / edit tabs in IngredientDialog (which owns the RHF
+// instance).
+export type IngredientFormState = IngredientFormValues;
 
 export const emptyForm: IngredientFormState = {
   name: '',
@@ -198,29 +195,24 @@ export interface ParsedIngredient {
   fiber_g_per_unit: number;
 }
 
+/**
+ * Validate + normalize via the co-located zod schema (single source of truth,
+ * D-C2/R-09). Behavior is identical to the old hand-rolled parser: any invalid
+ * field → `null` (the dialog turns that into the localized `errors.invalid`
+ * message); blank fiber → 0; brand trimmed-to-null.
+ */
 export function parseForm(form: IngredientFormState): ParsedIngredient | null {
-  const name = form.name.trim();
-  if (name === '') return null;
-  const num = (s: string) => {
-    const n = Number(s);
-    return Number.isFinite(n) && n >= 0 ? n : null;
-  };
-  const kcal = num(form.kcal_per_unit);
-  const protein = num(form.protein_g_per_unit);
-  const carbs = num(form.carbs_g_per_unit);
-  const fat = num(form.fat_g_per_unit);
-  const fiber = form.fiber_g_per_unit.trim() === '' ? 0 : num(form.fiber_g_per_unit);
-  if (kcal === null || protein === null || carbs === null || fat === null || fiber === null) {
-    return null;
-  }
+  const result = ingredientFormSchema.safeParse(form);
+  if (!result.success) return null;
+  const v = result.data;
   return {
-    name,
-    brand: form.brand.trim() === '' ? null : form.brand.trim(),
-    unit_type: form.unit_type,
-    kcal_per_unit: kcal,
-    protein_g_per_unit: protein,
-    carbs_g_per_unit: carbs,
-    fat_g_per_unit: fat,
-    fiber_g_per_unit: fiber,
+    name: v.name,
+    brand: v.brand.trim() === '' ? null : v.brand.trim(),
+    unit_type: v.unit_type,
+    kcal_per_unit: v.kcal_per_unit,
+    protein_g_per_unit: v.protein_g_per_unit,
+    carbs_g_per_unit: v.carbs_g_per_unit,
+    fat_g_per_unit: v.fat_g_per_unit,
+    fiber_g_per_unit: v.fiber_g_per_unit,
   };
 }

@@ -1,4 +1,6 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -16,11 +18,14 @@ import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { isProfileOnboarded } from '@/features/profile/api';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
+import {
+  onboardingFormSchema,
+  type OnboardingFormValues,
+  type ParsedOnboardingForm,
+} from '@/features/profile/schema';
 import { estimateBoneKg } from '@/lib/macros';
 import { isoDate } from '@/lib/dates';
 import { differenceInYears, parseISO } from 'date-fns';
-
-type Sex = 'male' | 'female' | 'other';
 
 export function OnboardingPage() {
   const { t } = useTranslation('onboarding');
@@ -30,24 +35,45 @@ export function OnboardingPage() {
   const { signOut } = useAuth();
   const { data: profile, isLoading } = useProfile();
   const update = useUpdateProfile();
-
-  const [sex, setSex] = useState<Sex | ''>('');
-  const [birthDate, setBirthDate] = useState('');
-  const [heightCm, setHeightCm] = useState('');
-  const [initialWeightKg, setInitialWeightKg] = useState('');
-  const [boneKg, setBoneKg] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    control,
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors, isSubmitted },
+  } = useForm<OnboardingFormValues, unknown, ParsedOnboardingForm>({
+    resolver: zodResolver(onboardingFormSchema),
+    defaultValues: {
+      sex: '',
+      birth_date: '',
+      height_cm: '',
+      initial_weight_kg: '',
+      bone_kg: '',
+    },
+  });
 
   useEffect(() => {
     if (!profile) return;
-    if (profile.sex && (['male', 'female', 'other'] as const).includes(profile.sex as Sex)) {
-      setSex(profile.sex as Sex);
-    }
-    if (profile.birth_date) setBirthDate(profile.birth_date);
-    if (profile.height_cm) setHeightCm(String(profile.height_cm));
-    if (profile.initial_weight_kg) setInitialWeightKg(String(profile.initial_weight_kg));
-    if (profile.bone_kg) setBoneKg(String(profile.bone_kg));
-  }, [profile]);
+    reset({
+      sex: (['male', 'female', 'other'] as const).includes(profile.sex as 'male')
+        ? (profile.sex as OnboardingFormValues['sex'])
+        : '',
+      birth_date: profile.birth_date ?? '',
+      height_cm: profile.height_cm != null ? String(profile.height_cm) : '',
+      initial_weight_kg:
+        profile.initial_weight_kg != null ? String(profile.initial_weight_kg) : '',
+      bone_kg: profile.bone_kg != null ? String(profile.bone_kg) : '',
+    });
+  }, [profile, reset]);
+
+  const sex = watch('sex');
+  const birthDate = watch('birth_date');
+  const heightCm = watch('height_cm');
+  const initialWeightKg = watch('initial_weight_kg');
 
   if (isLoading) {
     return <div className="p-8 text-muted-foreground">{tCommon('loading')}</div>;
@@ -56,44 +82,48 @@ export function OnboardingPage() {
     return <Navigate to="/diario" replace />;
   }
 
-  function canEstimateBone() {
-    return sex !== '' && birthDate !== '' && heightCm !== '' && initialWeightKg !== '';
-  }
+  const canEstimateBone =
+    !!sex &&
+    !!birthDate &&
+    Number.isFinite(Number(heightCm)) &&
+    Number(heightCm) > 0 &&
+    Number.isFinite(Number(initialWeightKg)) &&
+    Number(initialWeightKg) > 0;
 
   function handleEstimate() {
-    if (!canEstimateBone()) return;
+    if (!canEstimateBone) return;
     const ageYears = differenceInYears(new Date(), parseISO(birthDate));
     const estimated = estimateBoneKg({
       heightCm: Number(heightCm),
       weightKg: Number(initialWeightKg),
       ageYears,
-      sex: sex as Sex,
+      sex: sex as 'male' | 'female' | 'other',
     });
     if (Number.isFinite(estimated) && estimated > 0) {
-      setBoneKg(estimated.toFixed(2));
+      setValue('bone_kg', estimated.toFixed(2), { shouldValidate: true });
     }
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function onSubmit(values: ParsedOnboardingForm) {
     setError(null);
-    if (!sex || !birthDate || !heightCm || !initialWeightKg || !boneKg) {
-      setError(t('errors.required'));
-      return;
-    }
     try {
       await update.mutateAsync({
-        sex,
-        birth_date: birthDate,
-        height_cm: Number(heightCm),
-        initial_weight_kg: Number(initialWeightKg),
-        bone_kg: Number(boneKg),
+        sex: values.sex,
+        birth_date: values.birth_date,
+        height_cm: values.height_cm,
+        initial_weight_kg: values.initial_weight_kg,
+        bone_kg: values.bone_kg,
       });
       navigate('/diario', { replace: true });
     } catch (err) {
       setError((err as Error).message);
     }
   }
+
+  // Preserve the prior UX: the page showed one combined `t('errors.required')`
+  // line only after a submit attempt with missing/invalid fields (never
+  // per-field, never before first submit).
+  const showRequired = isSubmitted && Object.keys(errors).length > 0;
 
   return (
     <div className="min-h-dvh flex items-center justify-center p-4">
@@ -110,29 +140,33 @@ export function OnboardingPage() {
             <CardDescription>{t('subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="sex">{t('sex.label')}</Label>
-                <Select value={sex} onValueChange={(v) => setSex(v as Sex)}>
-                  <SelectTrigger id="sex">
-                    <SelectValue placeholder={t('sex.placeholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">{t('sex.male')}</SelectItem>
-                    <SelectItem value="female">{t('sex.female')}</SelectItem>
-                    <SelectItem value="other">{t('sex.other')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="sex"
+                  render={({ field }) => (
+                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                      <SelectTrigger id="sex">
+                        <SelectValue placeholder={t('sex.placeholder')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">{t('sex.male')}</SelectItem>
+                        <SelectItem value="female">{t('sex.female')}</SelectItem>
+                        <SelectItem value="other">{t('sex.other')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="birthDate">{t('birthDate')}</Label>
                 <Input
                   id="birthDate"
                   type="date"
-                  required
                   max={isoDate()}
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
+                  {...register('birth_date')}
                 />
               </div>
               <div className="space-y-2">
@@ -141,12 +175,10 @@ export function OnboardingPage() {
                   id="heightCm"
                   type="number"
                   inputMode="decimal"
-                  required
                   min={100}
                   max={250}
                   step="0.1"
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(e.target.value)}
+                  {...register('height_cm')}
                 />
               </div>
               <div className="space-y-2">
@@ -161,12 +193,10 @@ export function OnboardingPage() {
                   id="initialWeightKg"
                   type="number"
                   inputMode="decimal"
-                  required
                   min={20}
                   max={400}
                   step="0.1"
-                  value={initialWeightKg}
-                  onChange={(e) => setInitialWeightKg(e.target.value)}
+                  {...register('initial_weight_kg')}
                 />
               </div>
               <div className="space-y-2">
@@ -177,7 +207,7 @@ export function OnboardingPage() {
                     variant="link"
                     size="sm"
                     className="h-auto p-0"
-                    disabled={!canEstimateBone()}
+                    disabled={!canEstimateBone}
                     onClick={handleEstimate}
                   >
                     {t('boneKg.estimate')}
@@ -187,15 +217,14 @@ export function OnboardingPage() {
                   id="boneKg"
                   type="number"
                   inputMode="decimal"
-                  required
                   min={0.5}
                   max={20}
                   step="0.01"
-                  value={boneKg}
-                  onChange={(e) => setBoneKg(e.target.value)}
+                  {...register('bone_kg')}
                 />
                 <p className="text-xs text-muted-foreground">{t('boneKg.help')}</p>
               </div>
+              {showRequired && <p className="text-sm text-destructive">{t('errors.required')}</p>}
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={update.isPending}>
                 {update.isPending ? tCommon('loading') : t('submit')}

@@ -1,4 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -11,6 +13,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  saveAsTemplateFormSchema,
+  type SaveAsTemplateFormValues,
+} from '../schema';
 import { formatDate, type Locale } from '@/lib/dates';
 
 interface Props {
@@ -31,34 +37,39 @@ export function SaveAsTemplateDialog({
   const { t, i18n } = useTranslation('planning');
   const { t: tCommon } = useTranslation('common');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
-  const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<SaveAsTemplateFormValues>({
+    resolver: zodResolver(saveAsTemplateFormSchema),
+    defaultValues: { name: '' },
+  });
 
   useEffect(() => {
     if (open) {
       const suggestion = t('save.defaultName', {
         date: formatDate(weekStart, 'd MMM yyyy', locale),
       });
-      setName(suggestion);
+      reset({ name: suggestion });
       setError(null);
     }
-  }, [open, weekStart, t, locale]);
+  }, [open, weekStart, t, locale, reset]);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function onValid(values: SaveAsTemplateFormValues) {
     setError(null);
-    const trimmed = name.trim();
-    if (trimmed === '') {
-      setError(t('save.errors.nameRequired'));
-      return;
-    }
     try {
-      await onSave(trimmed);
+      await onSave(values.name.trim());
       onOpenChange(false);
     } catch (err) {
       setError((err as Error).message);
     }
   }
+
+  // Parity: prior code showed t('save.errors.nameRequired') on blank name.
+  const nameError = errors.name ? t('save.errors.nameRequired') : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -67,17 +78,14 @@ export function SaveAsTemplateDialog({
           <DialogTitle>{t('save.title')}</DialogTitle>
           <DialogDescription>{t('save.subtitle')}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+        <form onSubmit={handleSubmit(onValid)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="save-tpl-name">{t('save.name')}</Label>
-            <Input
-              id="save-tpl-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+            <Input id="save-tpl-name" {...register('name')} />
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {(nameError || error) && (
+            <p className="text-sm text-destructive">{nameError ?? error}</p>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {tCommon('cancel')}

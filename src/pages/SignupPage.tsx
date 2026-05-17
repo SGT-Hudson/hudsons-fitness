@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -7,31 +9,29 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { supabase } from '@/lib/supabase';
+import { signupFormSchema, type SignupFormValues } from '@/features/auth/schema';
 
 export function SignupPage() {
   const { t } = useTranslation('auth');
   const { t: tCommon } = useTranslation('common');
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting, errors },
+  } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupFormSchema),
+    defaultValues: { displayName: '', email: '', password: '' },
+  });
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function onSubmit(values: SignupFormValues) {
     setError(null);
-    if (password.length < 8) {
-      setError(t('errors.weakPassword'));
-      return;
-    }
-    setSubmitting(true);
     const { error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: displayName } },
+      email: values.email,
+      password: values.password,
+      options: { data: { display_name: values.displayName } },
     });
-    setSubmitting(false);
     if (authError) {
       setError(
         authError.message.toLowerCase().includes('registered')
@@ -42,6 +42,10 @@ export function SignupPage() {
     }
     setSuccess(true);
   }
+
+  // Preserve the prior UX: the only inline validation message the page ever
+  // showed was the localized weak-password text when password.length < 8.
+  const weakPassword = !!errors.password;
 
   return (
     <div className="min-h-dvh flex items-center justify-center p-4">
@@ -58,15 +62,14 @@ export function SignupPage() {
             {success ? (
               <p className="text-sm">{t('checkEmail')}</p>
             ) : (
-              <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="displayName">{t('displayName')}</Label>
                   <Input
                     id="displayName"
                     type="text"
                     autoComplete="name"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    {...register('displayName')}
                   />
                 </div>
                 <div className="space-y-2">
@@ -74,10 +77,8 @@ export function SignupPage() {
                   <Input
                     id="email"
                     type="email"
-                    required
                     autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    {...register('email')}
                   />
                 </div>
                 <div className="space-y-2">
@@ -85,16 +86,16 @@ export function SignupPage() {
                   <Input
                     id="password"
                     type="password"
-                    required
                     autoComplete="new-password"
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    {...register('password')}
                   />
                 </div>
+                {weakPassword && (
+                  <p className="text-sm text-destructive">{t('errors.weakPassword')}</p>
+                )}
                 {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button type="submit" disabled={submitting} className="w-full">
-                  {submitting ? tCommon('loading') : t('signUp')}
+                <Button type="submit" disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? tCommon('loading') : t('signUp')}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center">
                   {t('hasAccount')}{' '}
