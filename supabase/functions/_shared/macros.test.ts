@@ -2,13 +2,17 @@ import { describe, it, expect } from 'vitest';
 
 // R-17 / D-F3 PARITY NET.
 //
-// One golden-vector fixture set asserted against BOTH runtime paths:
+// One golden-vector fixture set asserted against BOTH code paths, run under a
+// single (Node/Vitest) runtime:
 //   - the CLIENT path  → src/features/recipes/macros.ts (camelCase),
 //   - the EDGE path     → supabase/functions/_shared/macros.ts
 //                         (the shared camel core + the snake_case DB adapter).
-// Both delegate to the single shared core (src/core/macros.ts). If the two
-// ever diverge, this suite fails in CI — that is the regression guarantee
-// the R-17 extraction rests on. The pre-existing client suites
+// Both delegate to the single shared core (src/core/macros.ts). This guards
+// against the two CODE paths diverging; it does NOT exercise the Deno runtime
+// (the edge path is imported and run under Node here, not Deno), so it is a
+// code-divergence guarantee, not a Node-vs-Deno runtime-parity one. If the two
+// code paths ever diverge, this suite fails in CI — that is the regression
+// guarantee the R-17 extraction rests on. The pre-existing client suites
 // (src/features/recipes/macros.test.ts, src/lib/macros.test.ts,
 // src/lib/dates.test.ts, etc.) are unchanged and still pass against the
 // delegating client API.

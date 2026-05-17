@@ -169,6 +169,20 @@ once in **`supabase/functions/deno.json`** (import map —
 `supabase/functions/_shared/macros.test.ts` golden-vector suite asserts the
 client and edge paths stay numerically identical (CI fails on divergence).
 
+**Wave-3 deploy validation (cross-root core import).** The edge functions
+import the shared core via the relative path `../../../src/core/*.ts`, which
+resolves *outside* `supabase/functions/`. Edge functions are not shipped yet,
+so whether `supabase functions deploy` actually bundles a source file from a
+cross-root path is **unverified**. Before (or at) the first
+`supabase functions deploy`, verify the cross-root import is bundled by the
+Supabase CLI. If it is NOT bundled, the fallback is to vendor/copy the core
+into `supabase/functions/_shared/` (or relocate the core there and have the
+client import from that path): the D-F3 shared core stays single-source — only
+its physical location moves. This is a tracked Wave-3 prod step, not an
+optional check.
+
+> ⚠ Changing — see R-17 (D-F3) — cross-root core import unverified at deploy; vendor/relocate fallback
+
 ## Cron
 
 Three jobs run via `pg_cron`, each invoking an edge function through

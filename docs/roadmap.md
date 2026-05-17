@@ -453,6 +453,16 @@ reference shard carries it (never edit the decision entry).
   all 4 functions switched to the bare specifier. Parity net:
   `supabase/functions/_shared/macros.test.ts` asserts one golden-vector
   fixture set against BOTH the client path and the edge path; vitest 83/83.
+- **follow-up (Wave-3 deploy validation):** the code refactor is done, but the
+  edge imports the core via the cross-root path `../../../src/core/*.ts`
+  (outside `supabase/functions/`). Edge functions aren't shipped yet, so
+  whether `supabase functions deploy` bundles a cross-root source file is
+  unverified. Before/at the first deploy, verify the CLI bundles it; if not,
+  the fallback is to vendor/copy the core into `supabase/functions/_shared/`
+  (or relocate it there and have the client import from that path) — single
+  source stays, only the physical location moves. Tracked in
+  `docs/operations.md` (Edge functions → Wave-3 deploy validation,
+  `> ⚠ Changing — see R-17`). Not a code regression; deploy-time only.
 - **scope:** Own small refactor sprint; depends on R-16 Tier-1 golden vectors
   existing first (they guard the extraction). Coordinate with R-12 (already
   removes the materialization mirror via RPC) and R-05/R-06/R-11 (they touch
