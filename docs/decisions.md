@@ -3,9 +3,55 @@
 Immutable log of the 34-item conventions review (2026-05-17). Append-only.
 IDs are permanent and never renumbered or reused. When a decision's
 implementation is pending, it links its roadmap item: `roadmap: R-xx`.
+The `R-xx` items are defined in `roadmap.md`.
 
 ## Contents
-- D-A1 … D-F6 (grouped: A data-model · B math · C state/forms · D UI · E i18n · F ops)
+
+**A. Data model**
+- D-A1 — Shared crowdsourced `ingredients` library — keep
+- D-A2 — `recipe_ingredients ON DELETE RESTRICT` — folded into ★ Library model
+- D-A3 — Soft recipe deletion — folded into ★ Library model
+- D-A4 — Ingredient duplicates tolerated — tech-debt
+- D-A5 — Past phases — 7-day grace-window + notes-editable-forever
+- D-A6 — `bone_kg` removed entirely
+- D-A7 — `initial_weight_kg` read-only after onboarding
+- D-A8 — `types/database.ts` — switch to generated
+
+**B. Math & formulas**
+- D-B1 — Protein — lean-mass, phase-aware code-constant table; canonical-fn refactor
+- D-B2 — Default protein 1.6 g/kg — REVERSED, superseded by D-B1
+- D-B3 — Fat stored as fraction — confirm + centralize via shared helper
+- D-B4 — TDEE window — replace with adaptive Kalman model
+- D-B5 — BMR Mifflin — keep as derived/never-stored display; drop 4 dead tdee_estimates cols
+
+**C. State & forms**
+- D-C1 — State mgmt — confirm + decision boundary + Zustand escape hatch
+- D-C2 — Forms — RHF + zod everywhere
+- D-C3 — Form types — implicitly reversed by D-C2 (z.infer)
+- D-C4 — Macros casing — snake_case DB end-to-end; camelCase for computed only
+- D-C5 — RPCs — confirm + hard threshold + SECURITY INVOKER invariant
+
+**D. UI**
+- D-D1 — Badge — reverse; adopt shadcn Badge component
+- D-D2 — Toasts fire from mutation-owning layer — confirm + tighten
+- D-D3 — High-frequency mutations toast on error only — confirm + 3-axis rule
+- D-D4 — Chart time-range pills — confirm as-is
+- D-D5 — Composition chart — full redesign (fat/lean stack + trends + %↔kg toggle)
+- D-D6 — Plan = default truth — confirm + single RPC + partial unique index + today-guard
+
+**E. i18n & locale**
+- D-E1 — i18n detection — wire profile.language authoritative
+- D-E2 — Stored content never auto-translated — keep; rationale documented
+- D-E3 — Metric-only / `profiles.units` — remove column
+- D-E4 — Language toggle — remove header switcher; Settings-only when authed
+
+**F. Operations**
+- D-F1 — Lint/build gate + no test runner — add CI + tiered tests (spec-first)
+- D-F2 — Auto-merge — repo public + real branch protection + auto-merge
+- D-F3 — Edge Deno+TS+_shared — confirm + shared pure core + edge adapter
+- D-F4 — Cron UTC/DST — confirm single-TZ + record pre-specced multi-TZ path
+- D-F5 — Cron Vault auth — confirm + cron liveness alerting + ops runbook
+- D-F6 — Theme localStorage/FOUC — confirm + document the D-E1 contrast
 
 ## D-A1 — Shared crowdsourced `ingredients` library — keep
 
@@ -61,13 +107,13 @@ implementation is pending, it links its roadmap item: `roadmap: R-xx`.
 
 **Why:** `initial_weight_kg` is the historical anchor that progress charts measure against — letting it change post-onboarding would silently rewrite the baseline of every chart and target. The convention was already correct; the only gap was that users were not warned the value is permanent before committing it. Shipped: an amber `role="alert"` warning above the weight input (matching the `LatestMeasurementCard` amber pattern), new i18n key `initialWeightWarning` (ES+EN), weight input pulled into its own full-width row so the warning sits between label and input.
 
-**Status:** decided · done (shipped, commit 999e58f)
+**Status:** decided · done (commit 999e58f)
 
 ## D-A8 — `types/database.ts` — switch to generated
 
 **Ruling:** Change from hand-written to generated Supabase types. Run `supabase gen types typescript --project-id upvraruehzurbetzrxov` (or a local schema-dump variant), commit the generated file, and document the regen command in operations docs.
 
-**Why:** Hand-written types drift from the real schema and must be manually edited on every migration (the D-A6, D-B5, D-E3 column removals all currently require hand-edits to this file). Generated types make the schema the single source of truth and make those removals automatic. One caveat must be carried forward: CHECK-constraint enums (`kcal_mode`, `fiber_mode`) come through as plain `string` from the generator too, so future form work must still verify enum values against `pg_constraint` — the generator does not fix that.
+**Why:** Hand-written types drift from the real schema and must be manually edited on every migration (at review time, the D-A6, D-B5, D-E3 column removals all required hand-edits to this file). Generated types make the schema the single source of truth and make those removals automatic. One caveat must be carried forward: CHECK-constraint enums (`kcal_mode`, `fiber_mode`) come through as plain `string` from the generator too, so future form work must still verify enum values against `pg_constraint` — the generator does not fix that.
 
 **Status:** decided · roadmap: R-04
 
@@ -85,7 +131,7 @@ implementation is pending, it links its roadmap item: `roadmap: R-xx`.
 
 **Why:** The prior B2 plan was to make the single default user-tunable in Settings via a new profile column plus a per-phase snapshot column plus a Settings card. The D-B1 rethink made that obsolete: a single bodyweight-based default is the wrong anchor for a lean-mass formula, and per-phase tuning is already expressible through the existing `phases.protein_g_per_kg` column pre-filled from the phase-aware table. Adding profile/snapshot columns and a Settings card would have been net-new surface area duplicating what the existing per-phase column already does. B2 is therefore entirely subsumed by D-B1's action list.
 
-**Status:** decided · REVERSED by D-B1
+**Status:** decided · reversed by D-B1
 
 ## D-B3 — Fat stored as fraction — confirm + centralize via shared helper
 
@@ -107,13 +153,17 @@ implementation is pending, it links its roadmap item: `roadmap: R-xx`.
 
 **Ruling:** Keep `mifflinStJeor` but give it real call sites as an "Estimated BMR" value recomputed on render from profile + latest weight, never stored (same pattern as `computeTargetWeightKg`). Drop the 4 dead columns from `tdee_estimates` via migration: `bmr_kcal`, `activity_kcal`, `neat_residual_kcal`, `workout_kcal_logged`. Any expenditure/BMR decomposition is owned by the D-B4 adaptive-TDEE spec, not pre-scaffolded here. The bone-estimation half is moot — see D-A6.
 
-**Why:** `mifflinStJeor` was dead code (zero call sites) and the DB mirrored the dead scaffolding: 4 always-null `tdee_estimates` columns never written by `recalculate-tdee`. The whole BMR/breakdown layer (architecture §6.4 `activity_kcal = TDEE − BMR`, with a further workout/NEAT split gated on a non-existent Workouts module) is inert and built on the very two-endpoint total-TDEE model D-B4 already rules to replace. But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves with weight) and is deterministic from data already collected, so it has standalone display value. The fix is therefore hybrid: the formula stays and gets surfaced as a live derived value; the dead storage goes. `bmr_kcal` is denormalization (recompute, don't store, since a historical series is reconstructable any time); `neat_residual_kcal`/`workout_kcal_logged` are pure speculation for a non-existent module (YAGNI, D-A6 precedent); `activity_kcal` (the decomposition) is handed to D-B4. The §6.4 energy-breakdown chain was descaffolded for these reasons.
+**Why:** `mifflinStJeor` was dead code (zero call sites) and the DB mirrored the dead scaffolding: 4 always-null `tdee_estimates` columns never written by `recalculate-tdee`. The whole BMR/breakdown layer (the architecture spec's energy-breakdown section, `activity_kcal = TDEE − BMR`, with a further workout/NEAT split gated on a non-existent Workouts module) is inert and built on the very two-endpoint total-TDEE model D-B4 already rules to replace.
+
+But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves with weight) and is deterministic from data already collected, so it has standalone display value. The fix is therefore hybrid: the formula stays and gets surfaced as a live derived value; the dead storage goes.
+
+`bmr_kcal` is denormalization (recompute, don't store, since a historical series is reconstructable any time); `neat_residual_kcal`/`workout_kcal_logged` are pure speculation for a non-existent module (YAGNI, D-A6 precedent); `activity_kcal` (the decomposition) is handed to D-B4. The energy-breakdown chain was descaffolded for these reasons.
 
 **Status:** decided · roadmap: R-08
 
 ## D-C1 — State mgmt — confirm + decision boundary + Zustand escape hatch
 
-**Ruling:** Keep the architecture as-is and record an explicit decision boundary plus a pre-blessed escape hatch. Boundary: server state → TanStack Query (per-feature `hooks.ts`); cross-cutting app concerns → React Context, used sparingly (currently Auth + Theme only); everything else → local `useState` / route params; no query-string (`useSearchParams`) UI state. Escape hatch: Zustand is the pre-blessed library for shared, frequently-updating client state, introduced per-slice only when a real need appears — never a wholesale migration. Redux/MobX/etc remain rejected.
+**Ruling:** Keep the architecture as-is and record an explicit decision boundary plus a pre-blessed escape hatch. Boundary: server state → TanStack Query (per-feature `hooks.ts`); cross-cutting app concerns → React Context, used sparingly (at review time: Auth + Theme); everything else → local `useState` / route params; no query-string (`useSearchParams`) UI state. Escape hatch: Zustand is the pre-blessed library for shared, frequently-updating client state, introduced per-slice only when a real need appears — never a wholesale migration. Redux/MobX/etc remain rejected.
 
 **Why:** The architecture is followed faithfully and is the conventionally correct stack for a Supabase/PostgREST SPA, not an arbitrary imposition: the app is overwhelmingly server-state, and genuine global client state is just auth + theme (low-frequency, read-mostly, where Context's re-render weakness does not bite). Redux would be wrong (no complex client state machine; RTK Query would re-implement TanStack Query worse-integrated with Supabase). Zustand is the only defensible alternative and only reactively, per-slice, when a real shared/frequently-updating need appears (global command palette, cross-route wizard, optimistic-UI coordination). One drift to note for the doc rewrite: there are **two** sanctioned Contexts (Auth + Theme, theme added Sprint 14), so the inherited "React Context for auth" wording understates reality and must be corrected.
 
@@ -187,7 +237,11 @@ implementation is pending, it links its roadmap item: `roadmap: R-xx`.
 
 **Ruling:** Full redesign (user-designed, endorsed). The composition stack becomes `fat%` + `lean%` only (`lean% ≡ 100 − bodyFat%`, a true disjoint 100% partition, fat at bottom, hard `domain={[0,100]}` now correct). Muscle% and water% are rendered as independent non-stacked trend charts (plus a fat% trend), not stacked peers. Add a `%`↔`kg` toggle computed frontend from the stored `weight_kg` (zero schema work) as local `useState`. Keep per-series linear interpolation (`interpolateSeries`) as-is.
 
-**Why:** All three inherited sub-rules (Y-axis capped at 100%, body fat at bottom, linear interpolation) were implemented exactly as worded — but the convention itself is semantically wrong. Body water is distributed *within* lean tissue, so `bodyFat%`, `muscle%`, `water%` are **not disjoint partitions** of body mass — they overlap. Stacking them implies a parts-of-a-whole relationship that does not exist; the sum routinely exceeds 100% (e.g. 20+40+55=115), which the hard `domain={[0,100]}` then clips into a visibly misleading chart. The "body fat at bottom" sub-rule only existed *because* of that incorrect stacking. fat%/lean% is a true partition that sums to exactly 100%, making the hard cap correct and meaningful; muscle/water belong as independent trend series because that is what a progress tracker actually needs ("is my body-fat % falling?"). The kg toggle is the more honest view for the key cut question ("am I retaining muscle *mass* while losing fat?" — muscle% can rise merely because fat fell) and costs zero schema/data work. The kg decomposition is presentational only and must not feed protein/TDEE — same guardrail as D-A6's bone analysis. Recording why the old fat+muscle+water stack was a category error (non-disjoint ratios) prevents its reintroduction.
+**Why:** All three inherited sub-rules (Y-axis capped at 100%, body fat at bottom, linear interpolation) were implemented exactly as worded — but the convention itself is semantically wrong. Body water is distributed *within* lean tissue, so `bodyFat%`, `muscle%`, `water%` are **not disjoint partitions** of body mass — they overlap. Stacking them implies a parts-of-a-whole relationship that does not exist; the sum routinely exceeds 100% (e.g. 20+40+55=115), which the hard `domain={[0,100]}` then clips into a visibly misleading chart.
+
+The "body fat at bottom" sub-rule only existed *because* of that incorrect stacking. fat%/lean% is a true partition that sums to exactly 100%, making the hard cap correct and meaningful; muscle/water belong as independent trend series because that is what a progress tracker actually needs ("is my body-fat % falling?").
+
+The kg toggle is the more honest view for the key cut question ("am I retaining muscle *mass* while losing fat?" — muscle% can rise merely because fat fell) and costs zero schema/data work. The kg decomposition is presentational only and must not feed protein/TDEE — same guardrail as D-A6's bone analysis. Recording why the old fat+muscle+water stack was a category error (non-disjoint ratios) prevents its reintroduction.
 
 **Status:** decided · roadmap: R-11
 
@@ -195,7 +249,7 @@ implementation is pending, it links its roadmap item: `roadmap: R-xx`.
 
 **Ruling:** Confirm the model (plan = default truth; active-week slots → `from_plan` `meal_logs`; dedup by `plan_week_slot_id`; `from_plan` is an editable origin marker; manual adds stay `from_plan=false`; plan edits after materialization do not propagate back). Fix the implementation per the D-C5 RPC invariant: one `materialize_plan_for_date` RPC (`SECURITY INVOKER` + `set search_path = public`) called by both client and edge; a partial unique index `unique (user_id, plan_week_slot_id) where plan_week_slot_id is not null` with `INSERT … ON CONFLICT DO NOTHING`; and a `date <= today` guard inside the RPC.
 
-**Why:** The model works, but the finding exposed three real defects. (1) `materializePlanForDate` is hand-mirrored across two runtimes — client TS in `features/diario/api.ts` and re-typed Deno in `daily-nutrition-snapshot/index.ts` (the file literally comments "Server-side mirror of…") — a drift hazard and exactly the single-source-of-truth case the D-C5 RPC invariant targets. (2) No DB-level idempotency: `meal_logs` has no unique constraint on `(user_id, plan_week_slot_id)`; dedup is app-level read-then-write, so a concurrent client effect + cron (or two tabs / fast double-mount) can both read "missing" and double-insert. (3) The client materializes future dates: spec §687 says "today or any past date" but `materializePlanForDate` has no `date <= today` bound and `DiarioPage` fires for whatever date is in the URL, so `/diario/<future-date>` inserts future plan slots as already-consumed logs, contradicting "the diary is the truth of what I ate" (the cron is safe; the client is the leak). One INVOKER RPC + a partial unique index + an in-RPC date guard fixes all three at once and enacts the D-C5 invariant; the `date <= today` guard must use the same Madrid-TZ "today" as `previousDayInTZ()` (see D-F4).
+**Why:** The model works, but the finding exposed three real defects. (1) `materializePlanForDate` is hand-mirrored across two runtimes — client TS in `features/diario/api.ts` and re-typed Deno in `daily-nutrition-snapshot/index.ts` (the file literally comments "Server-side mirror of…") — a drift hazard and exactly the single-source-of-truth case the D-C5 RPC invariant targets. (2) No DB-level idempotency: `meal_logs` has no unique constraint on `(user_id, plan_week_slot_id)`; dedup is app-level read-then-write, so a concurrent client effect + cron (or two tabs / fast double-mount) can both read "missing" and double-insert. (3) The client materializes future dates: the architecture spec's Diario-materialization rule says "today or any past date" but `materializePlanForDate` has no `date <= today` bound and `DiarioPage` fires for whatever date is in the URL, so `/diario/<future-date>` inserts future plan slots as already-consumed logs, contradicting "the diary is the truth of what I ate" (the cron is safe; the client is the leak). One INVOKER RPC + a partial unique index + an in-RPC date guard fixes all three at once and enacts the D-C5 invariant; the `date <= today` guard must use the same Madrid-TZ "today" as `previousDayInTZ()` (see D-F4).
 
 **Status:** decided · roadmap: R-12
 
@@ -235,7 +289,7 @@ implementation is pending, it links its roadmap item: `roadmap: R-xx`.
 
 **Ruling:** Add real CI plus tiered, spec-first test coverage. Make the lint+build-before-merge gate real and CI-enforced (blocking auto-merge). Tier 1 (now): Vitest over the pure-logic core (`lib/macros.ts`, recipe macros, phase targets, `interpolateSeries`, B3 fraction helpers, edge `_shared/macros.ts`, `lib/dates.ts`) plus a GitHub Actions workflow gating PRs. Tier 2: thin component layer, rides with the D-C2 RHF+zod sprint. Tier 3: DB/RLS/RPC tests via local `supabase start` + pgTAP, gated behind a schema-baseline-into-migrations prerequisite. E2E (Playwright) explicitly out of scope. Write a short test-strategy spec first.
 
-**Why:** Scripts were confirmed but the bigger finding is that **there is no CI at all** — no `.github/` directory. "MUST pass before push" and the "auto-merge after CI" claim describe a gate that does not exist; it is enforced only by manual discipline (Vercel runs `build` post-push but `lint` is gated by nothing and nothing blocks the merge). This is acute now because the review queued logic-heavy sprints (B1 protein, B4 Kalman TDEE, B3 helpers, D5 chart math, D6 idempotent RPC) whose correctness is exactly what cheap unit tests guard. A Tier-3 blocker was also discovered: `supabase/migrations/` holds only one file (schema was built via dashboard/MCP), so there is no reproducible migration history to stand up a local DB for RLS/RPC tests — that schema-baseline task is a shared prerequisite (also unblocks D-A8 generated types and the D-A6/D-E3/D-D6 migrations). The tiering keeps Tier 1 cheap and immediate, defers expensive Tier 3 honestly behind its blocker, and excludes E2E as low-ROI for a solo MVP.
+**Why:** Scripts were confirmed but the bigger finding is that, at the time of the review, **there was no CI at all** — the review found no `.github/` directory. "MUST pass before push" and the "auto-merge after CI" claim described a gate that did not exist; it was enforced only by manual discipline (Vercel ran `build` post-push but `lint` was gated by nothing and nothing blocked the merge). This was acute at review time because the review queued logic-heavy sprints (B1 protein, B4 Kalman TDEE, B3 helpers, D5 chart math, D6 idempotent RPC) whose correctness is exactly what cheap unit tests guard. A Tier-3 blocker was also discovered: at the time of the review, `supabase/migrations/` held only one file (schema was built via dashboard/MCP), so there was no reproducible migration history to stand up a local DB for RLS/RPC tests — that schema-baseline task is a shared prerequisite (also unblocks D-A8 generated types and the D-A6/D-E3/D-D6 migrations). The tiering keeps Tier 1 cheap and immediate, defers expensive Tier 3 honestly behind its blocker, and excludes E2E as low-ROI for a solo MVP.
 
 **Status:** decided · roadmap: R-16
 
@@ -243,7 +297,11 @@ implementation is pending, it links its roadmap item: `roadmap: R-xx`.
 
 **Ruling:** Make the GitHub repo public to unlock branch protection + required-status-check + GitHub-native auto-merge, making the original convention literally true. Hard prerequisite gate: a clean secrets-history audit before flipping visibility. Ordered chain: secrets-history scan → license decision → F1 CI workflow exists → flip to public → configure branch protection on `main` → reconcile the commit gap → confirm/document the Vercel production branch.
 
-**Why:** This was the most drifted convention — fictional on three counts. (1) No CI exists (per D-F1). (2) GitHub-native auto-merge is *impossible* on this repo's plan: branch protection returns 403 "Upgrade to GitHub Pro or make this repository public" — private + free plan cannot configure required-status-check auto-merge. (3) Empirically not happening: `origin/main…dev` was 1/22, main tip was Sprint 9/10, and Sprints 11–17 never reached main (manual squash-merges only). Going public is the cheapest path to make the convention literally true and automated, but it makes RLS the *sole* security boundary, which elevates D-F1 Tier-3 RLS/RPC tests and D-A1/D-A2/D-A3 shared-library policy verification to near-term/blocking. The secrets-history scan is non-negotiable and irreversible if skipped: the publishable/anon key and project ref are public-tier and acceptable, but any service-role key or Vault secret ever committed must be rotated and scrubbed before going public. This decision was fully executed on 2026-05-17 (repo made public, CI workflow added, branch protection requiring `lint-build`, GitHub auto-merge enabled, main reconciled via PR #17, production redeployed).
+**Why:** At review time this was the most drifted convention — the review found it was fiction on three counts: (1) no CI existed (per D-F1); (2) GitHub-native auto-merge was *impossible* on this repo's plan — branch protection returned 403 "Upgrade to GitHub Pro or make this repository public", so a private repo on the free plan could not configure required-status-check auto-merge; (3) it was empirically not happening — at review time main was ~22 commits behind dev, main's tip was around Sprint 9/10, and Sprints 11–17 had never reached main (manual squash-merges only).
+
+Going public was the cheapest path to make the convention literally true and automated. The timeless rationale: a public repo unlocks branch protection + required-status-check + GitHub-native auto-merge at no cost, but it makes RLS the *sole* security boundary, which elevates D-F1 Tier-3 RLS/RPC tests and D-A1/D-A2/D-A3 shared-library policy verification to near-term/blocking. The secrets-history scan is non-negotiable and irreversible if skipped: the publishable/anon key and project ref are public-tier and acceptable, but any service-role key or Vault secret ever committed must be rotated and scrubbed before going public.
+
+Executed 2026-05-17: repo made public, CI workflow added, branch protection requiring `lint-build` configured, GitHub auto-merge enabled, main reconciled (via a reconciliation PR), production redeployed.
 
 **Status:** decided · done (2026-05-17)
 
