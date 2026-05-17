@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { cn } from '@/lib/utils';
-import { LanguageSwitcher } from './LanguageSwitcher';
 
 const NAV_ITEMS = [
   { to: '/diario', key: 'diario' },
@@ -46,7 +45,6 @@ export function AppLayout() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <LanguageSwitcher />
             {user && (
               <Button variant="ghost" size="sm" onClick={() => void signOut()}>
                 {tAuth('signOut')}
