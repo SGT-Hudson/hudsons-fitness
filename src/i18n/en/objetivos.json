@@ -26,6 +26,8 @@
     "delete": "Delete",
     "deleteConfirm": "Delete phase \"{{name}}\"?",
     "edit": "Edit",
+    "editNotes": "Edit notes",
+    "frozenHint": "Phase closed (more than 7 days past its end). Only notes can be edited.",
     "type": {
       "cut": "Cut",
       "maintenance": "Maintenance",
@@ -48,6 +50,8 @@
     "form": {
       "newTitle": "New phase",
       "editTitle": "Edit phase",
+      "notesOnlyTitle": "Edit phase notes",
+      "notesOnlyHint": "This phase is closed. All other fields are read-only; you can only update the notes.",
       "name": "Name",
       "namePlaceholder": "e.g. Summer cut 2025",
       "type": "Type",

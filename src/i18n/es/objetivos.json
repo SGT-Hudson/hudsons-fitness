@@ -26,6 +26,8 @@
     "delete": "Eliminar",
     "deleteConfirm": "¿Eliminar la fase \"{{name}}\"?",
     "edit": "Editar",
+    "editNotes": "Editar notas",
+    "frozenHint": "Fase cerrada (más de 7 días desde el fin). Solo se pueden editar las notas.",
     "type": {
       "cut": "Corte",
       "maintenance": "Mantenimiento",
@@ -48,6 +50,8 @@
     "form": {
       "newTitle": "Nueva fase",
       "editTitle": "Editar fase",
+      "notesOnlyTitle": "Editar notas de la fase",
+      "notesOnlyHint": "Esta fase está cerrada. El resto de campos son de solo lectura; únicamente puedes actualizar las notas.",
       "name": "Nombre",
       "namePlaceholder": "ej. Corte verano 2025",
       "type": "Tipo",

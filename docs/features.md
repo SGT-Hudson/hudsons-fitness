@@ -154,14 +154,31 @@ total bodyweight when no body-fat % is available.
 The Diario shows the active phase's daily macro targets (kcal, protein,
 carbs, fat, fiber) against what was consumed. The active phase is resolved
 as "today's phase only" — no consumer reconstructs which phase was active on
-a past date. `/objetivos` lists and manages all phases. Past phases are
-currently frozen the moment their `end_date` passes: the card becomes
-read-only and dimmed (`opacity-60`), edit/delete hidden.
+a past date. Editing a past phase's macros therefore changes nothing
+downstream: past phases are computationally **inert**. `/objetivos` lists and
+manages all phases.
 
-> ⚠ Changing — see R-02 (D-A5). The hard freeze-at-`end_date` cliff becomes
-> a 7-day grace window (the phase stays fully editable and deletable for 7
-> days past `end_date`, only then hard-freezing and dimming), and the
-> `notes` field stays editable forever even on frozen phases.
+Past phases follow a **grace-window** model (D-A5), not a hard
+freeze-at-`end_date` cliff. The grace constant is
+`PHASE_EDIT_GRACE_DAYS = 7` in `src/pages/ObjetivosPage.tsx`:
+
+- **In grace** (`end_date` passed, but ≤ 7 days ago): the card renders as a
+  normal editable card — name, dates, macros, and notes are all editable and
+  the phase is still deletable. Only the status badge is `end_date`-based
+  (it already reads "past"); the freeze/dim is grace-based, not badge-based.
+- **Frozen** (`end_date` more than 7 days in the past): edit/delete
+  affordances are hidden and the card dims (`opacity-60`).
+- **Notes editable forever:** even on a frozen phase the `notes` field stays
+  editable via a notes-only affordance (the `PhaseDialog` opened in
+  `notesOnly` mode — every other field read-only/disabled, only `notes`
+  saveable). Retrospective annotations affect no computation, so this is
+  always allowed.
+
+The freeze is a UX stance ("history is closed"), **not** a data invariant —
+the inert-past-phases finding (no consumer reconstructs a historical active
+phase) means it protects nothing integrity-critical, which is why a forgiving
+late-correction window and forever-editable notes are safe and the change is
+UI-only with no DB backstop.
 
 ## Meal plans (templates ↔ active week)
 

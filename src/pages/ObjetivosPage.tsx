@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -24,7 +24,7 @@ import {
 } from '@/features/phases/hooks';
 import { PhaseDialog } from '@/features/phases/components/PhaseDialog';
 import type { Phase, PhaseInput } from '@/features/phases/api';
-import { formatDate, isoDate, type Locale } from '@/lib/dates';
+import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
 
 type GoalForm = {
   target_body_fat_pct: number;
@@ -35,6 +35,26 @@ function phaseStatus(phase: Phase, today: string): 'active' | 'past' | 'upcoming
   if (phase.start_date > today) return 'upcoming';
   if (phase.end_date && phase.end_date < today) return 'past';
   return 'active';
+}
+
+/**
+ * Grace window after a phase's `end_date` during which it stays fully
+ * editable and deletable. Past phases are computationally inert (no code
+ * reconstructs which phase was active on a historical date — see D-A5), so
+ * the freeze is a UX stance ("history is closed"), not a data invariant.
+ * That justifies a forgiving late-correction window before the card freezes.
+ */
+const PHASE_EDIT_GRACE_DAYS = 7;
+
+/**
+ * A phase is frozen only once it ended more than PHASE_EDIT_GRACE_DAYS ago.
+ * Frozen → edit/delete affordances hidden + card dimmed. The status badge
+ * stays `end_date`-based (a frozen phase still reads "past"); only the
+ * freeze/dim is grace-based. Notes stay editable forever regardless (D-A5).
+ */
+function isPhaseFrozen(phase: Phase, today: string): boolean {
+  if (!phase.end_date || phase.end_date >= today) return false;
+  return daysBetween(phase.end_date, today) > PHASE_EDIT_GRACE_DAYS;
 }
 
 export function ObjetivosPage() {
@@ -75,14 +95,25 @@ export function ObjetivosPage() {
 
   const [phaseOpen, setPhaseOpen] = useState(false);
   const [editingPhase, setEditingPhase] = useState<Phase | null>(null);
+  // Notes-only mode: used for frozen (post-grace) phases — every field but
+  // `notes` is read-only in the dialog (D-A5: notes editable forever).
+  const [notesOnly, setNotesOnly] = useState(false);
 
   function openNewPhase() {
     setEditingPhase(null);
+    setNotesOnly(false);
     setPhaseOpen(true);
   }
 
   function openEditPhase(phase: Phase) {
     setEditingPhase(phase);
+    setNotesOnly(false);
+    setPhaseOpen(true);
+  }
+
+  function openNotesEditor(phase: Phase) {
+    setEditingPhase(phase);
+    setNotesOnly(true);
     setPhaseOpen(true);
   }
 
@@ -174,9 +205,9 @@ export function ObjetivosPage() {
           <div className="space-y-3">
             {sortedPhases.map((phase) => {
               const status = phaseStatus(phase, today);
-              const isPast = status === 'past';
+              const isFrozen = isPhaseFrozen(phase, today);
               return (
-                <Card key={phase.id} className={isPast ? 'opacity-60' : undefined}>
+                <Card key={phase.id} className={isFrozen ? 'opacity-60' : undefined}>
                   <CardContent className="pt-4 pb-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-2 min-w-0">
@@ -230,7 +261,19 @@ export function ObjetivosPage() {
                         )}
                       </div>
 
-                      {!isPast && (
+                      {isFrozen ? (
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t('phases.editNotes')}
+                            aria-label={t('phases.editNotes')}
+                            onClick={() => openNotesEditor(phase)}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
                         <div className="flex gap-1 shrink-0">
                           <Button
                             variant="ghost"
@@ -308,6 +351,7 @@ export function ObjetivosPage() {
         phase={editingPhase}
         onSave={handlePhaseSave}
         busy={phaseBusy}
+        notesOnly={notesOnly}
       />
     </div>
   );

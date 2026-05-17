@@ -56,9 +56,22 @@ interface Props {
   phase?: Phase | null;
   onSave: (input: PhaseInput) => Promise<void>;
   busy?: boolean;
+  /**
+   * Notes-only mode: used for frozen (post-grace) past phases. Every field
+   * except `notes` is disabled/read-only; only the notes annotation can be
+   * changed and saved (notes feed no computation — see D-A5).
+   */
+  notesOnly?: boolean;
 }
 
-export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) {
+export function PhaseDialog({
+  open,
+  onOpenChange,
+  phase,
+  onSave,
+  busy,
+  notesOnly = false,
+}: Props) {
   const { t } = useTranslation('objetivos');
 
   const {
@@ -127,16 +140,30 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {phase ? t('phases.form.editTitle') : t('phases.form.newTitle')}
+            {notesOnly
+              ? t('phases.form.notesOnlyTitle')
+              : phase
+                ? t('phases.form.editTitle')
+                : t('phases.form.newTitle')}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-1">
+          {notesOnly && (
+            <p
+              role="note"
+              className="text-xs rounded-md bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 px-3 py-2"
+            >
+              {t('phases.form.notesOnlyHint')}
+            </p>
+          )}
           {/* Name */}
           <div className="space-y-1.5">
             <Label htmlFor="ph-name">{t('phases.form.name')}</Label>
             <Input
               id="ph-name"
               placeholder={t('phases.form.namePlaceholder')}
+              readOnly={notesOnly}
+              disabled={notesOnly}
               {...register('name', { required: true })}
             />
             {errors.name && (
@@ -151,7 +178,11 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
               control={control}
               name="phase_type"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={notesOnly}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -169,7 +200,13 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="ph-start">{t('phases.form.startDate')}</Label>
-              <Input type="date" id="ph-start" {...register('start_date', { required: true })} />
+              <Input
+                type="date"
+                id="ph-start"
+                readOnly={notesOnly}
+                disabled={notesOnly}
+                {...register('start_date', { required: true })}
+              />
               {errors.start_date && (
                 <p className="text-xs text-destructive">
                   {t('phases.form.errors.startDateRequired')}
@@ -181,6 +218,8 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
               <Input
                 type="date"
                 id="ph-end"
+                readOnly={notesOnly}
+                disabled={notesOnly}
                 {...register('end_date', {
                   validate: (v) => {
                     if (!v) return true;
@@ -203,7 +242,11 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
                   control={control}
                   name="kcal_mode"
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={notesOnly}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -221,6 +264,8 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
                 type="number"
                 step="any"
                 className="w-24 shrink-0"
+                readOnly={notesOnly}
+                disabled={notesOnly}
                 {...register('kcal_value', {
                   valueAsNumber: true,
                   validate: (v) =>
@@ -245,6 +290,8 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
               step="0.1"
               min="0.1"
               max="4"
+              readOnly={notesOnly}
+              disabled={notesOnly}
               {...register('protein_g_per_kg', {
                 valueAsNumber: true,
                 min: { value: 0.1, message: t('phases.form.errors.protein') },
@@ -265,6 +312,8 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
               step="1"
               min="10"
               max="60"
+              readOnly={notesOnly}
+              disabled={notesOnly}
               {...register('fat_pct_input', {
                 valueAsNumber: true,
                 min: { value: 10, message: t('phases.form.errors.fat') },
@@ -285,7 +334,11 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
                   control={control}
                   name="fiber_mode"
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={notesOnly}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -304,6 +357,8 @@ export function PhaseDialog({ open, onOpenChange, phase, onSave, busy }: Props) 
                 step="any"
                 min="0.1"
                 className="w-24 shrink-0"
+                readOnly={notesOnly}
+                disabled={notesOnly}
                 {...register('fiber_value', {
                   valueAsNumber: true,
                   min: { value: 0.1, message: t('phases.form.errors.fiberValue') },
