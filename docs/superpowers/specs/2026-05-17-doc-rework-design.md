@@ -126,7 +126,12 @@ design as if it exists.
 4. Rewrite `CLAUDE.md` to the router contract; trim `README.md`; stub
    `supabase/README.md`.
 5. **Absorption-verification pass**: a checklist confirming every non-obsolete
-   fact in the 5 source docs is present in a shard — before any deletion.
+   fact in the five migrated sources — `hudsons-fitness-architecture.md`,
+   `HANDOFF.md`, `funcionalidades-excel-gym.md`, `supabase/README.md`, and the
+   absorbed prose of the old `CLAUDE.md` — is present in a shard before any
+   deletion. (`conventions-audit.md` is verified separately as the
+   `decisions.md`/`roadmap.md` input; `README.md` is trimmed in place, not
+   absorbed.)
 6. Delete `hudsons-fitness-architecture.md`, `HANDOFF.md`,
    `funcionalidades-excel-gym.md`; delete `conventions-audit.md` **last**.
 7. Commit. Update memory (`conventions_review_in_progress`,
@@ -141,7 +146,8 @@ design as if it exists.
 - Every one of the 34 rulings is recoverable by ID with its Why intact.
 - Every spawned implementation sprint is in `roadmap.md` with a decision
   back-link and the `R-00` blocker dependency where applicable.
-- No source-doc unique fact is lost (absorption-verification pass).
+- No unique fact from the five migrated sources is lost
+  (absorption-verification pass).
 - No shard documents an un-built design as current; all such spots carry a
   `⚠ Changing — R-xx` callout.
 - `pnpm lint` + `pnpm build` still pass (docs-only change; sanity check).
