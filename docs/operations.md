@@ -149,8 +149,6 @@ curl -X POST \
   `per_serving` rows scale with the recipe's `servings` before contributing.
 - `recalculate-tdee` uses 14 days, 7700 kcal/kg, requires ≥10 days of intake
   data, and tolerates a ±3-day gap on the boundary weight measurements.
-- `weekly-rollover` re-applies the most recent `source_template_id` via
-  `apply_template_to_week_admin`.
 
 The macro and date/TZ logic is duplicated across the client and the edge
 runtime today (edge `_shared/macros.ts` is snake_case; client
@@ -195,16 +193,31 @@ select vault.create_secret(
 );
 ```
 
+The key must be passed as a single-quoted string literal — pasting the raw
+key unquoted is a Postgres syntax error (the error text shows it unquoted).
+
 Until this is set, each scheduled run raises
 `Vault secret cron_service_role_key not set` (visible via
 `select * from cron.job_run_details order by start_time desc limit 5;`).
 
-**Auth: rotation.** To rotate: rotate the `service_role` key in the Supabase
-dashboard, then update the Vault secret in place (`vault.update_secret`) or
-delete and recreate it under the same name `cron_service_role_key`. Verify the
-next scheduled run succeeds via the diagnostics below. The migration
-references the secret by name, never by value, so the repo stays clean by
-design.
+**Auth: rotation.** After rotating the `service_role` key in the Supabase
+dashboard, update the Vault secret. `vault.update_secret` is id-based, so look
+the id up by name first:
+
+```sql
+-- Rotate cron_service_role_key after rotating the service-role key in the Supabase dashboard.
+-- 1) find the secret id:
+select id from vault.secrets where name = 'cron_service_role_key';
+-- 2a) update in place:
+select vault.update_secret('<secret-uuid>', '<new service_role key>');
+-- 2b) OR delete + recreate under the same name:
+-- select vault.delete_secret('<secret-uuid>');
+-- select vault.create_secret('<new service_role key>', 'cron_service_role_key');
+```
+
+Then verify the next scheduled run succeeds via the diagnostics below. The
+migration references the secret by name, never by value, so the repo stays
+clean by design.
 
 **How to tell crons are dead.** Two manual checks: (1) inspect the pg_cron
 run history; (2) check the freshest `daily_nutrition_history` row (and
