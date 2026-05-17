@@ -4,6 +4,7 @@ import { Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { useDeleteTemplate, useTemplates } from '@/features/templates/hooks';
 import { formatDate, type Locale } from '@/lib/dates';
 
@@ -64,13 +65,14 @@ export function PlantillasPage() {
                       {tpl.name}
                     </Link>
                     {tpl.is_auto_generated && (
-                      <span
-                        className="shrink-0 inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground"
+                      <Badge
+                        variant="secondary"
+                        className="shrink-0 gap-1"
                         title={t('list.autoBadgeTooltip')}
                       >
                         <Sparkles className="h-3 w-3" />
                         {t('list.autoBadge')}
-                      </span>
+                      </Badge>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground space-y-1">
