@@ -27,5 +27,5 @@ jobs:
 
       - run: pnpm build
 
-      # Tier-1 tests (F1 ruling) land here once Vitest is added:
-      # - run: pnpm test
+      # Tier-1 tests (D-F1 ruling, R-16): pure-logic unit tests via Vitest.
+      - run: pnpm test
