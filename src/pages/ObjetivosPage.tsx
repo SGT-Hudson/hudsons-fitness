@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { useGoal, useUpsertGoal } from '@/features/objetivos/hooks';
 import {
   useCreatePhase,
@@ -29,13 +30,6 @@ type GoalForm = {
   target_body_fat_pct: number;
   notes: string;
 };
-
-function badgeCls(variant: 'primary' | 'secondary' | 'outline'): string {
-  const base = 'inline-flex items-center text-xs px-1.5 py-0.5 rounded-md font-medium';
-  if (variant === 'primary') return `${base} bg-primary text-primary-foreground`;
-  if (variant === 'secondary') return `${base} bg-secondary text-secondary-foreground`;
-  return `${base} border border-border text-muted-foreground`;
-}
 
 function phaseStatus(phase: Phase, today: string): 'active' | 'past' | 'upcoming' {
   if (phase.start_date > today) return 'upcoming';
@@ -188,20 +182,20 @@ export function ObjetivosPage() {
                       <div className="space-y-2 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold">{phase.name}</span>
-                          <span
-                            className={badgeCls(
+                          <Badge
+                            variant={
                               status === 'active'
                                 ? 'primary'
                                 : status === 'upcoming'
                                   ? 'secondary'
-                                  : 'outline',
-                            )}
+                                  : 'outline'
+                            }
                           >
                             {t(`phases.${status}`)}
-                          </span>
-                          <span className={badgeCls('secondary')}>
+                          </Badge>
+                          <Badge variant="secondary">
                             {t(`phases.type.${phase.phase_type}`)}
-                          </span>
+                          </Badge>
                         </div>
 
                         <p className="text-sm text-muted-foreground">

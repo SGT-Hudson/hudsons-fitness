@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { computeMealLogMacros, describeMealLog } from '../macros';
 import type { MealLogWithJoins } from '../api';
 import { roundMacro } from '@/features/recipes/macros';
@@ -23,9 +24,7 @@ export function MealLogEntry({ log, onEdit }: Props) {
           <span className="font-medium truncate">{desc.title}</span>
           {desc.detail && <span className="text-xs text-muted-foreground">· {desc.detail}</span>}
           {log.from_plan && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
-              {t('entry.fromPlan')}
-            </span>
+            <Badge variant="secondary">{t('entry.fromPlan')}</Badge>
           )}
           {recipeDeleted && (
             <span className="text-xs text-muted-foreground italic">

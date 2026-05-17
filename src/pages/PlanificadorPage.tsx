@@ -5,6 +5,7 @@ import { ArrowLeftRight, FileBox, Save, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { ApplyTemplateDialog } from '@/features/planning/components/ApplyTemplateDialog';
 import { SaveAsTemplateDialog } from '@/features/planning/components/SaveAsTemplateDialog';
 import { WeekGrid } from '@/features/planning/components/WeekGrid';
@@ -94,10 +95,10 @@ export function PlanificadorPage() {
             {t('planner.basedOn', { name: week.data.source_template_name })}
           </span>
           {week.data.has_diverged && (
-            <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <Badge variant="warning" className="gap-1">
               <Sparkles className="h-3 w-3" />
               {t('planner.diverged')}
-            </span>
+            </Badge>
           )}
         </div>
       )}
