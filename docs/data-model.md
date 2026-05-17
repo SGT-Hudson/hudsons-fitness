@@ -1,14 +1,14 @@
 # Data Model
 
 ## Contents
-- Overview
-- Tables
-- Row-Level Security
-- RPCs
-- Views
-- Extensions
-- Library Contribution & Lifecycle Model
-- Type definitions & caveats
+- [Overview](#overview)
+- [Tables](#tables)
+- [Row-Level Security](#row-level-security)
+- [RPCs](#rpcs)
+- [Views](#views)
+- [Extensions](#extensions)
+- [Library Contribution & Lifecycle Model](#library-contribution--lifecycle-model)
+- [Type definitions & caveats](#type-definitions--caveats)
 
 ## Overview
 
