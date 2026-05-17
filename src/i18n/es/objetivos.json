@@ -43,6 +43,7 @@
     "summary": {
       "protein": "prot.",
       "proteinBasisLean": "× masa magra",
+      "proteinBasisFallback": "1,6 g/kg de peso — añade un % de grasa para un objetivo ajustado a la fase",
       "fat": "grasa",
       "fiber": "fibra",
       "tdeePrefix": "TDEE"

@@ -43,6 +43,7 @@
     "summary": {
       "protein": "protein",
       "proteinBasisLean": "× lean mass",
+      "proteinBasisFallback": "1.6 g/kg bodyweight — add a body-fat % for a phase-tuned target",
       "fat": "fat",
       "fiber": "fiber",
       "tdeePrefix": "TDEE"
