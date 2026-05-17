@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { isoDateInTZ, previousDayInTZ, mondayOfTodayInTZ } from './dates';
+import {
+  isoDateInTZ,
+  todayInTZ,
+  previousDayInTZ,
+  mondayOfTodayInTZ,
+} from './dates';
 
 // Direct coverage of the shared pure date/TZ core (D-F3 / R-17). Behavior is
 // byte-identical to the helpers the edge `_shared/macros.ts` used to inline.
@@ -15,6 +20,16 @@ describe('isoDateInTZ', () => {
 
   it('honors an explicit timezone argument', () => {
     expect(isoDateInTZ(new Date('2026-05-17T22:30:00Z'), 'UTC')).toBe('2026-05-17');
+  });
+});
+
+describe('todayInTZ', () => {
+  it('equals isoDateInTZ(now) for Madrid (the canonical "today")', () => {
+    expect(todayInTZ()).toBe(isoDateInTZ(new Date(), 'Europe/Madrid'));
+  });
+
+  it('honors an explicit timezone argument', () => {
+    expect(todayInTZ('UTC')).toBe(isoDateInTZ(new Date(), 'UTC'));
   });
 });
 

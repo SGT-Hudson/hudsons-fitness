@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { isoDate } from '@/lib/dates';
+import { todayInTZ } from '@/lib/dates';
 import {
   fractionToPct,
   pctToFraction,
@@ -34,7 +34,7 @@ type FormValues = PhaseFormValues;
 const DEFAULTS: FormValues = {
   name: '',
   phase_type: 'maintenance',
-  start_date: isoDate(),
+  start_date: todayInTZ(),
   end_date: '',
   kcal_mode: 'absolute',
   kcal_value: 2000,
@@ -118,7 +118,7 @@ export function PhaseDialog({
         notes: phase.notes ?? '',
       });
     } else {
-      reset({ ...DEFAULTS, start_date: isoDate() });
+      reset({ ...DEFAULTS, start_date: todayInTZ() });
     }
   }, [open, phase, reset]);
 

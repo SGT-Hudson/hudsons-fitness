@@ -20,7 +20,7 @@ import {
   type MeasurementFormValues,
   type ParsedMeasurementForm,
 } from '../schema';
-import { isoDate } from '@/lib/dates';
+import { todayInTZ } from '@/lib/dates';
 import type { BodyMeasurement } from '../api';
 
 interface Props {
@@ -126,7 +126,7 @@ export function MeasurementDialog({
             <Input
               id="measuredOn"
               type="date"
-              max={isoDate()}
+              max={todayInTZ()}
               disabled={!!existing}
               {...register('measured_on')}
             />

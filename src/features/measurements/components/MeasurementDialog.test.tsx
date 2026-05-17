@@ -5,7 +5,7 @@
 // required + bounded (schema rejects bad input, mutation not called),
 // optional metrics are blank→null, and a valid submit ships the parsed
 // numeric payload. The mutation hook is mocked (not the schema).
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import i18n from '@/i18n';
@@ -17,9 +17,25 @@ vi.mock('../hooks', () => ({
 
 import { MeasurementDialog } from './MeasurementDialog';
 
+// Freeze the clock at a fixed mid-day-UTC instant. The dialog's date-input
+// `max` is the project's canonical Europe/Madrid "today" (`todayInTZ`); a
+// real-clock test was timezone-flaky (CI at 23:51 UTC = next calendar day in
+// Madrid pushed `max` a day off and the browser blocked the in-range submit).
+// 2026-05-15T12:00:00Z is the same calendar date (2026-05-15) under BOTH UTC
+// and Europe/Madrid (UTC+2 in May → 14:00), so the frozen "today" is stable
+// regardless of the host timezone. The same-day measurement uses that date.
+const FROZEN_NOW = new Date('2026-05-15T12:00:00Z');
+const TODAY = '2026-05-15';
+
 beforeEach(async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.setSystemTime(FROZEN_NOW);
   await i18n.changeLanguage('es');
   mutateAsync.mockClear();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 function setup() {
@@ -28,7 +44,7 @@ function setup() {
     <MeasurementDialog
       open
       onOpenChange={onOpenChange}
-      defaultDate="2026-05-18"
+      defaultDate={TODAY}
       existing={null}
       prefillFrom={null}
     />,
@@ -72,7 +88,7 @@ describe('MeasurementDialog (Tier-2)', () => {
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
     const payload = mutateAsync.mock.calls[0][0];
     expect(payload).toMatchObject({
-      measured_on: '2026-05-18',
+      measured_on: TODAY,
       weight_kg: 82.4,
       body_fat_pct: 18,
       muscle_pct: null, // left blank → null (parseOptional parity)

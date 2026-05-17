@@ -7,7 +7,7 @@
 // the R-02 notesOnly mode locks every non-notes field, and the R-05 protein
 // prefill tracks phase_type. The mutation is a prop (onSave) — we spy it, not
 // the schema.
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import i18n from '@/i18n';
@@ -15,8 +15,21 @@ import { PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM, pctToFraction } from '@/lib/macros
 import { PhaseDialog } from './PhaseDialog';
 import type { Phase } from '../api';
 
+// PhaseDialog's `start_date` defaults to the project's canonical Europe/Madrid
+// "today" (`todayInTZ`). Freeze the clock at a fixed mid-day-UTC instant so
+// that default is deterministic regardless of the host timezone (CI runs
+// UTC; near a UTC/Madrid midnight boundary the date would otherwise drift).
+// 2026-05-15T12:00:00Z is 2026-05-15 under both UTC and Europe/Madrid.
+const FROZEN_NOW = new Date('2026-05-15T12:00:00Z');
+
 beforeEach(async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.setSystemTime(FROZEN_NOW);
   await i18n.changeLanguage('es');
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 function setup(props: Partial<Parameters<typeof PhaseDialog>[0]> = {}) {

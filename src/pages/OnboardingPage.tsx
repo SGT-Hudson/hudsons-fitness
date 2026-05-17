@@ -24,7 +24,7 @@ import {
   type ParsedOnboardingForm,
 } from '@/features/profile/schema';
 import { estimateBoneKg } from '@/lib/macros';
-import { isoDate } from '@/lib/dates';
+import { todayInTZ } from '@/lib/dates';
 import { differenceInYears, parseISO } from 'date-fns';
 
 export function OnboardingPage() {
@@ -172,7 +172,7 @@ export function OnboardingPage() {
                 <Input
                   id="birthDate"
                   type="date"
-                  max={isoDate()}
+                  max={todayInTZ()}
                   {...register('birth_date')}
                 />
               </div>

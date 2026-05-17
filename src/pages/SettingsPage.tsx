@@ -24,7 +24,7 @@ import {
 } from '@/features/profile/schema';
 import { useTheme, type Theme } from '@/features/theme/ThemeProvider';
 import { DeleteAccountDialog } from '@/features/account/components/DeleteAccountDialog';
-import { isoDate } from '@/lib/dates';
+import { todayInTZ } from '@/lib/dates';
 
 type Lang = 'es' | 'en';
 
@@ -239,7 +239,7 @@ export function SettingsPage() {
               <Input
                 id="birthDate"
                 type="date"
-                max={isoDate()}
+                max={todayInTZ()}
                 {...bioForm.register('birth_date')}
               />
             </div>
