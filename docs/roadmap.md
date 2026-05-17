@@ -69,7 +69,10 @@ reference shard carries it (never edit the decision entry).
 ## R-02 — Phase 7-day grace-window + notes-editable-forever
 - **decision:** D-A5
 - **blocked-by:** —
-- **status:** todo
+- **status:** done (2026-05-17) — `PHASE_EDIT_GRACE_DAYS = 7` +
+  `isPhaseFrozen` in `ObjetivosPage.tsx`; notes-only mechanism = (b)
+  `PhaseDialog` opened in `notesOnly` mode (all other fields
+  disabled/read-only, only `notes` saveable). UI-only, no migration.
 - **scope:**
   1. `src/pages/ObjetivosPage.tsx`: replace the binary `phaseStatus`/`isPast`
      cliff (`phase.end_date < today`, lines 42 / 183 / 185 / 239) with a
