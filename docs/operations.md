@@ -57,11 +57,12 @@ CI and the merge gate are real and enforced (D-F1, D-F2).
   branch run far ahead of `main` again (the historical 22-commit drift that
   D-F2 reconciled).
 
-Tiered Vitest coverage and a real CI `pnpm test` step are decided but not yet
-built (Tier 1 pure-logic suites first; the stubbed test step becomes real
-when they land):
+Tiered Vitest coverage is partially built: Tier-1 (pure-logic suites + a real
+CI `pnpm test` step in the `lint-build` job) landed; Tier-2 (component tests)
+rides R-09 and Tier-3 (DB/RLS/RPC via local `supabase start` + pgTAP) is gated
+behind R-00 — both still pending:
 
-> ⚠ Changing — see R-16 (D-F1)
+> ⚠ Changing — see R-16 (D-F1) — Tier-1 landed; T2/T3 pending
 
 ## Hosting & deploy
 

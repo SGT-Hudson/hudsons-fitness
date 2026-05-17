@@ -261,7 +261,7 @@ reference shard carries it (never edit the decision entry).
 ## R-10 — Add src/components/ui/badge.tsx; refactor 4 inline sites; update docs
 - **decision:** D-D1
 - **blocked-by:** —
-- **status:** todo
+- **status:** done (2026-05-18)
 - **scope:**
   1. Add `src/components/ui/badge.tsx` (shadcn's official component, ~50 lines,
      CVA-based variants).
@@ -341,7 +341,7 @@ reference shard carries it (never edit the decision entry).
 ## R-13 — AuthProvider profile→i18n sync effect
 - **decision:** D-E1
 - **blocked-by:** —
-- **status:** todo
+- **status:** done (2026-05-18)
 - **scope:** Small change (one sync effect).
   1. Add a profile→i18n sync: when the profile loads (or changes) and
      `profile.language` is set and `!== i18n.language`, call
@@ -385,7 +385,7 @@ reference shard carries it (never edit the decision entry).
 ## R-15 — Remove LanguageSwitcher from AppLayout; keep pre-auth only
 - **decision:** D-E4
 - **blocked-by:** —
-- **status:** todo
+- **status:** done (2026-05-18)
 - **scope:**
   1. `src/components/layout/AppLayout.tsx`: remove the `LanguageSwitcher`
      import + its render at line 49 (keep the sign-out button and the flex
@@ -404,7 +404,7 @@ reference shard carries it (never edit the decision entry).
 ## R-16 — Vitest Tier-1 (spec-first) + Tier-2 (with R-09) + Tier-3 (after R-00)
 - **decision:** D-F1
 - **blocked-by:** R-00 (Tier-3 only)
-- **status:** todo
+- **status:** in-progress — Tier-1 (Vitest + CI `pnpm test` in the `lint-build` job) landed; Tier-2 rides R-09; Tier-3 after R-00
 - **scope:** Spec-first; Tier 1 is its own sprint, Tier 2 rides with R-09,
   Tier 3 is gated behind R-00.
   1. Spec: `docs/superpowers/specs/` test-strategy doc — tier boundaries,

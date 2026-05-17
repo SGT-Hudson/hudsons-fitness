@@ -27,7 +27,6 @@
     "deleteConfirm": "Delete phase \"{{name}}\"?",
     "edit": "Edit",
     "editNotes": "Edit notes",
-    "frozenHint": "Phase closed (more than 7 days past its end). Only notes can be edited.",
     "type": {
       "cut": "Cut",
       "maintenance": "Maintenance",
