@@ -1,4 +1,23 @@
+// Client-facing recipe-macro API. The arithmetic now lives in the shared
+// pure core (`@/core/macros`, D-F3 / R-17) so the client and the Deno edge
+// functions compute identical results from one implementation. This module
+// keeps the existing public surface (`Macros`, `RecipeRowMacrosInput`,
+// `rowContribution`, `computeRecipeMacros`, `roundMacro`) unchanged so the
+// 14+ call sites across the app keep working with no churn.
+
 import type { Ingredient } from '@/features/ingredients/api';
+import {
+  add,
+  computeRecipeMacros as coreComputeRecipeMacros,
+  ingredientMacros as coreIngredientMacros,
+  roundMacro as coreRoundMacro,
+  scale,
+  ZERO_MACROS,
+  type CoreIngredient,
+  type Macros,
+} from '@/core/macros';
+
+export type { Macros } from '@/core/macros';
 
 export interface RecipeRowMacrosInput {
   ingredient: Pick<
@@ -14,63 +33,45 @@ export interface RecipeRowMacrosInput {
   perServing: boolean;
 }
 
-export interface Macros {
-  kcal: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-  fiberG: number;
-}
-
-const ZERO: Macros = { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0 };
-
-function rowTotalQuantity(row: RecipeRowMacrosInput, servings: number): number {
-  if (row.perServing) return row.quantity * servings;
-  return row.quantity;
-}
-
-function divisor(unitType: string): number {
-  return unitType === 'unit' ? 1 : 100;
-}
-
-export function rowContribution(row: RecipeRowMacrosInput, servings: number): Macros {
-  if (!Number.isFinite(row.quantity) || row.quantity <= 0) return ZERO;
-  const factor = rowTotalQuantity(row, servings) / divisor(row.ingredient.unit_type);
-  const ing = row.ingredient;
+function toCoreIngredient(
+  ing: RecipeRowMacrosInput['ingredient'],
+): CoreIngredient {
   return {
-    kcal: ing.kcal_per_unit * factor,
-    proteinG: ing.protein_g_per_unit * factor,
-    carbsG: ing.carbs_g_per_unit * factor,
-    fatG: ing.fat_g_per_unit * factor,
-    fiberG: ing.fiber_g_per_unit * factor,
+    unitType: ing.unit_type,
+    kcalPerUnit: ing.kcal_per_unit,
+    proteinGPerUnit: ing.protein_g_per_unit,
+    carbsGPerUnit: ing.carbs_g_per_unit,
+    fatGPerUnit: ing.fat_g_per_unit,
+    fiberGPerUnit: ing.fiber_g_per_unit,
   };
+}
+
+export function rowContribution(
+  row: RecipeRowMacrosInput,
+  servings: number,
+): Macros {
+  if (!Number.isFinite(row.quantity) || row.quantity <= 0) return ZERO_MACROS;
+  const qty = row.perServing ? row.quantity * servings : row.quantity;
+  return coreIngredientMacros(toCoreIngredient(row.ingredient), qty);
 }
 
 export function computeRecipeMacros(opts: {
   servings: number;
   rows: RecipeRowMacrosInput[];
 }): { total: Macros; perServing: Macros } {
-  const safeServings = opts.servings > 0 ? opts.servings : 1;
-  const total = opts.rows.reduce<Macros>((acc, row) => {
-    const c = rowContribution(row, safeServings);
-    return {
-      kcal: acc.kcal + c.kcal,
-      proteinG: acc.proteinG + c.proteinG,
-      carbsG: acc.carbsG + c.carbsG,
-      fatG: acc.fatG + c.fatG,
-      fiberG: acc.fiberG + c.fiberG,
-    };
-  }, ZERO);
-  const perServing: Macros = {
-    kcal: total.kcal / safeServings,
-    proteinG: total.proteinG / safeServings,
-    carbsG: total.carbsG / safeServings,
-    fatG: total.fatG / safeServings,
-    fiberG: total.fiberG / safeServings,
-  };
-  return { total, perServing };
+  return coreComputeRecipeMacros({
+    servings: opts.servings,
+    ingredients: opts.rows.map((r) => ({
+      quantity: r.quantity,
+      perServing: r.perServing,
+      ingredient: toCoreIngredient(r.ingredient),
+    })),
+  });
 }
 
 export function roundMacro(n: number): number {
-  return Math.round(n * 10) / 10;
+  return coreRoundMacro(n);
 }
+
+// Re-exported core arithmetic for callers that build totals directly.
+export { add, scale, ZERO_MACROS };

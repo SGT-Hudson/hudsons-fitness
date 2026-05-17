@@ -11,7 +11,9 @@
 // POST body may include `{ "week_start": "YYYY-MM-DD" }` to target a specific
 // Monday; otherwise defaults to today's Monday in Europe/Madrid.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+// Version pinned once in supabase/functions/deno.json (D-F3 / R-17).
+import { createClient } from '@supabase/supabase-js';
+// Date/TZ helper from the shared pure core, re-exported via _shared (D-F3 / R-17).
 import { mondayOfTodayInTZ } from '../_shared/macros.ts';
 
 Deno.serve(async (req) => {

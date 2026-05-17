@@ -1,7 +1,52 @@
-// Server-side mirror of src/features/recipes/macros.ts and src/features/diario/macros.ts.
-// Kept in snake_case so it lines up with the columns of daily_nutrition_history.
+// Edge ↔ shared-core bridge (D-F3 / R-17).
+//
+// This file no longer duplicates the macro/date math — that single
+// implementation now lives in the runtime-agnostic camelCase core at
+// `src/core/macros.ts` + `src/core/dates.ts`, imported directly here via a
+// relative path (Deno resolves relative `.ts` with no alias/transpile/codegen;
+// the core has zero browser/Node/Deno-only deps — only `Date` + `Intl`).
+//
+// The edge keeps a THIN snake_case adapter ONLY at the
+// `public.daily_nutrition_history` write boundary (`toSnakeMacros` /
+// `EMPTY_SNAKE`). That is the single place column-shaped snake_case is needed
+// (D-C4: snake_case reserved for DB rows). Every other edge call site uses the
+// camelCase core directly.
+//
+// `_shared/` remains edge↔edge only; the client↔edge *pure* boundary is this
+// shared core, and the client↔edge *stateful* boundary is the DB/RPC (D-C5,
+// D-D6). NOTE: the relative depth `../../../src/core/...` assumes this file
+// stays at `supabase/functions/_shared/`.
 
-export interface MacrosTotals {
+export {
+  add,
+  scale,
+  ingredientMacros,
+  recipePerServingMacros,
+  computeRecipeMacros,
+  roundMacro,
+  ZERO_MACROS,
+  type Macros,
+  type CoreIngredient,
+  type CoreRecipeIngredient,
+  type CoreRecipe,
+  type Numeric,
+} from '../../../src/core/macros.ts';
+
+export {
+  isoDateInTZ,
+  previousDayInTZ,
+  mondayOfTodayInTZ,
+} from '../../../src/core/dates.ts';
+
+import type { Macros } from '../../../src/core/macros.ts';
+
+/**
+ * Snake_case shape of the macro columns on `public.daily_nutrition_history`
+ * (and the `custom_*` log columns). This is the ONLY snake_case macro type in
+ * the codebase — it exists solely to map a camelCase core {@link Macros} onto
+ * DB columns at the write boundary.
+ */
+export interface SnakeMacros {
   kcal: number;
   protein_g: number;
   carbs_g: number;
@@ -9,7 +54,7 @@ export interface MacrosTotals {
   fiber_g: number;
 }
 
-export const ZERO: MacrosTotals = {
+export const EMPTY_SNAKE: SnakeMacros = {
   kcal: 0,
   protein_g: 0,
   carbs_g: 0,
@@ -17,97 +62,13 @@ export const ZERO: MacrosTotals = {
   fiber_g: 0,
 };
 
-export interface IngredientRow {
-  unit_type: string;
-  kcal_per_unit: number | string;
-  protein_g_per_unit: number | string;
-  carbs_g_per_unit: number | string;
-  fat_g_per_unit: number | string;
-  fiber_g_per_unit: number | string | null;
-}
-
-export interface RecipeIngredientRow {
-  quantity: number | string;
-  per_serving: boolean;
-  ingredient: IngredientRow;
-}
-
-export interface RecipeRow {
-  servings: number | string;
-  recipe_ingredients: RecipeIngredientRow[];
-}
-
-export function add(a: MacrosTotals, b: MacrosTotals): MacrosTotals {
+/** camelCase core {@link Macros} → snake_case DB column shape. */
+export function toSnakeMacros(m: Macros): SnakeMacros {
   return {
-    kcal: a.kcal + b.kcal,
-    protein_g: a.protein_g + b.protein_g,
-    carbs_g: a.carbs_g + b.carbs_g,
-    fat_g: a.fat_g + b.fat_g,
-    fiber_g: a.fiber_g + b.fiber_g,
+    kcal: m.kcal,
+    protein_g: m.proteinG,
+    carbs_g: m.carbsG,
+    fat_g: m.fatG,
+    fiber_g: m.fiberG,
   };
-}
-
-export function scale(m: MacrosTotals, k: number): MacrosTotals {
-  return {
-    kcal: m.kcal * k,
-    protein_g: m.protein_g * k,
-    carbs_g: m.carbs_g * k,
-    fat_g: m.fat_g * k,
-    fiber_g: m.fiber_g * k,
-  };
-}
-
-export function ingredientMacros(ing: IngredientRow, quantity: number): MacrosTotals {
-  if (!Number.isFinite(quantity) || quantity <= 0) return ZERO;
-  const divisor = ing.unit_type === 'unit' ? 1 : 100;
-  const factor = quantity / divisor;
-  return {
-    kcal: Number(ing.kcal_per_unit) * factor,
-    protein_g: Number(ing.protein_g_per_unit) * factor,
-    carbs_g: Number(ing.carbs_g_per_unit) * factor,
-    fat_g: Number(ing.fat_g_per_unit) * factor,
-    fiber_g: Number(ing.fiber_g_per_unit ?? 0) * factor,
-  };
-}
-
-export function recipePerServingMacros(recipe: RecipeRow): MacrosTotals {
-  const servings = Number(recipe.servings) > 0 ? Number(recipe.servings) : 1;
-  const total = (recipe.recipe_ingredients ?? []).reduce<MacrosTotals>((acc, ri) => {
-    const qty = ri.per_serving ? Number(ri.quantity) * servings : Number(ri.quantity);
-    return add(acc, ingredientMacros(ri.ingredient, qty));
-  }, ZERO);
-  return {
-    kcal: total.kcal / servings,
-    protein_g: total.protein_g / servings,
-    carbs_g: total.carbs_g / servings,
-    fat_g: total.fat_g / servings,
-    fiber_g: total.fiber_g / servings,
-  };
-}
-
-// Date in a given IANA timezone, formatted YYYY-MM-DD.
-export function isoDateInTZ(date: Date, tz = 'Europe/Madrid'): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date);
-}
-
-export function previousDayInTZ(tz = 'Europe/Madrid'): string {
-  const today = isoDateInTZ(new Date(), tz);
-  const [y, m, d] = today.split('-').map(Number);
-  const yesterday = new Date(Date.UTC(y, m - 1, d) - 86_400_000);
-  return yesterday.toISOString().slice(0, 10);
-}
-
-export function mondayOfTodayInTZ(tz = 'Europe/Madrid'): string {
-  const today = isoDateInTZ(new Date(), tz);
-  const [y, m, d] = today.split('-').map(Number);
-  const utc = new Date(Date.UTC(y, m - 1, d));
-  const dow = utc.getUTCDay(); // 0 Sun..6 Sat
-  const diff = dow === 0 ? -6 : 1 - dow;
-  const monday = new Date(Date.UTC(y, m - 1, d + diff));
-  return monday.toISOString().slice(0, 10);
 }

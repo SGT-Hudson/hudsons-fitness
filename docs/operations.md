@@ -147,19 +147,41 @@ curl -X POST \
 
 **Math notes.**
 
-- `daily-nutrition-snapshot` mirrors the client-side macro math in
-  `src/features/recipes/macros.ts` and `src/features/diario/macros.ts`.
-  Per-100g ingredients divide by 100; per-unit ingredients divide by 1.
+- `daily-nutrition-snapshot` uses the shared pure macro core (no mirrored
+  math). Per-100g ingredients divide by 100; per-unit ingredients divide by 1;
   `per_serving` rows scale with the recipe's `servings` before contributing.
 - `recalculate-tdee` uses 14 days, 7700 kcal/kg, requires ≥10 days of intake
   data, and tolerates a ±3-day gap on the boundary weight measurements.
 
-The macro and date/TZ logic is duplicated across the client and the edge
-runtime today (edge `_shared/macros.ts` is snake_case; client
-`features/recipes/macros.ts` is camelCase); the decided fix is one shared
-pure core plus a thin edge snake_case adapter:
+The macro and date/TZ logic is single-source (R-17 / D-F3): one dependency-free
+camelCase core at `src/core/macros.ts` + `src/core/dates.ts`, imported by the
+client (via `src/features/recipes/macros.ts` / `src/lib/dates.ts`) and by the
+edge (via `supabase/functions/_shared/macros.ts`, which re-exports the core).
+`_shared/` is edge↔edge only; it does not bridge client↔edge — the shared core
+does. The edge keeps exactly one snake_case adapter (`toSnakeMacros`), used
+only at the `daily_nutrition_history` write boundary in
+`daily-nutrition-snapshot`. Deno resolves the core via the relative path
+`../../../src/core/*.ts` (no transpile/codegen). Deno dependencies are pinned
+once in **`supabase/functions/deno.json`** (import map —
+`@supabase/supabase-js@2.45.4`); all functions import the bare
+`@supabase/supabase-js` specifier. To bump the SDK, change the single
+`deno.json` import-map entry, not each function. The
+`supabase/functions/_shared/macros.test.ts` golden-vector suite asserts the
+client and edge paths stay numerically identical (CI fails on divergence).
 
-> ⚠ Changing — see R-17 (D-F3)
+**Wave-3 deploy validation (cross-root core import).** The edge functions
+import the shared core via the relative path `../../../src/core/*.ts`, which
+resolves *outside* `supabase/functions/`. Edge functions are not shipped yet,
+so whether `supabase functions deploy` actually bundles a source file from a
+cross-root path is **unverified**. Before (or at) the first
+`supabase functions deploy`, verify the cross-root import is bundled by the
+Supabase CLI. If it is NOT bundled, the fallback is to vendor/copy the core
+into `supabase/functions/_shared/` (or relocate the core there and have the
+client import from that path): the D-F3 shared core stays single-source — only
+its physical location moves. This is a tracked Wave-3 prod step, not an
+optional check.
+
+> ⚠ Changing — see R-17 (D-F3) — cross-root core import unverified at deploy; vendor/relocate fallback
 
 ## Cron
 
