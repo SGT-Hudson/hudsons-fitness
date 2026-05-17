@@ -27,7 +27,6 @@
     "deleteConfirm": "¿Eliminar la fase \"{{name}}\"?",
     "edit": "Editar",
     "editNotes": "Editar notas",
-    "frozenHint": "Fase cerrada (más de 7 días desde el fin). Solo se pueden editar las notas.",
     "type": {
       "cut": "Corte",
       "maintenance": "Mantenimiento",

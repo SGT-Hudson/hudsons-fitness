@@ -45,28 +45,20 @@ tracked in `roadmap.md`).
 
 ## UI
 
-- Use the shadcn `Badge` component for badges (Badge component not yet added; 4 inline-Tailwind sites) (D-D1).
-
-> ⚠ Changing — see R-10
-
+- Use the shadcn `Badge` component for badges (D-D1).
 - Toasts fire from the layer that owns the mutation (usually `hooks.ts`); a component owning its own mutation flow (e.g. destructive confirm dialogs) calls toast directly; pages never call toast (D-D2).
 - Success toasts only when the action is user-triggered AND low-frequency; high-frequency, background, or implicit mutations toast on error only; `useDeleteWeekSlot` is the documented success-on-slot-mutation exception (D-D3).
 - Chart time-range pills: options 30d/90d/1y/all, default 90d, per-chart independent local `useState`, no cross-chart sync, no persistence (D-D4).
 
 ## i18n & locale
 
-- Bilingual ES/EN; for authenticated users `profile.language` is authoritative, applied at/after auth; pre-auth and fallback chain is `localStorage → navigator → es` (`profile.language` not yet applied at boot) (D-E1).
-
-> ⚠ Changing — see R-13
-
+- Bilingual ES/EN; for authenticated users `profile.language` is authoritative and is applied post-auth (AuthProvider's profile→i18n sync); pre-auth and fallback chain is `localStorage → navigator → es` (D-E1).
 - Stored content (recipe/ingredient/template names) is never auto-translated — stays as authored (D-E2).
 - Metric-only (kg/cm/g); no imperial (`profiles.units` legacy column still present, slated for removal) (D-E3).
 
 > ⚠ Changing — see R-14
 
-- Authenticated language change is Settings-only; the one-click `LanguageSwitcher` appears only on pre-auth and onboarding routes (`LanguageSwitcher` still in `AppLayout` header) (D-E4).
-
-> ⚠ Changing — see R-15
+- Authenticated language change is Settings-only; the one-click `LanguageSwitcher` appears only on pre-auth and onboarding routes (removed from the `AppLayout` header) (D-E4).
 
 ## Theme
 

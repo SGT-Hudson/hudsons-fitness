@@ -96,11 +96,9 @@ This is a behavioral overview of the nutrition math as it runs today. Column/DDL
 
 The app is bilingual ES/EN with **11 i18n namespaces** (`common`, `auth`, `nav`, `onboarding`, `metricas`, `ingredientes`, `recetas`, `diario`, `planning`, `objetivos`, `settings`), registered in `src/i18n/index.ts` (default namespace `common`).
 
-Language is detected at boot by `i18next-browser-languagedetector` with detection order **`localStorage → navigator → es`** (`lookupLocalStorage: 'hudsons-fitness-lang'`, `caches: ['localStorage']`, `fallbackLng: 'es'`, `supportedLngs: ['es', 'en']`). `profile.language` is **not** applied at boot today — only `SettingsPage` persists it; nothing reads it back into i18next on load.
+Language is detected at boot by `i18next-browser-languagedetector` with detection order **`localStorage → navigator → es`** (`lookupLocalStorage: 'hudsons-fitness-lang'`, `caches: ['localStorage']`, `fallbackLng: 'es'`, `supportedLngs: ['es', 'en']`). For authenticated users `profile.language` is authoritative: `AuthProvider` runs a profile→i18n sync effect that applies it post-auth (after the boot detector has set the pre-auth language), so the effective order is `profile.language` (post-auth) → `localStorage → navigator → es`. `SettingsPage` remains the only authed write path for `profile.language`.
 
-> ⚠ Changing — see R-13 (D-E1)
-
-Stored content (recipe, ingredient, and template names) is never auto-translated. The placement of the in-app language toggle is governed separately by D-E4 (⚠ R-15).
+Stored content (recipe, ingredient, and template names) is never auto-translated. The placement of the in-app language toggle is governed separately by D-E4 (Settings-only when authenticated; the `LanguageSwitcher` appears only on pre-auth/onboarding routes).
 
 Locale-aware formatting follows the active language: dates are formatted via `date-fns` with the `es` / `en-GB` locales, and numbers via `Intl.NumberFormat` (decimal comma in Spanish, decimal period in English).
 
