@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DateNavigator } from '@/features/diario/components/DateNavigator';
-import { DayTotalsCard } from '@/features/diario/components/DayTotalsCard';
+import { DayTotalsCard, type ProteinBasis } from '@/features/diario/components/DayTotalsCard';
 import { MealLogEntry } from '@/features/diario/components/MealLogEntry';
 import { MealLogDialog } from '@/features/diario/components/MealLogDialog';
 import { useMaterializePlan, useMealLogsForDay } from '@/features/diario/hooks';
@@ -90,6 +90,12 @@ export function DiarioPage() {
     );
   }, [activePhase.data, latestMeasurement.data, latestTdee.data]);
 
+  // The protein basis is fully data-driven (D-B1): a logged body-fat % on the
+  // latest measurement → phase-aware lean-mass path; absent → 1.6 g/kg
+  // bodyweight fallback. No manual toggle.
+  const proteinBasis: ProteinBasis =
+    latestMeasurement.data?.body_fat_pct != null ? 'lean' : 'fallback';
+
   function openNew(mealType: MealType) {
     setEditing(null);
     setDialogMealType(mealType);
@@ -116,7 +122,7 @@ export function DiarioPage() {
 
       <DateNavigator date={date} onChange={changeDate} />
 
-      <DayTotalsCard totals={totals} targets={targets} />
+      <DayTotalsCard totals={totals} targets={targets} proteinBasis={proteinBasis} />
 
       {logs.isLoading ? (
         <div className="space-y-4">

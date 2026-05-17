@@ -42,6 +42,8 @@
     },
     "summary": {
       "protein": "prot.",
+      "proteinBasisLean": "× masa magra",
+      "proteinBasisFallback": "1,6 g/kg de peso — añade un % de grasa para un objetivo ajustado a la fase",
       "fat": "grasa",
       "fiber": "fibra",
       "tdeePrefix": "TDEE"
@@ -61,7 +63,7 @@
       "kcalValueFixed": "kcal/día",
       "kcalValueDelta": "kcal (+ superávit)",
       "protein": "Proteína (g/kg masa magra)",
-      "proteinHelp": "Multiplicado por tu masa magra (peso × (1 − % grasa)). Si no tienes % de grasa registrado, se usa tu peso total.",
+      "proteinHelp": "Sobre masa magra (peso × (1 − % grasa)). Por defecto para «{{type}}»: {{default}} g/kg de masa magra. Si no hay % de grasa registrado, se usa 1,6 g/kg de peso total.",
       "fat": "Grasa (% de kcal)",
       "fiber": "Fibra",
       "fiberMode": "Modo",

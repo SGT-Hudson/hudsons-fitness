@@ -3,9 +3,14 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { roundMacro, type Macros } from '@/features/recipes/macros';
 
+/** Which protein basis the active target was computed on (D-B1). */
+export type ProteinBasis = 'lean' | 'fallback';
+
 interface Props {
   totals: Macros;
   targets?: Macros;
+  /** Set only when `targets` is present — labels the active protein basis. */
+  proteinBasis?: ProteinBasis;
 }
 
 function Stat({
@@ -13,11 +18,13 @@ function Stat({
   value,
   target,
   suffix,
+  note,
 }: {
   label: string;
   value: number;
   target?: number;
   suffix: string;
+  note?: string;
 }) {
   const pct = target != null && target > 0 ? (value / target) * 100 : null;
 
@@ -33,6 +40,7 @@ function Stat({
         )}
         <span className="text-sm font-normal text-muted-foreground ml-1">{suffix}</span>
       </div>
+      {note && <div className="text-[11px] text-muted-foreground leading-tight">{note}</div>}
       {pct != null && (
         <div className="h-1 bg-muted rounded-full overflow-hidden">
           <div
@@ -48,8 +56,14 @@ function Stat({
   );
 }
 
-export function DayTotalsCard({ totals, targets }: Props) {
+export function DayTotalsCard({ totals, targets, proteinBasis }: Props) {
   const { t } = useTranslation('diario');
+  const proteinNote =
+    targets && proteinBasis
+      ? proteinBasis === 'lean'
+        ? t('totals.proteinBasisLean')
+        : t('totals.proteinBasisFallback')
+      : undefined;
   return (
     <Card>
       <CardHeader>
@@ -68,6 +82,7 @@ export function DayTotalsCard({ totals, targets }: Props) {
             value={totals.proteinG}
             target={targets?.proteinG}
             suffix="g"
+            note={proteinNote}
           />
           <Stat
             label={t('totals.carbs')}

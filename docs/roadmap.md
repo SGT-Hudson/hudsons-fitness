@@ -135,7 +135,14 @@ reference shard carries it (never edit the decision entry).
 ## R-05 — Protein refactor: canonical-fn owns rule, phase-aware lean-mass table, fallback const, visible basis
 - **decision:** D-B1, D-B2
 - **blocked-by:** —
-- **status:** todo
+- **status:** done (2026-05-18) — `computeDailyMacroTargets` now owns the
+  protein rule (true `weightKg` + `bodyFatPct?` + `phaseType`); constants
+  `PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM` (cut 2.4 / maintenance 2.0 / bulk 1.8)
+  + `PROTEIN_FALLBACK_G_PER_KG_BODYWEIGHT` (1.6). `computePhaseTargets` is now
+  a thin shape adapter. `PhaseDialog` pre-fills `protein_g_per_kg` per
+  phase_type (override-respecting) with basis-aware help text; ObjetivosPage
+  + Diario show the active basis. Existing phases keep their stored
+  `protein_g_per_kg` (no retroactive change). Code-only, no migration.
 - **scope:**
   1. Refactor so the canonical fn owns the rule: `computeDailyMacroTargets`
      takes `weightKg` (true bodyweight) + `bodyFatPct?` + `phaseType`, and

@@ -42,6 +42,8 @@
     },
     "summary": {
       "protein": "protein",
+      "proteinBasisLean": "× lean mass",
+      "proteinBasisFallback": "1.6 g/kg bodyweight — add a body-fat % for a phase-tuned target",
       "fat": "fat",
       "fiber": "fiber",
       "tdeePrefix": "TDEE"
@@ -61,7 +63,7 @@
       "kcalValueFixed": "kcal/day",
       "kcalValueDelta": "kcal (+ surplus)",
       "protein": "Protein (g/kg lean mass)",
-      "proteinHelp": "Multiplied by your lean mass (weight × (1 − body fat %)). If you have no body fat % logged, your total weight is used instead.",
+      "proteinHelp": "On lean mass (weight × (1 − body fat %)). Default for \"{{type}}\": {{default}} g/kg lean mass. With no body fat % logged, 1.6 g/kg of total bodyweight is used instead.",
       "fat": "Fat (% of kcal)",
       "fiber": "Fiber",
       "fiberMode": "Mode",

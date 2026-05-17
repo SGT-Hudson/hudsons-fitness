@@ -23,6 +23,7 @@ import {
   useUpdatePhase,
 } from '@/features/phases/hooks';
 import { PhaseDialog } from '@/features/phases/components/PhaseDialog';
+import { useLatestMeasurement } from '@/features/measurements/hooks';
 import { fractionToPct } from '@/lib/macros';
 import type { Phase, PhaseInput } from '@/features/phases/api';
 import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
@@ -87,6 +88,13 @@ export function ObjetivosPage() {
     });
     setGoalOpen(false);
   }
+
+  // The protein basis is fully data-driven (D-B1), mirroring DiarioPage: a
+  // logged body-fat % on the latest measurement → lean-mass path; absent →
+  // 1.6 g/kg bodyweight fallback. Drives the phase-summary basis label so
+  // Objetivos and Diario advertise the same active basis.
+  const latestMeasurement = useLatestMeasurement();
+  const proteinBasisIsLean = latestMeasurement.data?.body_fat_pct != null;
 
   // ── Phases ─────────────────────────────────────────────────────────────────
   const phases = usePhases();
@@ -245,7 +253,10 @@ export function ObjetivosPage() {
                               `${t('phases.summary.tdeePrefix')} ${phase.kcal_value > 0 ? '+' : ''}${phase.kcal_value} kcal`}
                           </span>
                           <span>
-                            {phase.protein_g_per_kg} g/kg {t('phases.summary.protein')}
+                            {phase.protein_g_per_kg} g/kg {t('phases.summary.protein')}{' '}
+                            {proteinBasisIsLean
+                              ? t('phases.summary.proteinBasisLean')
+                              : t('phases.summary.proteinBasisFallback')}
                           </span>
                           <span>
                             {Math.round(fractionToPct(phase.fat_pct_of_kcal))}% {t('phases.summary.fat')}

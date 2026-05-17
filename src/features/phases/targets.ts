@@ -1,7 +1,21 @@
-import { computeDailyMacroTargets, type FiberMode, type KcalMode } from '@/lib/macros';
+import {
+  computeDailyMacroTargets,
+  type FiberMode,
+  type KcalMode,
+  type PhaseType,
+} from '@/lib/macros';
 import type { Macros } from '@/features/recipes/macros';
 import type { Phase } from './api';
 
+/**
+ * Thin shape adapter over the canonical {@link computeDailyMacroTargets}.
+ *
+ * The protein rule (lean-mass, phase-aware table + 1.6 g/kg bodyweight
+ * fallback) now lives entirely in the canonical fn — D-B1. This wrapper only
+ * maps a `Phase` row + true scale `weightKg` + optional `bodyFatPct` into the
+ * canonical inputs and rounds the result. It no longer pre-computes lean mass
+ * or feeds it through a misnamed `weightKg` parameter.
+ */
 export function computePhaseTargets(
   phase: Phase,
   weightKg: number,
@@ -10,11 +24,10 @@ export function computePhaseTargets(
 ): Macros | null {
   if (phase.kcal_mode === 'tdee_delta' && estimatedTdeeKcal == null) return null;
 
-  const leanMassKg =
-    bodyFatPct != null ? weightKg * (1 - bodyFatPct / 100) : weightKg;
-
   const t = computeDailyMacroTargets({
-    weightKg: leanMassKg,
+    weightKg,
+    bodyFatPct,
+    phaseType: phase.phase_type as PhaseType,
     phase: {
       kcal_mode: phase.kcal_mode as KcalMode,
       kcal_value: phase.kcal_value,

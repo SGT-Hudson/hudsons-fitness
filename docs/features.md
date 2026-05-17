@@ -141,15 +141,21 @@ A **phase** is a dated nutrition block of type `cut`, `maintenance`, or
 (`kcal_mode = 'absolute'`) or as a delta from estimated TDEE
 (`kcal_mode = 'tdee_delta'`). Fat is stored as a fraction of kcal
 (`fat_pct_of_kcal`, 0.10–0.60), converted to/from a percent only at the form
-boundary. Fiber is set per a fiber mode. Protein is currently computed on a
-lean-mass basis (`lean = weight × (1 − bf%/100) × g/kg`), falling back to
-total bodyweight when no body-fat % is available.
-
-> ⚠ Changing — see R-05 (D-B1). The protein rule moves into the canonical
-> `computeDailyMacroTargets`, re-anchored to a phase-aware lean-mass
-> code-constant table (`cut 2.4 / maintenance 2.0 / bulk 1.8` g/kg LBM)
-> with a `1.6 g/kg bodyweight` no-bf% fallback and a visible basis label;
-> the current single-default + thin-wrapper housing is removed.
+boundary. Fiber is set per a fiber mode. Protein is computed on a phase-aware
+lean-mass basis (D-B1): the canonical `computeDailyMacroTargets` owns the
+rule. When the latest measurement has a body-fat %, protein =
+`lean × phase.protein_g_per_kg`, where `lean = weight × (1 − bf%/100)` and
+`protein_g_per_kg` is the per-phase override pre-filled at create time from
+the phase-aware lean-mass table `PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM`
+(`cut 2.4 / maintenance 2.0 / bulk 1.8` g/kg LBM, in `src/lib/macros.ts`).
+When no body-fat % is logged it falls back to
+`weight × PROTEIN_FALLBACK_G_PER_KG_BODYWEIGHT` (1.6 g/kg of total
+bodyweight) — the basis switches automatically on bf% presence (no manual
+toggle) and the active basis is labelled in the UI (PhaseDialog help,
+ObjetivosPage phase summary, Diario targets). Existing phases keep their
+stored `protein_g_per_kg`; only new phases get table defaults at create
+time. The mild fallback under-target for a bf%-less cutter is a deliberate
+nudge to log a body-fat %.
 
 The Diario shows the active phase's daily macro targets (kcal, protein,
 carbs, fat, fiber) against what was consumed. The active phase is resolved
