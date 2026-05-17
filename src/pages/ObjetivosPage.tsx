@@ -23,6 +23,7 @@ import {
   useUpdatePhase,
 } from '@/features/phases/hooks';
 import { PhaseDialog } from '@/features/phases/components/PhaseDialog';
+import { fractionToPct } from '@/lib/macros';
 import type { Phase, PhaseInput } from '@/features/phases/api';
 import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
 
@@ -247,7 +248,7 @@ export function ObjetivosPage() {
                             {phase.protein_g_per_kg} g/kg {t('phases.summary.protein')}
                           </span>
                           <span>
-                            {Math.round(phase.fat_pct_of_kcal * 100)}% {t('phases.summary.fat')}
+                            {Math.round(fractionToPct(phase.fat_pct_of_kcal))}% {t('phases.summary.fat')}
                           </span>
                           <span>
                             {phase.fiber_value}

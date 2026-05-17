@@ -170,7 +170,8 @@ reference shard carries it (never edit the decision entry).
 ## R-06 — fractionToPct/pctToFraction helper; refactor 3 inline sites; verify/add DB CHECK
 - **decision:** D-B3
 - **blocked-by:** —
-- **status:** todo
+- **status:** in-progress — helper + 3 sites + tests landed; DB CHECK migration
+  staged, applied at Wave-3 prod checkpoint.
 - **scope:**
   1. Add a shared `fractionToPct` / `pctToFraction` pair (or a single
      documented constant) in `src/lib/macros.ts` (or `src/lib/` utils).

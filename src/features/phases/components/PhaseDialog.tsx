@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { isoDate } from '@/lib/dates';
+import { fractionToPct, pctToFraction } from '@/lib/macros';
 import type { Phase, PhaseInput } from '../api';
 
 type FormValues = {
@@ -98,7 +99,7 @@ export function PhaseDialog({
         kcal_mode: phase.kcal_mode as FormValues['kcal_mode'],
         kcal_value: phase.kcal_value,
         protein_g_per_kg: phase.protein_g_per_kg,
-        fat_pct_input: Math.round(phase.fat_pct_of_kcal * 100),
+        fat_pct_input: Math.round(fractionToPct(phase.fat_pct_of_kcal)),
         fiber_mode: phase.fiber_mode as FormValues['fiber_mode'],
         fiber_value: phase.fiber_value,
         notes: phase.notes ?? '',
@@ -117,7 +118,7 @@ export function PhaseDialog({
       kcal_mode: values.kcal_mode,
       kcal_value: values.kcal_value,
       protein_g_per_kg: values.protein_g_per_kg,
-      fat_pct_of_kcal: values.fat_pct_input / 100,
+      fat_pct_of_kcal: pctToFraction(values.fat_pct_input),
       fiber_mode: values.fiber_mode,
       fiber_value: values.fiber_value,
       notes: values.notes || null,
