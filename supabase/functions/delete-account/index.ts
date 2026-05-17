@@ -10,7 +10,8 @@
 // CORS: only allow same-origin browser requests via the Authorization header
 // supabase.functions.invoke adds; we don't open up arbitrary cross-origin POSTs.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+// Version pinned once in supabase/functions/deno.json (D-F3 / R-17).
+import { createClient } from '@supabase/supabase-js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',

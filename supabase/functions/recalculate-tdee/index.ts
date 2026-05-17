@@ -14,7 +14,9 @@
 // near each end of the window — otherwise the estimate would be too noisy and
 // we skip the user. Result is upserted into tdee_estimates(user_id, computed_on).
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+// Version pinned once in supabase/functions/deno.json (D-F3 / R-17).
+import { createClient } from '@supabase/supabase-js';
+// Date/TZ helper from the shared pure core, re-exported via _shared (D-F3 / R-17).
 import { previousDayInTZ } from '../_shared/macros.ts';
 
 const WINDOW_DAYS = 14;

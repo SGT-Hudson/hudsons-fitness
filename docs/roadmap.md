@@ -440,7 +440,19 @@ reference shard carries it (never edit the decision entry).
 ## R-17 — Extract shared pure camelCase macro/date core; edge snake adapter; Deno dep-pin
 - **decision:** D-F3
 - **blocked-by:** R-16 (Tier-1 first)
-- **status:** todo
+- **status:** done (2026-05-18) — shared pure camelCase core at
+  `src/core/macros.ts` + `src/core/dates.ts` (dependency-free; only
+  `Date`/`Intl`). Client (`src/features/recipes/macros.ts`, `src/lib/dates.ts`)
+  re-exports/delegates to it with unchanged public API; edge
+  `supabase/functions/_shared/macros.ts` re-exports the core and keeps the
+  ONLY snake_case adapter (`toSnakeMacros`/`EMPTY_SNAKE`) at the
+  `daily_nutrition_history` write boundary in `daily-nutrition-snapshot`. Edge
+  imports the core via the relative path `../../../src/core/*.ts` (Deno-native
+  resolution, no alias/transpile/codegen). Deno deps pinned once via
+  `supabase/functions/deno.json` import map (`@supabase/supabase-js@2.45.4`);
+  all 4 functions switched to the bare specifier. Parity net:
+  `supabase/functions/_shared/macros.test.ts` asserts one golden-vector
+  fixture set against BOTH the client path and the edge path; vitest 83/83.
 - **scope:** Own small refactor sprint; depends on R-16 Tier-1 golden vectors
   existing first (they guard the extraction). Coordinate with R-12 (already
   removes the materialization mirror via RPC) and R-05/R-06/R-11 (they touch

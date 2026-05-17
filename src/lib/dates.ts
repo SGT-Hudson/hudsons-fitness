@@ -1,6 +1,17 @@
 import { differenceInCalendarDays, format, parseISO, startOfWeek } from 'date-fns';
 import { es, enGB } from 'date-fns/locale';
 
+// Timezone-aware day-boundary helpers live in the shared pure core
+// (`@/core/dates`, D-F3 / R-17) so the client and the Deno edge functions
+// share one implementation. Re-exported here so client callers keep a single
+// `@/lib/dates` import surface; the `date-fns`-based helpers below stay local
+// because `date-fns` is a browser-only dependency the edge cannot import.
+export {
+  isoDateInTZ,
+  previousDayInTZ,
+  mondayOfTodayInTZ,
+} from '@/core/dates';
+
 export type Locale = 'es' | 'en';
 
 const LOCALES = { es, en: enGB } as const;

@@ -61,12 +61,11 @@ The client (browser SPA) and the edge (Supabase Edge Functions, Deno) are two ru
 
 - **Stateful cross-runtime logic** goes through the database / an RPC, so there is one authoritative implementation. RPCs are `SECURITY INVOKER` and atomic across multiple tables (D-C5).
 - **Pure cross-runtime logic** goes through a single shared pure module imported by both runtimes (D-F3).
+- **`_shared/` is edge↔edge only.** It cannot bridge client↔edge (the Vite browser bundle and Deno cannot import the same aliased module). The client↔edge boundaries are the two bullets above: the DB/RPC for stateful logic, the shared pure core for pure logic.
 
-Current reality does not yet match the pure-module side of this rule:
+The pure-module side of this rule is now in place (R-17 / D-F3):
 
-- **Macro and date math is duplicated today.** The client uses `src/lib/macros.ts` and `src/features/recipes/macros.ts` (camelCase `Macros`); the edge uses a separate `supabase/functions/_shared/macros.ts` (snake-cased totals plus its own date helpers). The two are maintained by hand in parallel.
-
-  > ⚠ Changing — see R-17 (D-F3)
+- **Macro and date/TZ math is single-source.** The runtime-agnostic camelCase core lives at `src/core/macros.ts` and `src/core/dates.ts` — dependency-free (only `Date`/`Intl`), no React, no `@/` alias. The client imports it through `src/features/recipes/macros.ts` and `src/lib/dates.ts` (unchanged public API — those modules now delegate); the Deno edge imports it through `supabase/functions/_shared/macros.ts`, which re-exports the core and adds the **one** snake_case adapter (`toSnakeMacros`) used solely where rows are written to `daily_nutrition_history`. The core is camelCase by D-C4 (snake_case is reserved for DB rows); Deno resolves it via the relative path `../../../src/core/*.ts` with no transpile/codegen, and the `supabase/functions/_shared/macros.test.ts` golden-vector suite asserts the client and edge paths stay numerically identical (CI fails on divergence).
 
 - **Plan materialization is hand-mirrored across client and edge.** The client materializes plan slots into `meal_logs` via `materializePlanForDate` in `src/features/diario/api.ts`; the `daily-nutrition-snapshot` edge function re-implements "the same plan-materialization the Diario page does" independently.
 
