@@ -11,6 +11,21 @@ export interface PhaseInputs {
   fiber_value: number;
 }
 
+/**
+ * `phases.fat_pct_of_kcal` is stored as a FRACTION (0.10–0.60), not a percent.
+ * These are the single canonical conversion helpers — never inline `×100`/`÷100`
+ * at a UI boundary; always go through these (D-B3 / R-06). No clamping: the
+ * caller (form `register` min/max + a staged DB CHECK) owns the 0.10–0.60 bound.
+ */
+export function fractionToPct(fraction: number): number {
+  return fraction * 100;
+}
+
+/** Inverse of {@link fractionToPct}: a percent input back to the stored fraction. */
+export function pctToFraction(pct: number): number {
+  return pct / 100;
+}
+
 export interface MacroTargets {
   kcal: number;
   proteinG: number;

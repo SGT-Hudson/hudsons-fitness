@@ -39,7 +39,7 @@ tracked in `roadmap.md`).
 
 > ⚠ Changing — see R-12
 
-- Convert the fat fraction (and any unit/fraction) only at the form boundary via a shared helper, never inline `×100` (helper not yet extracted; 3 inline sites) (D-B3).
+- Convert the fat fraction (and any unit/fraction) only at the form boundary via a shared helper, never inline `×100` (helper `fractionToPct`/`pctToFraction` in `src/lib/macros.ts`; the 3 inline sites now use it — rule satisfied in code; only the DB CHECK backstop remains, staged for the Wave-3 prod checkpoint) (D-B3).
 
 > ⚠ Changing — see R-06
 

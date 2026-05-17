@@ -4,6 +4,8 @@ import {
   computeTargetWeightKg,
   mifflinStJeor,
   estimateBoneKg,
+  fractionToPct,
+  pctToFraction,
   type PhaseInputs,
 } from './macros';
 
@@ -115,6 +117,42 @@ describe('mifflinStJeor', () => {
 
   it('treats "other" like female (base - 161)', () => {
     expect(mifflinStJeor({ ...common, sex: 'other' })).toBe(1614);
+  });
+});
+
+describe('fractionToPct / pctToFraction (D-B3 / R-06)', () => {
+  it('fractionToPct multiplies by 100', () => {
+    expect(fractionToPct(0.3)).toBeCloseTo(30, 10);
+  });
+
+  it('pctToFraction divides by 100', () => {
+    expect(pctToFraction(30)).toBeCloseTo(0.3, 10);
+  });
+
+  it('maps the 0.10 / 0.60 storage bounds to 10 / 60 percent', () => {
+    expect(fractionToPct(0.1)).toBeCloseTo(10, 10);
+    expect(fractionToPct(0.6)).toBeCloseTo(60, 10);
+    expect(pctToFraction(10)).toBeCloseTo(0.1, 10);
+    expect(pctToFraction(60)).toBeCloseTo(0.6, 10);
+  });
+
+  it('round-trips fraction → pct → fraction', () => {
+    for (const f of [0.1, 0.25, 0.333, 0.5, 0.6]) {
+      expect(pctToFraction(fractionToPct(f))).toBeCloseTo(f, 10);
+    }
+  });
+
+  it('round-trips pct → fraction → pct', () => {
+    for (const p of [10, 25, 30, 45, 60]) {
+      expect(fractionToPct(pctToFraction(p))).toBeCloseTo(p, 10);
+    }
+  });
+
+  it('does no clamping (bound is enforced by the caller / DB CHECK, not here)', () => {
+    expect(fractionToPct(0)).toBe(0);
+    expect(fractionToPct(1)).toBe(100);
+    expect(pctToFraction(0)).toBe(0);
+    expect(pctToFraction(100)).toBe(1);
   });
 });
 
