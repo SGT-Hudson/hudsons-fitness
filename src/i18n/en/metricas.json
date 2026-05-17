@@ -59,8 +59,23 @@
       "bodyFat": "Body fat %",
       "muscle": "Muscle %",
       "water": "Water %",
+      "fat": "Fat",
+      "lean": "Lean",
       "empty": "Log body fat, muscle or water to see this chart.",
-      "help": "Values are linearly interpolated between measurements with data."
+      "help": "Fat + lean sum to exactly 100%. Values are linearly interpolated between measurements with data.",
+      "helpKg": "Kilogram decomposition derived from the logged weight. Display only — it does not feed protein or TDEE.",
+      "unit": {
+        "label": "Unit",
+        "pct": "%",
+        "kg": "kg"
+      },
+      "trends": {
+        "title": "Independent trends",
+        "help": "Independent (non-stacked) series: water is distributed within lean tissue, so fat/muscle/water are not disjoint partitions.",
+        "bodyFat": "Body fat trend",
+        "muscle": "Muscle trend",
+        "water": "Water trend"
+      }
     },
     "macros": {
       "title": "Daily nutrition",

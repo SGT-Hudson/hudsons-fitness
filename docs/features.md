@@ -60,18 +60,22 @@ moving average; the first days use a shorter window) so trend consumers read
 smoothed weight rather than raw weigh-ins.
 
 The `/progreso` page renders a weight chart (raw + smoothed) and a
-composition chart. The composition chart today is a **stacked area** of
-`body_fat_pct` + `muscle_pct` + `water_pct` on a hard `0–100` Y-axis, with
-body fat at the bottom of the stack and per-series linear interpolation
-between measurements (no extrapolation past the first/last point).
-
-> ⚠ Changing — see R-11 (D-D5). The three series are not a disjoint
-> partition (water is distributed within lean tissue), so the stack is a
-> category error whose sum routinely exceeds 100% and gets clipped. The
-> redesign replaces it with a true `fat%` + `lean%` (`100 − bodyFat%`)
-> 2-series stack, moves muscle%/water%/bodyFat% to independent trend
-> charts, and adds a local `%`↔`kg` toggle computed frontend from the
-> stored `weight_kg`.
+composition chart. The composition chart's main view is a **2-series stacked
+area** of `fat%` + `lean%` (`lean% ≡ 100 − body_fat_pct`), fat at the bottom,
+with per-series linear interpolation between measurements (no extrapolation
+past the first/last point). fat%/lean% is a true disjoint partition that sums
+to exactly 100%, so the hard `0–100` Y-axis is correct and never clips.
+`muscle_pct`, `water_pct` and a `body_fat_pct` trend are rendered **below the
+stack as independent non-stacked trend charts** (a responsive grid of compact
+line cards), never folded into the 100% partition — water is distributed
+within lean tissue, so fat/muscle/water are not disjoint ratios and must not
+be stacked together. A per-chart-local `%`↔`kg` toggle (component `useState`,
+no URL/persistence — same pattern as the time-range pills) switches both the
+stack and the trends to a kilogram decomposition derived on the frontend from
+the stored `weight_kg` (`fat_kg = body_fat_pct/100 × weight`,
+`lean_kg = weight − fat_kg`, `muscle_kg`/`water_kg` analogously); the stack's
+Y-axis auto-scales in kg mode. This whole view is **presentational only** — it
+reads measurements for display and never feeds protein/TDEE/targets.
 
 ## Recipes
 
