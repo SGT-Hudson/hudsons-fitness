@@ -11,6 +11,9 @@ D-id in `decisions.md`; pending work by R-id in `roadmap.md`.
 - [Supabase project](#supabase-project)
 - [Edge functions](#edge-functions)
 - [Cron](#cron)
+- [Data seeding](#data-seeding)
+- [Backups](#backups)
+- [Auth & privacy](#auth--privacy)
 - [Schema-in-migrations status](#schema-in-migrations-status)
 
 ## Commands
@@ -233,11 +236,70 @@ select jobid, runid, status, return_message, start_time
   limit 20;
 ```
 
+**Keep-alive side effect.** Supabase free-tier projects auto-pause after 7
+days with no activity (≈30 s cold-start on the next hit). The
+`daily-nutrition-snapshot` and `weekly-rollover` jobs both read and write the
+DB, which resets the 7-day counter for free — no dedicated keep-alive is
+needed. If these crons are ever removed or disabled, a fallback must take over
+the keep-alive: a GitHub Action running
+`curl https://upvraruehzurbetzrxov.supabase.co/rest/v1/profiles?limit=1` every
+3–4 days, or a Cloudflare Worker scheduled trigger doing the equivalent.
+
 Automated cron liveness alerting (a daily staleness check on
 `daily_nutrition_history` / `tdee_estimates` that notifies on stale data) is
 decided but not yet built:
 
 > ⚠ Changing — see R-18 (D-F5)
+
+## Data seeding
+
+Rather than parsing the original `GYM Gonzalo.xlsx`, the useful content was
+pre-extracted once into committed seed files under `supabase/seed/`
+(`ingredients.json` ≈ 21 ingredients, `recipes.json` ≈ 10 recipes for the
+founding user, and a generated `seed.sql`). The seed runs once on initial
+bootstrap (`supabase db reset` or a one-shot script). Ingredients are inserted
+as **system seeds** (`created_by_user_id = null`, `source = 'system'`) so they
+are immutable and immediately visible to every user via the shared library
+(see `data-model.md` Row-Level Security). A future BEDCA seed of generic
+Spanish staples is an uncommitted product idea
+(`features.md#product-ideas-uncommitted`).
+
+## Backups
+
+The Supabase free tier has **no automatic backups**. For a personal project
+this is acceptable, but a weekly safety net is worthwhile until a Pro upgrade
+(which adds 7-day PITR):
+
+```bash
+supabase db dump --db-url "postgresql://..." > backup-$(date +%F).sql
+```
+
+Wire this into the same scheduled GitHub Action that performs the keep-alive
+fallback (see [Cron](#cron)) and commit the dump to a private location. Crude
+but effective at this scale.
+
+## Auth & privacy
+
+- **Auth methods:** Supabase Auth with email/password **and** Google OAuth.
+  The route/gate chain is `RequireAuth → RequireOnboarded → AppLayout`
+  (`architecture.md#frontend-layout`).
+- **Region:** Supabase EU (Frankfurt) keeps personal data in the EU for GDPR
+  (also noted under [Supabase project](#supabase-project)).
+- **Right to deletion:** the user-invoked `delete-account` edge function
+  (verifies the caller JWT, then `auth.admin.deleteUser`); the
+  `auth.users → profiles → user-scoped tables` CASCADE chain erases all user
+  data atomically. The ★ Library model (`data-model.md#library-model`, R-01)
+  will refine this so a deleted user's shared-pool contributions are
+  reassigned to the reserved anon id rather than CASCADE-deleted.
+- **Right to export:** a self-service "Download all my data" export (an edge
+  function returning a ZIP of per-table JSON) is **specified but not built** —
+  the only GDPR action implemented today is account deletion. Tracked as an
+  uncommitted product idea (`features.md#product-ideas-uncommitted`).
+- **Analytics:** none by default. If analytics is ever added it must be an
+  EU-friendly, self-hostable option (Plausible / Umami) — no third-party
+  tracking by default.
+- **Pre-launch:** a privacy policy and a cookie banner are required before any
+  public launch beyond the solo user.
 
 ## Schema-in-migrations status
 
@@ -255,5 +317,3 @@ the cross-cutting prerequisite that unblocks the generated-types switch
 `profiles.units` (R-14), and `materialize_plan_for_date` (R-12) migrations:
 
 > ⚠ Changing — see R-00
-</content>
-</invoke>

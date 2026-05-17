@@ -102,6 +102,8 @@ Language is detected at boot by `i18next-browser-languagedetector` with detectio
 
 Stored content (recipe, ingredient, and template names) is never auto-translated. The placement of the in-app language toggle is governed separately by D-E4 (⚠ R-15).
 
+Locale-aware formatting follows the active language: dates are formatted via `date-fns` with the `es` / `en-GB` locales, and numbers via `Intl.NumberFormat` (decimal comma in Spanish, decimal period in English).
+
 ## Theme model
 
 Theming is owned by `ThemeProvider` in `src/features/theme/ThemeProvider.tsx`. It exposes `theme` ∈ `'light' | 'dark' | 'system'`, resolving `system` via `window.matchMedia('(prefers-color-scheme: dark)')` and toggling the `dark` class on `<html>`. The selected value is persisted **only** to `localStorage` under the key `hf-theme` — never to `profiles`.

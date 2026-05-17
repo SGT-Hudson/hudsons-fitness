@@ -10,6 +10,8 @@ decision will replace — it describes reality now, not the target design.
 
 - [Background (origin)](#background-origin)
 - [Body composition & measurements](#body-composition--measurements)
+- [Recipes](#recipes)
+- [Ingredients (shared library & OFF import)](#ingredients-shared-library--off-import)
 - [Macros & phases](#macros--phases)
 - [Meal plans (templates ↔ active week)](#meal-plans-templates--active-week)
 - [Diario & materialization](#diario--materialization)
@@ -70,6 +72,67 @@ between measurements (no extrapolation past the first/last point).
 > 2-series stack, moves muscle%/water%/bodyFat% to independent trend
 > charts, and adds a local `%`↔`kg` toggle computed frontend from the
 > stored `weight_kg`.
+
+## Recipes
+
+Recipes are per-user private rows referencing the shared ingredient library
+(schema in `data-model.md`). Each recipe has a `servings` count and a list of
+ingredient lines (`quantity` in grams or units per the ingredient's
+`unit_type`). The recipe editor is a two-column layout: the ingredient list on
+one side and a **live macros panel** on the other that recomputes as quantities
+change — when `servings === 1` it shows a single "Macros" column, otherwise it
+shows "Totales" and "Por ración" side by side. Persistence is atomic via the
+`save_recipe` RPC (UPSERT recipe + replace its `recipe_ingredients` in one
+transaction).
+
+Per-ingredient scaling honors the `per_serving` flag: a normal line's quantity
+is divided across `servings`, but a `per_serving = true` line is added fresh
+*per serving served* (the batch-cooked-curry trick — the stew's macros divide
+by 5 servings while the 70 g of rice is counted per plate).
+
+The Recetas list offers a grid/list view toggle persisted to `localStorage`:
+the grid shows recipe cards (photo or initials placeholder, name, kcal/serving,
+ingredient-count badge); the list shows dense rows with the same fields. Recipe
+deletion is currently a soft delete (`deleted_at` + partial unique index where
+`deleted_at is null`).
+
+> ⚠ Changing — see R-01 (D-A2/D-A3/D-A4). Recipes fold into the ★ Library
+> Contribution & Lifecycle Model (shared pool + per-user reference rows;
+> "delete" = drop your reference); the interim `deleted_at` soft-delete is
+> replaced by that structure. See `data-model.md#library-model`.
+
+## Ingredients (shared library & OFF import)
+
+The ingredient library is shared across all users (the crowdsourced model in
+`data-model.md`): anyone reads the whole pool, anyone inserts (tagged with
+`created_by_user_id`), only the creator edits/deletes their own rows, and
+`created_by_user_id = null` rows are immutable system seeds. Macros are stored
+per 100 g, or per unit when `unit_type = 'unit'` (eggs, egg whites, protein
+scoops). `pg_trgm` trigram indexes back fuzzy name/brand search (so "yogur"
+matches "yogures", "yogurt", and typos).
+
+Search (on the Ingredientes page and inside the recipe editor's autocomplete)
+is **local-first**: it queries the shared library, ordering verified rows
+first. Only when local results are thin (fewer than ~5) **and** the query is at
+least 3 characters does it also probe **OpenFoodFacts** (text search, no API
+key, CORS-friendly, queried directly from the browser). OFF results missing an
+energy value are filtered out. Picking an OFF result inserts it into the shared
+library tagged `source = 'openfoodfacts'` with the OFF barcode as
+`external_id`; the `unique (source, external_id)` constraint makes imports
+race-safe across concurrent users — a unique-violation on insert means another
+user already imported that barcode, so the existing row is fetched and reused
+instead.
+
+The Create Ingredient modal (opened from "+ Nuevo" on Ingredientes or the
+recipe editor's sticky "+ Crear nuevo" autocomplete item) has a debounced
+OpenFoodFacts search tab and a manual-entry tab; a barcode-import tab is a
+disabled placeholder (a future product idea, below). On save it returns the new
+`ingredient_id` to whatever opened it. Ingredient duplicates are tolerated (no
+dedup in the MVP).
+
+> ⚠ Changing — see R-01 (D-A2/D-A3/D-A4). Ingredients fold into the same ★
+> Library Contribution & Lifecycle Model; tolerated duplicates are structurally
+> resolved by that model's Phase-2 reaper, not a dedicated dedup feature.
 
 ## Macros & phases
 
@@ -164,14 +227,20 @@ instead of returning `null`.
 
 ## Product ideas (uncommitted)
 
-Future-feature suggestions distilled from the original spreadsheet's §5.
-These are **uncommitted product ideas, not on the roadmap** and carry no
-R-id; stale or obsolete entries from the source have been dropped.
+Future-feature suggestions distilled from the original spreadsheet's §5 and
+the retired architecture spec's post-MVP roadmap. These are **uncommitted
+product ideas, not on the roadmap** and carry no R-id; stale or obsolete
+entries from the sources have been dropped. (Decided, scheduled work lives in
+`roadmap.md` with an R-id — not here.)
 
 - **Nutrition:** barcode scanner / external food databases for ingredient
-  entry; import recipes from a URL with auto-computed macros; an automatic
-  shopping list derived from the planned week; dynamic serving rescaling
-  (scale a recipe to N people or a target kcal).
+  entry; import recipes from a URL with auto-computed macros (JSON-LD +
+  LLM ingredient mapping); an automatic shopping list derived from the planned
+  week; dynamic serving rescaling (scale a recipe to N people or a target
+  kcal); a **BEDCA seed** of ~100 generic Spanish staples (huevos, pollo,
+  arroz blanco, leche entera, aceite de oliva, …) inserted idempotently as
+  system rows to improve autocomplete for genéricos OpenFoodFacts covers
+  poorly.
 - **Body composition:** smart-scale / health-platform integrations
   (Withings, Renpho, Garmin, Apple Health, Google Fit) to avoid manual
   entry; trend charts with regression, goal-date prediction, and plateau
@@ -182,8 +251,26 @@ R-id; stale or obsolete entries from the source have been dropped.
   an exercise library; cardio / NEAT and step tracking via wearables.
 - **Health & wellbeing:** sleep and mood logging correlated with
   performance; injury / niggle tracking with automatic exercise exclusion.
-- **Platform:** native iOS/Android alongside web with cloud sync; offline
-  mode with deferred sync; sharing routines/recipes and a coach↔client role
-  system; CSV export/import and backup (including importing the original
-  spreadsheet); reminders (weigh-in time, daily deficit/surplus); a
+- **Goals UX:** a body-fat-goal visual reference on `/objetivos` — reference
+  body images at e.g. 8/12/15/20/25/30 % paired with educational copy on the
+  healthy / sustainable / athletic / minimum ranges per sex (men ~10–20 %
+  healthy, ~6 % essential floor; women ~18–28 % healthy, ~12 % essential
+  floor), sources cited (ACE / ACSM).
+- **Notifications:** a `daily-summary` edge function / push that tells the
+  user how many kcal they have left for the day (also: weigh-in reminders,
+  daily deficit/surplus pings).
+- **Account:** a "Start fresh" reset in Settings that clears the active phase,
+  active meal plan, and (future) workout state **without** deleting historical
+  data (`body_measurements`, `meal_logs`, `daily_nutrition_history`,
+  `tdee_estimates` all preserved) — for returning after a long break. Also: a
+  GDPR "Download all my data" self-service export (the only built GDPR action
+  today is account deletion — see `operations.md#auth--privacy`).
+- **Moderation:** ingredient moderation tooling — flagging, duplicate merging,
+  verification badges, an admin dashboard. (Partly subsumed by the ★ Library
+  model's Phase-2 reaper, R-01; the human-facing moderation UX is the
+  uncommitted part.)
+- **Platform:** native iOS/Android (Capacitor) alongside web with cloud sync;
+  offline mode with deferred sync; push notifications and share-sheet
+  integration; sharing routines/recipes and a coach↔client role system; CSV
+  export/import and backup (including importing the original spreadsheet); a
   configurable widget dashboard; biometric login for encrypted health data.
