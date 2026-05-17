@@ -59,8 +59,23 @@
       "bodyFat": "% grasa",
       "muscle": "% músculo",
       "water": "% agua",
+      "fat": "Grasa",
+      "lean": "Magra",
       "empty": "Registra grasa, músculo o agua para ver esta gráfica.",
-      "help": "Valores interpolados linealmente entre mediciones con datos."
+      "help": "Grasa + magra suman exactamente el 100 %. Valores interpolados linealmente entre mediciones con datos.",
+      "helpKg": "Descomposición en kg a partir del peso registrado. Solo informativo: no alimenta proteína ni TDEE.",
+      "unit": {
+        "label": "Unidad",
+        "pct": "%",
+        "kg": "kg"
+      },
+      "trends": {
+        "title": "Tendencias independientes",
+        "help": "Series independientes (no apiladas): el agua se distribuye dentro del tejido magro, así que grasa/músculo/agua no son particiones disjuntas.",
+        "bodyFat": "Tendencia de grasa",
+        "muscle": "Tendencia de músculo",
+        "water": "Tendencia de agua"
+      }
     },
     "macros": {
       "title": "Nutrición diaria",

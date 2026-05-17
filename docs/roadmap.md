@@ -289,7 +289,14 @@ reference shard carries it (never edit the decision entry).
 ## R-11 — Composition-chart redesign: fat/lean 100% stack + muscle/water trend charts + local %↔kg toggle
 - **decision:** D-D5
 - **blocked-by:** —
-- **status:** todo
+- **status:** done (2026-05-18) — `CompositionChart.tsx` reworked: fat/lean
+  2-series stack (fat bottom, `domain={[0,100]}` in % mode, auto in kg mode);
+  pure `composition.ts` helpers (`leanPct`/`fatKg`/`leanKg`/`pctToKg`) with
+  unit tests; independent non-stacked `TrendChart` cards for bodyFat%/muscle%/
+  water% in a responsive grid below the stack; local `useState` `%↔kg`
+  `UnitToggle` (TimeRangePills pattern — no URL/persistence). `interpolateSeries`
+  reused (no second copy). Presentational only — no protein/TDEE/targets
+  touched. vitest 90/90.
 - **scope:** One implementation sprint (chart-rework feature).
   1. Rework `CompositionChart.tsx`: fat%/lean% 2-series stack (fat bottom),
      `domain={[0,100]}` retained (now correct). Derive `lean = 100 − bodyFat`
