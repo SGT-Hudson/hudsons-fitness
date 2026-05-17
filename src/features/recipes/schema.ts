@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { pickFirstError } from '@/lib/zod';
 
 // Co-located zod schema for the recipe editor form (D-C2/D-C3, R-09).
 //
@@ -93,13 +94,5 @@ export type RecipeFormValues = z.infer<typeof recipeFormSchema>;
 export function firstRecipeError(
   errors: Record<string, { message?: string } | undefined>,
 ): RecipeErrorCode | null {
-  const codes = new Set<string>();
-  for (const key of ['name', 'servings', 'rows']) {
-    const m = errors[key]?.message;
-    if (m) codes.add(m);
-  }
-  for (const code of RECIPE_ERROR_ORDER) {
-    if (codes.has(code)) return code;
-  }
-  return null;
+  return pickFirstError(errors, ['name', 'servings', 'rows'], RECIPE_ERROR_ORDER);
 }

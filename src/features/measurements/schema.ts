@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { optionalNumericString, requiredNumericString } from '@/lib/zod';
 
 // Co-located zod schema for the measurement entry form (D-C2/D-C3, R-09).
 // Parity with the prior hand-rolled `parseOptional` + `weight === null →
@@ -24,43 +25,17 @@ import { z } from 'zod';
 // declared bound emits the distinct `range` code so the form can surface a
 // range-specific message instead of the misleading "required" one. The
 // rejection itself is unchanged — only which message text is shown.
-
-const requiredNumericString = (min: number, max: number, requiredCode: string) =>
-  z.string().superRefine((s, ctx) => {
-    if (s.trim() === '') {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: requiredCode });
-      return;
-    }
-    const n = Number(s);
-    if (!Number.isFinite(n) || n < min || n > max) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'range' });
-    }
-  }).transform((s) => Number(s));
-
-const optionalNumericString = (max: number) =>
-  z
-    .string()
-    .transform((s) => {
-      if (s.trim() === '') return null;
-      const n = Number(s);
-      return Number.isFinite(n) ? n : null; // non-finite → null (parseOptional parity)
-    })
-    .superRefine((n, ctx) => {
-      // null passes (blank / non-finite → null, parseOptional parity); only a
-      // finite, in-range out-of-bound number is rejected — same accept/reject
-      // set as the prior `.pipe(z.number().min(0).max(max).nullable())`, just
-      // with the distinct `range` code so the message isn't the required copy.
-      if (n !== null && (n < 0 || n > max)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'range' });
-      }
-    });
+//
+// `requiredNumericString` / `optionalNumericString` are the shared helpers in
+// `@/lib/zod` (R-09 pattern A). The optional helper's min was implicitly 0
+// here; the shared helper takes it explicitly, so the call sites pass 0.
 
 export const measurementFormSchema = z.object({
   measured_on: z.string().min(1),
   weight_kg: requiredNumericString(20, 400, 'weightRequired'),
-  body_fat_pct: optionalNumericString(70),
-  muscle_pct: optionalNumericString(100),
-  water_pct: optionalNumericString(100),
+  body_fat_pct: optionalNumericString(0, 70),
+  muscle_pct: optionalNumericString(0, 100),
+  water_pct: optionalNumericString(0, 100),
   notes: z.string(),
 });
 

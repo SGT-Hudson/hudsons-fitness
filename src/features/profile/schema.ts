@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { requiredNumericString } from '@/lib/zod';
 
 // Co-located zod schemas for the profile-backed forms (D-C2/D-C3, R-09).
 // OnboardingPage and the SettingsPage cards have no page feature folder; the
@@ -41,18 +42,12 @@ const sexInput = z
 // value outside the declared bound emits the distinct `range` code so the
 // form can surface a range-specific message. The rejection set is unchanged
 // (blank/non-finite still fails) — only which message is shown.
+//
+// This is the shared `requiredNumericString` helper from `@/lib/zod` (R-09
+// pattern A) bound to the `required` code these profile forms use.
 /** string `<input>` value → bounded number; blank/non-finite fails the bound. */
 const numericString = (min: number, max: number) =>
-  z.string().superRefine((s, ctx) => {
-    if (s.trim() === '') {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'required' });
-      return;
-    }
-    const n = Number(s);
-    if (!Number.isFinite(n) || n < min || n > max) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'range' });
-    }
-  }).transform((s) => Number(s));
+  requiredNumericString(min, max, 'required');
 
 export const onboardingFormSchema = z.object({
   sex: sexInput,

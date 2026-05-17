@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { pickFirstError } from '@/lib/zod';
 
 // Co-located zod schemas for the planning dialogs (D-C2/D-C3, R-09).
 // All error copy stays in the components (localized `t(...)`); the schemas
@@ -53,13 +54,9 @@ export type RecipePickerFormValues = z.infer<typeof recipePickerFormSchema>;
 export function firstRecipePickerError(
   errors: Record<string, { message?: string } | undefined>,
 ): RecipePickerErrorCode | null {
-  const codes = new Set<string>();
-  for (const key of ['hasRecipe', 'servings']) {
-    const m = errors[key]?.message;
-    if (m) codes.add(m);
-  }
-  for (const code of RECIPE_PICKER_ERROR_ORDER) {
-    if (codes.has(code)) return code;
-  }
-  return null;
+  return pickFirstError(
+    errors,
+    ['hasRecipe', 'servings'],
+    RECIPE_PICKER_ERROR_ORDER,
+  );
 }
