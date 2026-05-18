@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { isoDate } from '@/lib/dates';
+import { todayInTZ } from '@/lib/dates';
 import type { Tables, TablesInsert, TablesUpdate } from '@/types/database';
 
 export type Phase = Tables<'phases'>;
@@ -16,7 +16,10 @@ export async function listPhases(userId: string): Promise<Phase[]> {
 }
 
 export async function fetchActivePhase(userId: string): Promise<Phase | null> {
-  const today = isoDate();
+  // Canonical Europe/Madrid "today" (R-09 follow-up): "which phase is active
+  // today" must use the same day boundary as the rest of the app, not the
+  // host TZ (UTC in prod/CI would be a day off near Madrid midnight).
+  const today = todayInTZ();
   const { data, error } = await supabase
     .from('phases')
     .select('*')
