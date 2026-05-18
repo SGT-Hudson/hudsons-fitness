@@ -68,7 +68,7 @@ into `auth.users` (the `handle_new_user` trigger then creates the matching
 - `lint-build` (existing, **required**, blocks auto-merge): `pnpm install`,
   `pnpm lint`, `pnpm build`, `pnpm test` (Tier-1 + Tier-2). Unchanged.
 - `db-tests` (**new, separate file, `workflow_dispatch` only, NOT a required
-  check**): installs the Supabase CLI, `supabase db start`, `supabase test
+  check**): installs the Supabase CLI, `supabase start`, `supabase test
   db` (Tier-3 pgTAP), then the R-00 reproducibility script. It is manual on
   purpose: it has never had a green run (no local Docker/CLI in the authoring
   environment), so wiring it into branch protection now would block
@@ -86,7 +86,7 @@ Tier-3 is **authored but not executed**. The authoring environment has no
 Docker and no Supabase CLI, so `supabase start` / `supabase test db` cannot
 run here. R-16 stays `in-progress` until a machine with Docker + the CLI runs:
 
-    supabase db start
+    supabase start
     supabase test db
     bash scripts/db-reproducibility-check.sh   # R-00 reproducibility
 
