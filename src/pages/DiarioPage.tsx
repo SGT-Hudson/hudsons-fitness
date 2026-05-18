@@ -137,6 +137,11 @@ export function DiarioPage() {
         targets={targets}
         proteinBasis={proteinBasis}
         tdeeConfidence={tdeeConfidence}
+        phaseType={activePhase.data?.phase_type as
+          | 'cut'
+          | 'maintenance'
+          | 'bulk'
+          | undefined}
       />
 
       {logs.isLoading ? (
