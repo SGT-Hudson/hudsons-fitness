@@ -413,17 +413,60 @@ but effective at this scale.
 
 ## Schema-in-migrations status
 
-Only one migration file exists —
-`supabase/migrations/20260514120000_sprint9_cron_and_jobs.sql` (the Sprint 9
-cron + jobs). The rest of the schema (all 15 tables, RLS policies, RPCs,
-views, extensions) was built via the Supabase dashboard / MCP and is **not**
-reproducible from `supabase/migrations/` — there is no migration history to
-stand up an equivalent local database. RLS/RPC correctness therefore rests on
-manual review only today.
+The live schema is now captured in-repo. The baseline migration
+`supabase/migrations/20260508080000_r00_baseline_schema.sql` (R-00) was
+reconstructed read-only from `information_schema`/`pg_catalog` and recreates
+the full pre-existing `public` schema (15 tables, RLS policies, the 4 user
+RPCs, the `handle_new_user`/`mark_week_diverged` triggers, the
+`body_measurements_smoothed` view, the `extensions`-schema extensions). The
+reproducibility gap is closed in-repo: `supabase/migrations/` is now a
+complete history rather than the lone Sprint-9 file.
 
-Baselining the live schema into a complete, reproducible migration history is
-the cross-cutting prerequisite that unblocks the generated-types switch
-(R-04), the Tier-3 DB/RLS/RPC tests (R-16), and the `bone_kg` (R-03),
-`profiles.units` (R-14), and `materialize_plan_for_date` (R-12) migrations:
+**Migration sequence and the staged Wave-3 split.** The intended apply order
+is filename-lexicographic:
 
-> ⚠ Changing — see R-00
+```
+20260508080000_r00_baseline_schema.sql      # pre-Sprint-9 baseline (R-00)
+20260514120000_sprint9_cron_and_jobs.sql    # Sprint 9 cron/RPC/Vault helper
+20260518000000_r06_fat_pct_check.sql        # STAGED — Wave-3 (R-06)
+20260518010000_r18_cron_healthcheck.sql     # STAGED — Wave-3 (R-18)
+20260518020000_r07_adaptive_tdee_state.sql  # STAGED — Wave-3 (R-07)
+```
+
+The baseline deliberately excludes the objects the Sprint-9 migration already
+owns (`pg_net`/`pg_cron`, the `private` schema + `invoke_edge_function`,
+`apply_template_to_week_admin`, the `tdee_estimates (user_id, computed_on)`
+unique constraint, the three cron jobs), so `baseline + sprint9` together
+equal the full live schema with no double-create error; the staged Wave-3
+files then layer their changes on top. The baseline reflects the schema **as
+it is now**, not the Wave-3 future (it does not contain the R-06 CHECK, R-18
+cron, R-07 `tdee_state`, R-03/R-08/R-14 drops, or the R-12 RPC).
+
+**Not auto-applied; prod re-apply is a Wave-3 no-op check.** CI does not run
+migrations and the live prod DB already contains every baseline object, so the
+baseline file is not applied by its PR. It is written with
+`create … if not exists` / guarded DDL specifically so that applying it to the
+existing prod DB is a safe no-op. Actually verifying that no-op against prod
+via the Supabase CLI (`supabase db`) is itself a **Wave-3 validation item** —
+it cannot be run from this environment (no Supabase CLI / local Postgres
+here), so it is tracked, not performed, by the R-00 PR.
+
+**Regen / verify command.** To regenerate the baseline from a live project (or
+to diff the repo migrations against prod), use the Supabase CLI from a machine
+that has it installed and is linked to the project:
+
+```bash
+# Regenerate a schema-only dump of the live prod schema:
+supabase db dump --project-ref upvraruehzurbetzrxov --schema public -f schema.sql
+
+# Reproducibility check (Wave-3): stand up the migration history locally and
+# confirm it matches prod (expected: no diff / a clean no-op apply).
+supabase db reset            # applies supabase/migrations/* to a local DB
+supabase db diff --linked    # diff local migration state vs the linked prod DB
+```
+
+Tier-3 DB/RLS/RPC tests (R-16) can now stand up a local DB from this history
+via `supabase start` + pgTAP; the generated-types switch (R-04) and the
+staged `bone_kg` (R-03), `profiles.units` (R-14), dead-`tdee_estimates`-cols
+(R-08), and `materialize_plan_for_date` (R-12) migrations now sit on a
+reproducible baseline.
