@@ -37,7 +37,7 @@ const BAR_TONE: Record<MacroTone, string> = {
   overBudget: 'bg-destructive',
   floorMet: 'bg-emerald-600 dark:bg-emerald-500',
   floorUnderSoft: 'bg-muted-foreground/50',
-  floorUnderWarn: 'bg-amber-500',
+  floorUnderWarn: 'bg-amber-500 dark:bg-amber-400',
   flex: 'bg-muted-foreground/40',
 };
 
@@ -64,9 +64,9 @@ function MacroBlock({
   if (hasTarget) {
     const n = Math.abs(roundMacro(s.remaining));
     if (macroKey === 'proteinG') {
-      sub = s.tone === 'floorMet' ? t('totals.proteinMet', { n }) : t('totals.remainingG', { n });
+      sub = s.tone === 'floorMet' ? t('totals.floorMet', { n }) : t('totals.remainingG', { n });
     } else if (macroKey === 'fiberG') {
-      sub = s.tone === 'floorMet' ? t('totals.proteinMet', { n }) : t('totals.fiberBelowMin', { n });
+      sub = s.tone === 'floorMet' ? t('totals.floorMet', { n }) : t('totals.fiberBelowMin', { n });
     } else {
       sub = s.remaining >= 0 ? t('totals.remainingG', { n }) : t('totals.overG', { n });
     }

@@ -36,7 +36,7 @@
     "heroOver": "kcal de más",
     "remainingG": "faltan {{n}} g",
     "overG": "+{{n}} g de más",
-    "proteinMet": "✓ cubierto +{{n}} g",
+    "floorMet": "✓ cubierto +{{n}} g",
     "fiberBelowMin": "{{n}} g bajo el mínimo",
     "consumedOf": "{{consumed}} / {{target}} consumidas"
   },
