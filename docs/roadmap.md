@@ -198,7 +198,7 @@ reference shard carries it (never edit the decision entry).
   (`supabase/migrations/20260518020000_r07_adaptive_tdee_state.sql`) +
   edge deploy applied at Wave-3 prod checkpoint. Filter = 2-state linear
   Kalman on `[trend_weight, expenditure]` in the pure core
-  `src/core/tdee.ts` (deterministic Vitest, 17 tests); schema approach =
+  `src/core/tdee.ts` (deterministic Vitest, 18 tests); schema approach =
   new `tdee_state` table + 2 nullable `tdee_estimates` cols
   (`confidence`/`is_warmup`) — order-free wrt the separately-staged R-08
   col-drop. `body_measurements_smoothed` retained (no longer the TDEE
