@@ -13,11 +13,6 @@
   "heightCm": "Altura (cm)",
   "initialWeightKg": "Peso actual (kg)",
   "initialWeightWarning": "Esta medición queda fijada como referencia histórica y no se puede editar después. Pésate antes de continuar — no introduzcas un valor aproximado.",
-  "boneKg": {
-    "label": "Peso óseo (kg)",
-    "estimate": "Estimar",
-    "help": "El peso óseo apenas cambia con el tiempo, así que solo lo pedimos una vez. Editable en Ajustes."
-  },
   "errors": {
     "required": "Completa todos los campos.",
     "outOfRange": "Algunos valores están fuera del rango permitido."

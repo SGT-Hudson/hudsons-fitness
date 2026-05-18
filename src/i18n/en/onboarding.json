@@ -13,11 +13,6 @@
   "heightCm": "Height (cm)",
   "initialWeightKg": "Current weight (kg)",
   "initialWeightWarning": "This measurement is locked in as your historical anchor and cannot be edited later. Weigh yourself before continuing — don't enter an approximate value.",
-  "boneKg": {
-    "label": "Bone weight (kg)",
-    "estimate": "Estimate",
-    "help": "Bone weight barely changes over time, so we only ask once. Editable in Settings."
-  },
   "errors": {
     "required": "Fill in all fields.",
     "outOfRange": "Some values are outside the allowed range."

@@ -128,19 +128,3 @@ export function mifflinStJeor(opts: {
     10 * opts.weightKg + 6.25 * opts.heightCm - 5 * opts.ageYears;
   return opts.sex === 'male' ? base + 5 : base - 161;
 }
-
-export function estimateBoneKg(opts: {
-  heightCm: number;
-  weightKg: number;
-  ageYears: number;
-  sex: 'male' | 'female' | 'other';
-}): number {
-  const base =
-    -0.25 +
-    0.046 * opts.heightCm +
-    0.036 * opts.weightKg -
-    0.012 * opts.ageYears;
-  const sexFactor =
-    opts.sex === 'male' ? 1.05 : opts.sex === 'female' ? 0.95 : 1.0;
-  return Math.round(base * sexFactor * 100) / 100;
-}
