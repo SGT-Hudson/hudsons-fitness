@@ -114,7 +114,15 @@ reference shard carries it (never edit the decision entry).
 ## R-03 — Drop profiles.bone_kg + purge estimateBoneKg/onboarding/settings/gate/i18n
 - **decision:** D-A6
 - **blocked-by:** R-00
-- **status:** todo
+- **status:** in-progress — code purge + `src/types/database.ts` hand-edit
+  merged (`estimateBoneKg` deleted; `boneKg` removed from
+  OnboardingPage/SettingsPage + the `onboarding`/`biometrics` zod schemas;
+  `isProfileOnboarded` no longer gates on bone; i18n keys removed ES+EN;
+  `profiles` Row/Insert/Update no longer carry `bone_kg`). The
+  `ALTER TABLE … DROP COLUMN bone_kg` is **staged**, not applied:
+  `supabase/migrations/20260518030000_r03_drop_bone_kg.sql` (staged header,
+  applied by the operator at the Wave-3 prod-migration checkpoint — prod
+  apply gated, live DB untouched). NOT done until the prod drop.
 - **scope:**
   1. DB migration: `ALTER TABLE profiles DROP COLUMN bone_kg;` (new file in
      `supabase/migrations/`).

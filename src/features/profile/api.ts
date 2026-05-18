@@ -33,7 +33,6 @@ export function isProfileOnboarded(p: Profile | null | undefined): boolean {
     p.sex !== null &&
     p.birth_date !== null &&
     p.height_cm !== null &&
-    p.initial_weight_kg !== null &&
-    p.bone_kg !== null
+    p.initial_weight_kg !== null
   );
 }

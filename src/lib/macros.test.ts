@@ -3,7 +3,6 @@ import {
   computeDailyMacroTargets,
   computeTargetWeightKg,
   mifflinStJeor,
-  estimateBoneKg,
   fractionToPct,
   pctToFraction,
   PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM,
@@ -270,36 +269,5 @@ describe('fractionToPct / pctToFraction (D-B3 / R-06)', () => {
     expect(fractionToPct(1)).toBe(100);
     expect(pctToFraction(0)).toBe(0);
     expect(pctToFraction(100)).toBe(1);
-  });
-});
-
-describe('estimateBoneKg', () => {
-  it('applies the sex factor and rounds to 2 decimals', () => {
-    // base = -0.25 + 0.046*180 + 0.036*80 - 0.012*30
-    //      = -0.25 + 8.28 + 2.88 - 0.36 = 10.55
-    const base = -0.25 + 0.046 * 180 + 0.036 * 80 - 0.012 * 30;
-    const male = estimateBoneKg({
-      heightCm: 180,
-      weightKg: 80,
-      ageYears: 30,
-      sex: 'male',
-    });
-    expect(male).toBe(Math.round(base * 1.05 * 100) / 100);
-
-    const female = estimateBoneKg({
-      heightCm: 180,
-      weightKg: 80,
-      ageYears: 30,
-      sex: 'female',
-    });
-    expect(female).toBe(Math.round(base * 0.95 * 100) / 100);
-
-    const other = estimateBoneKg({
-      heightCm: 180,
-      weightKg: 80,
-      ageYears: 30,
-      sex: 'other',
-    });
-    expect(other).toBe(Math.round(base * 1.0 * 100) / 100);
   });
 });

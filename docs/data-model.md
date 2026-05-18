@@ -33,13 +33,13 @@ Extends Supabase's built-in `auth.users`. One row per user (`id` is the FK to `a
 | `sex` | `text`, check in (`'male'`, `'female'`, `'other'`) |
 | `birth_date` | `date` |
 | `height_cm` | `numeric(5,1)` |
-| `bone_kg` | `numeric(4,2)` — absolute bone mass in kg (smart-scale convention) |
+| `bone_kg` | `numeric(4,2)` — absolute bone mass in kg (smart-scale convention) — still in prod; removed from app + types, `DROP` staged for Wave-3 |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
 
 > ⚠ Changing — see R-03 (D-A6)
 
-The `bone_kg` column lives here on `profiles` (a single per-user value), not on `body_measurements`. It is dead and slated for removal along with its onboarding/settings/gate/i18n surfaces.
+The `bone_kg` column lives here on `profiles` (a single per-user value), not on `body_measurements`. It was dead — it fed zero computations and added mandatory onboarding friction (D-A6). It is now **removed from the app + `src/types/database.ts`** (`estimateBoneKg`, the onboarding/settings inputs, the `isProfileOnboarded` gate, and the i18n keys are all gone), but the physical column still exists in the live `profiles` table: the `ALTER TABLE … DROP COLUMN bone_kg` is staged in `supabase/migrations/20260518030000_r03_drop_bone_kg.sql` and applied by the operator at the Wave-3 prod-migration checkpoint. The marker stays until that prod drop lands.
 
 > ⚠ Changing — see R-14 (D-E3)
 

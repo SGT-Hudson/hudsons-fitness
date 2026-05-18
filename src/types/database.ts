@@ -447,7 +447,6 @@ export type Database = {
       profiles: {
         Row: {
           birth_date: string | null;
-          bone_kg: number | null;
           created_at: string;
           display_name: string | null;
           height_cm: number | null;
@@ -461,7 +460,6 @@ export type Database = {
         };
         Insert: {
           birth_date?: string | null;
-          bone_kg?: number | null;
           created_at?: string;
           display_name?: string | null;
           height_cm?: number | null;
@@ -475,7 +473,6 @@ export type Database = {
         };
         Update: {
           birth_date?: string | null;
-          bone_kg?: number | null;
           created_at?: string;
           display_name?: string | null;
           height_cm?: number | null;

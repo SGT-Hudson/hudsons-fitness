@@ -28,8 +28,6 @@
     "sexOther": "Otro / prefiero no decir",
     "birthDate": "Fecha de nacimiento",
     "heightCm": "Altura (cm)",
-    "boneKg": "Peso óseo (kg)",
-    "boneKgHelp": "Apenas cambia con el tiempo; ajústalo solo si tienes un valor más preciso.",
     "initialWeightKg": "Peso inicial (kg)",
     "initialWeightKgHelp": "Ancla histórica fijada en el onboarding. No editable."
   },
