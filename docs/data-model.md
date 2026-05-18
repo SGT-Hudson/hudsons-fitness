@@ -27,7 +27,7 @@ Extends Supabase's built-in `auth.users`. One row per user (`id` is the FK to `a
 | `id` | `uuid` primary key, references `auth.users(id)` on delete cascade |
 | `display_name` | `text` |
 | `language` | `text` not null default `'es'`, check in (`'es'`, `'en'`) |
-| `units` | `text` not null default `'metric'`, check in (`'metric'`, `'imperial'`) |
+| `units` | `text` not null default `'metric'`, check in (`'metric'`, `'imperial'`) — still in prod; removed from types, `DROP` staged for Wave-3 (R-14) |
 | `start_date` | `date` not null default `current_date` |
 | `initial_weight_kg` | `numeric(5,2)` |
 | `sex` | `text`, check in (`'male'`, `'female'`, `'other'`) |
@@ -43,7 +43,7 @@ The `bone_kg` column lives here on `profiles` (a single per-user value), not on 
 
 > ⚠ Changing — see R-14 (D-E3)
 
-The `units` column is dead legacy: no form writes it, nothing reads it, and the app is metric-only. It is slated for removal.
+The `units` column is dead legacy: no form writes it, nothing reads it, and the app is metric-only (D-E3). It is now **removed from `src/types/database.ts`** (it was code-dead — no `profiles.units` read/write existed anywhere, so no app code changed), but the physical column still exists in the live `profiles` table: the `ALTER TABLE … DROP COLUMN units` is staged in `supabase/migrations/20260518040000_r14_drop_units.sql` and applied by the operator at the Wave-3 prod-migration checkpoint. The marker stays until that prod drop lands.
 
 ### `body_measurements`
 
