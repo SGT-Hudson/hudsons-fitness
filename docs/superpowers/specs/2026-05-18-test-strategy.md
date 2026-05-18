@@ -41,8 +41,11 @@ form's validation-to-payload mapping → Tier 2; anything whose correctness is
   and missing weeks, is idempotent via the partial unique index, and maps
   `meal_index → meal_type` correctly; `save_recipe` create-vs-update +
   not-owned raises; the `meal_log_one_source` exactly-one CHECK; the `phases`
-  per-user non-overlap EXCLUDE; the shared-data `ON DELETE RESTRICT`
-  backstop; `handle_new_user` auto-profile; `mark_week_diverged` today+ only.
+  per-user non-overlap EXCLUDE. Deferred (not behaviorally exercised here —
+  would expand `plan()` scope): the shared-data `ON DELETE RESTRICT` backstop
+  and `mark_week_diverged` today+; `handle_new_user` is exercised indirectly
+  as the profile-seeding mechanism in `01_rls_behavioral.sql`, not as an
+  explicit contract.
 
 Structural is exhaustive (all tables); behavioral is depth on the
 security-critical and non-obvious surfaces. Together they pin RLS against
