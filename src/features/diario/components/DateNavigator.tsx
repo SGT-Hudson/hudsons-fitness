@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { addDays, isAfter, parseISO } from 'date-fns';
-import { formatDate, isoDate, type Locale } from '@/lib/dates';
+import { formatDate, isoDate, todayInTZ, type Locale } from '@/lib/dates';
 
 interface Props {
   date: string;
@@ -13,7 +13,11 @@ interface Props {
 export function DateNavigator({ date, onChange }: Props) {
   const { t, i18n } = useTranslation('diario');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
-  const today = isoDate();
+  // Canonical Europe/Madrid "today" (R-09 follow-up): the date-input `max`,
+  // the isToday check, and the future-shift guard must all agree with the
+  // rest of the app's day boundary. Host-TZ `isoDate()` would be a day behind
+  // near Madrid midnight on a UTC host.
+  const today = todayInTZ();
   const isToday = date === today;
 
   function shift(days: number) {

@@ -256,6 +256,11 @@ reference shard carries it (never edit the decision entry).
   `environmentMatchGlobs` while Tier-1 `*.test.ts` stay Node; PhaseDialog +
   MeasurementDialog component tests added. CI `lint-build` job unchanged.
   vitest 98/98 (90 Tier-1 + 8 Tier-2).
+- **follow-up:** done (2026-05-18) — the canonical `todayInTZ()` (Europe/Madrid
+  day boundary) introduced by this fix is now also used by the two sibling
+  host-TZ "today" sites left out of the original PR's scope: `DateNavigator.tsx`
+  (date-input `max` + isToday + future-shift guard) and `phases/api.ts`
+  `fetchActivePhase` (active-phase-on date). `todayInTZ` migration complete.
 - **scope:**
   - Audit first: grep `useForm|useState.*[A-Z]Form|onChange=\{` to enumerate
     every form. Estimate ~6–8 (OnboardingPage, IngredienteEditor,
