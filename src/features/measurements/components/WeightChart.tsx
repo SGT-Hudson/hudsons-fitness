@@ -4,6 +4,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -20,7 +21,7 @@ interface Point {
   ma5: number | null;
 }
 
-export function WeightChart() {
+export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null }) {
   const { t, i18n } = useTranslation('metricas');
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
   const [range, setRange] = useState<TimeRange>('90d');
@@ -41,12 +42,13 @@ export function WeightChart() {
     const values = points
       .flatMap((p) => [p.weight, p.ma5])
       .filter((v): v is number => v != null);
+    if (targetWeightKg != null) values.push(targetWeightKg);
     if (values.length === 0) return undefined;
     const min = Math.min(...values);
     const max = Math.max(...values);
     const pad = Math.max(0.5, (max - min) * 0.1);
     return [Math.floor(min - pad), Math.ceil(max + pad)];
-  }, [points]);
+  }, [points, targetWeightKg]);
 
   return (
     <Card>
@@ -68,6 +70,21 @@ export function WeightChart() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={points} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                {targetWeightKg != null && (
+                  <ReferenceLine
+                    y={targetWeightKg}
+                    stroke="hsl(var(--primary))"
+                    strokeDasharray="4 4"
+                    label={{
+                      value: t('charts.weight.targetLine', {
+                        n: targetWeightKg.toFixed(1),
+                      }),
+                      position: 'insideTopRight',
+                      fontSize: 10,
+                      fill: 'hsl(var(--primary))',
+                    }}
+                  />
+                )}
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}

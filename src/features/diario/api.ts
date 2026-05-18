@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import type { Tables, TablesInsert, TablesUpdate } from '@/types/database';
 import type { Ingredient } from '@/features/ingredients/api';
+import { computeRecipeMacros } from '@/features/recipes/macros';
+import type { QuickAddRow } from './quickAdd';
 
 export type MealLog = Tables<'meal_logs'>;
 export type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner' | 'other';
@@ -166,4 +168,65 @@ export async function materializePlanForDate(
   });
   if (error) throw error;
   return data ?? 0;
+}
+
+// Recent recipe meal-logs (last 60 days) for the quick-add blend. Reuses the
+// same recipe→ingredients join as fetchMealLogsForDay so per-serving kcal is
+// computed from the canonical recipe-macro path. Deleted recipes are excluded
+// (interim until R-01).
+export async function fetchQuickAddRecipeRows(
+  userId: string,
+  sinceISO: string,
+): Promise<QuickAddRow[]> {
+  const { data, error } = await supabase
+    .from('meal_logs')
+    .select(
+      `logged_on,
+       recipe:recipes (
+         id, name, servings, deleted_at,
+         recipe_ingredients (
+           quantity, per_serving,
+           ingredient:ingredients (*)
+         )
+       )`,
+    )
+    .eq('user_id', userId)
+    .not('recipe_id', 'is', null)
+    .gte('logged_on', sinceISO)
+    .order('logged_on', { ascending: false })
+    .limit(250);
+  if (error) throw error;
+
+  const rows: QuickAddRow[] = [];
+  for (const r of (data ?? []) as unknown as Array<{
+    logged_on: string;
+    recipe: {
+      id: string;
+      name: string;
+      servings: number;
+      deleted_at: string | null;
+      recipe_ingredients: {
+        quantity: number;
+        per_serving: boolean;
+        ingredient: RecipeIngredientJoin['ingredient'];
+      }[];
+    } | null;
+  }>) {
+    if (!r.recipe || r.recipe.deleted_at != null) continue;
+    const { perServing } = computeRecipeMacros({
+      servings: r.recipe.servings,
+      rows: r.recipe.recipe_ingredients.map((ri) => ({
+        ingredient: ri.ingredient,
+        quantity: Number(ri.quantity),
+        perServing: ri.per_serving,
+      })),
+    });
+    rows.push({
+      recipeId: r.recipe.id,
+      name: r.recipe.name,
+      kcalPerServing: Math.round(perServing.kcal),
+      loggedOn: r.logged_on,
+    });
+  }
+  return rows;
 }

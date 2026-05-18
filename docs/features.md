@@ -59,8 +59,38 @@ Users log measurements with `weight_kg` plus optional `body_fat_pct`,
 moving average; the first days use a shorter window) so trend consumers read
 smoothed weight rather than raw weigh-ins.
 
-The `/progreso` page renders a weight chart (raw + smoothed) and a
-composition chart. The composition chart's main view is a **2-series stacked
+The `/progreso` page leads with a **`LatestMeasurementCard`** whose weight
+headline is the **smoothed (5-day-avg) trend weight** (`latestMa5`) rather
+than the raw weigh-in. Alongside it a **rate per week** (`smoothedRatePerWeek`
+— kg/week over a 7-day lookback on the smoothed series) is shown in
+phase-aware color. A secondary line shows **since-start** (`latestMa5 −
+profile.initial_weight_kg`) and **to-goal** (`latestMa5 − targetWeightKg`) —
+this line and the to-goal clause render only when the data exists (since-start
+requires `initial_weight_kg` on the profile; to-goal additionally requires a
+derivable target weight). The **target weight** is computed on render by
+`computeTargetWeightKg` from `goal.target_body_fat_pct` + the latest
+`body_fat_pct`/`weight_kg` (fat-free-mass method — assuming fat loss only);
+it is never stored. **Estimated BMR** (Mifflin-St Jeor) is shown as a quiet,
+delta-free line — it is a deterministic function of current weight, so a
+BMR "Δ" would merely restate the weight trend.
+
+Below the weight headline the card shows body-fat, muscle, and water
+percentages with a **≥7-day delta** (`compositionDelta`, same 7-day lookback)
+colored by `deltaTone`: **phase-aware** — weight and body-fat are colored
+toward the active phase's goal (cut: down=good; bulk: up=good for weight;
+body-fat down is always good when any phase is set); muscle up is always good;
+water is always neutral; **everything is neutral when no active phase is set**.
+`ProgresoPage` reads the active phase via `useActivePhase()` and the user's
+goal via `useGoal()` read-only for this coloring and target-weight derivation
+— no writes.
+
+The weight chart (raw + smoothed) draws a **dashed reference line** at the
+derived target weight, but only when it is computable (requires
+`goal.target_body_fat_pct` + current `body_fat_pct` + `weight_kg`). All of
+the above is **derived/presentational only** — never stored, never feeds
+protein/TDEE/targets; no schema, RPC, or edge function was added or changed.
+
+The composition chart's main view is a **2-series stacked
 area** of `fat%` + `lean%` (`lean% ≡ 100 − body_fat_pct`), fat at the bottom,
 with per-series linear interpolation between measurements (no extrapolation
 past the first/last point). fat%/lean% is a true disjoint partition that sums
@@ -161,12 +191,23 @@ stored `protein_g_per_kg`; only new phases get table defaults at create
 time. The mild fallback under-target for a bf%-less cutter is a deliberate
 nudge to log a body-fat %.
 
-The Diario shows the active phase's daily macro targets (kcal, protein,
-carbs, fat, fiber) against what was consumed. The active phase is resolved
-as "today's phase only" — no consumer reconstructs which phase was active on
-a past date. Editing a past phase's macros therefore changes nothing
-downstream: past phases are computationally **inert**. `/objetivos` lists and
-manages all phases.
+The Diario's **DayTotalsCard** leads with a phase-aware kcal-remaining hero:
+on `cut` and `maintenance` it shows a remaining **budget** (target minus
+consumed); on `bulk` it shows a **to-goal** figure (how far the user still
+needs to eat). Consumed and target kcal appear underneath the hero, and a
+low/medium TDEE-confidence badge sits directly below it when the active phase
+uses `tdee_delta` mode. Below the hero a **2×2 macro grid** covers protein,
+carbs, fat, and fiber. Per-macro semantics reflect dietary intent: protein and
+fiber are **floors** — meeting or exceeding the target is success-colored
+(extra protein is never flagged red; fiber below its minimum is amber); kcal
+over target on a non-bulk phase is the sole red "over budget" state; carbs and
+fat are informational/neutral only. The card is **presentational only** — it
+reads logged totals and the active phase's targets and feeds nothing back (no
+protein/TDEE/target writes). The active phase is resolved as "today's phase
+only" — no consumer reconstructs which phase was active on a past date.
+Editing a past phase's macros therefore changes nothing downstream: past
+phases are computationally **inert**. `/objetivos` lists and manages all
+phases.
 
 Past phases follow a **grace-window** model (D-A5), not a hard
 freeze-at-`end_date` cliff. The grace constant is
@@ -210,6 +251,21 @@ snapshot crons also double as the keep-alive that prevents the free-tier
 Supabase project from auto-pausing.
 
 ## Diario & materialization
+
+The Diario logging UX groups entries by meal. The four canonical sections —
+Breakfast, Lunch, Snack, and Dinner — **always render**, even when empty; the
+`other` fallback bucket appears only when it has entries. Each section header
+shows the meal's **kcal subtotal** (or a "— sin registros / — nothing logged"
+label when empty) alongside an add ("+") button that opens the full
+`MealLogDialog`. Below any logged entries, a **quick-add chip strip** lists
+recent and most-frequent recipes derived from the user's `meal_logs` — recent
+entries (logged within ~14 days) first, then backfilled by most-logged frequency over a ~60-day history, capped to a short list (≈6).
+Tapping a chip logs **1 serving** of that recipe to the section's meal type
+instantly (via `createMealLog`) and fires an **undo toast** ("Deshacer /
+Undo") that calls `deleteMealLog` on the just-created entry and invalidates
+the query, reverting as if the tap never happened. This is presentational and
+logging UX only — no schema, RPC, or edge function was added or changed for
+this layer.
 
 The plan is the default truth of what was eaten. When a Diario date has no
 `from_plan = true` `meal_logs` yet, the active-week slots for that date are
