@@ -1,7 +1,7 @@
 -- Tier-3 / R-16 — Structural RLS pin. Exhaustive: every public table has RLS
 -- enabled and exactly the expected policy set. Any drift fails CI.
 begin;
-select plan(31);
+select plan(23);
 
 -- 1. RLS enabled on all 15 tables.
 select ok(
@@ -78,11 +78,6 @@ select policies_are('public','daily_nutrition_history', array[
 select policies_are('public','tdee_estimates', array[
   'Users see own tdee','Users insert own tdee',
   'Users update own tdee','Users delete own tdee']);
-
-select policies_are('public','goals', array[
-  'Users see own goals','Users insert own goals',
-  'Users update own goals','Users delete own goals'],
-  'goals policy set (re-pin)');
 
 -- ingredients: non-uniform shared-library policy set (D-A1).
 select policies_are('public','ingredients', array[
