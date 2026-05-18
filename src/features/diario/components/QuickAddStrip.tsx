@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useQuickAddMealLog,
   deleteMealLog,
@@ -17,6 +18,7 @@ interface Props {
 export function QuickAddStrip({ mealType, date, items }: Props) {
   const { t } = useTranslation('diario');
   const quickAdd = useQuickAddMealLog();
+  const qc = useQueryClient();
 
   if (items.length === 0) return null;
 
@@ -33,7 +35,9 @@ export function QuickAddStrip({ mealType, date, items }: Props) {
               {
                 onSuccess: (created) =>
                   toastUndoableQuickAdd(it.name, () => {
-                    void deleteMealLog(created.id);
+                    void deleteMealLog(created.id).then(() => {
+                      void qc.invalidateQueries({ queryKey: ['meal_logs'] });
+                    });
                   }),
               },
             )

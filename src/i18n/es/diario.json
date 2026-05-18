@@ -81,7 +81,9 @@
     "deleteConfirm": "¿Borrar esta entrada del diario?"
   },
   "quickAdd": {
-    "add": "Añadir {{name}}"
+    "add": "Añadir {{name}}",
+    "added": "{{name}} añadido",
+    "undo": "Deshacer"
   },
   "errors": {
     "pickRecipe": "Selecciona una receta.",

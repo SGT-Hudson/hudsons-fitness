@@ -81,7 +81,9 @@
     "deleteConfirm": "Delete this diary entry?"
   },
   "quickAdd": {
-    "add": "Add {{name}}"
+    "add": "Add {{name}}",
+    "added": "{{name}} added",
+    "undo": "Undo"
   },
   "errors": {
     "pickRecipe": "Pick a recipe.",
