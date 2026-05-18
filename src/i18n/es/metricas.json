@@ -27,7 +27,7 @@
       "usingValues": "se usa el último valor registrado"
     },
     "weightTrendLabel": "Peso · tendencia (media 5d)",
-    "ratePerWeek": "{{n}} kg / sem",
+    "rateUnit": "kg / sem",
     "sinceStart": "{{n}} kg desde el inicio",
     "toGoal": "faltan {{n}} kg al objetivo ({{target}})",
     "noTrend": "tendencia no disponible aún"

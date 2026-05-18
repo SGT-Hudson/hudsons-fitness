@@ -27,7 +27,7 @@
       "usingValues": "using the latest value"
     },
     "weightTrendLabel": "Weight · trend (5-day avg)",
-    "ratePerWeek": "{{n}} kg / wk",
+    "rateUnit": "kg / wk",
     "sinceStart": "{{n}} kg since the start",
     "toGoal": "{{n}} kg to goal ({{target}})",
     "noTrend": "trend not available yet"

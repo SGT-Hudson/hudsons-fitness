@@ -227,7 +227,7 @@ export function LatestMeasurementCard({
               <span
                 className={cn('text-sm font-semibold tabular-nums', TONE_CLASS[rateTone])}
               >
-                {signed(rate)} {t('latest.ratePerWeek', { n: '' }).trim()}
+                {signed(rate)} {t('latest.rateUnit')}
               </span>
             )}
           </div>
@@ -246,15 +246,15 @@ export function LatestMeasurementCard({
 
         {/* BMR — quiet, derived, no delta (T1b) */}
         {bmr !== null && (
-          <div className="flex items-baseline justify-between border-t pt-3 text-sm">
-            <span className="text-muted-foreground">{t('fields.estimatedBmr')}</span>
-            <span className="font-semibold tabular-nums">{Math.round(bmr)} kcal</span>
-          </div>
-        )}
-        {bmr !== null && (
-          <p className="text-[11px] text-muted-foreground -mt-2">
-            {t('fields.estimatedBmrHelp')}
-          </p>
+          <>
+            <div className="flex items-baseline justify-between border-t pt-3 text-sm">
+              <span className="text-muted-foreground">{t('fields.estimatedBmr')}</span>
+              <span className="font-semibold tabular-nums">{Math.round(bmr)} kcal</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground -mt-2">
+              {t('fields.estimatedBmrHelp')}
+            </p>
+          </>
         )}
 
         {/* Composition 3-up with phase-aware deltas */}
