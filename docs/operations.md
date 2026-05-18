@@ -95,7 +95,8 @@ supabase/
 ├── migrations/
 │   ├── 20260514120000_sprint9_cron_and_jobs.sql
 │   ├── 20260518000000_r06_fat_pct_check.sql        # STAGED — Wave-3
-│   └── 20260518010000_r18_cron_healthcheck.sql     # STAGED — Wave-3
+│   ├── 20260518010000_r18_cron_healthcheck.sql     # STAGED — Wave-3
+│   └── 20260518020000_r07_adaptive_tdee_state.sql  # STAGED — Wave-3
 └── functions/
     ├── _shared/macros.ts
     ├── daily-nutrition-snapshot/index.ts   # 0 1 * * *  UTC (≈02:00 CET)
@@ -153,8 +154,22 @@ curl -X POST \
 - `daily-nutrition-snapshot` uses the shared pure macro core (no mirrored
   math). Per-100g ingredients divide by 100; per-unit ingredients divide by 1;
   `per_serving` rows scale with the recipe's `servings` before contributing.
-- `recalculate-tdee` uses 14 days, 7700 kcal/kg, requires ≥10 days of intake
-  data, and tolerates a ±3-day gap on the boundary weight measurements.
+- `recalculate-tdee` is a daily incremental adaptive **Kalman** filter
+  (R-07 / D-B4): a 2-state linear filter on `[trend_weight, expenditure]`
+  maintaining persistent per-user state (trend weight + expenditure +
+  covariance) in `tdee_state`. Each run predicts the smoothed weight change
+  from `intake − expenditure`, compares it to the observed smoothed weigh-in,
+  and the residual self-corrects expenditure. 7700 kcal/kg survives only as
+  an internal conversion prior, not the headline formula; the retired
+  two-endpoint model's `14d / 10d / ±3d` window gating is gone. Filter
+  variance maps to a low/medium/high UI **confidence** band (low/medium
+  surfaced only for `tdee_delta` phases). The adaptive model is implemented
+  in the edge function now; it becomes live when the R-07 Wave-3
+  migration + edge deploy land (see [Cron](#cron) R-07 entry) — until then
+  the staged migration is not applied and the rewritten function is not
+  deployed.
+
+  > ⚠ Changing — see R-07 (D-B4) — adaptive Kalman model implemented; schema + edge deploy staged for Wave-3
 
 The macro and date/TZ logic is single-source (R-17 / D-F3): one dependency-free
 camelCase core at `src/core/macros.ts` + `src/core/dates.ts`, imported by the
@@ -185,6 +200,32 @@ its physical location moves. This is a tracked Wave-3 prod step, not an
 optional check.
 
 > ⚠ Changing — see R-17 (D-F3) — cross-root core import unverified at deploy; vendor/relocate fallback
+
+**R-07 adaptive-TDEE Wave-3 deploy (ordered).** The R-07 rewrite of
+`recalculate-tdee` and its persistent state schema are staged, not live:
+the rewritten edge function is NOT deployed and
+**`supabase/migrations/20260518020000_r07_adaptive_tdee_state.sql`** (new
+`tdee_state` table + nullable `tdee_estimates.confidence`/`is_warmup` cols)
+is NOT applied by its PR (live project untouched — R-00).
+
+- **Ordering invariant.** Deploy the rewritten `recalculate-tdee` edge
+  function FIRST
+  (`supabase functions deploy recalculate-tdee --project-ref
+  upvraruehzurbetzrxov`), THEN apply
+  `20260518020000_r07_adaptive_tdee_state.sql`. Reversed, the first
+  post-migration scheduled run finds an empty `tdee_state` / unpopulated
+  new columns with the old two-endpoint function still live, so no run
+  seeds the per-user filter state the new schema expects.
+- **Cross-root core caveat.** `recalculate-tdee` imports the shared pure
+  filter core (`src/core/tdee.ts`) via the same cross-root relative path as
+  the other functions — the **Wave-3 deploy validation (cross-root core
+  import)** note above applies unchanged; do not duplicate that check, run
+  it once for all functions.
+- **Rollback.** The migration is the only persistent change; revert by
+  dropping the staged objects (`drop table tdee_state;` and the two
+  `tdee_estimates` columns) and redeploying the previous `recalculate-tdee`
+  build. The Sprint-17 reader contract is additive-only, so the frontend
+  tolerates the columns being absent (no UI rollback needed).
 
 ## Cron
 
@@ -294,8 +335,9 @@ snapshot is also the free-tier keep-alive, so a silent death is double-impact.
   UTC/DST drift (D-F4) is absorbed by the whole-day UTC-midnight diff. Net: one
   missed daily run does NOT alert; two consecutive missed runs (or an empty
   table) DO. `tdee_estimates` is a SECONDARY signal with a lenient 4-day
-  threshold (`recalculate-tdee` legitimately skips users with <10 intake days,
-  so it lags for data reasons, not cron death) — a stale `tdee_estimates`
+  threshold (`recalculate-tdee` legitimately lags new users during the
+  adaptive filter's warm-up before a confident estimate is emitted, so it
+  trails for data reasons, not cron death) — a stale `tdee_estimates`
   alone never alerts; it only contributes when `daily_history` is also stale.
 - **How it alerts (dependency-light, no new secret).** On alert the function
   (1) `console.error`s a single structured `CRON_LIVENESS_ALERT {…}` line (the

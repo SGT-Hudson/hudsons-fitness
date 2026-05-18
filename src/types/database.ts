@@ -564,9 +564,17 @@ export type Database = {
           avg_kcal_intake: number;
           bmr_kcal: number | null;
           computed_on: string;
+          // R-07: variance-derived UI confidence band 'low'|'medium'|'high'
+          // (plain text like phases.kcal_mode — allowed set lives in
+          // src/core/tdee.ts). Nullable: rows written before R-07's edge fn
+          // ran (and pre-Wave-3) have no confidence signal.
+          confidence: string | null;
           created_at: string;
           estimated_tdee_kcal: number;
           id: string;
+          // R-07: true while the adaptive filter is in cold-start/long-gap
+          // warm-up (estimate present but low-trust).
+          is_warmup: boolean;
           neat_residual_kcal: number | null;
           user_id: string;
           weight_delta_kg: number;
@@ -578,9 +586,11 @@ export type Database = {
           avg_kcal_intake: number;
           bmr_kcal?: number | null;
           computed_on: string;
+          confidence?: string | null;
           created_at?: string;
           estimated_tdee_kcal: number;
           id?: string;
+          is_warmup?: boolean;
           neat_residual_kcal?: number | null;
           user_id: string;
           weight_delta_kg: number;
@@ -592,14 +602,60 @@ export type Database = {
           avg_kcal_intake?: number;
           bmr_kcal?: number | null;
           computed_on?: string;
+          confidence?: string | null;
           created_at?: string;
           estimated_tdee_kcal?: number;
           id?: string;
+          is_warmup?: boolean;
           neat_residual_kcal?: number | null;
           user_id?: string;
           weight_delta_kg?: number;
           window_days?: number;
           workout_kcal_logged?: number | null;
+        };
+        Relationships: [];
+      };
+      // R-07 / D-B4: per-user adaptive-TDEE filter memory (one row per
+      // user). The 2x2 symmetric state covariance P is stored as its 3 free
+      // scalars (cov_ww, cov_we == cov_ew, cov_ee). STAGED migration
+      // 20260518020000 — present in types now so the edge adapter + any
+      // future client read compile; live table created at Wave-3.
+      tdee_state: {
+        Row: {
+          cov_ee: number;
+          cov_we: number;
+          cov_ww: number;
+          created_at: string;
+          expenditure_kcal: number;
+          last_updated_on: string;
+          observations_count: number;
+          trend_weight_kg: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          cov_ee: number;
+          cov_we: number;
+          cov_ww: number;
+          created_at?: string;
+          expenditure_kcal: number;
+          last_updated_on: string;
+          observations_count?: number;
+          trend_weight_kg: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          cov_ee?: number;
+          cov_we?: number;
+          cov_ww?: number;
+          created_at?: string;
+          expenditure_kcal?: number;
+          last_updated_on?: string;
+          observations_count?: number;
+          trend_weight_kg?: number;
+          updated_at?: string;
+          user_id?: string;
         };
         Relationships: [];
       };

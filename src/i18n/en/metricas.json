@@ -91,6 +91,10 @@
         "carbs": "Carbs",
         "fat": "Fat",
         "fiber": "Fiber"
+      },
+      "tdeeConfidence": {
+        "low": "Target uses a warming-up TDEE estimate (limited data) — treat as approximate.",
+        "medium": "TDEE estimate still settling — target is approximate."
       }
     }
   }

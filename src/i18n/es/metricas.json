@@ -91,6 +91,10 @@
         "carbs": "Carbohidratos",
         "fat": "Grasa",
         "fiber": "Fibra"
+      },
+      "tdeeConfidence": {
+        "low": "El objetivo usa una estimación de TDEE en calentamiento (pocos datos): trátalo como aproximado.",
+        "medium": "La estimación de TDEE aún se está estabilizando: el objetivo es aproximado."
       }
     }
   }

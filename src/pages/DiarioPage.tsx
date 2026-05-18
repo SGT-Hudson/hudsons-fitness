@@ -16,6 +16,7 @@ import { useLatestMeasurement } from '@/features/measurements/hooks';
 import { useActivePhase } from '@/features/phases/hooks';
 import { computePhaseTargets } from '@/features/phases/targets';
 import { useLatestTdee } from '@/features/tdee/hooks';
+import { tdeeConfidenceBand } from '@/features/tdee/api';
 import { isoDate } from '@/lib/dates';
 
 function isValidDate(s: string): boolean {
@@ -96,6 +97,15 @@ export function DiarioPage() {
   const proteinBasis: ProteinBasis =
     latestMeasurement.data?.body_fat_pct != null ? 'lean' : 'fallback';
 
+  // Surface the adaptive-TDEE confidence (R-07 / D-B4) only when the active
+  // phase's kcal actually came from the estimate (`tdee_delta`) — otherwise
+  // the estimate doesn't drive the displayed target so the badge would be
+  // noise. Null/`high` confidence → no badge (preserves the prior UI).
+  const tdeeConfidence =
+    activePhase.data?.kcal_mode === 'tdee_delta'
+      ? tdeeConfidenceBand(latestTdee.data)
+      : null;
+
   function openNew(mealType: MealType) {
     setEditing(null);
     setDialogMealType(mealType);
@@ -122,7 +132,12 @@ export function DiarioPage() {
 
       <DateNavigator date={date} onChange={changeDate} />
 
-      <DayTotalsCard totals={totals} targets={targets} proteinBasis={proteinBasis} />
+      <DayTotalsCard
+        totals={totals}
+        targets={targets}
+        proteinBasis={proteinBasis}
+        tdeeConfidence={tdeeConfidence}
+      />
 
       {logs.isLoading ? (
         <div className="space-y-4">

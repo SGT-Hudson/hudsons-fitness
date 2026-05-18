@@ -18,6 +18,7 @@ import { type TimeRange } from '@/features/measurements/hooks';
 import { useActivePhase } from '@/features/phases/hooks';
 import { computePhaseTargets } from '@/features/phases/targets';
 import { useLatestTdee } from '@/features/tdee/hooks';
+import { tdeeConfidenceBand } from '@/features/tdee/api';
 import type { Macros } from '@/features/recipes/macros';
 import { formatDate, type Locale } from '@/lib/dates';
 import { cn } from '@/lib/utils';
@@ -112,6 +113,14 @@ export function MacrosChart() {
     return targets[cols.target];
   }, [activePhase.data, latest.data, latestTdee.data, cols.target]);
 
+  // Adaptive-TDEE confidence (R-07 / D-B4): only meaningful when the active
+  // phase's kcal is driven by the estimate (`tdee_delta`). Null/high → no
+  // caption (prior UI preserved).
+  const tdeeConfidence =
+    activePhase.data?.kcal_mode === 'tdee_delta'
+      ? tdeeConfidenceBand(latestTdee.data)
+      : null;
+
   const unitSuffix = cols.unit === 'kcal' ? ' kcal' : ' g';
 
   const isLoading = history.isLoading;
@@ -147,6 +156,17 @@ export function MacrosChart() {
             </button>
           ))}
         </div>
+
+        {(tdeeConfidence === 'low' || tdeeConfidence === 'medium') && (
+          <p
+            role="note"
+            className="text-xs rounded-md px-2 py-1 bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            {tdeeConfidence === 'low'
+              ? t('charts.macros.tdeeConfidence.low')
+              : t('charts.macros.tdeeConfidence.medium')}
+          </p>
+        )}
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground py-12 text-center">

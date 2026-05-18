@@ -28,7 +28,9 @@
     "fiber": "Fiber",
     "targetsHint": "Once you have an active phase, daily targets and per-macro progress bars will show here.",
     "proteinBasisLean": "× lean mass",
-    "proteinBasisFallback": "1.6 g/kg bodyweight — add a body-fat % for a phase-tuned target"
+    "proteinBasisFallback": "1.6 g/kg bodyweight — add a body-fat % for a phase-tuned target",
+    "tdeeConfidenceLow": "TDEE warming up — approximate target",
+    "tdeeConfidenceMedium": "TDEE still settling — approximate target"
   },
   "entry": {
     "edit": "Edit entry",

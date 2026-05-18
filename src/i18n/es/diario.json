@@ -28,7 +28,9 @@
     "fiber": "Fibra",
     "targetsHint": "Cuando tengas una fase activa, aquí verás los objetivos diarios y la barra de progreso por macro.",
     "proteinBasisLean": "× masa magra",
-    "proteinBasisFallback": "1,6 g/kg de peso — añade un % de grasa para un objetivo ajustado a la fase"
+    "proteinBasisFallback": "1,6 g/kg de peso — añade un % de grasa para un objetivo ajustado a la fase",
+    "tdeeConfidenceLow": "TDEE en calentamiento — objetivo aproximado",
+    "tdeeConfidenceMedium": "TDEE aún estabilizándose — objetivo aproximado"
   },
   "entry": {
     "edit": "Editar entrada",
