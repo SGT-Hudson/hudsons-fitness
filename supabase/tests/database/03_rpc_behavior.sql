@@ -1,6 +1,6 @@
 -- Tier-3 / R-16 — Behavioral contracts protecting real review-found defects.
 begin;
-select plan(11);
+select plan(10);
 
 insert into auth.users (id, instance_id, aud, role, email,
   encrypted_password, email_confirmed_at, created_at, updated_at)
