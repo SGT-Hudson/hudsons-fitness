@@ -4,12 +4,15 @@ import {
   createMealLog,
   deleteMealLog,
   fetchMealLogsForDay,
+  fetchQuickAddRecipeRows,
   materializePlanForDate,
   updateMealLog,
   type CreateMealLogInput,
+  type MealType,
 } from './api';
+import { buildQuickAddList } from './quickAdd';
 import type { TablesUpdate } from '@/types/database';
-import { toastCreated, toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
+import { toastCreated, toastDeleted, toastError, toastSaved, toastUndoableQuickAdd } from '@/lib/toast-helpers';
 
 export function useMealLogsForDay(loggedOn: string) {
   const { user } = useAuth();
@@ -77,3 +80,42 @@ export function useDeleteMealLog() {
     onError: toastError,
   });
 }
+
+function isoMinusDays(days: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+export function useQuickAddRecipes() {
+  const { user } = useAuth();
+  return useQuery({
+    enabled: !!user,
+    queryKey: ['quick_add', user?.id],
+    queryFn: async () => {
+      const rows = await fetchQuickAddRecipeRows(user!.id, isoMinusDays(60));
+      return buildQuickAddList(rows, { now: new Date() });
+    },
+  });
+}
+
+export function useQuickAddMealLog() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { recipeId: string; mealType: MealType; loggedOn: string }) =>
+      createMealLog(user!.id, {
+        loggedOn: v.loggedOn,
+        mealType: v.mealType,
+        source: { kind: 'recipe', recipeId: v.recipeId, servings: 1 },
+        notes: null,
+      }),
+    onSuccess: (_created, v) => {
+      void qc.invalidateQueries({ queryKey: ['meal_logs', user?.id, v.loggedOn] });
+      void qc.invalidateQueries({ queryKey: ['quick_add', user?.id] });
+    },
+    onError: toastError,
+  });
+}
+
+export { toastUndoableQuickAdd, deleteMealLog };
