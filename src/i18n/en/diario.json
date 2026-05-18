@@ -20,7 +20,7 @@
     "other": "Other"
   },
   "totals": {
-    "title": "Daily totals",
+    "title": "Day summary",
     "kcal": "Calories",
     "protein": "Protein",
     "carbs": "Carbs",
@@ -30,7 +30,15 @@
     "proteinBasisLean": "× lean mass",
     "proteinBasisFallback": "1.6 g/kg bodyweight — add a body-fat % for a phase-tuned target",
     "tdeeConfidenceLow": "TDEE warming up — approximate target",
-    "tdeeConfidenceMedium": "TDEE still settling — approximate target"
+    "tdeeConfidenceMedium": "TDEE still settling — approximate target",
+    "heroRemaining": "kcal left",
+    "heroToGoal": "kcal to goal",
+    "heroOver": "kcal over",
+    "remainingG": "{{n}} g left",
+    "overG": "+{{n}} g over",
+    "proteinMet": "✓ met +{{n}} g",
+    "fiberBelowMin": "{{n}} g below minimum",
+    "consumedOf": "{{consumed}} / {{target}} consumed"
   },
   "entry": {
     "edit": "Edit entry",
