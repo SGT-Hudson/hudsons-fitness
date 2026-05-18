@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { roundMacro, type Macros } from '@/features/recipes/macros';
+import type { TdeeConfidence } from '@/features/tdee/api';
 
 /** Which protein basis the active target was computed on (D-B1). */
 export type ProteinBasis = 'lean' | 'fallback';
@@ -11,6 +13,12 @@ interface Props {
   targets?: Macros;
   /** Set only when `targets` is present — labels the active protein basis. */
   proteinBasis?: ProteinBasis;
+  /**
+   * Set only when the active target's kcal came from the adaptive-TDEE
+   * estimate (`kcal_mode='tdee_delta'`) — drives a low/medium-confidence
+   * badge by the kcal stat (R-07 / D-B4). `high`/null → no badge.
+   */
+  tdeeConfidence?: TdeeConfidence | null;
 }
 
 function Stat({
@@ -56,7 +64,12 @@ function Stat({
   );
 }
 
-export function DayTotalsCard({ totals, targets, proteinBasis }: Props) {
+export function DayTotalsCard({
+  totals,
+  targets,
+  proteinBasis,
+  tdeeConfidence,
+}: Props) {
   const { t } = useTranslation('diario');
   const proteinNote =
     targets && proteinBasis
@@ -64,6 +77,9 @@ export function DayTotalsCard({ totals, targets, proteinBasis }: Props) {
         ? t('totals.proteinBasisLean')
         : t('totals.proteinBasisFallback')
       : undefined;
+  // Only surface when a target is shown AND the estimate is not high-conf.
+  const showTdeeBadge =
+    !!targets && (tdeeConfidence === 'low' || tdeeConfidence === 'medium');
   return (
     <Card>
       <CardHeader>
@@ -71,12 +87,21 @@ export function DayTotalsCard({ totals, targets, proteinBasis }: Props) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-          <Stat
-            label={t('totals.kcal')}
-            value={totals.kcal}
-            target={targets?.kcal}
-            suffix="kcal"
-          />
+          <div className="space-y-1">
+            <Stat
+              label={t('totals.kcal')}
+              value={totals.kcal}
+              target={targets?.kcal}
+              suffix="kcal"
+            />
+            {showTdeeBadge && (
+              <Badge variant="warning">
+                {tdeeConfidence === 'low'
+                  ? t('totals.tdeeConfidenceLow')
+                  : t('totals.tdeeConfidenceMedium')}
+              </Badge>
+            )}
+          </div>
           <Stat
             label={t('totals.protein')}
             value={totals.proteinG}

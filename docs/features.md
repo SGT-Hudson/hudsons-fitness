@@ -235,22 +235,31 @@ what was actually eaten).
 
 ## TDEE
 
-TDEE is estimated by the `recalculate-tdee` edge function (cron). The
-current model is a two-endpoint energy balance over a fixed 14-day window:
-it requires at least 10 days of intake data, uses a 7700 kcal/kg fat-energy
-constant, and picks the weigh-in closest to each window edge within a ±3-day
-tolerance (`TDEE ≈ avgIntake − Δweight × 7700 / 14`). The frontend reads the
-latest `tdee_estimates` row (wired in Sprint 17), so phases with
-`kcal_mode = 'tdee_delta'` resolve their kcal target from that estimate
-instead of returning `null`.
+TDEE is estimated by the `recalculate-tdee` edge function (cron). The model
+is an **adaptive expenditure filter** (R-07 / D-B4): a 2-state linear Kalman
+filter on `[trend_weight, expenditure]` with persistent per-user state
+(`tdee_state`). Each day it predicts the smoothed weight change from
+`intake − expenditure`, compares it to the observed raw weigh-in, and the
+residual self-corrects expenditure (the Kalman gain's expenditure component).
+7700 kcal/kg survives only as an internal conversion prior, not the headline
+formula; the old `14d / 10d / ±3d` window gating is retired. Filter variance
+maps to a low/medium/high UI **confidence** band (surfaced on `/diario` and
+`/progreso` when the active phase is `tdee_delta`). The frontend still reads
+the latest `tdee_estimates` row (Sprint-17 contract unchanged — additive
+`confidence`/`is_warmup` only), so `kcal_mode = 'tdee_delta'` phases resolve
+their kcal target from that estimate. The pure, deterministic filter math
+lives in `src/core/tdee.ts` (dual-runtime, unit tested). Spec:
+`docs/superpowers/specs/2026-05-18-adaptive-tdee-design.md`.
+`body_measurements_smoothed` is retained for chart/display use but is no
+longer the TDEE path's input (the filter maintains its own superior trend
+weight — spec §8).
 
-> ⚠ Changing — see R-07 (D-B4). The two-endpoint window model (and its
-> 14d/10d/±3d/7700 gating) is replaced by a fully adaptive expenditure
-> estimator (MacroFactor / Hacker's-Diet–Kalman lineage): persistent
-> per-user state (trend weight + running expenditure + variance) updated
-> daily by reconciling predicted vs observed smoothed weight change, with
-> 7700 surviving only as an internal prior. It needs its own design spec
-> before implementation.
+> ⚠ Changing — see R-07 (D-B4). Adaptive model implemented; schema
+> (`tdee_state` table + `tdee_estimates.confidence`/`is_warmup`) + edge
+> deploy pending Wave-3. The staged migration
+> (`20260518020000_r07_adaptive_tdee_state.sql`) is NOT applied by its PR
+> and the rewritten edge function is NOT deployed — the live model only
+> switches at the Wave-3 prod checkpoint.
 
 ## Product ideas (uncommitted)
 
