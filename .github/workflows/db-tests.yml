@@ -1,0 +1,34 @@
+name: DB tests (Tier-3, manual)
+
+# Manual on purpose. This job has never had a green run (the authoring env
+# had no Docker/CLI). Wiring it into branch protection now would block
+# auto-merge on an unproven job.
+#
+# PROMOTION (after the first green dispatch run):
+#   1. add `pull_request: { branches: [main] }` below
+#   2. add `db-tests` to the required status checks on `main`
+on:
+  workflow_dispatch:
+
+jobs:
+  db-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase stack
+        run: supabase start
+
+      - name: Tier-3 pgTAP (supabase/tests/database/*.sql)
+        run: supabase test db
+
+      - name: R-00 reproducibility check
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase link --project-ref upvraruehzurbetzrxov
+          bash scripts/db-reproducibility-check.sh
