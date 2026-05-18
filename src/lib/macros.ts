@@ -128,3 +128,53 @@ export function mifflinStJeor(opts: {
     10 * opts.weightKg + 6.25 * opts.heightCm - 5 * opts.ageYears;
   return opts.sex === 'male' ? base + 5 : base - 161;
 }
+
+/**
+ * Whole-years age from an ISO `birth_date` (`YYYY-MM-DD`) as of `asOfISO`,
+ * counting whether this year's birthday has passed. Pure/deterministic
+ * (string math, no `Date`/TZ) so it is unit-testable with a fixed "as of".
+ * Mirrors the edge fn's `ageYearsFrom` (recalculate-tdee/index.ts).
+ */
+export function ageYearsFromBirthDate(
+  birthISO: string,
+  asOfISO: string,
+): number {
+  const [by, bm, bd] = birthISO.split('-').map(Number);
+  const [ay, am, ad] = asOfISO.split('-').map(Number);
+  let age = ay - by;
+  if (am < bm || (am === bm && ad < bd)) age -= 1;
+  return age;
+}
+
+/**
+ * Estimated BMR (Mifflin–St Jeor) as a **derived, never-stored display**
+ * value (D-B5 / R-08) — the exact same pattern as
+ * {@link computeTargetWeightKg}: recompute on render from profile
+ * (sex, birth_date→age, height_cm) + the latest measured weight; never
+ * persist, no DB column, never feed protein/TDEE/targets (display only —
+ * the D-A6/D-B5 guardrail). Returns `null` when any input is missing or
+ * non-sensible so the caller can simply not render the stat (same as
+ * `LatestMeasurementCard`'s null-value `Stat` skip).
+ */
+export function estimatedBmr(opts: {
+  sex: string | null | undefined;
+  birthDate: string | null | undefined;
+  heightCm: number | null | undefined;
+  weightKg: number | null | undefined;
+  asOfISO: string;
+}): number | null {
+  const { sex, birthDate, heightCm, weightKg, asOfISO } = opts;
+  if (
+    (sex !== 'male' && sex !== 'female' && sex !== 'other') ||
+    birthDate == null ||
+    heightCm == null ||
+    heightCm <= 0 ||
+    weightKg == null ||
+    weightKg <= 0
+  ) {
+    return null;
+  }
+  const ageYears = ageYearsFromBirthDate(birthDate, asOfISO);
+  if (ageYears <= 0 || ageYears >= 120) return null;
+  return mifflinStJeor({ weightKg, heightCm, ageYears, sex });
+}

@@ -3,6 +3,8 @@ import {
   computeDailyMacroTargets,
   computeTargetWeightKg,
   mifflinStJeor,
+  ageYearsFromBirthDate,
+  estimatedBmr,
   fractionToPct,
   pctToFraction,
   PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM,
@@ -233,6 +235,52 @@ describe('mifflinStJeor', () => {
 
   it('treats "other" like female (base - 161)', () => {
     expect(mifflinStJeor({ ...common, sex: 'other' })).toBe(1614);
+  });
+});
+
+describe('ageYearsFromBirthDate (R-08 / D-B5)', () => {
+  it('counts a birthday that has already passed this year', () => {
+    expect(ageYearsFromBirthDate('1990-01-15', '2026-05-18')).toBe(36);
+  });
+
+  it('does not count a birthday still upcoming this year', () => {
+    expect(ageYearsFromBirthDate('1990-11-20', '2026-05-18')).toBe(35);
+  });
+
+  it('counts the birthday exactly on the day', () => {
+    expect(ageYearsFromBirthDate('1990-05-18', '2026-05-18')).toBe(36);
+  });
+});
+
+describe('estimatedBmr (R-08 / D-B5 — derived, never stored)', () => {
+  const ok = {
+    sex: 'male' as const,
+    birthDate: '1990-05-18',
+    heightCm: 180,
+    weightKg: 80,
+    asOfISO: '2026-05-18',
+  };
+
+  it('matches mifflinStJeor for a complete profile', () => {
+    // age = 36 → base = 800 + 1125 - 180 = 1745 ; male +5 = 1750
+    expect(estimatedBmr(ok)).toBe(1750);
+    expect(estimatedBmr(ok)).toBe(
+      mifflinStJeor({ weightKg: 80, heightCm: 180, ageYears: 36, sex: 'male' }),
+    );
+  });
+
+  it('returns null when any input is missing', () => {
+    expect(estimatedBmr({ ...ok, sex: null })).toBeNull();
+    expect(estimatedBmr({ ...ok, birthDate: null })).toBeNull();
+    expect(estimatedBmr({ ...ok, heightCm: null })).toBeNull();
+    expect(estimatedBmr({ ...ok, weightKg: null })).toBeNull();
+  });
+
+  it('returns null for non-sensible inputs', () => {
+    expect(estimatedBmr({ ...ok, sex: 'unknown' })).toBeNull();
+    expect(estimatedBmr({ ...ok, heightCm: 0 })).toBeNull();
+    expect(estimatedBmr({ ...ok, weightKg: -1 })).toBeNull();
+    expect(estimatedBmr({ ...ok, birthDate: '2030-01-01' })).toBeNull();
   });
 });
 

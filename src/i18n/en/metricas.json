@@ -6,7 +6,9 @@
     "bodyFatPct": "Body fat %",
     "musclePct": "Muscle %",
     "waterPct": "Water %",
-    "notes": "Notes"
+    "notes": "Notes",
+    "estimatedBmr": "Estimated BMR",
+    "estimatedBmrHelp": "Estimated basal metabolic rate (Mifflin-St Jeor) from your profile and latest weight. Informational only: recomputed, never stored, and never feeds protein, TDEE, or targets."
   },
   "latest": {
     "title": "Latest measurement",

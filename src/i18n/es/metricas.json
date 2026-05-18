@@ -6,7 +6,9 @@
     "bodyFatPct": "% grasa",
     "musclePct": "% músculo",
     "waterPct": "% agua",
-    "notes": "Notas"
+    "notes": "Notas",
+    "estimatedBmr": "TMB estimada",
+    "estimatedBmrHelp": "Metabolismo basal estimado (Mifflin-St Jeor) a partir de tu perfil y tu último peso. Solo informativo: se recalcula, no se guarda, y no alimenta proteína ni TDEE ni objetivos."
   },
   "latest": {
     "title": "Última medición",

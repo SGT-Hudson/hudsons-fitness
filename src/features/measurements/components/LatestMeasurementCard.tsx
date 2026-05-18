@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
+import { estimatedBmr } from '@/lib/macros';
+import { useProfile } from '@/features/profile/hooks';
 import type { BodyMeasurement } from '../api';
 
 interface Props {
@@ -34,6 +36,20 @@ export function LatestMeasurementCard({
 }: Props) {
   const { t, i18n } = useTranslation('metricas');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
+  const profile = useProfile();
+
+  // Estimated BMR (Mifflin–St Jeor) — a DERIVED, NEVER-STORED display value
+  // (D-B5 / R-08), recomputed on render from profile + latest weight, same
+  // pattern as computeTargetWeightKg. Display only: it never feeds
+  // protein/TDEE/targets (D-A6/D-B5 guardrail). `null` (incomplete profile
+  // or no measurement) → the Stat self-skips, like every other null metric.
+  const bmr = estimatedBmr({
+    sex: profile.data?.sex,
+    birthDate: profile.data?.birth_date,
+    heightCm: profile.data?.height_cm,
+    weightKg: latest?.weight_kg,
+    asOfISO: isoDate(),
+  });
 
   if (loading) {
     return (
@@ -110,7 +126,15 @@ export function LatestMeasurementCard({
           <Stat label={t('fields.bodyFatPct')} value={latest.body_fat_pct} suffix="%" />
           <Stat label={t('fields.musclePct')} value={latest.muscle_pct} suffix="%" />
           <Stat label={t('fields.waterPct')} value={latest.water_pct} suffix="%" />
+          <Stat
+            label={t('fields.estimatedBmr')}
+            value={bmr === null ? null : Math.round(bmr)}
+            suffix="kcal"
+          />
         </div>
+        {bmr !== null && (
+          <p className="text-xs text-muted-foreground">{t('fields.estimatedBmrHelp')}</p>
+        )}
         {latest.notes && (
           <p className="text-sm text-muted-foreground border-l-2 border-muted pl-3">
             {latest.notes}

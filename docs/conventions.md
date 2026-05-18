@@ -30,9 +30,9 @@ tracked in `roadmap.md`).
 
 - DB-sourced rows stay snake_case end-to-end (D-C4).
 - camelCase is reserved for computed/derived types — the `Macros` envelope is `{ kcal, proteinG, carbsG, fatG, fiberG }` (D-C4).
-- BMR (Mifflin-St Jeor) and target-weight are derived; recompute, never persist (4 dead `tdee_estimates` columns still present; `mifflinStJeor` not yet wired as display) (D-B5).
+- Estimated BMR (Mifflin-St Jeor) and target-weight are derived, never-stored displays — recompute on render, don't persist, no DB column, and never feed protein/TDEE/targets (display only) (D-B5). `estimatedBmr` is wired on `/progreso` (latest-measurement card).
 
-> ⚠ Changing — see R-08
+> ⚠ Changing — see R-08 — only the physical drop of the 4 dead `tdee_estimates` columns is pending (staged migration `20260518050000`, applied at the Wave-3 prod checkpoint); the never-stored rule itself is now satisfied in code.
 
 - Store `phases.fat_pct_of_kcal` as a fraction `0.10`–`0.60`, never a percent (D-B3).
 

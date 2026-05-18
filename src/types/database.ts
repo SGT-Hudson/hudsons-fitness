@@ -553,10 +553,16 @@ export type Database = {
         Relationships: [];
       };
       tdee_estimates: {
+        // R-08 / D-B5: the 4 dead BMR/breakdown columns
+        // (bmr_kcal, activity_kcal, neat_residual_kcal, workout_kcal_logged)
+        // were always-null scaffolding never written by recalculate-tdee.
+        // Removed from the hand-written types here; the physical
+        // `ALTER TABLE … DROP COLUMN` is STAGED
+        // (20260518050000_r08_drop_dead_tdee_cols.sql) and applied at the
+        // Wave-3 prod checkpoint — reading fewer columns than prod exposes is
+        // safe. R-07's confidence/is_warmup stay (different, additive cols).
         Row: {
-          activity_kcal: number | null;
           avg_kcal_intake: number;
-          bmr_kcal: number | null;
           computed_on: string;
           // R-07: variance-derived UI confidence band 'low'|'medium'|'high'
           // (plain text like phases.kcal_mode — allowed set lives in
@@ -569,43 +575,33 @@ export type Database = {
           // R-07: true while the adaptive filter is in cold-start/long-gap
           // warm-up (estimate present but low-trust).
           is_warmup: boolean;
-          neat_residual_kcal: number | null;
           user_id: string;
           weight_delta_kg: number;
           window_days: number;
-          workout_kcal_logged: number | null;
         };
         Insert: {
-          activity_kcal?: number | null;
           avg_kcal_intake: number;
-          bmr_kcal?: number | null;
           computed_on: string;
           confidence?: string | null;
           created_at?: string;
           estimated_tdee_kcal: number;
           id?: string;
           is_warmup?: boolean;
-          neat_residual_kcal?: number | null;
           user_id: string;
           weight_delta_kg: number;
           window_days: number;
-          workout_kcal_logged?: number | null;
         };
         Update: {
-          activity_kcal?: number | null;
           avg_kcal_intake?: number;
-          bmr_kcal?: number | null;
           computed_on?: string;
           confidence?: string | null;
           created_at?: string;
           estimated_tdee_kcal?: number;
           id?: string;
           is_warmup?: boolean;
-          neat_residual_kcal?: number | null;
           user_id?: string;
           weight_delta_kg?: number;
           window_days?: number;
-          workout_kcal_logged?: number | null;
         };
         Relationships: [];
       };
