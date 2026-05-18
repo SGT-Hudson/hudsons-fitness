@@ -677,7 +677,18 @@ alter table public.daily_nutrition_history      enable row level security;
 alter table public.tdee_estimates               enable row level security;
 
 -- Standard per-user pattern: SELECT/INSERT/UPDATE/DELETE gated on auth.uid().
--- `create policy` is not idempotent, so each is guarded.
+-- `create policy` is not idempotent, so the whole set is guarded.
+--
+-- DESIGN NOTE — this DO-block is intentionally ALL-OR-NOTHING: a caught
+-- `duplicate_object` aborts the entire block (PL/pgSQL does not resume after
+-- the failing statement). Correct for the only two intended paths:
+--   * existing prod (every policy already exists): the first CREATE throws,
+--     the rest are skipped → exactly the desired no-op.
+--   * clean standup (e.g. `supabase db reset`, R-16 Tier-3): no exception,
+--     all policies created.
+-- It is NOT safe for a partial-policy state. Do NOT append new policies here:
+-- a future migration that adds a policy must put it in its OWN separately
+-- guarded block, or earlier existing policies will make it silently skip.
 do $$
 begin
   -- profiles (gated on id, not user_id)
