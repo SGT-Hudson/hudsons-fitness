@@ -161,12 +161,23 @@ stored `protein_g_per_kg`; only new phases get table defaults at create
 time. The mild fallback under-target for a bf%-less cutter is a deliberate
 nudge to log a body-fat %.
 
-The Diario shows the active phase's daily macro targets (kcal, protein,
-carbs, fat, fiber) against what was consumed. The active phase is resolved
-as "today's phase only" — no consumer reconstructs which phase was active on
-a past date. Editing a past phase's macros therefore changes nothing
-downstream: past phases are computationally **inert**. `/objetivos` lists and
-manages all phases.
+The Diario's **DayTotalsCard** leads with a phase-aware kcal-remaining hero:
+on `cut` and `maintenance` it shows a remaining **budget** (target minus
+consumed); on `bulk` it shows a **to-goal** figure (how far the user still
+needs to eat). Consumed and target kcal appear underneath the hero, and a
+low/medium TDEE-confidence badge sits directly below it when the active phase
+uses `tdee_delta` mode. Below the hero a **2×2 macro grid** covers protein,
+carbs, fat, and fiber. Per-macro semantics reflect dietary intent: protein and
+fiber are **floors** — meeting or exceeding the target is success-colored
+(extra protein is never flagged red; fiber below its minimum is amber); kcal
+over target on a non-bulk phase is the sole red "over budget" state; carbs and
+fat are informational/neutral only. The card is **presentational only** — it
+reads logged totals and the active phase's targets and feeds nothing back (no
+protein/TDEE/target writes). The active phase is resolved as "today's phase
+only" — no consumer reconstructs which phase was active on a past date.
+Editing a past phase's macros therefore changes nothing downstream: past
+phases are computationally **inert**. `/objetivos` lists and manages all
+phases.
 
 Past phases follow a **grace-window** model (D-A5), not a hard
 freeze-at-`end_date` cliff. The grace constant is
