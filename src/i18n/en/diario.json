@@ -80,6 +80,7 @@
     "subtitle": "Log what you ate. A recipe, a single ingredient, or type macros directly.",
     "deleteConfirm": "Delete this diary entry?"
   },
+  "mealSection": { "empty": "— nothing logged" },
   "quickAdd": {
     "add": "Add {{name}}",
     "added": "{{name}} added",

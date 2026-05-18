@@ -7,9 +7,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DateNavigator } from '@/features/diario/components/DateNavigator';
 import { DayTotalsCard, type ProteinBasis } from '@/features/diario/components/DayTotalsCard';
-import { MealLogEntry } from '@/features/diario/components/MealLogEntry';
 import { MealLogDialog } from '@/features/diario/components/MealLogDialog';
-import { useMaterializePlan, useMealLogsForDay } from '@/features/diario/hooks';
+import { MealSection } from '@/features/diario/components/MealSection';
+import { useMaterializePlan, useMealLogsForDay, useQuickAddRecipes } from '@/features/diario/hooks';
 import { computeMealLogMacros, sumMacros } from '@/features/diario/macros';
 import { MEAL_TYPE_ORDER, type MealLogWithJoins, type MealType } from '@/features/diario/api';
 import { useLatestMeasurement } from '@/features/measurements/hooks';
@@ -39,6 +39,8 @@ export function DiarioPage() {
   const activePhase = useActivePhase();
   const latestTdee = useLatestTdee();
   const materialize = useMaterializePlan();
+  // Quick-add chips are best-effort: loading/error silently degrade to none.
+  const quickAddItems = useQuickAddRecipes().data ?? [];
 
   // The plan is the default truth: any active-week slot for this date that
   // hasn't been materialized into a meal_log yet gets one inserted with
@@ -118,8 +120,6 @@ export function DiarioPage() {
     setDialogOpen(true);
   }
 
-  const isEmpty = (logs.data ?? []).length === 0 && !logs.isLoading;
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -156,40 +156,22 @@ export function DiarioPage() {
             </Card>
           ))}
         </div>
-      ) : isEmpty ? (
-        <Card>
-          <CardContent className="py-10 text-center space-y-3">
-            <p className="text-muted-foreground">{t('empty.message')}</p>
-            <Button onClick={() => openNew('breakfast')}>
-              <Plus className="h-4 w-4" />
-              {t('empty.cta')}
-            </Button>
-          </CardContent>
-        </Card>
       ) : (
         <div className="space-y-4">
           {MEAL_TYPE_ORDER.map((mt) => {
             const items = grouped.get(mt) ?? [];
-            if (items.length === 0) return null;
+            // 'other' is a fallback bucket — only show it when it has entries.
+            if (mt === 'other' && items.length === 0) return null;
             return (
-              <Card key={mt}>
-                <div className="flex items-center justify-between px-4 py-2 border-b">
-                  <h2 className="font-semibold">{t(`mealType.${mt}`)}</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openNew(mt)}
-                    aria-label={t('addToMeal')}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <ul className="divide-y">
-                  {items.map((log) => (
-                    <MealLogEntry key={log.id} log={log} onEdit={openEdit} />
-                  ))}
-                </ul>
-              </Card>
+              <MealSection
+                key={mt}
+                mealType={mt}
+                date={date}
+                items={items}
+                quickAddItems={quickAddItems}
+                onAdd={openNew}
+                onEdit={openEdit}
+              />
             );
           })}
         </div>
