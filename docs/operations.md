@@ -94,15 +94,15 @@ lives in `supabase/functions/_shared/` (this is edge↔edge only — see D-F3).
 supabase/
 ├── migrations/
 │   ├── 20260514120000_sprint9_cron_and_jobs.sql
-│   ├── 20260518000000_r06_fat_pct_check.sql        # STAGED — Wave-3
-│   ├── 20260518010000_r18_cron_healthcheck.sql     # STAGED — Wave-3
-│   └── 20260518020000_r07_adaptive_tdee_state.sql  # STAGED — Wave-3
+│   ├── 20260518000000_r06_fat_pct_check.sql        # applied 2026-05-18
+│   ├── 20260518010000_r18_cron_healthcheck.sql     # applied 2026-05-18
+│   └── 20260518020000_r07_adaptive_tdee_state.sql  # applied 2026-05-18
 └── functions/
     ├── _shared/macros.ts
     ├── daily-nutrition-snapshot/index.ts   # 0 1 * * *  UTC (≈02:00 CET)
     ├── weekly-rollover/index.ts            # 0 2 * * 1  UTC (≈03:00 CET Mon)
     ├── recalculate-tdee/index.ts           # 0 3 * * *  UTC (≈04:00 CET)
-    ├── cron-healthcheck/index.ts           # 0 6 * * *  UTC (R-18, staged)
+    ├── cron-healthcheck/index.ts           # 0 6 * * *  UTC (R-18, live)
     └── delete-account/index.ts             # GDPR account erasure (user-invoked)
 ```
 
@@ -163,13 +163,9 @@ curl -X POST \
   an internal conversion prior, not the headline formula; the retired
   two-endpoint model's `14d / 10d / ±3d` window gating is gone. Filter
   variance maps to a low/medium/high UI **confidence** band (low/medium
-  surfaced only for `tdee_delta` phases). The adaptive model is implemented
-  in the edge function now; it becomes live when the R-07 Wave-3
-  migration + edge deploy land (see [Cron](#cron) R-07 entry) — until then
-  the staged migration is not applied and the rewritten function is not
-  deployed.
-
-  > ⚠ Changing — see R-07 (D-B4) — adaptive Kalman model implemented; schema + edge deploy staged for Wave-3
+  surfaced only for `tdee_delta` phases). Live in prod since 2026-05-18
+  (the R-07 `tdee_state`/`confidence`/`is_warmup` migration was applied and
+  `recalculate-tdee` deployed; see [Cron](#cron) R-07 entry).
 
 The macro and date/TZ logic is single-source (R-17 / D-F3): one dependency-free
 camelCase core at `src/core/macros.ts` + `src/core/dates.ts`, imported by the
@@ -187,30 +183,25 @@ once in **`supabase/functions/deno.json`** (import map —
 `supabase/functions/_shared/macros.test.ts` golden-vector suite asserts the
 client and edge paths stay numerically identical (CI fails on divergence).
 
-**Wave-3 deploy validation (cross-root core import).** The edge functions
+**Cross-root core import — validated (2026-05-18).** The edge functions
 import the shared core via the relative path `../../../src/core/*.ts`, which
-resolves *outside* `supabase/functions/`. Edge functions are not shipped yet,
-so whether `supabase functions deploy` actually bundles a source file from a
-cross-root path is **unverified**. Before (or at) the first
-`supabase functions deploy`, verify the cross-root import is bundled by the
-Supabase CLI. If it is NOT bundled, the fallback is to vendor/copy the core
-into `supabase/functions/_shared/` (or relocate the core there and have the
-client import from that path): the D-F3 shared core stays single-source — only
-its physical location moves. This is a tracked Wave-3 prod step, not an
-optional check.
+resolves *outside* `supabase/functions/`. This was the open R-17 risk. Verified
+at the first prod deploy: `supabase functions deploy <fn> --use-api` follows
+and uploads the cross-root files (the upload log lists `src/core/*.ts`, and
+the deployed functions execute them correctly). The vendor/relocate fallback
+was **not** needed; the D-F3 shared core stays single-source at `src/core/`.
+Operational note: deploys must use `--use-api` (server-side bundling) — the
+default path needs Docker, which is not available in the deploy environment.
 
-> ⚠ Changing — see R-17 (D-F3) — cross-root core import unverified at deploy; vendor/relocate fallback
-
-**R-07 adaptive-TDEE Wave-3 deploy (ordered).** The R-07 rewrite of
-`recalculate-tdee` and its persistent state schema are staged, not live:
-the rewritten edge function is NOT deployed and
-**`supabase/migrations/20260518020000_r07_adaptive_tdee_state.sql`** (new
-`tdee_state` table + nullable `tdee_estimates.confidence`/`is_warmup` cols)
-is NOT applied by its PR (live project untouched — R-00).
+**R-07 adaptive-TDEE deploy (applied 2026-05-18 — ordered).** The R-07
+rewrite of `recalculate-tdee` + `supabase/migrations/20260518020000_r07_adaptive_tdee_state.sql`
+(`tdee_state` table + nullable `tdee_estimates.confidence`/`is_warmup`) are
+live in prod. The ordering invariant below must be honoured on any future
+redeploy/rollback:
 
 - **Ordering invariant.** Deploy the rewritten `recalculate-tdee` edge
   function FIRST
-  (`supabase functions deploy recalculate-tdee --project-ref
+  (`supabase functions deploy recalculate-tdee --use-api --project-ref
   upvraruehzurbetzrxov`), THEN apply
   `20260518020000_r07_adaptive_tdee_state.sql`. Reversed, the first
   post-migration scheduled run finds an empty `tdee_state` / unpopulated
@@ -218,47 +209,48 @@ is NOT applied by its PR (live project untouched — R-00).
   seeds the per-user filter state the new schema expects.
 - **Cross-root core caveat.** `recalculate-tdee` imports the shared pure
   filter core (`src/core/tdee.ts`) via the same cross-root relative path as
-  the other functions — the **Wave-3 deploy validation (cross-root core
-  import)** note above applies unchanged; do not duplicate that check, run
-  it once for all functions.
+  the other functions — covered by the **Cross-root core import — validated**
+  note above (one check for all functions).
 - **Rollback.** The migration is the only persistent change; revert by
-  dropping the staged objects (`drop table tdee_state;` and the two
+  dropping the objects (`drop table tdee_state;` and the two
   `tdee_estimates` columns) and redeploying the previous `recalculate-tdee`
   build. The Sprint-17 reader contract is additive-only, so the frontend
   tolerates the columns being absent (no UI rollback needed).
 
-**R-12 materialize_plan_for_date Wave-3 (ordered — code depends on the
-migration).** R-12 / D-D6 is the one staged item whose **code depends on its
-migration**. The client (`src/features/diario/api.ts`) and the
-`daily-nutrition-snapshot` edge function were rewritten to call
-`supabase.rpc('materialize_plan_for_date', …)`; that RPC does not exist in
-prod until **`supabase/migrations/20260518060000_r12_materialize_rpc.sql`**
-(the RPC + the `meal_logs_user_plan_slot_uidx` partial unique index) is
-applied. So both the migration and the calling-code PR are gated to Wave-3
-and the PR is **HELD** (auto-merge NOT enabled).
+**R-12 materialize_plan_for_date deploy (applied 2026-05-18 — ordered, code
+depends on the migration).** R-12 / D-D6 was the one item whose **code
+depends on its migration**: the client (`src/features/diario/api.ts`) and the
+`daily-nutrition-snapshot` edge function call
+`supabase.rpc('materialize_plan_for_date', …)`, and that RPC did not exist in
+prod until `supabase/migrations/20260518060000_r12_materialize_rpc.sql` (the
+RPC + the `meal_logs_user_plan_slot_uidx` partial unique index) was applied.
+Live in prod; the ordering invariant below must be honoured on any future
+redeploy/rollback:
 
-- **Ordering invariant (strict).** (1) Apply
-  `20260518060000_r12_materialize_rpc.sql` to prod
-  (`supabase db push --linked`, or run the file via the SQL editor) — this
-  creates the RPC + partial unique index; (2) THEN merge the R-12 PR (the
-  client/edge code that calls the RPC); (3) THEN redeploy the edge function
-  (`supabase functions deploy daily-nutrition-snapshot --project-ref
-  upvraruehzurbetzrxov`) so the cron uses the RPC instead of its now-deleted
-  mirrored copy. Reversed (code merged / edge redeployed before the migration
-  is applied) prod plan-materialization breaks: `supabase.rpc(...)` 404s on
-  every Diario open and every snapshot run. This inversion (migration FIRST,
-  then code) is the opposite of R-07's (code FIRST, then migration) — R-07's
-  code tolerates the old schema; R-12's code cannot run without the RPC.
-- **Order-free vs the other staged migrations.** R-12 only ADDs a function
-  plus a partial unique index on `public.meal_logs`; it is disjoint from
-  R-06 (`phases` CHECK), R-18 (`cron`), R-07 (`tdee_state`/`tdee_estimates`),
-  R-03/R-14/R-08 (`profiles`/`tdee_estimates` drops). It may be applied in
-  any position relative to them at the checkpoint with the same end state.
-- **Cross-root core caveat.** `daily-nutrition-snapshot` still imports the
-  shared core via the same cross-root relative path as the other functions —
-  the **Wave-3 deploy validation (cross-root core import)** note (R-17)
-  applies unchanged to its redeploy; run that check once for all functions,
-  do not duplicate it.
+- **Ordering invariant (strict).** (1) Apply the R-12 migration to prod —
+  apply staged migration files **individually** (Supabase MCP
+  `apply_migration` or the SQL editor); do **not** `supabase db push`: prod's
+  recorded migration history uses dashboard-built version timestamps that do
+  not match the repo's reconstructed baseline/sprint9 files, so `db push`
+  would try to re-apply them. (2) THEN merge the R-12 PR (the client/edge
+  code that calls the RPC). (3) THEN redeploy the edge function
+  (`supabase functions deploy daily-nutrition-snapshot --use-api
+  --project-ref upvraruehzurbetzrxov`) so the cron uses the RPC instead of
+  its now-deleted mirrored copy. Reversed (code merged / edge redeployed
+  before the migration is applied) prod plan-materialization breaks:
+  `supabase.rpc(...)` 404s on every Diario open and every snapshot run. This
+  inversion (migration FIRST, then code) is the opposite of R-07's (code
+  FIRST, then migration) — R-07's code tolerates the old schema; R-12's code
+  cannot run without the RPC.
+- **Order-free vs the other migrations.** R-12 only ADDs a function plus a
+  partial unique index on `public.meal_logs`; it is disjoint from R-06
+  (`phases` CHECK), R-18 (`cron`), R-07 (`tdee_state`/`tdee_estimates`),
+  R-03/R-14/R-08 (`profiles`/`tdee_estimates` drops) — applied in any order
+  relative to them with the same end state.
+- **Cross-root core caveat.** `daily-nutrition-snapshot` imports the shared
+  core via the same cross-root relative path as the other functions —
+  covered by the **Cross-root core import — validated** note above (one
+  check for all functions).
 - **Rollback.** The migration is additive (one function + one index). To
   roll back: revert the R-12 PR (restore the prior client/edge mirrored
   `materializePlanForDate`) and redeploy `daily-nutrition-snapshot`; the RPC
@@ -279,7 +271,7 @@ Schedules are in UTC (D-F4, D-F5):
 | `0 1 * * *` | daily nutrition snapshot | `daily-nutrition-snapshot` |
 | `0 2 * * 1` | weekly rollover (Monday) | `weekly-rollover` |
 | `0 3 * * *` | recalculate TDEE | `recalculate-tdee` |
-| `0 6 * * *` | cron liveness healthcheck (R-18, **staged** — not live until Wave-3) | `cron-healthcheck` |
+| `0 6 * * *` | cron liveness healthcheck (R-18, live since 2026-05-18) | `cron-healthcheck` |
 
 **Why the DST drift is harmless.** The schedules are fixed in UTC, so the
 trigger time shifts ±1h across European DST — but the date boundaries each
@@ -388,19 +380,16 @@ snapshot is also the free-tier keep-alive, so a silent death is double-impact.
   `cron.job_run_details` — exactly where the "how to tell crons are dead"
   manual check above looks — so a silent under-run becomes a loud, queryable
   one. A healthy run logs `cron-healthcheck OK …` and returns 200.
-- **Staged, not yet live.** The cron schedule is staged in
+- **Live since 2026-05-18 (ordered).** The cron schedule
   **`supabase/migrations/20260518010000_r18_cron_healthcheck.sql`**
   (`0 6 * * *` UTC — after the three data crons; reuses the existing
   `private.invoke_edge_function` + Vault `cron_service_role_key`, no new
-  secret/helper). It is NOT applied by its PR (live project untouched; no
-  reproducible migration history yet — R-00). At the Wave-3 prod-migration
-  checkpoint, deploy the edge function FIRST
-  (`supabase functions deploy cron-healthcheck --project-ref
-  upvraruehzurbetzrxov`), THEN apply the staged migration — otherwise the first
+  secret/helper) is applied. Ordering invariant (honour on any
+  redeploy/rollback): deploy the edge function FIRST
+  (`supabase functions deploy cron-healthcheck --use-api --project-ref
+  upvraruehzurbetzrxov`), THEN apply the migration — otherwise the first
   scheduled run 404s and self-reports as an alert. Rollback:
   `select cron.unschedule('cron-healthcheck');`.
-
-> ⚠ Changing — see R-18 (D-F5) — liveness-alert implemented; cron + deploy staged for Wave-3
 
 ## Data seeding
 
@@ -463,46 +452,49 @@ RPCs, the `handle_new_user`/`mark_week_diverged` triggers, the
 reproducibility gap is closed in-repo: `supabase/migrations/` is now a
 complete history rather than the lone Sprint-9 file.
 
-**Migration sequence and the staged Wave-3 split.** The intended apply order
-is filename-lexicographic:
+**Migration sequence (the Wave-3 set was applied 2026-05-18).** Filename-lexicographic order:
 
 ```
 20260508080000_r00_baseline_schema.sql      # pre-Sprint-9 baseline (R-00)
 20260514120000_sprint9_cron_and_jobs.sql    # Sprint 9 cron/RPC/Vault helper
-20260518000000_r06_fat_pct_check.sql        # STAGED — Wave-3 (R-06)
-20260518010000_r18_cron_healthcheck.sql     # STAGED — Wave-3 (R-18)
-20260518020000_r07_adaptive_tdee_state.sql  # STAGED — Wave-3 (R-07)
-20260518030000_r03_drop_bone_kg.sql         # STAGED — Wave-3 (R-03)
-20260518040000_r14_drop_units.sql           # STAGED — Wave-3 (R-14)
-20260518050000_r08_drop_dead_tdee_cols.sql  # STAGED — Wave-3 (R-08)
-20260518060000_r12_materialize_rpc.sql      # STAGED — Wave-3 (R-12); code-gated
+20260518000000_r06_fat_pct_check.sql        # applied 2026-05-18 (R-06)
+20260518010000_r18_cron_healthcheck.sql     # applied 2026-05-18 (R-18)
+20260518020000_r07_adaptive_tdee_state.sql  # applied 2026-05-18 (R-07)
+20260518030000_r03_drop_bone_kg.sql         # applied 2026-05-18 (R-03)
+20260518040000_r14_drop_units.sql           # applied 2026-05-18 (R-14)
+20260518050000_r08_drop_dead_tdee_cols.sql  # applied 2026-05-18 (R-08)
+20260518060000_r12_materialize_rpc.sql      # applied 2026-05-18 (R-12)
 ```
 
-All `20260518*` files are STAGED — applied by the operator at the Wave-3
-prod-migration checkpoint, not by their PRs (live DB untouched). They are
-mutually order-free (disjoint object sets); the lexicographic order is just
-file-monotonic, not a dependency order. The one special case is **R-12**:
-its calling code (client + edge) depends on the RPC existing in prod, so its
-PR is HELD and the migration must be applied **before** the R-12 PR is merged
-(see the R-12 Wave-3 runbook above).
+The `20260518*` files were applied **individually** at the Wave-3 checkpoint
+(Supabase MCP `apply_migration`), not via `supabase db push` (prod's recorded
+migration history uses dashboard-built versions that do not match the repo's
+reconstructed baseline/sprint9 files, so `db push` would try to re-apply
+them). They are mutually order-free (disjoint object sets). The one special
+case was **R-12**: its calling code (client + edge) depends on the RPC, so
+the migration was applied **before** the R-12 PR (#38) merged (see the R-12
+runbook above).
 
 The baseline deliberately excludes the objects the Sprint-9 migration already
 owns (`pg_net`/`pg_cron`, the `private` schema + `invoke_edge_function`,
 `apply_template_to_week_admin`, the `tdee_estimates (user_id, computed_on)`
 unique constraint, the three cron jobs), so `baseline + sprint9` together
-equal the full live schema with no double-create error; the staged Wave-3
-files then layer their changes on top. The baseline reflects the schema **as
-it is now**, not the Wave-3 future (it does not contain the R-06 CHECK, R-18
-cron, R-07 `tdee_state`, R-03/R-08/R-14 drops, or the R-12 RPC).
+equal the full pre-Wave-3 live schema with no double-create error; the
+`20260518*` migrations (applied 2026-05-18) layer their changes on top. The
+baseline file itself is a **pre-Wave-3 snapshot** — it intentionally does not
+contain the R-06 CHECK, R-18 cron, R-07 `tdee_state`, R-03/R-08/R-14 drops, or
+the R-12 RPC; those live in their own `20260518*` files. Current prod =
+baseline + sprint9 + all `20260518*`.
 
-**Not auto-applied; prod re-apply is a Wave-3 no-op check.** CI does not run
-migrations and the live prod DB already contains every baseline object, so the
-baseline file is not applied by its PR. It is written with
-`create … if not exists` / guarded DDL specifically so that applying it to the
-existing prod DB is a safe no-op. Actually verifying that no-op against prod
-via the Supabase CLI (`supabase db`) is itself a **Wave-3 validation item** —
-it cannot be run from this environment (no Supabase CLI / local Postgres
-here), so it is tracked, not performed, by the R-00 PR.
+**Baseline re-apply is a guarded no-op (R-00 verification still open).** CI
+does not run migrations and prod already contains every baseline object, so
+the baseline file is not applied by its PR; it is written with
+`create … if not exists` / guarded DDL so applying it to prod is a safe
+no-op. Verifying that no-op against prod via the Supabase CLI
+(`supabase db reset` locally + `supabase db diff --linked`) was **not run**
+during the Wave-3 apply (the `20260518*` files were applied directly via MCP,
+the baseline was untouched); it remains an open R-00 reproducibility check —
+the CLI is now available, so it can be performed in a follow-up.
 
 **Regen / verify command.** To regenerate the baseline from a live project (or
 to diff the repo migrations against prod), use the Supabase CLI from a machine
@@ -534,8 +526,8 @@ id means "create new"). The marker comment above the `Functions` block in the
 file documents this; see `conventions.md` (generated-types caveats). Verify
 with `pnpm typecheck && pnpm lint && pnpm build` before committing.
 
-Tier-3 DB/RLS/RPC tests (R-16) can now stand up a local DB from this history
-via `supabase start` + pgTAP; the generated-types switch (R-04) and the
-staged `bone_kg` (R-03), `profiles.units` (R-14), dead-`tdee_estimates`-cols
-(R-08), and `materialize_plan_for_date` (R-12) migrations now sit on a
-reproducible baseline.
+Tier-3 DB/RLS/RPC tests (R-16) can stand up a local DB from this history via
+`supabase start` + pgTAP; the generated-types switch (R-04) and the
+`bone_kg` (R-03), `profiles.units` (R-14), dead-`tdee_estimates`-cols (R-08),
+and `materialize_plan_for_date` (R-12) migrations are applied in prod and sit
+on a reproducible baseline.

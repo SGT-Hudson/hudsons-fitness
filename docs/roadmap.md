@@ -38,7 +38,8 @@ reference shard carries it (never edit the decision entry).
   `body_measurements_smoothed` view, the `extensions`-schema extensions)
   reconstructed read-only from `information_schema`/`pg_catalog`. It is
   timestamped before `20260514120000_sprint9_cron_and_jobs.sql` so the order
-  is baseline → sprint9 → staged Wave-3; it deliberately excludes the
+  is baseline → sprint9 → the `20260518*` Wave-3 migrations (applied
+  2026-05-18); it deliberately excludes the
   sprint9-owned objects (`pg_net`/`pg_cron`, the `private` schema +
   `invoke_edge_function`, `apply_template_to_week_admin`, the
   `tdee_estimates (user_id, computed_on)` unique constraint, the 3 cron jobs)
@@ -114,15 +115,13 @@ reference shard carries it (never edit the decision entry).
 ## R-03 — Drop profiles.bone_kg + purge estimateBoneKg/onboarding/settings/gate/i18n
 - **decision:** D-A6
 - **blocked-by:** R-00
-- **status:** in-progress — code purge + `src/types/database.ts` hand-edit
-  merged (`estimateBoneKg` deleted; `boneKg` removed from
-  OnboardingPage/SettingsPage + the `onboarding`/`biometrics` zod schemas;
-  `isProfileOnboarded` no longer gates on bone; i18n keys removed ES+EN;
-  `profiles` Row/Insert/Update no longer carry `bone_kg`). The
-  `ALTER TABLE … DROP COLUMN bone_kg` is **staged**, not applied:
-  `supabase/migrations/20260518030000_r03_drop_bone_kg.sql` (staged header,
-  applied by the operator at the Wave-3 prod-migration checkpoint — prod
-  apply gated, live DB untouched). NOT done until the prod drop.
+- **status:** done (2026-05-18) — code purge + types merged earlier
+  (`estimateBoneKg` deleted; `boneKg` removed from OnboardingPage/SettingsPage
+  + the `onboarding`/`biometrics` zod schemas; `isProfileOnboarded` no longer
+  gates on bone; i18n keys removed ES+EN). The `ALTER TABLE … DROP COLUMN
+  bone_kg` (`supabase/migrations/20260518030000_r03_drop_bone_kg.sql`) was
+  applied to prod at the Wave-3 checkpoint. Pre-drop value (one profile,
+  `bone_kg=9.9`) is in the Wave-3 safety snapshot.
 - **scope:**
   1. DB migration: `ALTER TABLE profiles DROP COLUMN bone_kg;` (new file in
      `supabase/migrations/`).
@@ -215,8 +214,9 @@ reference shard carries it (never edit the decision entry).
 ## R-06 — fractionToPct/pctToFraction helper; refactor 3 inline sites; verify/add DB CHECK
 - **decision:** D-B3
 - **blocked-by:** —
-- **status:** in-progress — helper + 3 sites + tests landed; DB CHECK migration
-  staged, applied at Wave-3 prod checkpoint.
+- **status:** done (2026-05-18) — helper + 3 sites + tests landed earlier;
+  the DB CHECK `phases_fat_pct_of_kcal_range` migration was applied to prod at
+  the Wave-3 checkpoint (pre-flight confirmed 0 out-of-range rows).
 - **scope:**
   1. Add a shared `fractionToPct` / `pctToFraction` pair (or a single
      documented constant) in `src/lib/macros.ts` (or `src/lib/` utils).
@@ -230,16 +230,17 @@ reference shard carries it (never edit the decision entry).
 ## R-07 — TDEE adaptive-Kalman model — own design spec first, then schema + rewrite recalculate-tdee
 - **decision:** D-B4
 - **blocked-by:** —
-- **status:** in-progress — spec written
+- **status:** done (2026-05-18) — spec written
   (`docs/superpowers/specs/2026-05-18-adaptive-tdee-design.md`); edge-fn
-  rewrite + filter + confidence UI landed; schema migration staged
-  (`supabase/migrations/20260518020000_r07_adaptive_tdee_state.sql`) +
-  edge deploy applied at Wave-3 prod checkpoint. Filter = 2-state linear
+  rewrite + filter + confidence UI landed; schema migration
+  (`supabase/migrations/20260518020000_r07_adaptive_tdee_state.sql`) applied
+  to prod and `recalculate-tdee` deployed at the Wave-3 checkpoint (ordered:
+  edge deploy first, then migration; `tdee_state` seeded + verified). Filter = 2-state linear
   Kalman on `[trend_weight, expenditure]` in the pure core
   `src/core/tdee.ts` (deterministic Vitest, 18 tests); schema approach =
   new `tdee_state` table + 2 nullable `tdee_estimates` cols
-  (`confidence`/`is_warmup`) — order-free wrt the separately-staged R-08
-  col-drop. `body_measurements_smoothed` retained (no longer the TDEE
+  (`confidence`/`is_warmup`) — order-free wrt the separately-applied R-08
+  col-drop (verified intact after R-08 dropped its 4 cols). `body_measurements_smoothed` retained (no longer the TDEE
   input — the filter maintains its own trend weight; see spec §8). The
   Sprint-17 reader contract is unchanged (additive confidence only).
 - **scope:** Standalone sprint — write a design spec before implementing
@@ -265,7 +266,7 @@ reference shard carries it (never edit the decision entry).
 ## R-08 — Drop 4 dead tdee_estimates cols; wire mifflinStJeor as derived "Estimated BMR" display
 - **decision:** D-B5
 - **blocked-by:** R-00
-- **status:** in-progress — 4 dead cols (`bmr_kcal`, `activity_kcal`,
+- **status:** done (2026-05-18) — 4 dead cols (`bmr_kcal`, `activity_kcal`,
   `neat_residual_kcal`, `workout_kcal_logged`) removed from
   `src/types/database.ts` `tdee_estimates` Row/Insert/Update (grep-confirmed
   no code read/wrote them — the R-07 edge rewrite already wrote nothing to
@@ -279,12 +280,11 @@ reference shard carries it (never edit the decision entry).
   most consistent placement). Display only — never feeds protein/TDEE/targets
   (D-A6/D-B5 guardrail). i18n `metricas.fields.estimatedBmr`/`estimatedBmrHelp`
   ES+EN; deterministic Vitest added for both new helpers. The
-  `ALTER TABLE … DROP COLUMN` of the 4 cols is **staged**, not applied:
-  `supabase/migrations/20260518050000_r08_drop_dead_tdee_cols.sql` (staged
-  header, timestamped after R-00 baseline + sprint9 + R-03 `20260518030000`
-  + R-14 `20260518040000`; independent/order-free wrt R-07's separately-staged
-  `20260518020000`; applied by the operator at the Wave-3 prod checkpoint —
-  live DB untouched). NOT done until the prod drop.
+  `ALTER TABLE … DROP COLUMN` of the 4 cols
+  (`supabase/migrations/20260518050000_r08_drop_dead_tdee_cols.sql`) was
+  applied to prod at the Wave-3 checkpoint (order-free wrt R-07's
+  `20260518020000`; R-07's `confidence`/`is_warmup` verified intact after the
+  drop). `tdee_estimates` was empty (0 rows) — zero data destroyed.
 - **scope:**
   1. DB migration: drop `bmr_kcal`, `activity_kcal`, `neat_residual_kcal`,
      `workout_kcal_logged` from `tdee_estimates` (new file in
@@ -409,8 +409,8 @@ reference shard carries it (never edit the decision entry).
 ## R-12 — materialize_plan_for_date RPC + partial unique index + date<=today guard; delete client/edge mirrors
 - **decision:** D-D6
 - **blocked-by:** R-00
-- **status:** in-progress — RPC + partial unique index + date≤today guard
-  authored (`supabase/migrations/20260518060000_r12_materialize_rpc.sql`,
+- **status:** done (2026-05-18) — RPC + partial unique index + date≤today guard
+  (`supabase/migrations/20260518060000_r12_materialize_rpc.sql`,
   `materialize_plan_for_date` SECURITY INVOKER + `set search_path = public`,
   partial unique index `meal_logs_user_plan_slot_uidx`, in-RPC
   `p_date > (now() at time zone 'Europe/Madrid')::date` no-op guard mirroring
@@ -418,12 +418,10 @@ reference shard carries it (never edit the decision entry).
   edge (`daily-nutrition-snapshot/index.ts`) switched to the RPC; the
   hand-mirrored client query/dedup logic and the edge's mirrored
   `materializePlanForDate` + duplicated `MEAL_TYPE_ORDER` removed (single
-  source = the RPC). **Migration AND code both gated to Wave-3 (apply
-  migration → then merge PR #38): unlike the other staged items R-12's CODE
-  depends on the migration — the RPC must exist in prod before this code
-  (which calls it) merges, else materialization breaks.** PR HELD, auto-merge
-  NOT enabled. NOT done until the operator applies the migration then merges
-  the PR at the Wave-3 checkpoint.
+  source = the RPC). R-12's code depended on its migration, so the ordered
+  Wave-3 apply was: migration applied to prod → **PR #38 merged** → 
+  `daily-nutrition-snapshot` redeployed. RPC smoke verified (future date→0,
+  today idempotent, plan rows materialized).
 - **scope:** One implementation sprint (migration + RPC + client/edge
   rewiring).
   1. Migration: create `materialize_plan_for_date(p_user_id uuid, p_date date)`
@@ -476,17 +474,14 @@ reference shard carries it (never edit the decision entry).
 ## R-14 — Drop profiles.units; purge from types
 - **decision:** D-E3
 - **blocked-by:** R-00
-- **status:** in-progress — `units` removed from `src/types/database.ts`
-  (`profiles` Row/Insert/Update); `profiles.units` was fully code-dead
-  (grep-verified: no read/write anywhere — the unrelated
-  `unit_type`/recipe-`units`/diario-`units.*`/`unitSuffix`/composition
-  `UnitToggle` tokens are out of scope), so this is a types-only change with
-  no app-code edits. The `ALTER TABLE … DROP COLUMN units` is **staged**, not
-  applied: `supabase/migrations/20260518040000_r14_drop_units.sql` (staged
-  header, timestamped after R-00 baseline + sprint9 + R-03's
-  `20260518030000`; applied by the operator at the Wave-3 prod-migration
-  checkpoint — prod apply gated, live DB untouched). NOT done until the prod
-  drop.
+- **status:** done (2026-05-18) — `units` removed from `src/types/database.ts`
+  earlier; `profiles.units` was fully code-dead (grep-verified: no read/write
+  anywhere — the unrelated `unit_type`/recipe-`units`/diario-`units.*`/
+  `unitSuffix`/composition `UnitToggle` tokens are out of scope), so the code
+  side was types-only. The `ALTER TABLE … DROP COLUMN units`
+  (`supabase/migrations/20260518040000_r14_drop_units.sql`) was applied to
+  prod at the Wave-3 checkpoint (both rows were the dead `'metric'` default —
+  no real data lost).
 - **scope:**
   1. DB migration: `ALTER TABLE profiles DROP COLUMN units;` (new file in
      `supabase/migrations/`).
@@ -569,16 +564,15 @@ reference shard carries it (never edit the decision entry).
   all 4 functions switched to the bare specifier. Parity net:
   `supabase/functions/_shared/macros.test.ts` asserts one golden-vector
   fixture set against BOTH the client path and the edge path; vitest 83/83.
-- **follow-up (Wave-3 deploy validation):** the code refactor is done, but the
-  edge imports the core via the cross-root path `../../../src/core/*.ts`
-  (outside `supabase/functions/`). Edge functions aren't shipped yet, so
-  whether `supabase functions deploy` bundles a cross-root source file is
-  unverified. Before/at the first deploy, verify the CLI bundles it; if not,
-  the fallback is to vendor/copy the core into `supabase/functions/_shared/`
-  (or relocate it there and have the client import from that path) — single
-  source stays, only the physical location moves. Tracked in
-  `docs/operations.md` (Edge functions → Wave-3 deploy validation,
-  `> ⚠ Changing — see R-17`). Not a code regression; deploy-time only.
+- **follow-up (cross-root deploy validation) — RESOLVED 2026-05-18:** the edge
+  imports the core via the cross-root path `../../../src/core/*.ts` (outside
+  `supabase/functions/`); whether the deploy would bundle it was the open risk.
+  Verified at the first prod deploy: `supabase functions deploy <fn> --use-api`
+  follows and uploads the cross-root files (`src/core/*.ts` appear in the
+  upload log) and the deployed functions execute them correctly. The
+  vendor/relocate fallback was **not** needed — the core stays single-source
+  at `src/core/`. Operational note recorded in `docs/operations.md`: deploys
+  must pass `--use-api` (Docker-free server-side bundling).
 - **scope:** Own small refactor sprint; depends on R-16 Tier-1 golden vectors
   existing first (they guard the extraction). Coordinate with R-12 (already
   removes the materialization mirror via RPC) and R-05/R-06/R-11 (they touch
@@ -612,9 +606,11 @@ reference shard carries it (never edit the decision entry).
 ## R-18 — Cron liveness alerting (stale daily_nutrition_history/tdee_estimates → notify)
 - **decision:** D-F5
 - **blocked-by:** —
-- **status:** in-progress — liveness-alert code + edge fn + staged cron
-  migration landed; cron schedule + edge deploy applied at Wave-3 prod
-  checkpoint. Mechanism = `cron-healthcheck` edge fn (chosen over the pure
+- **status:** done (2026-05-18) — liveness-alert code + edge fn + cron
+  migration landed; `cron-healthcheck` deployed then the cron schedule
+  applied to prod at the Wave-3 checkpoint (ordered: deploy first, then
+  migration; Vault `cron_service_role_key` confirmed set). Mechanism =
+  `cron-healthcheck` edge fn (chosen over the pure
   SQL+`net.http_post` variant: keeps the freshness predicate in a unit-tested
   pure module and reuses the existing `private.invoke_edge_function` + Vault
   `cron_service_role_key` path with no new secret). Pure freshness core at
@@ -622,9 +618,9 @@ reference shard carries it (never edit the decision entry).
   Vitest `src/core/liveness.test.ts`, 17 tests, frozen-clock). Edge fn
   `supabase/functions/cron-healthcheck/index.ts` (Madrid `todayInTZ()`;
   `console.error` structured `CRON_LIVENESS_ALERT …` line + HTTP 503 on alert
-  so the failed run shows in `cron.job_run_details`). Staged cron schedule:
+  so the failed run shows in `cron.job_run_details`). Cron schedule
   `supabase/migrations/20260518010000_r18_cron_healthcheck.sql` (`0 6 * * *`
-  UTC, after the three data crons; NOT applied — Wave-3). Thresholds:
+  UTC, after the three data crons) applied to prod. Thresholds:
   `daily_history` stale if > 2 calendar days old (1d inherent snapshot lag +
   1 transient missed run tolerated + DST drift); `tdee_estimates` > 4 days
   (legitimately sparser via `insufficient_intake`, secondary signal — does not

@@ -27,23 +27,15 @@ Extends Supabase's built-in `auth.users`. One row per user (`id` is the FK to `a
 | `id` | `uuid` primary key, references `auth.users(id)` on delete cascade |
 | `display_name` | `text` |
 | `language` | `text` not null default `'es'`, check in (`'es'`, `'en'`) |
-| `units` | `text` not null default `'metric'`, check in (`'metric'`, `'imperial'`) — still in prod; removed from types, `DROP` staged for Wave-3 (R-14) |
 | `start_date` | `date` not null default `current_date` |
 | `initial_weight_kg` | `numeric(5,2)` |
 | `sex` | `text`, check in (`'male'`, `'female'`, `'other'`) |
 | `birth_date` | `date` |
 | `height_cm` | `numeric(5,1)` |
-| `bone_kg` | `numeric(4,2)` — absolute bone mass in kg (smart-scale convention) — still in prod; removed from app + types, `DROP` staged for Wave-3 |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
 
-> ⚠ Changing — see R-03 (D-A6)
-
-The `bone_kg` column lives here on `profiles` (a single per-user value), not on `body_measurements`. It was dead — it fed zero computations and added mandatory onboarding friction (D-A6). It is now **removed from the app + `src/types/database.ts`** (`estimateBoneKg`, the onboarding/settings inputs, the `isProfileOnboarded` gate, and the i18n keys are all gone), but the physical column still exists in the live `profiles` table: the `ALTER TABLE … DROP COLUMN bone_kg` is staged in `supabase/migrations/20260518030000_r03_drop_bone_kg.sql` and applied by the operator at the Wave-3 prod-migration checkpoint. The marker stays until that prod drop lands.
-
-> ⚠ Changing — see R-14 (D-E3)
-
-The `units` column is dead legacy: no form writes it, nothing reads it, and the app is metric-only (D-E3). It is now **removed from `src/types/database.ts`** (it was code-dead — no `profiles.units` read/write existed anywhere, so no app code changed), but the physical column still exists in the live `profiles` table: the `ALTER TABLE … DROP COLUMN units` is staged in `supabase/migrations/20260518040000_r14_drop_units.sql` and applied by the operator at the Wave-3 prod-migration checkpoint. The marker stays until that prod drop lands.
+Two dead columns were dropped from `profiles` on 2026-05-18: `bone_kg` (a single per-user value that fed zero computations and added mandatory onboarding friction — R-03 / D-A6) and `units` (dead legacy, never written or read; the app is metric-only — R-14 / D-E3). Both removals were code/types-first; the prod `DROP COLUMN`s applied at the Wave-3 checkpoint completed them.
 
 ### `body_measurements`
 
@@ -145,11 +137,9 @@ One row per logged food item per day. Index `idx_meal_logs_user_date` on `(user_
 | `notes` | `text` |
 | `created_at` | `timestamptz` not null default `now()` |
 
-Constraint `meal_log_one_source` enforces exactly one of `recipe_id` / `ingredient_id` / `custom_name`.
+Constraint `meal_log_one_source` enforces exactly one of `recipe_id` / `ingredient_id` / `custom_name`. Partial unique index `meal_logs_user_plan_slot_uidx` on `(user_id, plan_week_slot_id) where plan_week_slot_id is not null` gives plan-materialization DB-level idempotency.
 
-> ⚠ Changing — see R-12 (D-D6)
-
-R-12 / D-D6 is implemented (applied + merged at Wave-3): the staged migration `20260518060000_r12_materialize_rpc.sql` adds a partial unique index `meal_logs_user_plan_slot_uidx` on `(user_id, plan_week_slot_id) where plan_week_slot_id is not null` and the `materialize_plan_for_date` SECURITY INVOKER RPC (`ON CONFLICT DO NOTHING` on that index → DB-level idempotency; `date <= today` Europe/Madrid guard). The prior app-level read-then-write dedup, hand-mirrored across client and edge, is removed. Not live in prod until the Wave-3 checkpoint (the migration is applied, then the calling-code PR is merged — the code depends on the RPC existing first).
+R-12 / D-D6 is live in prod (since 2026-05-18): the `materialize_plan_for_date` SECURITY INVOKER RPC (`ON CONFLICT DO NOTHING` on the index above → idempotency; `date <= today` Europe/Madrid guard) replaced the prior app-level read-then-write dedup that was hand-mirrored across client and edge. The migration was applied, then the calling-code PR merged (the code depends on the RPC existing first).
 
 ### `goals`
 
@@ -278,7 +268,7 @@ Daily snapshot of planned vs. consumed macros, computed by the `daily-nutrition-
 
 ### `tdee_estimates`
 
-Adaptive TDEE cache, recomputed weekly by an Edge Function. Index `idx_tdee_user_date` on `(user_id, computed_on desc)`.
+Emitted adaptive-TDEE series, upserted daily by the `recalculate-tdee` Edge Function (per-user persistent filter state lives in `tdee_state`). Index `idx_tdee_user_date` on `(user_id, computed_on desc)`.
 
 | Column | Type / constraint |
 |---|---|
@@ -289,21 +279,36 @@ Adaptive TDEE cache, recomputed weekly by an Edge Function. Index `idx_tdee_user
 | `avg_kcal_intake` | `numeric(7,1)` not null |
 | `weight_delta_kg` | `numeric(5,2)` not null |
 | `estimated_tdee_kcal` | `numeric(7,1)` not null (empirical total) |
-| `bmr_kcal` | `numeric(7,1)` |
-| `activity_kcal` | `numeric(7,1)` |
-| `workout_kcal_logged` | `numeric(7,1)` |
-| `neat_residual_kcal` | `numeric(7,1)` |
 | `created_at` | `timestamptz` not null default `now()` |
+| `confidence` | `text` (variance-derived UI band: `low`/`medium`/`high`; enum lives in `src/core/tdee.ts`, not a DB CHECK) |
+| `is_warmup` | `boolean` not null default false (cold-start/long-gap warm-up flag) |
 
-> ⚠ Changing — see R-08 (D-B5) — column drop only
+The `confidence` and `is_warmup` columns were added 2026-05-18 (R-07 / D-B4) for the adaptive Kalman estimator (Sprint-17 reader contract unchanged — additive only). Four dead always-null energy-breakdown columns — `bmr_kcal`, `activity_kcal`, `neat_residual_kcal`, `workout_kcal_logged` (§6.4 scaffolding on the replaced two-endpoint model, never written by `recalculate-tdee`) — were dropped the same day (R-08 / D-B5), code/types-first then the prod `DROP COLUMN`. BMR is now a derived, never-stored display (`estimatedBmr` in `src/lib/macros.ts`, surfaced on `/progreso`); any future expenditure decomposition is owned by the R-07 adaptive-TDEE spec.
 
-The four columns `bmr_kcal`, `activity_kcal`, `neat_residual_kcal`, and `workout_kcal_logged` were always-null/unused energy-breakdown scaffolding (§6.4: `activity_kcal = TDEE − BMR` + a workout/NEAT split gated on a non-existent Workouts module, built on the replaced two-endpoint model — any future expenditure decomposition is owned by the R-07 adaptive-TDEE spec). They are **removed from `src/types/database.ts` and unused in code** (the `recalculate-tdee` Edge Function never wrote them). The physical `ALTER TABLE … DROP COLUMN` is **staged** (`supabase/migrations/20260518050000_r08_drop_dead_tdee_cols.sql`) and applied at the Wave-3 prod-migration checkpoint — the live columns still physically exist in prod until then, hence the lingering `⚠ R-08` on the column-drop aspect only. BMR is now wired as a derived, never-stored display value (`estimatedBmr` in `src/lib/macros.ts`, surfaced on `/progreso`). This drop is independent and order-free with respect to R-07's separately-staged additive `confidence`/`is_warmup`/`tdee_state` migration (disjoint column sets; either may apply first).
+### `tdee_state`
+
+Per-user persistent adaptive-filter memory (one row per user; upserted daily by `recalculate-tdee`). Holds the 2-state Kalman filter — trend weight + expenditure — and its 2×2 covariance stored as 3 free scalars. Added 2026-05-18 (R-07 / D-B4).
+
+| Column | Type / constraint |
+|---|---|
+| `user_id` | `uuid` primary key, references `profiles(id)` on delete cascade |
+| `trend_weight_kg` | `numeric` not null |
+| `expenditure_kcal` | `numeric` not null |
+| `cov_ww` | `numeric` not null |
+| `cov_we` | `numeric` not null |
+| `cov_ee` | `numeric` not null |
+| `observations_count` | `integer` not null default 0 |
+| `last_updated_on` | `date` not null |
+| `created_at` | `timestamptz` not null default `now()` |
+| `updated_at` | `timestamptz` not null default `now()` |
+
+Standard per-user RLS (the four `auth.uid() = user_id` policies); the edge function writes via the service role (RLS-bypassing).
 
 ## Row-Level Security
 
 Every table is RLS-enabled.
 
-**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `recipes`, `recipe_ingredients` (via join to `recipes`), `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`.
+**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `recipes`, `recipe_ingredients` (via join to `recipes`), `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`.
 
 **`ingredients` (shared library).** Different shape (see D-A1):
 - SELECT: any authenticated user reads the entire library (`using (true)`).
@@ -317,19 +322,18 @@ The repo is public, so RLS is the sole security boundary — there is no server-
 
 ## RPCs
 
-Four user-facing RPCs, all `SECURITY INVOKER`, each atomic across multiple tables:
+Five user-facing RPCs, all `SECURITY INVOKER`, each atomic across multiple tables:
 - `save_recipe`
 - `save_template`
 - `apply_template_to_week`
 - `save_week_as_template`
+- `materialize_plan_for_date`
 
 One cron-only exception: `apply_template_to_week_admin` is `SECURITY DEFINER` (Sprint 9), used by scheduled jobs that act across users with the service role.
 
 Invariant (D-C5): any operation that mutates more than one table atomically MUST be an RPC. Single-table mutations stay client-side. All user-callable RPCs must be `SECURITY INVOKER` with `set search_path = public`. `SECURITY DEFINER` is forbidden without explicit security review and a non-`public` schema home; the cron-only `apply_template_to_week_admin` is the documented exception.
 
-> ⚠ Changing — see R-12 (D-D6)
-
-R-12 / D-D6 is implemented (applied + merged at Wave-3): plan materialization is the new `materialize_plan_for_date` `SECURITY INVOKER` RPC (`set search_path = public`, in-RPC `date <= today` Europe/Madrid guard) backed by the partial unique index `meal_logs_user_plan_slot_uidx` on `meal_logs (user_id, plan_week_slot_id) where plan_week_slot_id is not null` with `INSERT … ON CONFLICT DO NOTHING`. The hand-mirrored client/edge copies are deleted (single source = the RPC). Bringing the count of user-facing `SECURITY INVOKER` RPCs to five. Not live until the Wave-3 checkpoint — the staged migration is applied to prod first, then the calling-code PR is merged (the code calls the RPC, so the RPC must exist in prod before the code merges).
+`materialize_plan_for_date` (R-12 / D-D6) is the fifth: `SECURITY INVOKER`, `set search_path = public`, in-RPC `date <= today` Europe/Madrid guard, backed by the partial unique index `meal_logs_user_plan_slot_uidx` with `INSERT … ON CONFLICT DO NOTHING`. It replaced the hand-mirrored client/edge materialization copies (single source = the RPC). Live in prod since 2026-05-18 (migration applied, then the calling-code PR merged).
 
 ## Views
 
@@ -363,8 +367,4 @@ This is the **target** model. `ingredients` and `recipes` do **not** yet work th
 
 ## Type definitions & caveats
 
-`src/types/database.ts` is **hand-written** today, exposing `Tables`, `TablesInsert`, and `TablesUpdate` helper types. CHECK-constraint enums (e.g. `phases.kcal_mode`, `phases.fiber_mode`, `ingredients.unit_type`, `ingredients.source`) surface as plain `string` in TypeScript — verify the allowed values against `pg_constraint` before adding form options, since the type system does not narrow them. `phases.fat_pct_of_kcal` is stored as a fraction in the 0.10–0.60 range, not a percent; the UI converts at the form boundary.
-
-> ⚠ Changing — see R-04 (D-A8)
-
-The decided change switches `src/types/database.ts` to generated types (`supabase gen types typescript`). CHECK-constraint enums still come through as plain `string` from the generator, so the verify-against-`pg_constraint` rule continues to apply.
+`src/types/database.ts` is **generated** from the live schema (`supabase gen types typescript`, command + post-generation corrections in `operations.md`; caveats in `conventions.md`), exposing `Tables`, `TablesInsert`, `TablesUpdate` helper generics + `Constants` (R-04 / D-A8, done 2026-05-18). Two generator caveats survive every regen: (1) CHECK-constraint enums (e.g. `phases.kcal_mode`, `phases.fiber_mode`, `tdee_estimates.confidence`, `ingredients.unit_type`, `ingredients.source`) surface as plain `string` — verify allowed values against `pg_constraint`/the pure core before adding form options, the type won't narrow them; (2) the generator cannot infer SQL-function argument nullability and emits non-null `string`, so the nullable `save_recipe`/`save_template` ids (null = "create new") are restored to `string | null` by a documented post-generation patch. `phases.fat_pct_of_kcal` is stored as a fraction in the 0.10–0.60 range, not a percent; the UI converts at the form boundary.
