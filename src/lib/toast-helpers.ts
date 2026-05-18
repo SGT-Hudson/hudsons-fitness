@@ -1,3 +1,6 @@
+import { createElement } from 'react';
+import type { ToastActionElement } from '@/components/ui/toast';
+import { ToastAction } from '@/components/ui/toast';
 import i18n from '@/i18n';
 import { toast } from '@/hooks/use-toast';
 
@@ -42,5 +45,23 @@ export function toastError(err: unknown) {
     variant: 'destructive',
     title: i18n.t('common:toasts.errorTitle'),
     description,
+  });
+}
+
+/**
+ * Quick-add confirmation with an inline "undo" action (Theme 2 / L1).
+ * `onUndo` is fired when the user taps the action — wire it to delete the
+ * just-created meal_log by id. Uses createElement so this stays a .ts file.
+ */
+export function toastUndoableQuickAdd(name: string, onUndo: () => void) {
+  toast({
+    variant: 'success',
+    title: i18n.t('diario:quickAdd.added', { name }),
+    durationMs: 6000,
+    action: createElement(
+      ToastAction,
+      { altText: i18n.t('diario:quickAdd.undo'), onClick: onUndo },
+      i18n.t('diario:quickAdd.undo'),
+    ) as unknown as ToastActionElement,
   });
 }
