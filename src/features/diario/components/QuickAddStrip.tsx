@@ -37,6 +37,7 @@ export function QuickAddStrip({ mealType, date, items }: Props) {
                   toastUndoableQuickAdd(it.name, () => {
                     void deleteMealLog(created.id).then(() => {
                       void qc.invalidateQueries({ queryKey: ['meal_logs'] });
+                      void qc.invalidateQueries({ queryKey: ['quick_add'] });
                     });
                   }),
               },
