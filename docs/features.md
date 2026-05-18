@@ -59,8 +59,38 @@ Users log measurements with `weight_kg` plus optional `body_fat_pct`,
 moving average; the first days use a shorter window) so trend consumers read
 smoothed weight rather than raw weigh-ins.
 
-The `/progreso` page renders a weight chart (raw + smoothed) and a
-composition chart. The composition chart's main view is a **2-series stacked
+The `/progreso` page leads with a **`LatestMeasurementCard`** whose weight
+headline is the **smoothed (5-day-avg) trend weight** (`latestMa5`) rather
+than the raw weigh-in. Alongside it a **rate per week** (`smoothedRatePerWeek`
+— kg/week over a 7-day lookback on the smoothed series) is shown in
+phase-aware color. A secondary line shows **since-start** (`latestMa5 −
+profile.initial_weight_kg`) and **to-goal** (`latestMa5 − targetWeightKg`) —
+this line and the to-goal clause render only when the data exists (since-start
+requires `initial_weight_kg` on the profile; to-goal additionally requires a
+derivable target weight). The **target weight** is computed on render by
+`computeTargetWeightKg` from `goal.target_body_fat_pct` + the latest
+`body_fat_pct`/`weight_kg` (fat-free-mass method — assuming fat loss only);
+it is never stored. **Estimated BMR** (Mifflin-St Jeor) is shown as a quiet,
+delta-free line — it is a deterministic function of current weight, so a
+BMR "Δ" would merely restate the weight trend.
+
+Below the weight headline the card shows body-fat, muscle, and water
+percentages with a **≥7-day delta** (`compositionDelta`, same 7-day lookback)
+colored by `deltaTone`: **phase-aware** — weight and body-fat are colored
+toward the active phase's goal (cut: down=good; bulk: up=good for weight;
+body-fat down is always good when any phase is set); muscle up is always good;
+water is always neutral; **everything is neutral when no active phase is set**.
+`ProgresoPage` reads the active phase via `useActivePhase()` and the user's
+goal via `useGoal()` read-only for this coloring and target-weight derivation
+— no writes.
+
+The weight chart (raw + smoothed) draws a **dashed reference line** at the
+derived target weight, but only when it is computable (requires
+`goal.target_body_fat_pct` + current `body_fat_pct` + `weight_kg`). All of
+the above is **derived/presentational only** — never stored, never feeds
+protein/TDEE/targets; no schema, RPC, or edge function was added or changed.
+
+The composition chart's main view is a **2-series stacked
 area** of `fat%` + `lean%` (`lean% ≡ 100 − body_fat_pct`), fat at the bottom,
 with per-series linear interpolation between measurements (no extrapolation
 past the first/last point). fat%/lean% is a true disjoint partition that sums
