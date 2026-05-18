@@ -25,7 +25,12 @@
       "yesterday": "ayer",
       "daysAgo": "hace {{count}} días",
       "usingValues": "se usa el último valor registrado"
-    }
+    },
+    "weightTrendLabel": "Peso · tendencia (media 5d)",
+    "ratePerWeek": "{{n}} kg / sem",
+    "sinceStart": "{{n}} kg desde el inicio",
+    "toGoal": "faltan {{n}} kg al objetivo ({{target}})",
+    "noTrend": "tendencia no disponible aún"
   },
   "list": {
     "title": "Mediciones recientes",
@@ -55,7 +60,8 @@
     "weight": {
       "title": "Tendencia de peso",
       "raw": "Peso diario",
-      "ma5": "Media móvil 5 días"
+      "ma5": "Media móvil 5 días",
+      "targetLine": "objetivo {{n}} kg"
     },
     "composition": {
       "title": "Composición corporal",

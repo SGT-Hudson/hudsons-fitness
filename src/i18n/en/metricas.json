@@ -25,7 +25,12 @@
       "yesterday": "yesterday",
       "daysAgo": "{{count}} days ago",
       "usingValues": "using the latest value"
-    }
+    },
+    "weightTrendLabel": "Weight · trend (5-day avg)",
+    "ratePerWeek": "{{n}} kg / wk",
+    "sinceStart": "{{n}} kg since the start",
+    "toGoal": "{{n}} kg to goal ({{target}})",
+    "noTrend": "trend not available yet"
   },
   "list": {
     "title": "Recent measurements",
@@ -55,7 +60,8 @@
     "weight": {
       "title": "Weight trend",
       "raw": "Daily weight",
-      "ma5": "5-day moving avg"
+      "ma5": "5-day moving avg",
+      "targetLine": "goal {{n}} kg"
     },
     "composition": {
       "title": "Body composition",
