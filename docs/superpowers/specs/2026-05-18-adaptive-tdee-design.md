@@ -169,11 +169,15 @@ P⁺ = (I − K H) P⁻                  (Joseph form not required: H constant, 
 ```
 
 The expenditure self-correction D-B4 describes **falls out of `K`'s second
-component**: a weigh-in that comes in heavier than the energy-balance
-prediction (`y>0`) pushes `e` *up* via `K₁·y` (the filter infers "they must
-burn less than I thought"), and vice-versa — exactly the residual-driven
-expenditure correction, with the strength set by the learned covariance, not
-a hand-set gain.
+component** (`K₁`). The predict step makes `K₁` *negative* (the
+energy-balance coupling `F₀₁ = −1/α` drives `cov_we < 0`), so a weigh-in
+that comes in **heavier** than the energy-balance prediction (`y>0`) pushes
+`e` **down** via `K₁·y` (the filter infers "they burned *less* than I
+assumed, so their true expenditure is lower than my estimate"), and a
+weigh-in **lighter** than predicted (`y<0`) pushes `e` **up** ("they burned
+*more* than I assumed"). This is the physically correct residual-driven
+expenditure correction — with the strength set by the learned covariance,
+not a hand-set gain.
 
 ---
 
@@ -245,14 +249,28 @@ turns an energy imbalance into a weight delta. Fixed, documented, done.
 
 ### Long gap (no run for `G` days, e.g. user away / cron outage)
 
-- Process-only propagation for the elapsed days with **`Q` scaled by the gap
-  length** (`Q_eff = Q · Δt`), capped at `MAX_GAP_DAYS = 45`: beyond 45 days
-  the prior is so diffuse that we **re-initialize** `w` from the next
-  weigh-in and inflate `P₁₁` back toward the cold-start value (`e` retained
-  as the best prior, but its variance reset to `200²` → effectively a warm
-  restart, and `is_warmup` flips back to true until `observations_count`
-  re-crosses the gate). Prevents absurd extrapolation after a multi-month
-  absence while not throwing away a still-plausible `e`.
+- **Short / interior gap (`Δt ≤ MAX_GAP_DAYS = 45`):** process-only
+  propagation for the elapsed days with **`Q` scaled by the gap length**
+  (`Q_eff = Q · Δt`) — covariance grows linearly with elapsed days,
+  confidence degrades gracefully, no hard restart.
+- **Long gap (`Δt > MAX_GAP_DAYS = 45`):** beyond 45 days the prior is so
+  diffuse that day-by-day replay of the whole gap would be absurd
+  extrapolation, so we **warm-restart** in a single step: re-anchor `w` to
+  the latest weigh-in on/before the processed day and inflate `P₁₁` back
+  toward the cold-start value (`e` retained as the best prior, but its
+  variance reset to `200²`), with `is_warmup` flipping back to true until
+  `observations_count` re-crosses the gate. Prevents absurd extrapolation
+  after a multi-month absence while not throwing away a still-plausible `e`.
+  **Edge-path note (matches `recalculate-tdee/index.ts`):** the cron detects
+  `daysBetweenISO(last_updated_on, computedOn) > MAX_GAP_DAYS` *before* the
+  normal day-by-day replay and invokes the warm-restart as **one** `stepDay`
+  call with the real (large) `gapDays`, anchoring to the most recent weigh-in
+  at/before `computedOn`. This is the only production caller that exercises
+  `stepDay`'s warm-restart branch (steady-state runs only ever pass
+  `gapDays = 1`); the emitted `tdee_estimates` row for that day carries
+  `window_days = Δt`, `avg_kcal_intake = 0`, `weight_delta_kg = 0`, and the
+  re-engaged low-confidence band. The subsequent daily runs then resume
+  normal one-day steps from the restarted state.
 
 All gap arithmetic uses **whole calendar days via UTC-midnight diff**
 (`daysBetweenISO`, the same DST-immune helper R-18 introduced) and Madrid
@@ -294,10 +312,20 @@ incremental filter step**:
 3. For each profile with ≥1 phase (kept — the "actively tracking" gate; no
    phase ⇒ no TDEE consumer):
    - Load `tdee_state` (or cold-start init per §7).
-   - Determine the set of **days to process**: every calendar day from
-     `last_updated_on + 1` (or the user's first measurement) through
-     `computedOn`, inclusive. Normal steady state = exactly 1 day; catches
-     up deterministically after a gap by replaying day-by-day (§7).
+   - **Long-gap check first (§7):** if a state row exists and
+     `daysBetweenISO(last_updated_on, computedOn) > MAX_GAP_DAYS`, take the
+     warm-restart short-circuit — one `stepDay` with the real large
+     `gapDays`, re-anchored to the latest weigh-in at/before `computedOn` —
+     upsert state + the emitted row, and skip the day-by-day replay entirely
+     (replaying a multi-month gap one day at a time would be absurd
+     extrapolation). This is the production caller that makes `stepDay`'s
+     warm-restart branch reachable.
+   - Otherwise determine the set of **days to process**: every calendar day
+     from `last_updated_on + 1` (or the user's first measurement) through
+     `computedOn`, inclusive. Normal steady state = exactly 1 day; a short
+     gap (`≤ MAX_GAP_DAYS`) catches up deterministically by replaying
+     day-by-day with the first step's `gapDays` bridging from the prior
+     state date (§7).
    - For each day pull that day's `consumed_kcal` (intake) and that day's
      raw `weight_kg` (measurement, may be absent) and apply the pure filter
      step (§4–§7).

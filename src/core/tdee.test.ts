@@ -193,6 +193,48 @@ describe('long gap', () => {
     expect(Number.isFinite(s.expenditureKcal)).toBe(true);
   });
 
+  it('edge long-gap short-circuit: one step over a real >MAX_GAP_DAYS outage re-anchors to a sane low-confidence state', () => {
+    // Mirrors recalculate-tdee/index.ts's production warm-restart path: the
+    // edge detects daysBetweenISO(last_updated_on, computedOn) > MAX_GAP_DAYS
+    // and applies the warm-restart as a SINGLE stepDay with the real, large
+    // gapDays (no day-by-day replay of the gap). Frozen-clock: dates are
+    // literal and the gap is computed via the same UTC-midnight diff the edge
+    // uses — no wall clock is read.
+    const daysBetweenISO = (fromISO: string, toISO: string): number => {
+      const [fy, fm, fd] = fromISO.split('-').map(Number);
+      const [ty, tm, td] = toISO.split('-').map(Number);
+      return Math.round(
+        (Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000,
+      );
+    };
+    const lastUpdatedOn = '2026-01-01';
+    const computedOn = '2026-04-15'; // 104 days later (> MAX_GAP_DAYS = 45)
+    const gapDays = daysBetweenISO(lastUpdatedOn, computedOn);
+    expect(gapDays).toBeGreaterThan(MAX_GAP_DAYS);
+
+    // A converged, high-confidence state going stale across the outage.
+    let s = initState(W0, 80);
+    for (let i = 0; i < 60; i++) {
+      s = stepDay(s, { intakeKcal: 2600, weightKg: 80, gapDays: 1 });
+    }
+    expect(confidenceFromState(s).band).toBe('high');
+    const ePrior = s.expenditureKcal;
+
+    // The edge's exact call: intake null (branch ignores it), anchor weight =
+    // latest weigh-in on/before computedOn, the real large gapDays.
+    s = stepDay(s, { intakeKcal: null, weightKg: 82.5, gapDays });
+
+    expect(s.trendWeightKg).toBe(82.5); // re-anchored to the anchor weigh-in
+    expect(s.expenditureKcal).toBe(ePrior); // expenditure kept as best prior
+    expect(s.covEE).toBe(P_RESTART_E); // variance re-inflated (warm restart)
+    expect(s.observationsCount).toBe(0); // warm-up gate re-engaged
+    const conf = confidenceFromState(s);
+    expect(conf.isWarmup).toBe(true);
+    expect(conf.band).toBe('low'); // sane low-confidence re-anchored state
+    expect(Number.isFinite(s.expenditureKcal)).toBe(true);
+    expect(Number.isFinite(s.trendWeightKg)).toBe(true);
+  });
+
   it('carries weight when a long gap has no weigh-in', () => {
     let s = initState(W0, 2500);
     s = stepDay(s, { intakeKcal: 2500, weightKg: 81, gapDays: 1 });

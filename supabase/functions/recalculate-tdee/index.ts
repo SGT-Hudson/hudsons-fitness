@@ -38,6 +38,7 @@ import {
   initState,
   stepDay,
   confidenceFromState,
+  MAX_GAP_DAYS,
   type TdeeState,
   type DayInput,
 } from '../../../src/core/tdee.ts';
@@ -153,7 +154,11 @@ Deno.serve(async (req) => {
           covEE: Number(stateRow.cov_ee),
           observationsCount: Number(stateRow.observations_count),
         };
-        if (daysBetweenISO(stateRow.last_updated_on, computedOn) <= 0) {
+        const gapSinceState = daysBetweenISO(
+          stateRow.last_updated_on,
+          computedOn,
+        );
+        if (gapSinceState <= 0) {
           // Already processed up to (or past) computedOn — idempotent no-op.
           results.push({
             user_id: profile.id,
@@ -164,6 +169,82 @@ Deno.serve(async (req) => {
           });
           continue;
         }
+
+        // Long-gap WARM RESTART (spec §7). After an outage longer than
+        // MAX_GAP_DAYS (user away / cron down for months) the prior is so
+        // diffuse that day-by-day replay of the whole gap would be absurd
+        // extrapolation. Instead apply the pure core's warm-restart in ONE
+        // step covering the real gap: re-anchor the trend to the latest
+        // weigh-in on/before computedOn, keep expenditure as the best prior
+        // but re-inflate its variance, and re-engage the warm-up gate. This
+        // is the production path that makes stepDay's warm-restart branch
+        // reachable (steady-state cron only ever passes gapDays=1).
+        if (gapSinceState > MAX_GAP_DAYS) {
+          const { data: anchorRow } = await supabase
+            .from('body_measurements')
+            .select('measured_on, weight_kg')
+            .eq('user_id', profile.id)
+            .not('weight_kg', 'is', null)
+            .lte('measured_on', computedOn)
+            .order('measured_on', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          const restartWeight =
+            anchorRow?.weight_kg != null ? Number(anchorRow.weight_kg) : null;
+
+          state = stepDay(state, {
+            intakeKcal: null, // warm-restart branch ignores intake
+            weightKg: restartWeight, // re-anchor; null → drift-free carry
+            gapDays: gapSinceState,
+          });
+
+          const conf = confidenceFromState(state);
+          const { error: restartStateError } = await supabase
+            .from('tdee_state')
+            .upsert(
+              {
+                user_id: profile.id,
+                trend_weight_kg: round4(state.trendWeightKg),
+                expenditure_kcal: round4(state.expenditureKcal),
+                cov_ww: round4(state.covWW),
+                cov_we: round4(state.covWE),
+                cov_ee: round4(state.covEE),
+                observations_count: state.observationsCount,
+                last_updated_on: computedOn,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: 'user_id' },
+            );
+          if (restartStateError) throw restartStateError;
+
+          const { error: restartEstError } = await supabase
+            .from('tdee_estimates')
+            .upsert(
+              {
+                user_id: profile.id,
+                computed_on: computedOn,
+                window_days: gapSinceState,
+                avg_kcal_intake: 0, // no intake folded on a warm restart
+                weight_delta_kg: 0, // trend re-anchored, not advanced
+                estimated_tdee_kcal: round1(state.expenditureKcal),
+                confidence: conf.band,
+                is_warmup: conf.isWarmup,
+              },
+              { onConflict: 'user_id,computed_on' },
+            );
+          if (restartEstError) throw restartEstError;
+
+          results.push({
+            user_id: profile.id,
+            status: 'ok',
+            estimated_tdee_kcal: round1(state.expenditureKcal),
+            confidence: conf.band,
+            is_warmup: conf.isWarmup,
+            days_advanced: gapSinceState,
+          });
+          continue;
+        }
+
         processFrom = addDaysISO(stateRow.last_updated_on, 1);
       } else {
         // Cold start. Anchor weight to the earliest weigh-in (fallback to
