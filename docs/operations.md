@@ -57,12 +57,16 @@ CI and the merge gate are real and enforced (D-F1, D-F2).
   branch run far ahead of `main` again (the historical 22-commit drift that
   D-F2 reconciled).
 
-Tiered Vitest coverage is partially built: Tier-1 (pure-logic suites + a real
-CI `pnpm test` step in the `lint-build` job) landed; Tier-2 (component tests)
-rides R-09 and Tier-3 (DB/RLS/RPC via local `supabase start` + pgTAP) is gated
-behind R-00 — both still pending:
+Tiered Vitest coverage: Tier-1 (pure-logic suites + a real CI `pnpm test`
+step in the `lint-build` job) and Tier-2 (component tests, rode R-09) are
+landed; Tier-3 (DB/RLS/RPC via `supabase test db` + pgTAP) is **authored**
+(test-strategy spec + the `supabase/tests/database/*.sql` pgTAP suite + the
+R-00 reproducibility script + a manual non-blocking `db-tests` workflow) but
+execution is pending a Docker/Supabase-CLI env:
 
-> ⚠ Changing — see R-16 (D-F1) — Tier-1 landed; T2/T3 pending
+> ⚠ Changing — see R-16 (D-F1) — Tier-1 + Tier-2 landed; Tier-3 authored
+> (spec + pgTAP suite + R-00 script + manual workflow), execution pending a
+> Docker/CLI env
 
 ## Hosting & deploy
 
@@ -510,6 +514,12 @@ supabase db reset            # applies supabase/migrations/* to a local DB
 supabase db diff --linked    # diff local migration state vs the linked prod DB
 ```
 
+This is scripted at `scripts/db-reproducibility-check.sh` (expects an empty
+diff) and runs in the manual `.github/workflows/db-tests.yml` dispatch job
+alongside the Tier-3 pgTAP suite. It has not been executed yet — running it
+on a Docker+CLI machine is the open R-00 reproducibility verification and
+also the R-16 Tier-3 execution gate.
+
 **Regenerate `src/types/database.ts` (R-04).** The DB types are generated
 from the live schema, not hand-written. After any applied schema change,
 regenerate and commit the file:
@@ -526,8 +536,10 @@ id means "create new"). The marker comment above the `Functions` block in the
 file documents this; see `conventions.md` (generated-types caveats). Verify
 with `pnpm typecheck && pnpm lint && pnpm build` before committing.
 
-Tier-3 DB/RLS/RPC tests (R-16) can stand up a local DB from this history via
-`supabase start` + pgTAP; the generated-types switch (R-04) and the
+Tier-3 DB/RLS/RPC tests (R-16) are authored as the pgTAP suite
+`supabase/tests/database/*.sql`, run via `supabase start` + `supabase test
+db` against this reproducible history (execution pending a Docker/CLI env);
+the generated-types switch (R-04) and the
 `bone_kg` (R-03), `profiles.units` (R-14), dead-`tdee_estimates`-cols (R-08),
 and `materialize_plan_for_date` (R-12) migrations are applied in prod and sit
 on a reproducible baseline.
