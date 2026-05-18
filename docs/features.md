@@ -224,18 +224,16 @@ entry — `from_plan` stays only as an origin marker; manual additions remain
 propagate back into already-logged entries (intentional: the diary records
 what was actually eaten).
 
-> ⚠ Changing — see R-12 (D-D6). RPC implemented; applied + merged at Wave-3.
-> Materialization is now a single `materialize_plan_for_date` RPC (SECURITY
-> INVOKER, `set search_path = public`) called by both the client and the
-> Deno snapshot edge function — the prior hand-mirrored two-runtime copies
-> are deleted. DB-level idempotency comes from the partial unique index
-> `meal_logs (user_id, plan_week_slot_id) where plan_week_slot_id is not
-> null` + `INSERT … ON CONFLICT DO NOTHING` (fixes the race-prone app-level
-> read-then-write). An in-RPC `date <= today` guard (Europe/Madrid, same
-> canonical "today" as `previousDayInTZ()`) makes opening
-> `/diario/<future-date>` a no-op instead of materializing future slots.
-> Not live until the Wave-3 checkpoint: the staged migration is applied to
-> prod first, then the calling-code PR (which calls the RPC) is merged.
+Materialization is a single `materialize_plan_for_date` RPC (SECURITY
+INVOKER, `set search_path = public`) called by both the client and the Deno
+snapshot edge function — the prior hand-mirrored two-runtime copies are
+deleted (R-12 / D-D6). DB-level idempotency comes from the partial unique
+index `meal_logs (user_id, plan_week_slot_id) where plan_week_slot_id is not
+null` + `INSERT … ON CONFLICT DO NOTHING` (fixes the race-prone app-level
+read-then-write). An in-RPC `date <= today` guard (Europe/Madrid, same
+canonical "today" as `previousDayInTZ()`) makes opening
+`/diario/<future-date>` a no-op instead of materializing future slots. Live
+in prod since 2026-05-18 (migration applied, then calling code merged).
 
 ## TDEE
 
@@ -258,12 +256,9 @@ lives in `src/core/tdee.ts` (dual-runtime, unit tested). Spec:
 longer the TDEE path's input (the filter maintains its own superior trend
 weight — spec §8).
 
-> ⚠ Changing — see R-07 (D-B4). Adaptive model implemented; schema
-> (`tdee_state` table + `tdee_estimates.confidence`/`is_warmup`) + edge
-> deploy pending Wave-3. The staged migration
-> (`20260518020000_r07_adaptive_tdee_state.sql`) is NOT applied by its PR
-> and the rewritten edge function is NOT deployed — the live model only
-> switches at the Wave-3 prod checkpoint.
+Live in prod since 2026-05-18: the `tdee_state` table +
+`tdee_estimates.confidence`/`is_warmup` migration is applied and the
+rewritten `recalculate-tdee` edge function is deployed.
 
 ## Product ideas (uncommitted)
 
