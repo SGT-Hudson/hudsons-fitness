@@ -1,4 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -26,6 +28,11 @@ import type { Ingredient } from '@/features/ingredients/api';
 import { useCreateMealLog, useUpdateMealLog, useDeleteMealLog } from '../hooks';
 import type { MealLogWithJoins, MealType } from '../api';
 import { MEAL_TYPE_ORDER } from '../api';
+import {
+  firstMealLogError,
+  mealLogFormSchema,
+  type MealLogFormValues,
+} from '../schema';
 
 interface Props {
   open: boolean;
@@ -37,29 +44,20 @@ interface Props {
 
 type Source = 'recipe' | 'ingredient' | 'custom';
 
-interface FormState {
-  mealType: MealType;
-  source: Source;
-  recipe: RecipeOption | null;
-  servings: string;
-  ingredient: Ingredient | null;
-  quantity: string;
-  customName: string;
-  customKcal: string;
-  customProtein: string;
-  customCarbs: string;
-  customFat: string;
-  customFiber: string;
-  notes: string;
+function parseOptional(v: string): number | null {
+  const t = v.trim();
+  if (t === '') return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
 }
 
-function initialState(loggedOn: string, mealType: MealType): FormState {
+function defaults(mealType: MealType, source: Source): MealLogFormValues {
   return {
     mealType,
-    source: 'recipe',
-    recipe: null,
+    source,
+    hasRecipe: false,
+    hasIngredient: false,
     servings: '1',
-    ingredient: null,
     quantity: '',
     customName: '',
     customKcal: '',
@@ -69,50 +67,6 @@ function initialState(loggedOn: string, mealType: MealType): FormState {
     customFiber: '',
     notes: '',
   };
-  void loggedOn;
-}
-
-function fromExisting(log: MealLogWithJoins): FormState {
-  const base: FormState = initialState('', (log.meal_type as MealType) ?? 'other');
-  base.notes = log.notes ?? '';
-  if (log.recipe_id && log.recipe) {
-    return {
-      ...base,
-      source: 'recipe',
-      recipe: {
-        id: log.recipe.id,
-        name: log.recipe.name,
-        servings: log.recipe.servings,
-        ingredient_count: log.recipe.recipe_ingredients?.length ?? 0,
-      },
-      servings: String(log.servings ?? 1),
-    };
-  }
-  if (log.ingredient_id && log.ingredient) {
-    return {
-      ...base,
-      source: 'ingredient',
-      ingredient: log.ingredient,
-      quantity: String(log.quantity ?? ''),
-    };
-  }
-  return {
-    ...base,
-    source: 'custom',
-    customName: log.custom_name ?? '',
-    customKcal: log.custom_kcal == null ? '' : String(log.custom_kcal),
-    customProtein: log.custom_protein_g == null ? '' : String(log.custom_protein_g),
-    customCarbs: log.custom_carbs_g == null ? '' : String(log.custom_carbs_g),
-    customFat: log.custom_fat_g == null ? '' : String(log.custom_fat_g),
-    customFiber: log.custom_fiber_g == null ? '' : String(log.custom_fiber_g),
-  };
-}
-
-function parseOptional(v: string): number | null {
-  const t = v.trim();
-  if (t === '') return null;
-  const n = Number(t);
-  return Number.isFinite(n) ? n : null;
 }
 
 export function MealLogDialog({
@@ -125,122 +79,143 @@ export function MealLogDialog({
   const { t } = useTranslation('diario');
   const { t: tCommon } = useTranslation('common');
   const isEdit = !!editing;
-  const [state, setState] = useState<FormState>(initialState(loggedOn, initialMealType));
   const [error, setError] = useState<string | null>(null);
+  // Autocomplete-selected entities stay in component state (entity objects,
+  // not form primitives — same pattern as RecipePickerDialog).
+  const [recipe, setRecipe] = useState<RecipeOption | null>(null);
+  const [ingredient, setIngredient] = useState<Ingredient | null>(null);
 
   const create = useCreateMealLog();
   const update = useUpdateMealLog();
   const del = useDeleteMealLog();
 
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<MealLogFormValues>({
+    resolver: zodResolver(mealLogFormSchema),
+    defaultValues: defaults(initialMealType, 'recipe'),
+  });
+
   useEffect(() => {
     if (!open) return;
     setError(null);
-    setState(editing ? fromExisting(editing) : initialState(loggedOn, initialMealType));
-  }, [open, editing, loggedOn, initialMealType]);
+    if (!editing) {
+      setRecipe(null);
+      setIngredient(null);
+      reset(defaults(initialMealType, 'recipe'));
+      return;
+    }
+    const log = editing;
+    const base = defaults((log.meal_type as MealType) ?? 'other', 'custom');
+    base.notes = log.notes ?? '';
+    if (log.recipe_id && log.recipe) {
+      setRecipe({
+        id: log.recipe.id,
+        name: log.recipe.name,
+        servings: log.recipe.servings,
+        ingredient_count: log.recipe.recipe_ingredients?.length ?? 0,
+      });
+      setIngredient(null);
+      reset({
+        ...base,
+        source: 'recipe',
+        hasRecipe: true,
+        servings: String(log.servings ?? 1),
+      });
+    } else if (log.ingredient_id && log.ingredient) {
+      setIngredient(log.ingredient);
+      setRecipe(null);
+      reset({
+        ...base,
+        source: 'ingredient',
+        hasIngredient: true,
+        quantity: String(log.quantity ?? ''),
+      });
+    } else {
+      setRecipe(null);
+      setIngredient(null);
+      reset({
+        ...base,
+        source: 'custom',
+        customName: log.custom_name ?? '',
+        customKcal: log.custom_kcal == null ? '' : String(log.custom_kcal),
+        customProtein: log.custom_protein_g == null ? '' : String(log.custom_protein_g),
+        customCarbs: log.custom_carbs_g == null ? '' : String(log.custom_carbs_g),
+        customFat: log.custom_fat_g == null ? '' : String(log.custom_fat_g),
+        customFiber: log.custom_fiber_g == null ? '' : String(log.custom_fiber_g),
+      });
+    }
+  }, [open, editing, loggedOn, initialMealType, reset]);
 
-  function update_<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setState((s) => ({ ...s, [key]: value }));
+  function handleSelectRecipe(r: RecipeOption | null) {
+    setRecipe(r);
+    setValue('hasRecipe', !!r, { shouldValidate: true });
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  function handleSelectIngredient(ing: Ingredient | null) {
+    setIngredient(ing);
+    setValue('hasIngredient', !!ing, { shouldValidate: true });
+  }
+
+  async function onValid(v: MealLogFormValues) {
     setError(null);
     try {
       if (isEdit && editing) {
         const patch: Record<string, unknown> = {
-          meal_type: state.mealType,
-          notes: state.notes.trim() === '' ? null : state.notes.trim(),
+          meal_type: v.mealType,
+          notes: v.notes.trim() === '' ? null : v.notes.trim(),
         };
         if (editing.recipe_id) {
-          const s = parseOptional(state.servings);
-          if (s === null || s <= 0) {
-            setError(t('errors.servingsInvalid'));
-            return;
-          }
-          patch.servings = s;
+          patch.servings = Number(v.servings);
         } else if (editing.ingredient_id) {
-          const q = parseOptional(state.quantity);
-          if (q === null || q <= 0) {
-            setError(t('errors.quantityInvalid'));
-            return;
-          }
-          patch.quantity = q;
+          patch.quantity = Number(v.quantity);
         } else {
-          if (state.customName.trim() === '') {
-            setError(t('errors.customNameRequired'));
-            return;
-          }
-          const kcal = parseOptional(state.customKcal);
-          if (kcal === null) {
-            setError(t('errors.customKcalRequired'));
-            return;
-          }
-          patch.custom_name = state.customName.trim();
-          patch.custom_kcal = kcal;
-          patch.custom_protein_g = parseOptional(state.customProtein);
-          patch.custom_carbs_g = parseOptional(state.customCarbs);
-          patch.custom_fat_g = parseOptional(state.customFat);
-          patch.custom_fiber_g = parseOptional(state.customFiber);
+          patch.custom_name = v.customName.trim();
+          patch.custom_kcal = Number(v.customKcal);
+          patch.custom_protein_g = parseOptional(v.customProtein);
+          patch.custom_carbs_g = parseOptional(v.customCarbs);
+          patch.custom_fat_g = parseOptional(v.customFat);
+          patch.custom_fiber_g = parseOptional(v.customFiber);
         }
         await update.mutateAsync({ id: editing.id, patch });
+      } else if (v.source === 'recipe') {
+        await create.mutateAsync({
+          loggedOn,
+          mealType: v.mealType as MealType,
+          source: { kind: 'recipe', recipeId: recipe!.id, servings: Number(v.servings) },
+          notes: v.notes.trim() === '' ? null : v.notes.trim(),
+        });
+      } else if (v.source === 'ingredient') {
+        await create.mutateAsync({
+          loggedOn,
+          mealType: v.mealType as MealType,
+          source: {
+            kind: 'ingredient',
+            ingredientId: ingredient!.id,
+            quantity: Number(v.quantity),
+          },
+          notes: v.notes.trim() === '' ? null : v.notes.trim(),
+        });
       } else {
-        if (state.source === 'recipe') {
-          if (!state.recipe) {
-            setError(t('errors.pickRecipe'));
-            return;
-          }
-          const s = parseOptional(state.servings);
-          if (s === null || s <= 0) {
-            setError(t('errors.servingsInvalid'));
-            return;
-          }
-          await create.mutateAsync({
-            loggedOn,
-            mealType: state.mealType,
-            source: { kind: 'recipe', recipeId: state.recipe.id, servings: s },
-            notes: state.notes.trim() === '' ? null : state.notes.trim(),
-          });
-        } else if (state.source === 'ingredient') {
-          if (!state.ingredient) {
-            setError(t('errors.pickIngredient'));
-            return;
-          }
-          const q = parseOptional(state.quantity);
-          if (q === null || q <= 0) {
-            setError(t('errors.quantityInvalid'));
-            return;
-          }
-          await create.mutateAsync({
-            loggedOn,
-            mealType: state.mealType,
-            source: { kind: 'ingredient', ingredientId: state.ingredient.id, quantity: q },
-            notes: state.notes.trim() === '' ? null : state.notes.trim(),
-          });
-        } else {
-          if (state.customName.trim() === '') {
-            setError(t('errors.customNameRequired'));
-            return;
-          }
-          const kcal = parseOptional(state.customKcal);
-          if (kcal === null) {
-            setError(t('errors.customKcalRequired'));
-            return;
-          }
-          await create.mutateAsync({
-            loggedOn,
-            mealType: state.mealType,
-            source: {
-              kind: 'custom',
-              name: state.customName.trim(),
-              kcal,
-              proteinG: parseOptional(state.customProtein),
-              carbsG: parseOptional(state.customCarbs),
-              fatG: parseOptional(state.customFat),
-              fiberG: parseOptional(state.customFiber),
-            },
-            notes: state.notes.trim() === '' ? null : state.notes.trim(),
-          });
-        }
+        await create.mutateAsync({
+          loggedOn,
+          mealType: v.mealType as MealType,
+          source: {
+            kind: 'custom',
+            name: v.customName.trim(),
+            kcal: Number(v.customKcal),
+            proteinG: parseOptional(v.customProtein),
+            carbsG: parseOptional(v.customCarbs),
+            fatG: parseOptional(v.customFat),
+            fiberG: parseOptional(v.customFiber),
+          },
+          notes: v.notes.trim() === '' ? null : v.notes.trim(),
+        });
       }
       onOpenChange(false);
     } catch (err) {
@@ -259,9 +234,15 @@ export function MealLogDialog({
     }
   }
 
+  // One localized message, original precedence — D-C2 parity.
+  const validationCode = firstMealLogError(
+    errors as Record<string, { message?: string } | undefined>,
+  );
+  const validationError = validationCode ? t(`errors.${validationCode}`) : null;
+
   const submitting = create.isPending || update.isPending || del.isPending;
-  const ingredientUnit = state.ingredient
-    ? state.ingredient.unit_type === 'unit'
+  const ingredientUnit = ingredient
+    ? ingredient.unit_type === 'unit'
       ? t('units.unit')
       : 'g'
     : '';
@@ -274,87 +255,94 @@ export function MealLogDialog({
           <DialogDescription>{t('dialog.subtitle')}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+        <form onSubmit={handleSubmit(onValid)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="meal-type">{t('fields.mealType')}</Label>
-            <Select
-              value={state.mealType}
-              onValueChange={(v) => update_('mealType', v as MealType)}
-            >
-              <SelectTrigger id="meal-type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MEAL_TYPE_ORDER.map((mt) => (
-                  <SelectItem key={mt} value={mt}>
-                    {t(`mealType.${mt}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={control}
+              name="mealType"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="meal-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MEAL_TYPE_ORDER.map((mt) => (
+                      <SelectItem key={mt} value={mt}>
+                        {t(`mealType.${mt}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           {!isEdit ? (
-            <Tabs value={state.source} onValueChange={(v) => update_('source', v as Source)}>
-              <TabsList>
-                <TabsTrigger value="recipe">{t('tabs.recipe')}</TabsTrigger>
-                <TabsTrigger value="ingredient">{t('tabs.ingredient')}</TabsTrigger>
-                <TabsTrigger value="custom">{t('tabs.custom')}</TabsTrigger>
-              </TabsList>
-              <TabsContent value="recipe" className="space-y-3">
-                <Label>{t('fields.recipe')}</Label>
-                <RecipeAutocomplete
-                  selected={state.recipe}
-                  onSelect={(r) => update_('recipe', r)}
-                  onClear={() => update_('recipe', null)}
-                />
-                <div className="space-y-2">
-                  <Label htmlFor="ml-servings">{t('fields.servings')}</Label>
-                  <Input
-                    id="ml-servings"
-                    type="number"
-                    inputMode="decimal"
-                    min={0.25}
-                    step="0.25"
-                    value={state.servings}
-                    onChange={(e) => update_('servings', e.target.value)}
-                  />
-                </div>
-              </TabsContent>
-              <TabsContent value="ingredient" className="space-y-3">
-                <Label>{t('fields.ingredient')}</Label>
-                <IngredientAutocomplete
-                  selected={state.ingredient}
-                  onSelect={(ing) => update_('ingredient', ing)}
-                  onClear={() => update_('ingredient', null)}
-                />
-                <div className="space-y-2">
-                  <Label htmlFor="ml-qty">{t('fields.quantity')}</Label>
-                  <div className="relative">
-                    <Input
-                      id="ml-qty"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="0.1"
-                      value={state.quantity}
-                      onChange={(e) => update_('quantity', e.target.value)}
+            <Controller
+              control={control}
+              name="source"
+              render={({ field }) => (
+                <Tabs
+                  value={field.value}
+                  onValueChange={(val) => field.onChange(val as Source)}
+                >
+                  <TabsList>
+                    <TabsTrigger value="recipe">{t('tabs.recipe')}</TabsTrigger>
+                    <TabsTrigger value="ingredient">{t('tabs.ingredient')}</TabsTrigger>
+                    <TabsTrigger value="custom">{t('tabs.custom')}</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="recipe" className="space-y-3">
+                    <Label>{t('fields.recipe')}</Label>
+                    <RecipeAutocomplete
+                      selected={recipe}
+                      onSelect={handleSelectRecipe}
+                      onClear={() => handleSelectRecipe(null)}
                     />
-                    {ingredientUnit && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
-                        {ingredientUnit}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </TabsContent>
-              <TabsContent value="custom" className="space-y-3">
-                <CustomFields
-                  state={state}
-                  onChange={(p) => setState((s) => ({ ...s, ...p }))}
-                />
-              </TabsContent>
-            </Tabs>
+                    <div className="space-y-2">
+                      <Label htmlFor="ml-servings">{t('fields.servings')}</Label>
+                      <Input
+                        id="ml-servings"
+                        type="number"
+                        inputMode="decimal"
+                        min={0.25}
+                        step="0.25"
+                        {...register('servings')}
+                      />
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="ingredient" className="space-y-3">
+                    <Label>{t('fields.ingredient')}</Label>
+                    <IngredientAutocomplete
+                      selected={ingredient}
+                      onSelect={handleSelectIngredient}
+                      onClear={() => handleSelectIngredient(null)}
+                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="ml-qty">{t('fields.quantity')}</Label>
+                      <div className="relative">
+                        <Input
+                          id="ml-qty"
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="0.1"
+                          {...register('quantity')}
+                        />
+                        {ingredientUnit && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                            {ingredientUnit}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="custom" className="space-y-3">
+                    <CustomFields register={register} t={t} />
+                  </TabsContent>
+                </Tabs>
+              )}
+            />
           ) : editing?.recipe_id ? (
             <div className="space-y-3">
               <p className="text-sm">
@@ -369,8 +357,7 @@ export function MealLogDialog({
                   inputMode="decimal"
                   min={0.25}
                   step="0.25"
-                  value={state.servings}
-                  onChange={(e) => update_('servings', e.target.value)}
+                  {...register('servings')}
                 />
               </div>
             </div>
@@ -389,8 +376,7 @@ export function MealLogDialog({
                     inputMode="decimal"
                     min={0}
                     step="0.1"
-                    value={state.quantity}
-                    onChange={(e) => update_('quantity', e.target.value)}
+                    {...register('quantity')}
                   />
                   {editing.ingredient && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
@@ -401,20 +387,17 @@ export function MealLogDialog({
               </div>
             </div>
           ) : (
-            <CustomFields state={state} onChange={(p) => setState((s) => ({ ...s, ...p }))} />
+            <CustomFields register={register} t={t} />
           )}
 
           <div className="space-y-2">
             <Label htmlFor="ml-notes">{t('fields.notes')}</Label>
-            <Textarea
-              id="ml-notes"
-              rows={2}
-              value={state.notes}
-              onChange={(e) => update_('notes', e.target.value)}
-            />
+            <Textarea id="ml-notes" rows={2} {...register('notes')} />
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {(validationError || error) && (
+            <p className="text-sm text-destructive">{validationError ?? error}</p>
+          )}
 
           <DialogFooter className="sm:justify-between">
             <div>
@@ -444,56 +427,31 @@ export function MealLogDialog({
   );
 }
 
-interface CustomFieldsProps {
-  state: FormState;
-  onChange: (patch: Partial<FormState>) => void;
-}
+type RegisterFn = ReturnType<typeof useForm<MealLogFormValues>>['register'];
 
-function CustomFields({ state, onChange }: CustomFieldsProps) {
-  const { t } = useTranslation('diario');
+function CustomFields({
+  register,
+  t,
+}: {
+  register: RegisterFn;
+  t: (k: string) => string;
+}) {
   return (
     <div className="space-y-3">
       <div className="space-y-2">
         <Label htmlFor="cust-name">{t('fields.customName')}</Label>
-        <Input
-          id="cust-name"
-          required
-          value={state.customName}
-          onChange={(e) => onChange({ customName: e.target.value })}
-        />
+        <Input id="cust-name" {...register('customName')} />
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <CustomNum
-          id="cust-kcal"
-          label={t('fields.kcal')}
-          value={state.customKcal}
-          onChange={(v) => onChange({ customKcal: v })}
-          required
-        />
+        <CustomNum id="cust-kcal" label={t('fields.kcal')} {...register('customKcal')} />
         <CustomNum
           id="cust-protein"
           label={t('fields.protein')}
-          value={state.customProtein}
-          onChange={(v) => onChange({ customProtein: v })}
+          {...register('customProtein')}
         />
-        <CustomNum
-          id="cust-carbs"
-          label={t('fields.carbs')}
-          value={state.customCarbs}
-          onChange={(v) => onChange({ customCarbs: v })}
-        />
-        <CustomNum
-          id="cust-fat"
-          label={t('fields.fat')}
-          value={state.customFat}
-          onChange={(v) => onChange({ customFat: v })}
-        />
-        <CustomNum
-          id="cust-fiber"
-          label={t('fields.fiber')}
-          value={state.customFiber}
-          onChange={(v) => onChange({ customFiber: v })}
-        />
+        <CustomNum id="cust-carbs" label={t('fields.carbs')} {...register('customCarbs')} />
+        <CustomNum id="cust-fat" label={t('fields.fat')} {...register('customFat')} />
+        <CustomNum id="cust-fiber" label={t('fields.fiber')} {...register('customFiber')} />
       </div>
     </div>
   );
@@ -502,16 +460,11 @@ function CustomFields({ state, onChange }: CustomFieldsProps) {
 function CustomNum({
   id,
   label,
-  value,
-  onChange,
-  required,
+  ...field
 }: {
   id: string;
   label: string;
-  value: string;
-  onChange: (v: string) => void;
-  required?: boolean;
-}) {
+} & ReturnType<RegisterFn>) {
   return (
     <div className="space-y-1">
       <Label htmlFor={id} className="text-xs">
@@ -523,9 +476,7 @@ function CustomNum({
         inputMode="decimal"
         step="0.1"
         min={0}
-        required={required}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        {...field}
       />
     </div>
   );

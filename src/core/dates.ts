@@ -11,6 +11,22 @@
 // Import paths: client via `@/core/dates`; edge via a relative path from
 // `supabase/functions/_shared/`. No transpile/codegen.
 
+/**
+ * "Today" as a calendar date in `tz` (default Europe/Madrid), YYYY-MM-DD.
+ *
+ * This is the project's canonical definition of the current day. Use it for
+ * any "today" calendar boundary (e.g. a `<input type="date" max>` upper bound
+ * or a form's default start date). It MUST agree with the rest of the app's
+ * day-boundary logic (`previousDayInTZ` / `mondayOfTodayInTZ`), which is all
+ * Europe/Madrid via `isoDateInTZ`. Deriving "today" from the host timezone
+ * instead (e.g. `date-fns format(new Date())`, which is UTC in CI / on a
+ * UTC server) would put the input `max` a day behind for a user near
+ * midnight Madrid and falsely reject a valid same-day entry.
+ */
+export function todayInTZ(tz = 'Europe/Madrid'): string {
+  return isoDateInTZ(new Date(), tz);
+}
+
 /** Date in a given IANA timezone, formatted YYYY-MM-DD. */
 export function isoDateInTZ(date: Date, tz = 'Europe/Madrid'): string {
   return new Intl.DateTimeFormat('en-CA', {

@@ -38,7 +38,8 @@
     "prefillHint": "Pre-filled from your last measurement. Edit anything that changed."
   },
   "errors": {
-    "weightRequired": "Weight is required."
+    "weightRequired": "Weight is required.",
+    "outOfRange": "Must be between {{min}} and {{max}}."
   },
   "charts": {
     "empty": "Not enough data to render the chart yet.",

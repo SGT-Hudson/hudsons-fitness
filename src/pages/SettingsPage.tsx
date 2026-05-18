@@ -1,4 +1,6 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,14 +15,18 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
+import {
+  biometricsFormSchema,
+  displayNameFormSchema,
+  type BiometricsFormValues,
+  type DisplayNameFormValues,
+  type ParsedBiometricsForm,
+} from '@/features/profile/schema';
 import { useTheme, type Theme } from '@/features/theme/ThemeProvider';
 import { DeleteAccountDialog } from '@/features/account/components/DeleteAccountDialog';
-import { isoDate } from '@/lib/dates';
+import { todayInTZ } from '@/lib/dates';
 
-type Sex = 'male' | 'female' | 'other';
 type Lang = 'es' | 'en';
-
-const SEX_VALUES: Sex[] = ['male', 'female', 'other'];
 
 export function SettingsPage() {
   const { t } = useTranslation('settings');
@@ -32,26 +38,35 @@ export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const [displayName, setDisplayName] = useState('');
   const [language, setLanguage] = useState<Lang>('es');
-  const [sex, setSex] = useState<Sex | ''>('');
-  const [birthDate, setBirthDate] = useState('');
-  const [heightCm, setHeightCm] = useState('');
-  const [boneKg, setBoneKg] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [savedSection, setSavedSection] = useState<string | null>(null);
 
+  // Profile card (display_name) — RHF + zod (D-C2/D-C3).
+  const profileForm = useForm<DisplayNameFormValues>({
+    resolver: zodResolver(displayNameFormSchema),
+    defaultValues: { display_name: '' },
+  });
+
+  // Biometrics card — RHF + zod. Numeric inputs coerced via the schema.
+  const bioForm = useForm<BiometricsFormValues, unknown, ParsedBiometricsForm>({
+    resolver: zodResolver(biometricsFormSchema),
+    defaultValues: { sex: '', birth_date: '', height_cm: '', bone_kg: '' },
+  });
+
   useEffect(() => {
     if (!profile) return;
-    setDisplayName(profile.display_name ?? '');
     setLanguage((profile.language === 'en' ? 'en' : 'es') as Lang);
-    if (profile.sex && SEX_VALUES.includes(profile.sex as Sex)) {
-      setSex(profile.sex as Sex);
-    }
-    setBirthDate(profile.birth_date ?? '');
-    setHeightCm(profile.height_cm != null ? String(profile.height_cm) : '');
-    setBoneKg(profile.bone_kg != null ? String(profile.bone_kg) : '');
-  }, [profile]);
+    profileForm.reset({ display_name: profile.display_name ?? '' });
+    bioForm.reset({
+      sex: (['male', 'female', 'other'] as const).includes(profile.sex as 'male')
+        ? (profile.sex as BiometricsFormValues['sex'])
+        : '',
+      birth_date: profile.birth_date ?? '',
+      height_cm: profile.height_cm != null ? String(profile.height_cm) : '',
+      bone_kg: profile.bone_kg != null ? String(profile.bone_kg) : '',
+    });
+  }, [profile, profileForm, bioForm]);
 
   async function saveSection<T extends object>(section: string, patch: T) {
     setError(null);
@@ -64,9 +79,8 @@ export function SettingsPage() {
     }
   }
 
-  async function handleSaveProfile(e: FormEvent) {
-    e.preventDefault();
-    await saveSection('profile', { display_name: displayName.trim() || null });
+  async function onSaveProfile(values: DisplayNameFormValues) {
+    await saveSection('profile', { display_name: values.display_name.trim() || null });
   }
 
   async function handleSaveLanguage(next: Lang) {
@@ -75,19 +89,27 @@ export function SettingsPage() {
     await saveSection('language', { language: next });
   }
 
-  async function handleSaveBiometrics(e: FormEvent) {
-    e.preventDefault();
-    if (!sex || !birthDate || !heightCm || !boneKg) {
-      setError(t('errors.required'));
-      return;
-    }
+  async function onSaveBiometrics(values: ParsedBiometricsForm) {
     await saveSection('biometrics', {
-      sex,
-      birth_date: birthDate,
-      height_cm: Number(heightCm),
-      bone_kg: Number(boneKg),
+      sex: values.sex,
+      birth_date: values.birth_date,
+      height_cm: values.height_cm,
+      bone_kg: values.bone_kg,
     });
   }
+
+  // Combined biometrics message line(s): shown only after a submit attempt,
+  // never per-field. The schema now tags an out-of-bound numeric value with
+  // the distinct `range` code (vs `required` for a blank field), so an
+  // out-of-range value surfaces a range-specific line instead of the
+  // misleading "fill in all fields" copy. Enforcement is unchanged.
+  const bioErrorList = Object.values(bioForm.formState.errors);
+  const bioRange =
+    bioForm.formState.isSubmitted &&
+    bioErrorList.some((e) => e?.message === 'range');
+  const bioRequired =
+    bioForm.formState.isSubmitted &&
+    bioErrorList.some((e) => e?.message !== 'range');
 
   if (isLoading || !profile) {
     return <p className="text-sm text-muted-foreground">{tCommon('loading')}</p>;
@@ -109,14 +131,13 @@ export function SettingsPage() {
           <CardDescription>{t('profile.description')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={(e) => void handleSaveProfile(e)} className="space-y-4">
+          <form
+            onSubmit={profileForm.handleSubmit(onSaveProfile)}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label htmlFor="displayName">{t('profile.displayName')}</Label>
-              <Input
-                id="displayName"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
+              <Input id="displayName" {...profileForm.register('display_name')} />
             </div>
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={update.isPending}>
@@ -136,6 +157,9 @@ export function SettingsPage() {
           <CardDescription>{t('language.description')}</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Language is an instant-apply single control (persists to
+              profile.language on change, per D-E1) — not a validated submit
+              form, so it stays a controlled Select (no RHF needed). */}
           <div className="space-y-2 max-w-xs">
             <Label htmlFor="language">{t('language.title')}</Label>
             <Select
@@ -163,6 +187,8 @@ export function SettingsPage() {
           <CardDescription>{t('appearance.description')}</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Theme is localStorage-only (D-F6, never profile-backed) and
+              instant-apply — a controlled Select, not a form. */}
           <div className="space-y-2 max-w-xs">
             <Label htmlFor="theme">{t('appearance.theme')}</Label>
             <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
@@ -185,29 +211,36 @@ export function SettingsPage() {
           <CardDescription>{t('biometrics.description')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={(e) => void handleSaveBiometrics(e)} className="space-y-4">
+          <form
+            onSubmit={bioForm.handleSubmit(onSaveBiometrics)}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label htmlFor="sex">{t('biometrics.sex')}</Label>
-              <Select value={sex} onValueChange={(v) => setSex(v as Sex)}>
-                <SelectTrigger id="sex">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">{t('biometrics.sexMale')}</SelectItem>
-                  <SelectItem value="female">{t('biometrics.sexFemale')}</SelectItem>
-                  <SelectItem value="other">{t('biometrics.sexOther')}</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                control={bioForm.control}
+                name="sex"
+                render={({ field }) => (
+                  <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                    <SelectTrigger id="sex">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">{t('biometrics.sexMale')}</SelectItem>
+                      <SelectItem value="female">{t('biometrics.sexFemale')}</SelectItem>
+                      <SelectItem value="other">{t('biometrics.sexOther')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="birthDate">{t('biometrics.birthDate')}</Label>
               <Input
                 id="birthDate"
                 type="date"
-                required
-                max={isoDate()}
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
+                max={todayInTZ()}
+                {...bioForm.register('birth_date')}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -217,12 +250,10 @@ export function SettingsPage() {
                   id="heightCm"
                   type="number"
                   inputMode="decimal"
-                  required
                   min={100}
                   max={250}
                   step="0.1"
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(e.target.value)}
+                  {...bioForm.register('height_cm')}
                 />
               </div>
               <div className="space-y-2">
@@ -231,12 +262,10 @@ export function SettingsPage() {
                   id="boneKg"
                   type="number"
                   inputMode="decimal"
-                  required
                   min={0.5}
                   max={20}
                   step="0.01"
-                  value={boneKg}
-                  onChange={(e) => setBoneKg(e.target.value)}
+                  {...bioForm.register('bone_kg')}
                 />
               </div>
             </div>
@@ -250,6 +279,12 @@ export function SettingsPage() {
               />
               <p className="text-xs text-muted-foreground">{t('biometrics.initialWeightKgHelp')}</p>
             </div>
+            {bioRequired && (
+              <p className="text-sm text-destructive">{t('errors.required')}</p>
+            )}
+            {bioRange && (
+              <p className="text-sm text-destructive">{t('errors.outOfRange')}</p>
+            )}
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={update.isPending}>
                 {update.isPending ? t('actions.saving') : t('actions.save')}

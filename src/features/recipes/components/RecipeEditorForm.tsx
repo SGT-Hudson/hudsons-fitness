@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,11 @@ import { IngredientAutocomplete } from './IngredientAutocomplete';
 import { LiveMacrosPanel } from './LiveMacrosPanel';
 import type { Ingredient } from '@/features/ingredients/api';
 import type { RecipeWithIngredients } from '../api';
+import {
+  firstRecipeError,
+  recipeFormSchema,
+  type RecipeFormValues,
+} from '../schema';
 
 let rowIdCounter = 0;
 function newRowId() {
@@ -17,20 +24,12 @@ function newRowId() {
   return `row-${Date.now()}-${rowIdCounter}`;
 }
 
-export interface EditorRow {
-  rowId: string;
+// EditorRow / EditorState are now the zod schema's value shape (D-C2/R-09).
+// Kept as named exports because RecetaEditorPage builds/maps them.
+export type EditorRow = RecipeFormValues['rows'][number] & {
   ingredient: Ingredient | null;
-  quantity: string;
-  per_serving: boolean;
-}
-
-export interface EditorState {
-  name: string;
-  servings: string;
-  description: string;
-  instructions: string;
-  rows: EditorRow[];
-}
+};
+export type EditorState = Omit<RecipeFormValues, 'rows'> & { rows: EditorRow[] };
 
 export function emptyEditorState(): EditorState {
   return {
@@ -76,86 +75,71 @@ export function RecipeEditorForm({
 }: Props) {
   const { t } = useTranslation('recetas');
   const { t: tCommon } = useTranslation('common');
-  const [state, setState] = useState<EditorState>(initial ?? emptyEditorState());
-  const [validationError, setValidationError] = useState<string | null>(null);
 
-  const servingsNum = Number(state.servings);
-  const macroRows = state.rows
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<EditorState>({
+    resolver: zodResolver(recipeFormSchema) as never,
+    defaultValues: initial ?? emptyEditorState(),
+  });
+
+  // RecetaEditorPage passes `initial` once data loads; keep it in sync.
+  useEffect(() => {
+    if (initial) reset(initial);
+  }, [initial, reset]);
+
+  const { fields, append, remove } = useFieldArray<EditorState>({
+    control,
+    name: 'rows',
+  });
+
+  const rows = watch('rows');
+  const servingsNum = Number(watch('servings'));
+  const macroRows = (rows ?? [])
     .filter((r) => r.ingredient && Number(r.quantity) > 0)
     .map((r) => ({
-      ingredient: r.ingredient!,
+      ingredient: r.ingredient as Ingredient,
       quantity: Number(r.quantity),
       perServing: r.per_serving,
     }));
 
-  function update<K extends keyof EditorState>(key: K, value: EditorState[K]) {
-    setState((s) => ({ ...s, [key]: value }));
-  }
-
-  function updateRow(rowId: string, patch: Partial<EditorRow>) {
-    setState((s) => ({
-      ...s,
-      rows: s.rows.map((r) => (r.rowId === rowId ? { ...r, ...patch } : r)),
-    }));
-  }
-
   function addRow() {
-    setState((s) => ({
-      ...s,
-      rows: [...s.rows, { rowId: newRowId(), ingredient: null, quantity: '', per_serving: false }],
-    }));
+    append({ rowId: newRowId(), ingredient: null, quantity: '', per_serving: false });
   }
 
-  function removeRow(rowId: string) {
-    setState((s) => ({ ...s, rows: s.rows.filter((r) => r.rowId !== rowId) }));
+  function onValid(values: EditorState) {
+    // Preserve the original payload: only filled rows are passed up (the page
+    // re-filters too, but the prior code shipped `filledRows`).
+    const filledRows = values.rows.filter(
+      (r) => r.ingredient || r.quantity.trim() !== '',
+    );
+    onSubmit({ ...values, rows: filledRows });
   }
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setValidationError(null);
-    const name = state.name.trim();
-    const servings = Number(state.servings);
-    if (name === '') {
-      setValidationError(t('errors.nameRequired'));
-      return;
-    }
-    if (!Number.isFinite(servings) || servings <= 0) {
-      setValidationError(t('errors.servingsInvalid'));
-      return;
-    }
-    const filledRows = state.rows.filter((r) => r.ingredient || r.quantity.trim() !== '');
-    if (filledRows.length === 0) {
-      setValidationError(t('errors.noIngredients'));
-      return;
-    }
-    for (const row of filledRows) {
-      if (!row.ingredient) {
-        setValidationError(t('errors.rowMissingIngredient'));
-        return;
-      }
-      const q = Number(row.quantity);
-      if (!Number.isFinite(q) || q <= 0) {
-        setValidationError(t('errors.rowInvalidQuantity'));
-        return;
-      }
-    }
-    onSubmit({ ...state, rows: filledRows });
-  }
+  // One localized message, original precedence (D-C2 parity).
+  const validationCode = firstRecipeError(
+    errors as Record<string, { message?: string } | undefined>,
+  );
+  const validationError = validationCode ? t(`errors.${validationCode}`) : null;
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <form
+      onSubmit={handleSubmit(onValid)}
+      className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
+    >
       <div className="space-y-6 min-w-0">
         <Card>
           <CardContent className="pt-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-4">
               <div className="space-y-2">
                 <Label htmlFor="recipe-name">{t('form.name')}</Label>
-                <Input
-                  id="recipe-name"
-                  required
-                  value={state.name}
-                  onChange={(e) => update('name', e.target.value)}
-                />
+                <Input id="recipe-name" {...register('name')} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="recipe-servings">{t('form.servings')}</Label>
@@ -165,28 +149,17 @@ export function RecipeEditorForm({
                   inputMode="decimal"
                   min={0.5}
                   step="0.5"
-                  required
-                  value={state.servings}
-                  onChange={(e) => update('servings', e.target.value)}
+                  {...register('servings')}
                 />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="recipe-description">{t('form.description')}</Label>
-              <Input
-                id="recipe-description"
-                value={state.description}
-                onChange={(e) => update('description', e.target.value)}
-              />
+              <Input id="recipe-description" {...register('description')} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="recipe-instructions">{t('form.instructions')}</Label>
-              <Textarea
-                id="recipe-instructions"
-                rows={4}
-                value={state.instructions}
-                onChange={(e) => update('instructions', e.target.value)}
-              />
+              <Textarea id="recipe-instructions" rows={4} {...register('instructions')} />
             </div>
           </CardContent>
         </Card>
@@ -201,21 +174,31 @@ export function RecipeEditorForm({
               </Button>
             </div>
             <ul className="space-y-2">
-              {state.rows.map((row) => {
-                const unitSuffix = !row.ingredient
+              {fields.map((field, index) => {
+                const row = rows?.[index];
+                const ingredient = row?.ingredient ?? null;
+                const unitSuffix = !ingredient
                   ? ''
-                  : row.ingredient.unit_type === 'unit'
+                  : ingredient.unit_type === 'unit'
                     ? t('form.units')
                     : 'g';
                 return (
                   <li
-                    key={row.rowId}
+                    key={field.id}
                     className="grid gap-2 sm:grid-cols-[1fr_140px_auto_auto] items-start"
                   >
                     <IngredientAutocomplete
-                      selected={row.ingredient}
-                      onSelect={(ing) => updateRow(row.rowId, { ingredient: ing })}
-                      onClear={() => updateRow(row.rowId, { ingredient: null })}
+                      selected={ingredient}
+                      onSelect={(ing) =>
+                        setValue(`rows.${index}.ingredient`, ing, {
+                          shouldValidate: true,
+                        })
+                      }
+                      onClear={() =>
+                        setValue(`rows.${index}.ingredient`, null, {
+                          shouldValidate: true,
+                        })
+                      }
                     />
                     <div className="relative">
                       <Input
@@ -224,8 +207,7 @@ export function RecipeEditorForm({
                         step="0.1"
                         min={0}
                         placeholder={t('form.quantity')}
-                        value={row.quantity}
-                        onChange={(e) => updateRow(row.rowId, { quantity: e.target.value })}
+                        {...register(`rows.${index}.quantity`)}
                       />
                       {unitSuffix && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
@@ -237,10 +219,7 @@ export function RecipeEditorForm({
                       <input
                         type="checkbox"
                         className="h-4 w-4"
-                        checked={row.per_serving}
-                        onChange={(e) =>
-                          updateRow(row.rowId, { per_serving: e.target.checked })
-                        }
+                        {...register(`rows.${index}.per_serving`)}
                       />
                       <span>{t('form.perServing')}</span>
                     </label>
@@ -249,7 +228,7 @@ export function RecipeEditorForm({
                       variant="ghost"
                       size="icon"
                       aria-label={tCommon('delete')}
-                      onClick={() => removeRow(row.rowId)}
+                      onClick={() => remove(index)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

@@ -15,11 +15,16 @@ tracked in `roadmap.md`).
 
 ## Forms
 
-- Use `react-hook-form` with `zod` via `@hookform/resolvers` `zodResolver` (D-C2).
-- Co-locate the schema per feature at `src/features/<x>/schema.ts` (D-C3).
-- Derive the form type via `z.infer<typeof schema>`; no hand-written `type FormValues` (D-C3). (Today forms are RHF without `zodResolver`; `@hookform/resolvers` not installed; migration pending.)
-
-> ⚠ Changing — see R-09
+- Every form uses `react-hook-form` with `zod` via `@hookform/resolvers` `zodResolver` (D-C2).
+- Co-locate the schema per feature at `src/features/<x>/schema.ts`; page-level forms with no page feature folder put their schema in the most natural feature module (e.g. Login/Signup → `features/auth/schema.ts`, Onboarding/Settings biometrics → `features/profile/schema.ts`, the goal dialog → `features/objetivos/schema.ts`, the template editor → `features/templates/schema.ts`) (D-C3).
+- Derive the form type from the schema via `z.infer<typeof schema>` (or `z.input`/`z.output` when the schema transforms string inputs to numbers — declare the resolver's output type as the third `useForm` generic); never a hand-written `type FormValues = { ... }` (D-C3).
+- `register('field', { valueAsNumber })` / `Controller` for shadcn Select/Textarea; numeric string inputs are coerced inside the schema, so the field stays string-typed. Validity is the schema's job; localized error copy stays in the component (zod messages map to existing i18n keys — no raw English).
+- Two numeric-input patterns coexist by design (D-C2); both are behavior-preserving — do not "unify" them:
+  - **Pattern A** — string-input schema: `requiredNumericString`/`optionalNumericString` from `src/lib/zod.ts` + `z.input`/`z.output` + `useForm<Input, unknown, Output>`, emitting a stable `required` vs `range` issue-code split (blank → required copy, bad value → range copy). Used by measurements, profile (onboarding/biometrics), and ingredients. Use A for forms converted from manual `useState` string inputs, or wherever free-text numeric entry needs the required-vs-range message split.
+  - **Pattern B** — `z.number()` + `register(field, { valueAsNumber: true })` + plain `z.infer`, with a single generic per-field message. Used by PhaseDialog/`phases` and `objetivos` (already RHF before R-09; they carry R-02 notes-only / R-05 prefill / R-06 fraction interactions, so converting them is out of scope). Use B only when extending an existing B form where a single message is acceptable.
+  - New forms prefer pattern A unless they extend an existing pattern-B form.
+- The shared first-error precedence helper `pickFirstError(errors, orderedKeys, order)` (also `src/lib/zod.ts`) backs each feature's `first<X>Error` wrapper for multi-rule `superRefine` schemas (recipes, diario, templates, planning); the wrapper keeps the feature-named export and passes its ordered key list (D-C2).
+- Single-control, instant-apply settings (the Settings language + theme Selects) are controlled `<Select>`s, not RHF forms — they have no validated submit (theme is localStorage-only per D-F6).
 
 ## Types & macros
 

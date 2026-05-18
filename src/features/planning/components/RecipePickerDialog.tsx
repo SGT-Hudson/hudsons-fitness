@@ -1,4 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -12,6 +14,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RecipeAutocomplete, type RecipeOption } from '@/features/diario/components/RecipeAutocomplete';
+import {
+  firstRecipePickerError,
+  recipePickerFormSchema,
+  type RecipePickerFormValues,
+} from '../schema';
 
 interface Props {
   open: boolean;
@@ -38,8 +45,17 @@ export function RecipePickerDialog({
   const { t: tCommon } = useTranslation('common');
   const isEdit = !!initialRecipe;
   const [recipe, setRecipe] = useState<RecipeOption | null>(null);
-  const [servings, setServings] = useState('1');
   const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<RecipePickerFormValues>({
+    resolver: zodResolver(recipePickerFormSchema),
+    defaultValues: { hasRecipe: false, servings: '1' },
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -51,32 +67,36 @@ export function RecipePickerDialog({
         servings: 1,
         ingredient_count: 0,
       });
-      setServings(String(initialRecipe.servings));
+      reset({ hasRecipe: true, servings: String(initialRecipe.servings) });
     } else {
       setRecipe(null);
-      setServings('1');
+      reset({ hasRecipe: false, servings: '1' });
     }
-  }, [open, initialRecipe]);
+  }, [open, initialRecipe, reset]);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  function handleSelectRecipe(r: RecipeOption | null) {
+    setRecipe(r);
+    setValue('hasRecipe', !!r, { shouldValidate: true });
+  }
+
+  async function onValid(values: RecipePickerFormValues) {
     setError(null);
-    if (!recipe) {
-      setError(t('picker.errors.pickRecipe'));
-      return;
-    }
-    const s = Number(servings);
-    if (!Number.isFinite(s) || s <= 0) {
-      setError(t('picker.errors.servings'));
-      return;
-    }
+    if (!recipe) return;
     try {
-      await onSave(recipe.id, recipe.name, s);
+      await onSave(recipe.id, recipe.name, Number(values.servings));
       onOpenChange(false);
     } catch (err) {
       setError((err as Error).message);
     }
   }
+
+  // One localized message, original precedence (recipe → servings) — parity.
+  const validationCode = firstRecipePickerError(
+    errors as Record<string, { message?: string } | undefined>,
+  );
+  const validationError = validationCode
+    ? t(`picker.errors.${validationCode}`)
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,13 +105,13 @@ export function RecipePickerDialog({
           <DialogTitle>{isEdit ? t('picker.editTitle') : t('picker.addTitle')}</DialogTitle>
           <DialogDescription>{t('picker.subtitle')}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+        <form onSubmit={handleSubmit(onValid)} className="space-y-4">
           <div className="space-y-2">
             <Label>{t('picker.recipe')}</Label>
             <RecipeAutocomplete
               selected={recipe}
-              onSelect={setRecipe}
-              onClear={() => setRecipe(null)}
+              onSelect={handleSelectRecipe}
+              onClear={() => handleSelectRecipe(null)}
             />
           </div>
           <div className="space-y-2">
@@ -102,11 +122,12 @@ export function RecipePickerDialog({
               inputMode="decimal"
               min={0.25}
               step="0.25"
-              value={servings}
-              onChange={(e) => setServings(e.target.value)}
+              {...register('servings')}
             />
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {(validationError || error) && (
+            <p className="text-sm text-destructive">{validationError ?? error}</p>
+          )}
           <DialogFooter className="sm:justify-between">
             <div>
               {isEdit && onDelete && (

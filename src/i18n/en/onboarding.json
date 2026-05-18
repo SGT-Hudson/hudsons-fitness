@@ -19,6 +19,7 @@
     "help": "Bone weight barely changes over time, so we only ask once. Editable in Settings."
   },
   "errors": {
-    "required": "Fill in all fields."
+    "required": "Fill in all fields.",
+    "outOfRange": "Some values are outside the allowed range."
   }
 }

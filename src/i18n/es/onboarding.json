@@ -19,6 +19,7 @@
     "help": "El peso óseo apenas cambia con el tiempo, así que solo lo pedimos una vez. Editable en Ajustes."
   },
   "errors": {
-    "required": "Completa todos los campos."
+    "required": "Completa todos los campos.",
+    "outOfRange": "Algunos valores están fuera del rango permitido."
   }
 }

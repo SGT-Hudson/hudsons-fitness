@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Search } from 'lucide-react';
 import {
@@ -19,6 +21,7 @@ import {
   parseForm,
   type IngredientFormState,
 } from './IngredientFormFields';
+import { ingredientFormSchema, type ParsedIngredientForm } from '../schema';
 import {
   useCreateManualIngredient,
   useImportFromOFF,
@@ -61,7 +64,19 @@ export function IngredientDialog({
   const isEdit = mode === 'edit';
 
   const [tab, setTab] = useState<'off' | 'manual'>('off');
-  const [form, setForm] = useState<IngredientFormState>(emptyForm);
+  const {
+    handleSubmit,
+    reset,
+    watch,
+  } = useForm<IngredientFormState, unknown, ParsedIngredientForm>({
+    resolver: zodResolver(ingredientFormSchema),
+    defaultValues: emptyForm,
+  });
+  // IngredientFormFields is a reused presentational value/onChange component
+  // (OFF / manual / edit tabs); RHF owns the state here. `watch()` gives the
+  // live value; `reset(next)` is the onChange (it also re-runs validation).
+  const form = watch();
+  const setForm = (next: IngredientFormState) => reset(next);
   const [offQuery, setOffQuery] = useState('');
   const debouncedQuery = useDebouncedValue(offQuery, 350);
   const [pickedOFF, setPickedOFF] = useState<OFFSearchResult | null>(null);
@@ -78,7 +93,7 @@ export function IngredientDialog({
     setPickedOFF(null);
     if (isEdit && initial) {
       setTab('manual');
-      setForm(ingredientToForm(initial));
+      reset(ingredientToForm(initial));
       setOffQuery('');
     } else {
       const seed = defaultName?.trim() ?? '';
@@ -89,15 +104,16 @@ export function IngredientDialog({
         setTab(seed === '' ? 'off' : 'manual');
         setOffQuery('');
       }
-      setForm({ ...emptyForm, name: seed });
+      reset({ ...emptyForm, name: seed });
     }
-  }, [open, isEdit, initial, defaultName]);
+  }, [open, isEdit, initial, defaultName, reset]);
 
   const submitting = create.isPending || importOFF.isPending || update.isPending;
 
-  async function handleSave(e: FormEvent) {
-    e.preventDefault();
+  async function onValid() {
     setError(null);
+    // zodResolver already passed, so parseForm cannot return null here; it is
+    // reused purely to normalize (brand→null, fiber blank→0) exactly as before.
     const parsed = parseForm(form);
     if (!parsed) {
       setError(t('errors.invalid'));
@@ -131,6 +147,12 @@ export function IngredientDialog({
     }
   }
 
+  // The page only ever showed one combined `t('errors.invalid')` line (the old
+  // `parseForm` returned null on any bad field). Preserve that exact UX.
+  function onInvalid() {
+    setError(t('errors.invalid'));
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -141,7 +163,7 @@ export function IngredientDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={(e) => void handleSave(e)} className="space-y-4">
+        <form onSubmit={handleSubmit(onValid, onInvalid)} className="space-y-4">
           {!isEdit ? (
             <Tabs value={tab} onValueChange={(v) => setTab(v as 'off' | 'manual')}>
               <TabsList>

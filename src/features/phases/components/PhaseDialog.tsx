@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,32 +20,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { isoDate } from '@/lib/dates';
+import { todayInTZ } from '@/lib/dates';
 import {
   fractionToPct,
   pctToFraction,
   PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM,
 } from '@/lib/macros';
 import type { Phase, PhaseInput } from '../api';
+import { phaseFormSchema, type PhaseFormValues } from '../schema';
 
-type FormValues = {
-  name: string;
-  phase_type: 'cut' | 'maintenance' | 'bulk';
-  start_date: string;
-  end_date: string;
-  kcal_mode: 'absolute' | 'tdee_delta';
-  kcal_value: number;
-  protein_g_per_kg: number;
-  fat_pct_input: number; // percent in UI (10–60); stored as fraction in DB
-  fiber_mode: 'fixed_g' | 'per_1000_kcal';
-  fiber_value: number;
-  notes: string;
-};
+type FormValues = PhaseFormValues;
 
 const DEFAULTS: FormValues = {
   name: '',
   phase_type: 'maintenance',
-  start_date: isoDate(),
+  start_date: todayInTZ(),
   end_date: '',
   kcal_mode: 'absolute',
   kcal_value: 2000,
@@ -85,10 +75,12 @@ export function PhaseDialog({
     handleSubmit,
     watch,
     reset,
-    getValues,
     setValue,
     formState: { errors, dirtyFields },
-  } = useForm<FormValues>({ defaultValues: DEFAULTS });
+  } = useForm<FormValues>({
+    resolver: zodResolver(phaseFormSchema),
+    defaultValues: DEFAULTS,
+  });
 
   const kcalMode = watch('kcal_mode');
   const fiberMode = watch('fiber_mode');
@@ -126,7 +118,7 @@ export function PhaseDialog({
         notes: phase.notes ?? '',
       });
     } else {
-      reset({ ...DEFAULTS, start_date: isoDate() });
+      reset({ ...DEFAULTS, start_date: todayInTZ() });
     }
   }, [open, phase, reset]);
 
@@ -186,7 +178,7 @@ export function PhaseDialog({
               placeholder={t('phases.form.namePlaceholder')}
               readOnly={notesOnly}
               disabled={notesOnly}
-              {...register('name', { required: true })}
+              {...register('name')}
             />
             {errors.name && (
               <p className="text-xs text-destructive">{t('phases.form.errors.nameRequired')}</p>
@@ -227,7 +219,7 @@ export function PhaseDialog({
                 id="ph-start"
                 readOnly={notesOnly}
                 disabled={notesOnly}
-                {...register('start_date', { required: true })}
+                {...register('start_date')}
               />
               {errors.start_date && (
                 <p className="text-xs text-destructive">
@@ -242,12 +234,7 @@ export function PhaseDialog({
                 id="ph-end"
                 readOnly={notesOnly}
                 disabled={notesOnly}
-                {...register('end_date', {
-                  validate: (v) => {
-                    if (!v) return true;
-                    return v > getValues('start_date') || t('phases.form.errors.dateRange');
-                  },
-                })}
+                {...register('end_date')}
               />
               {errors.end_date && (
                 <p className="text-xs text-destructive">{t('phases.form.errors.dateRange')}</p>
@@ -288,13 +275,7 @@ export function PhaseDialog({
                 className="w-24 shrink-0"
                 readOnly={notesOnly}
                 disabled={notesOnly}
-                {...register('kcal_value', {
-                  valueAsNumber: true,
-                  validate: (v) =>
-                    getValues('kcal_mode') === 'tdee_delta' ||
-                    v > 0 ||
-                    t('phases.form.errors.kcalValue'),
-                })}
+                {...register('kcal_value', { valueAsNumber: true })}
               />
               <span className="text-sm text-muted-foreground">{kcalSuffix}</span>
             </div>
@@ -314,10 +295,7 @@ export function PhaseDialog({
               max="4"
               readOnly={notesOnly}
               disabled={notesOnly}
-              {...register('protein_g_per_kg', {
-                valueAsNumber: true,
-                min: { value: 0.1, message: t('phases.form.errors.protein') },
-              })}
+              {...register('protein_g_per_kg', { valueAsNumber: true })}
             />
             <p className="text-xs text-muted-foreground">
               {t('phases.form.proteinHelp', {
@@ -341,11 +319,7 @@ export function PhaseDialog({
               max="60"
               readOnly={notesOnly}
               disabled={notesOnly}
-              {...register('fat_pct_input', {
-                valueAsNumber: true,
-                min: { value: 10, message: t('phases.form.errors.fat') },
-                max: { value: 60, message: t('phases.form.errors.fat') },
-              })}
+              {...register('fat_pct_input', { valueAsNumber: true })}
             />
             {errors.fat_pct_input && (
               <p className="text-xs text-destructive">{t('phases.form.errors.fat')}</p>
@@ -386,10 +360,7 @@ export function PhaseDialog({
                 className="w-24 shrink-0"
                 readOnly={notesOnly}
                 disabled={notesOnly}
-                {...register('fiber_value', {
-                  valueAsNumber: true,
-                  min: { value: 0.1, message: t('phases.form.errors.fiberValue') },
-                })}
+                {...register('fiber_value', { valueAsNumber: true })}
               />
               <span className="text-sm text-muted-foreground">{fiberSuffix}</span>
             </div>

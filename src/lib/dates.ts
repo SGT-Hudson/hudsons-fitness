@@ -8,6 +8,7 @@ import { es, enGB } from 'date-fns/locale';
 // because `date-fns` is a browser-only dependency the edge cannot import.
 export {
   isoDateInTZ,
+  todayInTZ,
   previousDayInTZ,
   mondayOfTodayInTZ,
 } from '@/core/dates';

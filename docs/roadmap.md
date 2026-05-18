@@ -243,7 +243,19 @@ reference shard carries it (never edit the decision entry).
 ## R-09 — RHF + zod migration across ~6–8 forms; co-located schemas
 - **decision:** D-C2, D-C3
 - **blocked-by:** —
-- **status:** todo
+- **status:** done (2026-05-18) — `@hookform/resolvers` installed; all 15
+  forms migrated to `useForm + zodResolver + z.infer/z.input` with schemas
+  co-located per feature (`features/{phases,objetivos,auth,profile,
+  measurements,ingredients,recipes,templates,planning,diario}/schema.ts`). No
+  plain `type FormValues = {` object form types remain (grep-verified).
+  Validation/UX/payloads preserved exactly: PhaseDialog keeps R-02 notesOnly
+  + R-05 protein prefill + R-06 fat fraction conversion; combined/single
+  error messages map to existing i18n keys (no raw English zod text); the
+  Settings language + theme single-control Selects stay controlled (no
+  validated submit). Carried R-16 Tier-2: `*.test.tsx` run under jsdom via
+  `environmentMatchGlobs` while Tier-1 `*.test.ts` stay Node; PhaseDialog +
+  MeasurementDialog component tests added. CI `lint-build` job unchanged.
+  vitest 98/98 (90 Tier-1 + 8 Tier-2).
 - **scope:**
   - Audit first: grep `useForm|useState.*[A-Z]Form|onChange=\{` to enumerate
     every form. Estimate ~6–8 (OnboardingPage, IngredienteEditor,
@@ -418,7 +430,7 @@ reference shard carries it (never edit the decision entry).
 ## R-16 — Vitest Tier-1 (spec-first) + Tier-2 (with R-09) + Tier-3 (after R-00)
 - **decision:** D-F1
 - **blocked-by:** R-00 (Tier-3 only)
-- **status:** in-progress — Tier-1 (Vitest + CI `pnpm test` in the `lint-build` job) landed; Tier-2 rides R-09; Tier-3 after R-00
+- **status:** in-progress — Tier-1 (Vitest + CI `pnpm test` in the `lint-build` job) landed; Tier-2 **landed** (rode R-09, 2026-05-18): `*.test.tsx` run under jsdom via `environmentMatchGlobs` while Tier-1 `*.test.ts` stay Node, all in the same `pnpm test` / unchanged `lint-build` job; PhaseDialog + MeasurementDialog component tests added (`@testing-library/react` + `jsdom`). Only Tier-3 (DB/RLS/RPC via local `supabase start` + pgTAP) remains, gated behind R-00.
 - **scope:** Spec-first; Tier 1 is its own sprint, Tier 2 rides with R-09,
   Tier 3 is gated behind R-00.
   1. Spec: `docs/superpowers/specs/` test-strategy doc — tier boundaries,

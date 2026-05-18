@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -7,22 +9,28 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { supabase } from '@/lib/supabase';
+import { loginFormSchema, type LoginFormValues } from '@/features/auth/schema';
 
 export function LoginPage() {
   const { t } = useTranslation('auth');
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: { email: '', password: '' },
+  });
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function onSubmit(values: LoginFormValues) {
     setError(null);
-    setSubmitting(true);
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    setSubmitting(false);
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: values.email,
+      password: values.password,
+    });
     if (authError) {
       setError(t('errors.invalidCredentials'));
       return;
@@ -42,16 +50,14 @@ export function LoginPage() {
             <CardDescription>{t('signIn')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">{t('email')}</Label>
                 <Input
                   id="email"
                   type="email"
-                  required
                   autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...register('email')}
                 />
               </div>
               <div className="space-y-2">
@@ -59,15 +65,13 @@ export function LoginPage() {
                 <Input
                   id="password"
                   type="password"
-                  required
                   autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...register('password')}
                 />
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" disabled={submitting} className="w-full">
-                {submitting ? tCommon('loading') : t('signIn')}
+              <Button type="submit" disabled={isSubmitting} className="w-full">
+                {isSubmitting ? tCommon('loading') : t('signIn')}
               </Button>
               <p className="text-sm text-muted-foreground text-center">
                 {t('noAccount')}{' '}
