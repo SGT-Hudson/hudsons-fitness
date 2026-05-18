@@ -10,7 +10,7 @@ import {
   type CreateMealLogInput,
   type MealType,
 } from './api';
-import { buildQuickAddList } from './quickAdd';
+import { buildQuickAddList, isoMinusDays } from './quickAdd';
 import type { TablesUpdate } from '@/types/database';
 import { toastCreated, toastDeleted, toastError, toastSaved, toastUndoableQuickAdd } from '@/lib/toast-helpers';
 
@@ -81,24 +81,20 @@ export function useDeleteMealLog() {
   });
 }
 
-function isoMinusDays(days: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - days);
-  return d.toISOString().slice(0, 10);
-}
-
 export function useQuickAddRecipes() {
   const { user } = useAuth();
   return useQuery({
     enabled: !!user,
     queryKey: ['quick_add', user?.id],
     queryFn: async () => {
-      const rows = await fetchQuickAddRecipeRows(user!.id, isoMinusDays(60));
+      const rows = await fetchQuickAddRecipeRows(user!.id, isoMinusDays(new Date(), 60));
       return buildQuickAddList(rows, { now: new Date() });
     },
   });
 }
 
+// No success toast here on purpose: the caller (QuickAddStrip) shows an
+// undoable toast via toastUndoableQuickAdd, which needs the created row id.
 export function useQuickAddMealLog() {
   const { user } = useAuth();
   const qc = useQueryClient();

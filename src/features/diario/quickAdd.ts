@@ -15,7 +15,7 @@ export interface QuickAddItem {
   kcalPerServing: number;
 }
 
-function isoMinusDays(now: Date, days: number): string {
+export function isoMinusDays(now: Date, days: number): string {
   const d = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
   );
