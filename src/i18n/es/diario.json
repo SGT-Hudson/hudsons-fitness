@@ -80,6 +80,9 @@
     "subtitle": "Registra qué has comido. Una receta, un ingrediente suelto, o introduce los macros a mano.",
     "deleteConfirm": "¿Borrar esta entrada del diario?"
   },
+  "quickAdd": {
+    "add": "Añadir {{name}}"
+  },
   "errors": {
     "pickRecipe": "Selecciona una receta.",
     "pickIngredient": "Selecciona un ingrediente.",

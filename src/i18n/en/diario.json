@@ -80,6 +80,9 @@
     "subtitle": "Log what you ate. A recipe, a single ingredient, or type macros directly.",
     "deleteConfirm": "Delete this diary entry?"
   },
+  "quickAdd": {
+    "add": "Add {{name}}"
+  },
   "errors": {
     "pickRecipe": "Pick a recipe.",
     "pickIngredient": "Pick an ingredient.",
