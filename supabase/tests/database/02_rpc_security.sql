@@ -3,7 +3,7 @@
 -- ONLY SECURITY DEFINER function reachable via PostgREST is the cron-only
 -- apply_template_to_week_admin, locked to service_role.
 begin;
-select plan(14);
+select plan(16);
 
 -- Helper: assert (secdef, search_path) for a function by name+args.
 -- Inline as is(...) per function for readable failures.
@@ -15,7 +15,7 @@ select is((select prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronam
 select is((select array_to_string(p.proconfig,',') from pg_proc p
   join pg_namespace n on n.oid=p.pronamespace
   where n.nspname='public' and p.proname='save_recipe'),
-  'search_path=', 'save_recipe pins search_path=''''');
+  'search_path=""', 'save_recipe pins search_path=''''');
 
 -- save_template — INVOKER, search_path=''.
 select is((select prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace
@@ -24,17 +24,25 @@ select is((select prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronam
 select is((select array_to_string(proconfig,',') from pg_proc p
   join pg_namespace n on n.oid=p.pronamespace
   where n.nspname='public' and p.proname='save_template'),
-  'search_path=', 'save_template pins search_path=''''');
+  'search_path=""', 'save_template pins search_path=''''');
 
 -- apply_template_to_week — INVOKER, search_path=''.
 select is((select prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace
   where n.nspname='public' and p.proname='apply_template_to_week'), false,
   'apply_template_to_week is SECURITY INVOKER');
+select is((select array_to_string(proconfig,',') from pg_proc p
+  join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public' and p.proname='apply_template_to_week'),
+  'search_path=""', 'apply_template_to_week pins search_path=''''');
 
 -- save_week_as_template — INVOKER, search_path=''.
 select is((select prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace
   where n.nspname='public' and p.proname='save_week_as_template'), false,
   'save_week_as_template is SECURITY INVOKER');
+select is((select array_to_string(proconfig,',') from pg_proc p
+  join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public' and p.proname='save_week_as_template'),
+  'search_path=""', 'save_week_as_template pins search_path=''''');
 
 -- materialize_plan_for_date — INVOKER, search_path=public (R-12).
 select is((select prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace
@@ -63,7 +71,7 @@ select is_empty(
   $$ select 1 from information_schema.role_routine_grants
      where routine_schema='public'
        and routine_name='apply_template_to_week_admin'
-       and grantee in ('anon','authenticated','public') $$,
+       and grantee in ('anon','authenticated','PUBLIC') $$,
   'apply_template_to_week_admin NOT executable by anon/authenticated/public');
 select isnt_empty(
   $$ select 1 from information_schema.role_routine_grants
@@ -80,7 +88,7 @@ select is_empty(
   $$ select 1 from information_schema.role_routine_grants
      where routine_schema='private'
        and routine_name='invoke_edge_function'
-       and grantee in ('anon','authenticated','public') $$,
+       and grantee in ('anon','authenticated','PUBLIC') $$,
   'private.invoke_edge_function NOT executable by anon/authenticated/public');
 
 select * from finish();
