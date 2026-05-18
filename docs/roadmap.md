@@ -395,7 +395,21 @@ reference shard carries it (never edit the decision entry).
 ## R-12 — materialize_plan_for_date RPC + partial unique index + date<=today guard; delete client/edge mirrors
 - **decision:** D-D6
 - **blocked-by:** R-00
-- **status:** todo
+- **status:** in-progress — RPC + partial unique index + date≤today guard
+  authored (`supabase/migrations/20260518060000_r12_materialize_rpc.sql`,
+  `materialize_plan_for_date` SECURITY INVOKER + `set search_path = public`,
+  partial unique index `meal_logs_user_plan_slot_uidx`, in-RPC
+  `p_date > (now() at time zone 'Europe/Madrid')::date` no-op guard mirroring
+  `todayInTZ`/`previousDayInTZ`); client (`src/features/diario/api.ts`) +
+  edge (`daily-nutrition-snapshot/index.ts`) switched to the RPC; the
+  hand-mirrored client query/dedup logic and the edge's mirrored
+  `materializePlanForDate` + duplicated `MEAL_TYPE_ORDER` removed (single
+  source = the RPC). **Migration AND code both gated to Wave-3 (apply
+  migration → then merge PR #38): unlike the other staged items R-12's CODE
+  depends on the migration — the RPC must exist in prod before this code
+  (which calls it) merges, else materialization breaks.** PR HELD, auto-merge
+  NOT enabled. NOT done until the operator applies the migration then merges
+  the PR at the Wave-3 checkpoint.
 - **scope:** One implementation sprint (migration + RPC + client/edge
   rewiring).
   1. Migration: create `materialize_plan_for_date(p_user_id uuid, p_date date)`

@@ -149,7 +149,7 @@ Constraint `meal_log_one_source` enforces exactly one of `recipe_id` / `ingredie
 
 > ⚠ Changing — see R-12 (D-D6)
 
-Today there is no unique constraint on `(user_id, plan_week_slot_id)`; `from_plan` materialization dedup is app-level read-then-write, hand-mirrored across the client and the edge function. The decided change adds a partial unique index and a single RPC.
+R-12 / D-D6 is implemented (applied + merged at Wave-3): the staged migration `20260518060000_r12_materialize_rpc.sql` adds a partial unique index `meal_logs_user_plan_slot_uidx` on `(user_id, plan_week_slot_id) where plan_week_slot_id is not null` and the `materialize_plan_for_date` SECURITY INVOKER RPC (`ON CONFLICT DO NOTHING` on that index → DB-level idempotency; `date <= today` Europe/Madrid guard). The prior app-level read-then-write dedup, hand-mirrored across client and edge, is removed. Not live in prod until the Wave-3 checkpoint (the migration is applied, then the calling-code PR is merged — the code depends on the RPC existing first).
 
 ### `goals`
 
@@ -329,7 +329,7 @@ Invariant (D-C5): any operation that mutates more than one table atomically MUST
 
 > ⚠ Changing — see R-12 (D-D6)
 
-Plan materialization becomes a new `SECURITY INVOKER` RPC (`materialize_plan_for_date`) backed by a partial unique index on `meal_logs (user_id, plan_week_slot_id)`, replacing the hand-mirrored client/edge copies.
+R-12 / D-D6 is implemented (applied + merged at Wave-3): plan materialization is the new `materialize_plan_for_date` `SECURITY INVOKER` RPC (`set search_path = public`, in-RPC `date <= today` Europe/Madrid guard) backed by the partial unique index `meal_logs_user_plan_slot_uidx` on `meal_logs (user_id, plan_week_slot_id) where plan_week_slot_id is not null` with `INSERT … ON CONFLICT DO NOTHING`. The hand-mirrored client/edge copies are deleted (single source = the RPC). Bringing the count of user-facing `SECURITY INVOKER` RPCs to five. Not live until the Wave-3 checkpoint — the staged migration is applied to prod first, then the calling-code PR is merged (the code calls the RPC, so the RPC must exist in prod before the code merges).
 
 ## Views
 

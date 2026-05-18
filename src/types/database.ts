@@ -704,6 +704,16 @@ export type Database = {
         };
         Returns: string;
       };
+      // R-12 / D-D6: single source of truth for plan materialization
+      // (SECURITY INVOKER). Returns the number of from_plan meal_logs
+      // inserted. Hand-added until the R-04 generated-types switch lands.
+      materialize_plan_for_date: {
+        Args: {
+          p_user_id: string;
+          p_date: string;
+        };
+        Returns: number;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

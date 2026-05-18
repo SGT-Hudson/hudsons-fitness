@@ -40,7 +40,7 @@ tracked in `roadmap.md`).
 
 - Any operation mutating more than one table atomically MUST be an RPC; single-table mutations stay client-side (D-C5).
 - All user-callable RPCs are `SECURITY INVOKER` with `set search_path = public`; `SECURITY DEFINER` is forbidden without a security review (cron-only `apply_template_to_week_admin` is the documented exception) (D-C5).
-- Plan materialization is a single `SECURITY INVOKER` RPC (client/edge mirrors not yet removed) (D-D6).
+- Plan materialization is a single `SECURITY INVOKER` RPC `materialize_plan_for_date` (`set search_path = public`), DB-idempotent via a partial unique index + `ON CONFLICT DO NOTHING`, bounded to `date <= today` (Europe/Madrid); the client/edge mirrors are removed (RPC implemented; applied + merged at Wave-3 — not live in prod until the migration is applied then the calling-code PR is merged) (D-D6).
 
 > ⚠ Changing — see R-12
 

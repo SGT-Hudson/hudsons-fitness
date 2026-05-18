@@ -224,14 +224,18 @@ entry — `from_plan` stays only as an origin marker; manual additions remain
 propagate back into already-logged entries (intentional: the diary records
 what was actually eaten).
 
-> ⚠ Changing — see R-12 (D-D6). Materialization is currently hand-mirrored
-> in two runtimes (client TS + the Deno snapshot edge function), has no
-> DB-level idempotency (app-level read-then-write, race-prone), and the
-> client has no `date <= today` bound so opening `/diario/<future-date>`
-> materializes future slots. The fix is a single
-> `materialize_plan_for_date` RPC (SECURITY INVOKER) called by both, a
-> partial unique index on `(user_id, plan_week_slot_id)` with
-> `INSERT … ON CONFLICT DO NOTHING`, and an in-RPC `date <= today` guard.
+> ⚠ Changing — see R-12 (D-D6). RPC implemented; applied + merged at Wave-3.
+> Materialization is now a single `materialize_plan_for_date` RPC (SECURITY
+> INVOKER, `set search_path = public`) called by both the client and the
+> Deno snapshot edge function — the prior hand-mirrored two-runtime copies
+> are deleted. DB-level idempotency comes from the partial unique index
+> `meal_logs (user_id, plan_week_slot_id) where plan_week_slot_id is not
+> null` + `INSERT … ON CONFLICT DO NOTHING` (fixes the race-prone app-level
+> read-then-write). An in-RPC `date <= today` guard (Europe/Madrid, same
+> canonical "today" as `previousDayInTZ()`) makes opening
+> `/diario/<future-date>` a no-op instead of materializing future slots.
+> Not live until the Wave-3 checkpoint: the staged migration is applied to
+> prod first, then the calling-code PR (which calls the RPC) is merged.
 
 ## TDEE
 
