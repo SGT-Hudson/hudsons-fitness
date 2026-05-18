@@ -18,7 +18,7 @@ supabase db reset
 echo "==> supabase db diff --linked (local migration state vs linked prod)"
 DIFF="$(supabase db diff --linked 2>&1 || true)"
 
-if [ -z "${DIFF// /}" ] || echo "$DIFF" | grep -qiE 'no schema changes found|no changes'; then
+if [ -z "${DIFF//[$' \t\r\n']/}" ] || echo "$DIFF" | grep -qiE 'no schema changes found|no changes|up to date'; then
   echo "PASS: migration history reproduces prod (empty diff)."
   exit 0
 fi
