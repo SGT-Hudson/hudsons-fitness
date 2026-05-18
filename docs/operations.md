@@ -227,6 +227,47 @@ is NOT applied by its PR (live project untouched — R-00).
   build. The Sprint-17 reader contract is additive-only, so the frontend
   tolerates the columns being absent (no UI rollback needed).
 
+**R-12 materialize_plan_for_date Wave-3 (ordered — code depends on the
+migration).** R-12 / D-D6 is the one staged item whose **code depends on its
+migration**. The client (`src/features/diario/api.ts`) and the
+`daily-nutrition-snapshot` edge function were rewritten to call
+`supabase.rpc('materialize_plan_for_date', …)`; that RPC does not exist in
+prod until **`supabase/migrations/20260518060000_r12_materialize_rpc.sql`**
+(the RPC + the `meal_logs_user_plan_slot_uidx` partial unique index) is
+applied. So both the migration and the calling-code PR are gated to Wave-3
+and the PR is **HELD** (auto-merge NOT enabled).
+
+- **Ordering invariant (strict).** (1) Apply
+  `20260518060000_r12_materialize_rpc.sql` to prod
+  (`supabase db push --linked`, or run the file via the SQL editor) — this
+  creates the RPC + partial unique index; (2) THEN merge the R-12 PR (the
+  client/edge code that calls the RPC); (3) THEN redeploy the edge function
+  (`supabase functions deploy daily-nutrition-snapshot --project-ref
+  upvraruehzurbetzrxov`) so the cron uses the RPC instead of its now-deleted
+  mirrored copy. Reversed (code merged / edge redeployed before the migration
+  is applied) prod plan-materialization breaks: `supabase.rpc(...)` 404s on
+  every Diario open and every snapshot run. This inversion (migration FIRST,
+  then code) is the opposite of R-07's (code FIRST, then migration) — R-07's
+  code tolerates the old schema; R-12's code cannot run without the RPC.
+- **Order-free vs the other staged migrations.** R-12 only ADDs a function
+  plus a partial unique index on `public.meal_logs`; it is disjoint from
+  R-06 (`phases` CHECK), R-18 (`cron`), R-07 (`tdee_state`/`tdee_estimates`),
+  R-03/R-14/R-08 (`profiles`/`tdee_estimates` drops). It may be applied in
+  any position relative to them at the checkpoint with the same end state.
+- **Cross-root core caveat.** `daily-nutrition-snapshot` still imports the
+  shared core via the same cross-root relative path as the other functions —
+  the **Wave-3 deploy validation (cross-root core import)** note (R-17)
+  applies unchanged to its redeploy; run that check once for all functions,
+  do not duplicate it.
+- **Rollback.** The migration is additive (one function + one index). To
+  roll back: revert the R-12 PR (restore the prior client/edge mirrored
+  `materializePlanForDate`) and redeploy `daily-nutrition-snapshot`; the RPC
+  + index can stay (harmless and unused) or be dropped
+  (`drop function public.materialize_plan_for_date(uuid, date);` then
+  `drop index public.meal_logs_user_plan_slot_uidx;` — drop the function
+  first, the index has no other dependants). No data migration occurred, so
+  there is nothing to backfill or undo in `meal_logs`.
+
 ## Cron
 
 Three jobs run via `pg_cron`, each invoking an edge function through
@@ -431,7 +472,19 @@ is filename-lexicographic:
 20260518000000_r06_fat_pct_check.sql        # STAGED — Wave-3 (R-06)
 20260518010000_r18_cron_healthcheck.sql     # STAGED — Wave-3 (R-18)
 20260518020000_r07_adaptive_tdee_state.sql  # STAGED — Wave-3 (R-07)
+20260518030000_r03_drop_bone_kg.sql         # STAGED — Wave-3 (R-03)
+20260518040000_r14_drop_units.sql           # STAGED — Wave-3 (R-14)
+20260518050000_r08_drop_dead_tdee_cols.sql  # STAGED — Wave-3 (R-08)
+20260518060000_r12_materialize_rpc.sql      # STAGED — Wave-3 (R-12); code-gated
 ```
+
+All `20260518*` files are STAGED — applied by the operator at the Wave-3
+prod-migration checkpoint, not by their PRs (live DB untouched). They are
+mutually order-free (disjoint object sets); the lexicographic order is just
+file-monotonic, not a dependency order. The one special case is **R-12**:
+its calling code (client + edge) depends on the RPC existing in prod, so its
+PR is HELD and the migration must be applied **before** the R-12 PR is merged
+(see the R-12 Wave-3 runbook above).
 
 The baseline deliberately excludes the objects the Sprint-9 migration already
 owns (`pg_net`/`pg_cron`, the `private` schema + `invoke_edge_function`,
