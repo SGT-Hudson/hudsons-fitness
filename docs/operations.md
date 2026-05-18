@@ -93,12 +93,15 @@ lives in `supabase/functions/_shared/` (this is edge↔edge only — see D-F3).
 ```
 supabase/
 ├── migrations/
-│   └── 20260514120000_sprint9_cron_and_jobs.sql
+│   ├── 20260514120000_sprint9_cron_and_jobs.sql
+│   ├── 20260518000000_r06_fat_pct_check.sql        # STAGED — Wave-3
+│   └── 20260518010000_r18_cron_healthcheck.sql     # STAGED — Wave-3
 └── functions/
     ├── _shared/macros.ts
     ├── daily-nutrition-snapshot/index.ts   # 0 1 * * *  UTC (≈02:00 CET)
     ├── weekly-rollover/index.ts            # 0 2 * * 1  UTC (≈03:00 CET Mon)
     ├── recalculate-tdee/index.ts           # 0 3 * * *  UTC (≈04:00 CET)
+    ├── cron-healthcheck/index.ts           # 0 6 * * *  UTC (R-18, staged)
     └── delete-account/index.ts             # GDPR account erasure (user-invoked)
 ```
 
@@ -194,6 +197,7 @@ Schedules are in UTC (D-F4, D-F5):
 | `0 1 * * *` | daily nutrition snapshot | `daily-nutrition-snapshot` |
 | `0 2 * * 1` | weekly rollover (Monday) | `weekly-rollover` |
 | `0 3 * * *` | recalculate TDEE | `recalculate-tdee` |
+| `0 6 * * *` | cron liveness healthcheck (R-18, **staged** — not live until Wave-3) | `cron-healthcheck` |
 
 **Why the DST drift is harmless.** The schedules are fixed in UTC, so the
 trigger time shifts ±1h across European DST — but the date boundaries each
@@ -268,11 +272,52 @@ the keep-alive: a GitHub Action running
 `curl https://upvraruehzurbetzrxov.supabase.co/rest/v1/profiles?limit=1` every
 3–4 days, or a Cloudflare Worker scheduled trigger doing the equivalent.
 
-Automated cron liveness alerting (a daily staleness check on
-`daily_nutrition_history` / `tdee_estimates` that notifies on stale data) is
-decided but not yet built:
+**Automated cron liveness alerting (R-18 / D-F5).** A fourth job,
+`cron-healthcheck`, detects a *silent under-run* of the data crons — the D-F5
+failure mode: a missing/stale Vault secret, or pg_cron skipping a job because
+the previous run overran (pg_cron does not overlap a job's next occurrence).
+Both leave the data crons not writing while nothing surfaces it; the daily
+snapshot is also the free-tier keep-alive, so a silent death is double-impact.
 
-> ⚠ Changing — see R-18 (D-F5)
+- **What it checks.** The edge function `cron-healthcheck`
+  (`supabase/functions/cron-healthcheck/index.ts`) reads the freshest
+  `daily_nutrition_history.logged_on` and `tdee_estimates.computed_on` and runs
+  the shared pure freshness predicate `src/core/liveness.ts`
+  (`evaluateFreshness` / `decideAlert`, deterministic Vitest cover in
+  `src/core/liveness.test.ts`). "Today" is `Europe/Madrid` via `todayInTZ()`
+  (D-F4 — the same boundary the snapshot job keys on).
+- **Threshold + rationale.** `daily_nutrition_history` is the PRIMARY signal:
+  stale if its freshest `logged_on` is **more than 2 calendar days** behind
+  Madrid-today (`STALE_AFTER_DAYS.daily_history = 2`). Reasoning: the snapshot
+  writes the *previous* Madrid day so a healthy freshest row is inherently ~1
+  day old; +1 day tolerates a single transient missed run (anti-flap); the ±1h
+  UTC/DST drift (D-F4) is absorbed by the whole-day UTC-midnight diff. Net: one
+  missed daily run does NOT alert; two consecutive missed runs (or an empty
+  table) DO. `tdee_estimates` is a SECONDARY signal with a lenient 4-day
+  threshold (`recalculate-tdee` legitimately skips users with <10 intake days,
+  so it lags for data reasons, not cron death) — a stale `tdee_estimates`
+  alone never alerts; it only contributes when `daily_history` is also stale.
+- **How it alerts (dependency-light, no new secret).** On alert the function
+  (1) `console.error`s a single structured `CRON_LIVENESS_ALERT {…}` line (the
+  matchable signal for any future log-drain alerting, no dependency added now)
+  and (2) returns **HTTP 503**. Because pg_cron invokes it via
+  `net.http_post`, the 503 makes the failed run visible in
+  `cron.job_run_details` — exactly where the "how to tell crons are dead"
+  manual check above looks — so a silent under-run becomes a loud, queryable
+  one. A healthy run logs `cron-healthcheck OK …` and returns 200.
+- **Staged, not yet live.** The cron schedule is staged in
+  **`supabase/migrations/20260518010000_r18_cron_healthcheck.sql`**
+  (`0 6 * * *` UTC — after the three data crons; reuses the existing
+  `private.invoke_edge_function` + Vault `cron_service_role_key`, no new
+  secret/helper). It is NOT applied by its PR (live project untouched; no
+  reproducible migration history yet — R-00). At the Wave-3 prod-migration
+  checkpoint, deploy the edge function FIRST
+  (`supabase functions deploy cron-healthcheck --project-ref
+  upvraruehzurbetzrxov`), THEN apply the staged migration — otherwise the first
+  scheduled run 404s and self-reports as an alert. Rollback:
+  `select cron.unschedule('cron-healthcheck');`.
+
+> ⚠ Changing — see R-18 (D-F5) — liveness-alert implemented; cron + deploy staged for Wave-3
 
 ## Data seeding
 

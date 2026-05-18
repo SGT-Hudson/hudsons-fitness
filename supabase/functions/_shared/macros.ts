@@ -34,6 +34,7 @@ export {
 
 export {
   isoDateInTZ,
+  todayInTZ,
   previousDayInTZ,
   mondayOfTodayInTZ,
 } from '../../../src/core/dates.ts';
