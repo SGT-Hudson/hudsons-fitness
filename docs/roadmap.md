@@ -520,7 +520,23 @@ reference shard carries it (never edit the decision entry).
 ## R-18 — Cron liveness alerting (stale daily_nutrition_history/tdee_estimates → notify)
 - **decision:** D-F5
 - **blocked-by:** —
-- **status:** todo
+- **status:** in-progress — liveness-alert code + edge fn + staged cron
+  migration landed; cron schedule + edge deploy applied at Wave-3 prod
+  checkpoint. Mechanism = `cron-healthcheck` edge fn (chosen over the pure
+  SQL+`net.http_post` variant: keeps the freshness predicate in a unit-tested
+  pure module and reuses the existing `private.invoke_edge_function` + Vault
+  `cron_service_role_key` path with no new secret). Pure freshness core at
+  `src/core/liveness.ts` (`evaluateFreshness`/`decideAlert`, deterministic
+  Vitest `src/core/liveness.test.ts`, 17 tests, frozen-clock). Edge fn
+  `supabase/functions/cron-healthcheck/index.ts` (Madrid `todayInTZ()`;
+  `console.error` structured `CRON_LIVENESS_ALERT …` line + HTTP 503 on alert
+  so the failed run shows in `cron.job_run_details`). Staged cron schedule:
+  `supabase/migrations/20260518010000_r18_cron_healthcheck.sql` (`0 6 * * *`
+  UTC, after the three data crons; NOT applied — Wave-3). Thresholds:
+  `daily_history` stale if > 2 calendar days old (1d inherent snapshot lag +
+  1 transient missed run tolerated + DST drift); `tdee_estimates` > 4 days
+  (legitimately sparser via `insufficient_intake`, secondary signal — does not
+  alert alone). Live DB/edge untouched by the PR.
 - **scope:**
   1. Liveness alerting (small added scope): a daily check that the freshest
      `daily_nutrition_history` (and `tdee_estimates`) row is within expected
