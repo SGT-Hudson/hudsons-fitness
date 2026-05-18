@@ -31,7 +31,23 @@ reference shard carries it (never edit the decision entry).
 ## R-00 — Baseline current schema into migrations
 - **decision:** D-A8, D-A6, D-E3, D-D6, D-F1
 - **blocked-by:** —
-- **status:** todo
+- **status:** done (2026-05-18) — baseline migration
+  `supabase/migrations/20260508080000_r00_baseline_schema.sql` captures the
+  full pre-existing live `public` schema (15 tables, RLS, 4 user RPCs +
+  the `handle_new_user`/`mark_week_diverged` triggers, the
+  `body_measurements_smoothed` view, the `extensions`-schema extensions)
+  reconstructed read-only from `information_schema`/`pg_catalog`. It is
+  timestamped before `20260514120000_sprint9_cron_and_jobs.sql` so the order
+  is baseline → sprint9 → staged Wave-3; it deliberately excludes the
+  sprint9-owned objects (`pg_net`/`pg_cron`, the `private` schema +
+  `invoke_edge_function`, `apply_template_to_week_admin`, the
+  `tdee_estimates (user_id, computed_on)` unique constraint, the 3 cron jobs)
+  so `baseline + sprint9` = the full schema with no double-create. The
+  deliverable is the in-repo file; it does not require a prod apply (the
+  schema already exists — every statement is `if not exists`/guarded so a
+  prod re-apply is a verified no-op, which is itself a Wave-3 validation
+  item). R-03/R-04/R-08/R-12/R-14 + R-16-Tier-3 are now unblocked (a
+  reproducible schema exists in-repo).
 - **scope:** At the time of the review only one migration file exists —
   `supabase/migrations/20260514120000_sprint9_cron_and_jobs.sql` — and the
   rest of the schema was built via the Supabase dashboard/MCP, so there is no
