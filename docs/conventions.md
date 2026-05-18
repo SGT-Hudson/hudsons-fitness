@@ -29,6 +29,7 @@ tracked in `roadmap.md`).
 ## Types & macros
 
 - DB-sourced rows stay snake_case end-to-end (D-C4).
+- `src/types/database.ts` is **generated** from the live schema (`supabase gen types`, command in `operations.md`), not hand-maintained. Two generator caveats survive every regen: (1) CHECK-constraint enums (`phases.kcal_mode`, `fiber_mode`, `tdee_estimates.confidence`) come through as plain `string` — form/validation code must verify allowed values against `pg_constraint`/the pure core, the type won't; (2) the generator cannot infer SQL-function argument nullability so it emits non-null `string` — the nullable RPC args (`save_recipe`/`save_template` ids = "create new" when null) are restored to `string | null` by a documented post-generation patch (marker comment above the `Functions` block). Re-apply both after any regen (D-A8).
 - camelCase is reserved for computed/derived types — the `Macros` envelope is `{ kcal, proteinG, carbsG, fatG, fiberG }` (D-C4).
 - Estimated BMR (Mifflin-St Jeor) and target-weight are derived, never-stored displays — recompute on render, don't persist, no DB column, and never feed protein/TDEE/targets (display only) (D-B5). `estimatedBmr` is wired on `/progreso` (latest-measurement card).
 

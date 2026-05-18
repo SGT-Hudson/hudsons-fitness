@@ -146,7 +146,21 @@ reference shard carries it (never edit the decision entry).
 ## R-04 — Switch to generated types/database.ts; document regen command
 - **decision:** D-A8
 - **blocked-by:** R-00
-- **status:** todo
+- **status:** done (2026-05-18) — regenerated `src/types/database.ts` from the
+  final post-Wave-3 prod schema (`supabase gen types`, via MCP): drops
+  `profiles.bone_kg`/`units` + the 4 dead `tdee_estimates` cols, adds
+  `tdee_state`, `tdee_estimates.confidence`/`is_warmup`, the
+  `materialize_plan_for_date` function + `apply_template_to_week_admin`, FK
+  `Relationships`, and the generator's helper generics/`Constants`. Two
+  generator caveats handled: CHECK-enums (`kcal_mode`/`fiber_mode`/
+  `confidence`) stay plain `string` (verify in code, documented); SQL-function
+  arg nullability is not inferred, so the nullable RPC args
+  (`save_recipe`/`save_template` create-new ids) are restored to
+  `string | null` by a documented post-generation patch (marker comment in the
+  file). Regen command + corrections documented in `docs/operations.md`;
+  generated-types caveats documented in `docs/conventions.md`. Verified green:
+  `pnpm typecheck` (0), `pnpm lint` (0 errors), `pnpm build`, `pnpm test`
+  (147/147).
 - **scope:**
   - Run `supabase gen types typescript --project-id upvraruehzurbetzrxov` (or
     a local schema-dump variant).
