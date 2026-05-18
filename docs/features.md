@@ -222,6 +222,21 @@ Supabase project from auto-pausing.
 
 ## Diario & materialization
 
+The Diario logging UX groups entries by meal. The four canonical sections —
+Breakfast, Lunch, Snack, and Dinner — **always render**, even when empty; the
+`other` fallback bucket appears only when it has entries. Each section header
+shows the meal's **kcal subtotal** (or a "— sin registros / — nothing logged"
+label when empty) alongside an add ("+") button that opens the full
+`MealLogDialog`. Below any logged entries, a **quick-add chip strip** lists
+recent and most-frequent recipes derived from the user's `meal_logs` — recent
+entries (logged within ~14 days) first, then backfilled by most-logged frequency over a ~60-day history, capped to a short list (≈6).
+Tapping a chip logs **1 serving** of that recipe to the section's meal type
+instantly (via `createMealLog`) and fires an **undo toast** ("Deshacer /
+Undo") that calls `deleteMealLog` on the just-created entry and invalidates
+the query, reverting as if the tap never happened. This is presentational and
+logging UX only — no schema, RPC, or edge function was added or changed for
+this layer.
+
 The plan is the default truth of what was eaten. When a Diario date has no
 `from_plan = true` `meal_logs` yet, the active-week slots for that date are
 auto-materialized into `meal_logs` with `from_plan = true` and
