@@ -405,7 +405,7 @@ reference shard carries it (never edit the decision entry).
   hand-mirrored client query/dedup logic and the edge's mirrored
   `materializePlanForDate` + duplicated `MEAL_TYPE_ORDER` removed (single
   source = the RPC). **Migration AND code both gated to Wave-3 (apply
-  migration → then merge PR #<n>): unlike the other staged items R-12's CODE
+  migration → then merge PR #38): unlike the other staged items R-12's CODE
   depends on the migration — the RPC must exist in prod before this code
   (which calls it) merges, else materialization breaks.** PR HELD, auto-merge
   NOT enabled. NOT done until the operator applies the migration then merges
