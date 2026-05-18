@@ -251,7 +251,26 @@ reference shard carries it (never edit the decision entry).
 ## R-08 — Drop 4 dead tdee_estimates cols; wire mifflinStJeor as derived "Estimated BMR" display
 - **decision:** D-B5
 - **blocked-by:** R-00
-- **status:** todo
+- **status:** in-progress — 4 dead cols (`bmr_kcal`, `activity_kcal`,
+  `neat_residual_kcal`, `workout_kcal_logged`) removed from
+  `src/types/database.ts` `tdee_estimates` Row/Insert/Update (grep-confirmed
+  no code read/wrote them — the R-07 edge rewrite already wrote nothing to
+  them); R-07's `confidence`/`is_warmup`/`tdee_state` left intact. BMR display
+  wired: `estimatedBmr` (+ `ageYearsFromBirthDate`) pure helpers in
+  `src/lib/macros.ts` — derived, never-stored (same pattern as
+  `computeTargetWeightKg`; returns `null` on incomplete profile/no
+  measurement), surfaced on `/progreso` in `LatestMeasurementCard` alongside
+  the other latest body metrics (rationale: that card already shows
+  weight/bf%/muscle%/water% and BMR is a body metric that moves with weight;
+  most consistent placement). Display only — never feeds protein/TDEE/targets
+  (D-A6/D-B5 guardrail). i18n `metricas.fields.estimatedBmr`/`estimatedBmrHelp`
+  ES+EN; deterministic Vitest added for both new helpers. The
+  `ALTER TABLE … DROP COLUMN` of the 4 cols is **staged**, not applied:
+  `supabase/migrations/20260518050000_r08_drop_dead_tdee_cols.sql` (staged
+  header, timestamped after R-00 baseline + sprint9 + R-03 `20260518030000`
+  + R-14 `20260518040000`; independent/order-free wrt R-07's separately-staged
+  `20260518020000`; applied by the operator at the Wave-3 prod checkpoint —
+  live DB untouched). NOT done until the prod drop.
 - **scope:**
   1. DB migration: drop `bmr_kcal`, `activity_kcal`, `neat_residual_kcal`,
      `workout_kcal_logged` from `tdee_estimates` (new file in

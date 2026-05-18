@@ -295,9 +295,9 @@ Adaptive TDEE cache, recomputed weekly by an Edge Function. Index `idx_tdee_user
 | `neat_residual_kcal` | `numeric(7,1)` |
 | `created_at` | `timestamptz` not null default `now()` |
 
-> ⚠ Changing — see R-08 (D-B5)
+> ⚠ Changing — see R-08 (D-B5) — column drop only
 
-The four columns `bmr_kcal`, `activity_kcal`, `neat_residual_kcal`, and `workout_kcal_logged` are always-null/unused today — they are never written by the `recalculate-tdee` Edge Function and are slated for removal (BMR becomes a derived, never-stored display value).
+The four columns `bmr_kcal`, `activity_kcal`, `neat_residual_kcal`, and `workout_kcal_logged` were always-null/unused energy-breakdown scaffolding (§6.4: `activity_kcal = TDEE − BMR` + a workout/NEAT split gated on a non-existent Workouts module, built on the replaced two-endpoint model — any future expenditure decomposition is owned by the R-07 adaptive-TDEE spec). They are **removed from `src/types/database.ts` and unused in code** (the `recalculate-tdee` Edge Function never wrote them). The physical `ALTER TABLE … DROP COLUMN` is **staged** (`supabase/migrations/20260518050000_r08_drop_dead_tdee_cols.sql`) and applied at the Wave-3 prod-migration checkpoint — the live columns still physically exist in prod until then, hence the lingering `⚠ R-08` on the column-drop aspect only. BMR is now wired as a derived, never-stored display value (`estimatedBmr` in `src/lib/macros.ts`, surfaced on `/progreso`). This drop is independent and order-free with respect to R-07's separately-staged additive `confidence`/`is_warmup`/`tdee_state` migration (disjoint column sets; either may apply first).
 
 ## Row-Level Security
 
