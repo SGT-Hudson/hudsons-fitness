@@ -429,7 +429,17 @@ reference shard carries it (never edit the decision entry).
 ## R-14 — Drop profiles.units; purge from types
 - **decision:** D-E3
 - **blocked-by:** R-00
-- **status:** todo
+- **status:** in-progress — `units` removed from `src/types/database.ts`
+  (`profiles` Row/Insert/Update); `profiles.units` was fully code-dead
+  (grep-verified: no read/write anywhere — the unrelated
+  `unit_type`/recipe-`units`/diario-`units.*`/`unitSuffix`/composition
+  `UnitToggle` tokens are out of scope), so this is a types-only change with
+  no app-code edits. The `ALTER TABLE … DROP COLUMN units` is **staged**, not
+  applied: `supabase/migrations/20260518040000_r14_drop_units.sql` (staged
+  header, timestamped after R-00 baseline + sprint9 + R-03's
+  `20260518030000`; applied by the operator at the Wave-3 prod-migration
+  checkpoint — prod apply gated, live DB untouched). NOT done until the prod
+  drop.
 - **scope:**
   1. DB migration: `ALTER TABLE profiles DROP COLUMN units;` (new file in
      `supabase/migrations/`).
