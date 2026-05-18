@@ -518,6 +518,22 @@ supabase db reset            # applies supabase/migrations/* to a local DB
 supabase db diff --linked    # diff local migration state vs the linked prod DB
 ```
 
+**Regenerate `src/types/database.ts` (R-04).** The DB types are generated
+from the live schema, not hand-written. After any applied schema change,
+regenerate and commit the file:
+
+```bash
+supabase gen types typescript --project-id upvraruehzurbetzrxov > src/types/database.ts
+```
+
+Then **re-apply the post-generation corrections** (the generator cannot infer
+SQL-function argument nullability and emits every text arg as non-null
+`string`): restore `string | null` on `save_recipe.Args.{p_recipe_id,
+p_description,p_instructions}` and `save_template.Args.p_template_id` (a null
+id means "create new"). The marker comment above the `Functions` block in the
+file documents this; see `conventions.md` (generated-types caveats). Verify
+with `pnpm typecheck && pnpm lint && pnpm build` before committing.
+
 Tier-3 DB/RLS/RPC tests (R-16) can now stand up a local DB from this history
 via `supabase start` + pgTAP; the generated-types switch (R-04) and the
 staged `bone_kg` (R-03), `profiles.units` (R-14), dead-`tdee_estimates`-cols
