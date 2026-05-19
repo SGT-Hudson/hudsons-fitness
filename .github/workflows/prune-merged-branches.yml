@@ -28,7 +28,9 @@ jobs:
           gh api "repos/$REPO/branches" --paginate --jq '.[].name' \
             | grep -E '^claude/' \
             | while read -r br; do
-                state=$(gh pr list --head "$br" --state all --json state --jq '.[0].state // "NONE"')
+                # --repo is required: this job has no checkout, so gh would
+                # otherwise shell to git for repo context and fail.
+                state=$(gh pr list --repo "$REPO" --head "$br" --state all --json state --jq '.[0].state // "NONE"')
                 if [ "$state" = "MERGED" ]; then
                   echo "pruning merged branch: $br"
                   gh api -X DELETE "repos/$REPO/git/refs/heads/$br" || true
