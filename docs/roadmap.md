@@ -65,7 +65,10 @@ reference shard carries it (never edit the decision entry).
 ## R-01 — ★ Library Contribution & Lifecycle Model (Phase 1 migration; Phase 2 reaper)
 - **decision:** D-A2, D-A3, D-A4
 - **blocked-by:** R-00
-- **status:** todo
+- **status:** spec+plan ready (2026-05-18) — awaiting user review before
+  implementation
+- **spec:** `docs/superpowers/specs/2026-05-18-library-model-phase1-design.md`
+- **plan:** `docs/superpowers/plans/2026-05-18-library-model-phase1-plan.md`
 - **scope:** Build the unified ★ Library Contribution & Lifecycle Model
   covering ingredients and recipes. Phase 1 migration: replace per-user
   hard-delete and the recipe `deleted_at` soft-delete + partial unique index
