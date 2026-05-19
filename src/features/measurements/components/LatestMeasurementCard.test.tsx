@@ -9,6 +9,15 @@ vi.mock('@/features/profile/hooks', () => ({
   }),
 }));
 
+// Mocked the same way as useProfile — isolate the presentational card.
+// Fixed values yield an on_track ETA (trend 78.0 → target ~72.9, cutting).
+vi.mock('@/features/tdee/hooks', () => ({
+  useLatestTdee: () => ({
+    data: { avg_kcal_intake: 2000, estimated_tdee_kcal: 2350 },
+  }),
+  useTdeeState: () => ({ data: { trend_weight_kg: 78.0 } }),
+}));
+
 const latest = {
   id: 'm1',
   measured_on: '2026-05-18',
@@ -57,5 +66,22 @@ describe('LatestMeasurementCard', () => {
       />,
     );
     expect(screen.queryByText(/objetivo|to goal/i)).toBeNull();
+  });
+
+  it('renders the goal-date ETA line when on track toward the target', () => {
+    render(
+      <LatestMeasurementCard
+        latest={latest}
+        todayEntry={latest}
+        loading={false}
+        onLogToday={() => {}}
+        onEditToday={() => {}}
+        smoothed={smoothed}
+        recent={[latest]}
+        phaseType="cut"
+        targetBodyFatPct={12}
+      />,
+    );
+    expect(screen.getByText(/≈/)).toBeInTheDocument();
   });
 });
