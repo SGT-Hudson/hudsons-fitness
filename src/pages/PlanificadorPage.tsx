@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeftRight, FileBox, Save, Sparkles } from 'lucide-react';
+import { ArrowLeftRight, FileBox, Save, ShoppingCart, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ApplyTemplateDialog } from '@/features/planning/components/ApplyTemplateDialog';
 import { SaveAsTemplateDialog } from '@/features/planning/components/SaveAsTemplateDialog';
+import { ShoppingListDialog } from '@/features/planning/components/ShoppingListDialog';
 import { WeekGrid } from '@/features/planning/components/WeekGrid';
 import {
   useActiveWeek,
@@ -37,6 +38,7 @@ export function PlanificadorPage() {
 
   const [applyOpen, setApplyOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
+  const [shoppingOpen, setShoppingOpen] = useState(false);
 
   async function handleApply(templateId: string) {
     await apply.mutateAsync({ templateId, targetDate: today });
@@ -85,6 +87,14 @@ export function PlanificadorPage() {
           >
             <Save className="h-4 w-4" />
             {t('planner.saveAsTemplate')}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShoppingOpen(true)}
+            disabled={!week.data || week.data.slots.length === 0}
+          >
+            <ShoppingCart className="h-4 w-4" />
+            {t('shopping.open')}
           </Button>
         </div>
       </div>
@@ -183,6 +193,11 @@ export function PlanificadorPage() {
         weekStart={weekStart}
         onSave={handleSaveAs}
         busy={saveAs.isPending}
+      />
+      <ShoppingListDialog
+        open={shoppingOpen}
+        onOpenChange={setShoppingOpen}
+        weekStart={weekStart}
       />
     </div>
   );

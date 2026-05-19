@@ -1,0 +1,37 @@
+version: 2
+updates:
+  # App dependencies (pnpm-lock.yaml). The bot proposes ONLY minor/patch,
+  # grouped into one weekly PR that rides the D-F7 flow (CI-gated → auto-merge
+  # into develop/staging → promote). Majors are ignored entirely: framework
+  # majors (React 19, i18next 26, …) are adopted deliberately, never by the
+  # bot. (Security alerts for ignored majors still surface in the UI / via
+  # Dependabot security updates — act on those manually.)
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: develop
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  # GitHub Actions: low-risk; keep current including majors, one grouped PR.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: develop
+    open-pull-requests-limit: 3
+    groups:
+      gh-actions:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+          - major

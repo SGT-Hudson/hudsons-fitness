@@ -6,17 +6,24 @@ on:
   push:
     branches: [main, develop]
 
+# Cancel superseded in-flight runs on the same ref for PRs (a new push
+# obsoletes the old run), but let push runs on main/develop finish — every
+# protected-branch commit deserves a full build.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: pnpm
@@ -29,3 +36,28 @@ jobs:
 
       # Tier-1 tests (D-F1 ruling, R-16): pure-logic unit tests via Vitest.
       - run: pnpm test
+
+  # Deno-side guard for the edge functions. `deno lint` covers every function
+  # (syntactic — resolves no imports, so the Vitest parity test is fine).
+  # `deno check` is scoped to the D-F3/R-17 shared-core import chain only:
+  # the non-test `_shared/*.ts` pulls in src/core/*, proving that boundary
+  # stays Deno-resolvable — the exact silent-breakage class (an `@/` Vite
+  # alias creeping into the shared core) that Node/Vitest cannot catch.
+  # Full per-entrypoint `deno check` is deferred: the function bodies have
+  # pre-existing supabase-js generic strictness under Deno (runtime-harmless —
+  # prod crons work). Tracked follow-up before promoting this to a required
+  # status check.
+  edge-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Deno lint (all functions) + type-check (shared-core chain)
+        run: |
+          deno lint --config supabase/functions/deno.json supabase/functions
+          deno check --config supabase/functions/deno.json \
+            $(git ls-files 'supabase/functions/_shared/*.ts' | grep -v '\.test\.ts$')
