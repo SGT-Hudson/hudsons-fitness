@@ -1,0 +1,39 @@
+name: release-tag
+
+# Tag + GitHub Release when a release/* promotion merges into main (D-F7).
+# Tag is derived deterministically from the release branch name:
+#   release/2026-05-19  ->  v2026-05-19
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Create tag + GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          tag="v${HEAD_REF#release/}"
+          tag="${tag//\//-}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release $tag already exists; skipping."
+            exit 0
+          fi
+          gh release create "$tag" --target main --title "$tag" \
+            --notes "Production promotion via PR #${PR_NUM}. Changelog: docs/changelog.md."
