@@ -268,6 +268,13 @@ possible; behavior changes only as the spec dictates.
       `in-progress`; at Wave-3 apply → `done (<date>)` and remove the
       data-model callout. (This plan PR only sets spec+plan-ready — see
       "Doc bookkeeping" below.)
+- [ ] `CLAUDE.md` invariant #3: the second sanctioned `SECURITY DEFINER`
+      exception (`reconcile_account_delete`) is added to invariant #3 **in
+      this spec PR**, marked `⚠ staged, not yet applied; see R-01` (per
+      invariant #7 — the function is not built yet). At Wave-3 apply,
+      **drop only the `⚠ staged, not yet applied` qualifier** (the
+      exception becomes live), exactly as the data-model callout is removed
+      at Wave-3 — do not re-list or re-decide it.
 - **Verify:** no edit to `docs/decisions.md`; cross-refs by ID/anchor.
 
 ---
@@ -296,5 +303,9 @@ This PR (design only, not merged until user-approved) does **only**:
 - `docs/roadmap.md` R-01 `status:` →
   `spec+plan ready (2026-05-18) — awaiting user review before implementation`,
   with pointers to the spec + plan paths.
+- `CLAUDE.md` invariant #3: adds the second sanctioned `SECURITY DEFINER`
+  exception `reconcile_account_delete`, marked `⚠ staged, not yet applied;
+  see R-01` (user-decided §13 Q4 = Option A; the marker keeps invariant #7
+  satisfied until Wave-3).
 - Touches no other roadmap entry, not `docs/decisions.md`, no code, no
   migrations, no live DB/edge.

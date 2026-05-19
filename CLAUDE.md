@@ -20,7 +20,7 @@ pnpm preview      # preview ./dist locally
 ## Hard invariants (never violate)
 1. Metric-only (kg/cm/g).
 2. DB is canonical; RLS is the sole security boundary (repo is public).
-3. Any >1-table atomic mutation is an RPC (`SECURITY INVOKER` + `set search_path = public`); the cron-only `apply_template_to_week_admin` is the documented `SECURITY DEFINER` exception.
+3. Any >1-table atomic mutation is an RPC (`SECURITY INVOKER` + `set search_path = public`); the cron-only `apply_template_to_week_admin` is the documented `SECURITY DEFINER` exception. A second sanctioned `SECURITY DEFINER` exception — `reconcile_account_delete` (account-delete reconciliation; service-role/edge-only, granted to no role) — is `> ⚠ Changing — see R-01` (decided, staged, not yet applied).
 4. `pnpm lint` + `pnpm build` (CI-enforced) must pass before merge; work on a short-lived branch → PR → CI → auto-merge to `main`.
 5. BMR (Mifflin-St Jeor) and target-weight are derived — never stored.
 6. Convert units/fractions only at the form boundary via shared helpers.

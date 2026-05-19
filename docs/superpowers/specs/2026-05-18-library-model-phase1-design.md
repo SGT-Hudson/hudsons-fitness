@@ -453,6 +453,16 @@ filter" to "join through my refs" (library views) or "search the pool"
 | Types | `src/types/database.ts` | hand-written `recipes.deleted_at`, `recipes.user_id` | Remove `deleted_at`; rename/redefine owner column; add `user_ingredient_refs` / `user_recipe_refs` tables + `hide_owned_*` RPCs. Becomes automatic once R-04 generated-types lands; hand-edit until then. |
 | Edge: `delete-account` | `supabase/functions/delete-account/index.ts` | blanket CASCADE | Reworked — see §8. |
 
+**Intentional search/picker asymmetry (§13 Q3, decided).** Ingredient
+*search* (`searchLocalIngredients`) stays a **pool** query while the recipe
+*picker* in templates/plans becomes **my-library**. This is deliberate, not
+an inconsistency: ingredient search is an explicit *find/import* flow
+(discovery is the point), whereas the recipe picker is a *compose-from-what-
+I-have* flow where surfacing strangers' recipes is a UX/accident hazard and
+a behavior change from today's implicitly-private picker. Pool recipe
+discovery remains available as a separate explicit "browse library"
+affordance. Do not "fix" this asymmetry to look uniform.
+
 **`pg_trgm` note.** The trigram gin indexes on `ingredients.name`/`brand`
 stay on the pooled table (search is over the pool — correct). No new trigram
 index is needed on refs. "My library search" = pool trigram search filtered
@@ -563,9 +573,16 @@ insurance for Phase 2.
   (they did *not* creator-hide — they just removed it from their list).
   It is still pool-discoverable and they can re-add it. (Whether "drop my
   ref while I'm the sole real owner" should auto-transfer to anon is a
-  **product question — see §13**; spec default: it does NOT auto-transfer,
-  to keep Phase-1 logic minimal and avoid surprising ownership loss.
-  Phase-2's reaper handles eventual cleanup of unreferenced anon-able items.)
+  **product question — see §13 Q2**; spec default, **decided**: it does
+  NOT auto-transfer, to keep Phase-1 logic minimal and avoid surprising,
+  irreversible ownership loss.) **Known Phase-1 residual:** this leaves a
+  class of *real-owner-owned, zero-reference* pooled rows. The Phase-2
+  reaper only ever touches **anon-owned** items (§12), so it does **not**
+  reclaim these — they persist until the owner's account is deleted, at
+  which point `delete-account` reconciliation reassigns them to anon (§8)
+  and only then are they Phase-2-reapable. This residual is accepted for
+  Phase 1; widening the reaper predicate or an owner-prompted cleanup is
+  explicitly deferred and is **not** covered by the current Phase-2 design.
 - **System-seed immutability preserved.** `created_by_user_id IS NULL`
   still matches no UPDATE/DELETE policy → unchanged behavior; backfill never
   creates refs or rewrites owners for seeds.
