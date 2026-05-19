@@ -105,6 +105,13 @@
     "markStaple": "Siempre lo tengo (ocultar del total)",
     "unmarkStaple": "Volver a añadir a la lista",
     "showStaples": "Mostrar {{count}} que siempre tienes",
-    "hideStaples": "Ocultar los que siempre tienes"
+    "hideStaples": "Ocultar los que siempre tienes",
+    "share": "Compartir",
+    "copied": "Lista copiada al portapapeles",
+    "shareFailed": "No se pudo compartir la lista",
+    "extrasTitle": "Extras",
+    "addExtraPlaceholder": "Añadir artículo (p. ej. café)…",
+    "addExtra": "Añadir artículo",
+    "removeExtra": "Quitar"
   }
 }

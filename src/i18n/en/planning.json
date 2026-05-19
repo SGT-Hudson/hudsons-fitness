@@ -105,6 +105,13 @@
     "markStaple": "Always have it (hide from total)",
     "unmarkStaple": "Add back to the list",
     "showStaples": "Show {{count}} you always have",
-    "hideStaples": "Hide always-have items"
+    "hideStaples": "Hide always-have items",
+    "share": "Share",
+    "copied": "List copied to clipboard",
+    "shareFailed": "Couldn't share the list",
+    "extrasTitle": "Extras",
+    "addExtraPlaceholder": "Add an item (e.g. coffee)…",
+    "addExtra": "Add item",
+    "removeExtra": "Remove"
   }
 }
