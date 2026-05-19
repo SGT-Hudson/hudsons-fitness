@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
+import type { ShoppingSlotInput } from './shopping';
 
 export type PlanWeek = Tables<'meal_plan_weeks'>;
 export type PlanWeekSlot = Tables<'meal_plan_week_slots'>;
@@ -89,6 +90,84 @@ export async function fetchActiveWeek(
           a.display_order - b.display_order,
       ),
   };
+}
+
+// Pulls one week's planned slots with everything the pure shopping
+// aggregator needs (recipe servings + each ingredient line's
+// quantity/per_serving + the ingredient's display fields). Read-only,
+// RLS-scoped to the user; returns null when no week exists yet.
+export async function fetchWeekShopping(
+  userId: string,
+  weekStart: string,
+): Promise<ShoppingSlotInput[] | null> {
+  const { data, error } = await supabase
+    .from('meal_plan_weeks')
+    .select(
+      `id,
+       meal_plan_week_slots (
+         servings,
+         recipe:recipes (
+           servings,
+           recipe_ingredients (
+             quantity, per_serving,
+             ingredient:ingredients (id, name, brand, unit_type)
+           )
+         )
+       )`,
+    )
+    .eq('user_id', userId)
+    .eq('week_start', weekStart)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+
+  interface RawIng {
+    id: string;
+    name: string;
+    brand: string | null;
+    unit_type: string;
+  }
+  interface RawRi {
+    quantity: number;
+    per_serving: boolean;
+    ingredient: RawIng | RawIng[] | null;
+  }
+  interface RawRecipe {
+    servings: number;
+    recipe_ingredients: RawRi[];
+  }
+  interface RawSlot {
+    servings: number;
+    recipe: RawRecipe | RawRecipe[] | null;
+  }
+  const raw = data as unknown as { meal_plan_week_slots: RawSlot[] };
+
+  return raw.meal_plan_week_slots.flatMap((s) => {
+    const recipe = Array.isArray(s.recipe) ? s.recipe[0] : s.recipe;
+    if (!recipe) return [];
+    return [
+      {
+        recipeServings: Number(recipe.servings),
+        slotServings: Number(s.servings),
+        ingredients: (recipe.recipe_ingredients ?? [])
+          .map((ri) => {
+            const ing = Array.isArray(ri.ingredient)
+              ? ri.ingredient[0]
+              : ri.ingredient;
+            if (!ing) return null;
+            return {
+              ingredientId: ing.id,
+              name: ing.name,
+              brand: ing.brand,
+              unitType: ing.unit_type,
+              quantity: Number(ri.quantity),
+              perServing: ri.per_serving,
+            };
+          })
+          .filter((x): x is NonNullable<typeof x> => x !== null),
+      } satisfies ShoppingSlotInput,
+    ];
+  });
 }
 
 export async function applyTemplateToWeek(

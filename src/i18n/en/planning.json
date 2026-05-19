@@ -90,5 +90,13 @@
     "errors": {
       "nameRequired": "Give the template a name."
     }
+  },
+  "shopping": {
+    "open": "Shopping list",
+    "title": "Shopping list",
+    "subtitle": "Everything you need for the planned week.",
+    "empty": "Nothing to buy — the planned week has no recipes.",
+    "clearChecked": "Uncheck all",
+    "unit": "units"
   }
 }

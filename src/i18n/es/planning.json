@@ -90,5 +90,13 @@
     "errors": {
       "nameRequired": "Pon un nombre a la plantilla."
     }
+  },
+  "shopping": {
+    "open": "Lista de la compra",
+    "title": "Lista de la compra",
+    "subtitle": "Ingredientes que necesitas para la semana planificada.",
+    "empty": "Nada que comprar — la semana planificada no tiene recetas.",
+    "clearChecked": "Desmarcar todo",
+    "unit": "ud"
   }
 }
