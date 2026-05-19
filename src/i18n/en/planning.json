@@ -94,9 +94,17 @@
   "shopping": {
     "open": "Shopping list",
     "title": "Shopping list",
-    "subtitle": "Everything you need for the planned week.",
+    "subtitle": "You cook whole recipes — these are the amounts for the full batches you need this week.",
     "empty": "Nothing to buy — the planned week has no recipes.",
     "clearChecked": "Uncheck all",
-    "unit": "units"
+    "unit": "units",
+    "viewTotal": "Total",
+    "viewByRecipe": "By recipe",
+    "cook": "Cook {{count}}×",
+    "yield": "makes {{produced}} · you eat {{consumed}} · {{leftover}} leftover",
+    "markStaple": "Always have it (hide from total)",
+    "unmarkStaple": "Add back to the list",
+    "showStaples": "Show {{count}} you always have",
+    "hideStaples": "Hide always-have items"
   }
 }

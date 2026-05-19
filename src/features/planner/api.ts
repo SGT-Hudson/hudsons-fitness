@@ -107,7 +107,7 @@ export async function fetchWeekShopping(
        meal_plan_week_slots (
          servings,
          recipe:recipes (
-           servings,
+           id, name, servings,
            recipe_ingredients (
              quantity, per_serving,
              ingredient:ingredients (id, name, brand, unit_type)
@@ -133,6 +133,8 @@ export async function fetchWeekShopping(
     ingredient: RawIng | RawIng[] | null;
   }
   interface RawRecipe {
+    id: string;
+    name: string;
     servings: number;
     recipe_ingredients: RawRi[];
   }
@@ -147,6 +149,8 @@ export async function fetchWeekShopping(
     if (!recipe) return [];
     return [
       {
+        recipeId: recipe.id,
+        recipeName: recipe.name,
         recipeServings: Number(recipe.servings),
         slotServings: Number(s.servings),
         ingredients: (recipe.recipe_ingredients ?? [])
