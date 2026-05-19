@@ -1,17 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutGrid, List, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { LayoutGrid, List, Pencil, Plus, Search, Star, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRecipes, useSoftDeleteRecipe } from '@/features/recipes/hooks';
+import { partitionFavorites, toggleFavorite } from '@/features/recipes/favorites';
 import { formatDate, type Locale } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
 type View = 'grid' | 'list';
 const STORAGE_KEY = 'hudsons-fitness-recetas-view';
+const FAV_STORAGE_KEY = 'hudsons-fitness-recetas-favorites';
+
+function loadFavorites(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = window.localStorage.getItem(FAV_STORAGE_KEY);
+    return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
 
 export function RecetasPage() {
   const { t, i18n } = useTranslation('recetas');
@@ -24,10 +36,22 @@ export function RecetasPage() {
     return (window.localStorage.getItem(STORAGE_KEY) as View) || 'grid';
   });
   const [query, setQuery] = useState('');
+  const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, view);
   }, [view]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      FAV_STORAGE_KEY,
+      JSON.stringify([...favorites]),
+    );
+  }, [favorites]);
+
+  function handleToggleFav(id: string) {
+    setFavorites((prev) => toggleFavorite(prev, id));
+  }
 
   const recipes = useRecipes();
   const del = useSoftDeleteRecipe();
@@ -38,6 +62,11 @@ export function RecetasPage() {
     if (q === '') return recipes.data;
     return recipes.data.filter((r) => r.name.toLowerCase().includes(q));
   }, [recipes.data, query]);
+
+  const ordered = useMemo(
+    () => partitionFavorites(filtered, favorites),
+    [filtered, favorites],
+  );
 
   function handleDelete(id: string, name: string) {
     if (!window.confirm(t('list.deleteConfirm', { name }))) return;
@@ -110,7 +139,7 @@ export function RecetasPage() {
         </Card>
       ) : view === 'grid' ? (
         <ul className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((r) => (
+          {ordered.map((r) => (
             <li key={r.id}>
               <Card className="h-full hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
@@ -130,6 +159,20 @@ export function RecetasPage() {
                     {t('list.updated', { date: formatDate(r.updated_at, 'd MMM yyyy', locale) })}
                   </p>
                   <div className="flex justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={favorites.has(r.id) ? t('favorite.remove') : t('favorite.add')}
+                      aria-pressed={favorites.has(r.id)}
+                      onClick={() => handleToggleFav(r.id)}
+                    >
+                      <Star
+                        className={cn(
+                          'h-4 w-4',
+                          favorites.has(r.id) && 'fill-amber-400 text-amber-400',
+                        )}
+                      />
+                    </Button>
                     <Button asChild variant="ghost" size="icon" aria-label={tCommon('edit')}>
                       <Link to={`/recetas/${r.id}`}>
                         <Pencil className="h-4 w-4" />
@@ -152,7 +195,7 @@ export function RecetasPage() {
       ) : (
         <Card>
           <ul className="divide-y">
-            {filtered.map((r) => (
+            {ordered.map((r) => (
               <li
                 key={r.id}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-accent/40 transition-colors"
@@ -172,6 +215,20 @@ export function RecetasPage() {
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={favorites.has(r.id) ? t('favorite.remove') : t('favorite.add')}
+                    aria-pressed={favorites.has(r.id)}
+                    onClick={() => handleToggleFav(r.id)}
+                  >
+                    <Star
+                      className={cn(
+                        'h-4 w-4',
+                        favorites.has(r.id) && 'fill-amber-400 text-amber-400',
+                      )}
+                    />
+                  </Button>
                   <Button asChild variant="ghost" size="icon" aria-label={tCommon('edit')}>
                     <Link to={`/recetas/${r.id}`}>
                       <Pencil className="h-4 w-4" />

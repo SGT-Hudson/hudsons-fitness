@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus } from 'lucide-react';
+import { CopyPlus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CopyDayDialog } from '@/features/diario/components/CopyDayDialog';
 import { DateNavigator } from '@/features/diario/components/DateNavigator';
 import { DayTotalsCard, type ProteinBasis } from '@/features/diario/components/DayTotalsCard';
 import { MealLogDialog } from '@/features/diario/components/MealLogDialog';
@@ -33,6 +34,7 @@ export function DiarioPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMealType, setDialogMealType] = useState<MealType>('breakfast');
   const [editing, setEditing] = useState<MealLogWithJoins | null>(null);
+  const [copyOpen, setCopyOpen] = useState(false);
 
   const logs = useMealLogsForDay(date);
   const latestMeasurement = useLatestMeasurement();
@@ -124,10 +126,16 @@ export function DiarioPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
-        <Button onClick={() => openNew('breakfast')}>
-          <Plus className="h-4 w-4" />
-          {t('addEntry')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setCopyOpen(true)}>
+            <CopyPlus className="h-4 w-4" />
+            {t('copyDay.open')}
+          </Button>
+          <Button onClick={() => openNew('breakfast')}>
+            <Plus className="h-4 w-4" />
+            {t('addEntry')}
+          </Button>
+        </div>
       </div>
 
       <DateNavigator date={date} onChange={changeDate} />
@@ -186,6 +194,12 @@ export function DiarioPage() {
         loggedOn={date}
         initialMealType={dialogMealType}
         editing={editing}
+      />
+
+      <CopyDayDialog
+        open={copyOpen}
+        onOpenChange={setCopyOpen}
+        targetDate={date}
       />
     </div>
   );
