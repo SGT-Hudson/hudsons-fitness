@@ -11,6 +11,7 @@ import {
   applyTemplateToWeek,
   deleteWeekSlot,
   fetchActiveWeek,
+  fetchWeekShopping,
   saveWeekAsTemplate,
   updateWeekSlot,
 } from './api';
@@ -21,6 +22,15 @@ export function useActiveWeek(weekStart: string) {
     enabled: !!user,
     queryKey: ['planner', 'week', user?.id, weekStart],
     queryFn: () => fetchActiveWeek(user!.id, weekStart),
+  });
+}
+
+export function useWeekShopping(weekStart: string, enabled = true) {
+  const { user } = useAuth();
+  return useQuery({
+    enabled: !!user && enabled,
+    queryKey: ['planner', 'shopping', user?.id, weekStart],
+    queryFn: () => fetchWeekShopping(user!.id, weekStart),
   });
 }
 

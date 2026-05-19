@@ -90,5 +90,29 @@
     "errors": {
       "nameRequired": "Pon un nombre a la plantilla."
     }
+  },
+  "shopping": {
+    "open": "Lista de la compra",
+    "title": "Lista de la compra",
+    "subtitle": "Cocinas recetas enteras: estas son las cantidades para los lotes completos que necesitas esta semana.",
+    "empty": "Nada que comprar — la semana planificada no tiene recetas.",
+    "clearChecked": "Desmarcar todo",
+    "unit": "ud",
+    "viewTotal": "Total",
+    "viewByRecipe": "Por receta",
+    "cook": "Cocina {{count}}×",
+    "yield": "rinde {{produced}} · comes {{consumed}} · sobran {{leftover}}",
+    "markStaple": "Siempre lo tengo (ocultar del total)",
+    "unmarkStaple": "Volver a añadir a la lista",
+    "showStaples": "Mostrar {{count}} que siempre tienes",
+    "hideStaples": "Ocultar los que siempre tienes",
+    "share": "Compartir",
+    "copy": "Copiar",
+    "copied": "Lista copiada al portapapeles",
+    "copyFailed": "No se pudo copiar la lista",
+    "extrasTitle": "Extras",
+    "addExtraPlaceholder": "Añadir artículo (p. ej. café)…",
+    "addExtra": "Añadir artículo",
+    "removeExtra": "Quitar"
   }
 }
