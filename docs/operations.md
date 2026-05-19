@@ -68,8 +68,10 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
 - **Discipline:** keep branches short-lived and single-purpose; never push
   directly to `main`/`develop`.
 - **Supporting automation:** `auto-merge.yml` (arms squash auto-merge on
-  `develop` PRs), `delete-merged-branch.yml` (prunes merged feature branches —
-  `delete_branch_on_merge` does not fire on the auto-merge bot path),
+  `develop` PRs), `prune-merged-branches.yml` (scheduled daily — deletes
+  merged `claude/*` branches; a `closed`-triggered workflow and
+  `delete_branch_on_merge` both fail here because the auto-merge bot's merge
+  does not trigger workflows, so cleanup must be time-triggered),
   `backmerge.yml` (opens a `do-not-merge` `main`→`develop` PR after a
   release/hotfix), `release-tag.yml` (tags + GitHub Release on a
   `release/*`→`main` merge), Dependabot (grouped, weekly, targets
