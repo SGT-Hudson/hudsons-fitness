@@ -1,0 +1,40 @@
+name: backmerge-main-to-develop
+
+# After a release promotion or hotfix lands on main, main has commits
+# develop lacks. Open a main->develop PR so they reconverge (D-F7). It is
+# labeled do-not-merge so auto-merge.yml skips it (squash-merging main into
+# develop would be wrong, and would let delete-merged-branch try to delete
+# main) — you merge it manually with a MERGE COMMIT.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  backmerge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Open back-merge PR if main is ahead of develop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch -q origin develop
+          if [ -z "$(git rev-list origin/develop..origin/main)" ]; then
+            echo "develop already contains main; nothing to back-merge."
+            exit 0
+          fi
+          if [ "$(gh pr list --base develop --head main --state open --json number --jq 'length')" != "0" ]; then
+            echo "back-merge PR already open."
+            exit 0
+          fi
+          gh pr create --base develop --head main \
+            --title "chore: back-merge main → develop" \
+            --body "Automated (D-F7): \`main\` has release/hotfix commits not on \`develop\`. Merge with a **merge commit** (not squash) to reconverge. Labeled \`do-not-merge\` so it is not auto-squash-merged." \
+            --label do-not-merge

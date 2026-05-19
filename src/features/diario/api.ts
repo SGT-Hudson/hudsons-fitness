@@ -1,11 +1,17 @@
 import { supabase } from '@/lib/supabase';
 import type { Tables, TablesInsert, TablesUpdate } from '@/types/database';
 import type { Ingredient } from '@/features/ingredients/api';
+import { computeRecipeMacros } from '@/features/recipes/macros';
+import type { QuickAddRow } from './quickAdd';
 
 export type MealLog = Tables<'meal_logs'>;
 export type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner' | 'other';
 
 export const MEAL_TYPE_ORDER: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner', 'other'];
+
+// Maps meal_index -> meal_type. Mirrors the SQL array indexing inside the
+// `materialize_plan_for_date` RPC; kept here only as the canonical reference
+// for UI ordering (the RPC is the single source of truth for materialization).
 
 export interface RecipeIngredientJoin {
   id: string;
@@ -135,60 +141,92 @@ export async function deleteMealLog(id: string): Promise<void> {
   if (error) throw error;
 }
 
-// Materializes plan slots into meal_logs for a given date. The plan is the
-// default truth: anything in the plan counts as eaten unless the user has
-// already deleted/edited that specific slot. Idempotent — slots that already
-// have a corresponding meal_log (matched by plan_week_slot_id) are skipped, so
-// it's safe to call on every page load.
+// Materializes plan slots into meal_logs for a given date by delegating to
+// the `materialize_plan_for_date` SECURITY INVOKER RPC (R-12 / D-D6) — the
+// single source of truth for materialization, shared by this client and the
+// `daily-nutrition-snapshot` edge cron. The RPC:
+//   - picks the active week (latest `week_start <= date`) and its slots,
+//   - inserts the missing ones as `from_plan` meal_logs carrying
+//     `plan_week_slot_id`, race-safe via the partial unique index +
+//     `ON CONFLICT DO NOTHING` (DB-level idempotency — safe on every page
+//     load, concurrent cron, double-mount, two tabs),
+//   - no-ops future dates (`date > today`, Europe/Madrid) so viewing
+//     `/diario/<future-date>` can no longer materialize future plan slots.
+// The prior hand-written client query/dedup logic (and its Deno mirror in
+// the edge function) is removed; this is now the only client caller.
 //
-// Returns how many logs were inserted (0 if everything was already in sync).
+// Returns how many logs were inserted (0 if everything was already in sync,
+// no active week/slots, or the date is in the future) — same return contract
+// `useMaterializePlan` / DiarioPage already expect.
 export async function materializePlanForDate(
   userId: string,
   loggedOn: string,
 ): Promise<number> {
-  const { data: weeks, error: weekError } = await supabase
-    .from('meal_plan_weeks')
-    .select('id')
-    .eq('user_id', userId)
-    .lte('week_start', loggedOn)
-    .order('week_start', { ascending: false })
-    .limit(1);
-  if (weekError) throw weekError;
-  if (!weeks || weeks.length === 0) return 0;
+  const { data, error } = await supabase.rpc('materialize_plan_for_date', {
+    p_user_id: userId,
+    p_date: loggedOn,
+  });
+  if (error) throw error;
+  return data ?? 0;
+}
 
-  const { data: slots, error: slotsError } = await supabase
-    .from('meal_plan_week_slots')
-    .select('id, meal_index, recipe_id, servings')
-    .eq('plan_week_id', weeks[0].id)
-    .eq('date', loggedOn);
-  if (slotsError) throw slotsError;
-  if (!slots || slots.length === 0) return 0;
-
-  const { data: existing, error: existingError } = await supabase
+// Recent recipe meal-logs (last 60 days) for the quick-add blend. Reuses the
+// same recipe→ingredients join as fetchMealLogsForDay so per-serving kcal is
+// computed from the canonical recipe-macro path. Deleted recipes are excluded
+// (interim until R-01).
+export async function fetchQuickAddRecipeRows(
+  userId: string,
+  sinceISO: string,
+): Promise<QuickAddRow[]> {
+  const { data, error } = await supabase
     .from('meal_logs')
-    .select('plan_week_slot_id')
+    .select(
+      `logged_on,
+       recipe:recipes (
+         id, name, servings, deleted_at,
+         recipe_ingredients (
+           quantity, per_serving,
+           ingredient:ingredients (*)
+         )
+       )`,
+    )
     .eq('user_id', userId)
-    .eq('logged_on', loggedOn)
-    .not('plan_week_slot_id', 'is', null);
-  if (existingError) throw existingError;
-  const usedSlotIds = new Set(
-    (existing ?? []).map((r) => r.plan_week_slot_id).filter((s): s is string => !!s),
-  );
+    .not('recipe_id', 'is', null)
+    .gte('logged_on', sinceISO)
+    .order('logged_on', { ascending: false })
+    .limit(250);
+  if (error) throw error;
 
-  const missing = slots.filter((s) => !usedSlotIds.has(s.id));
-  if (missing.length === 0) return 0;
-
-  const rows: TablesInsert<'meal_logs'>[] = missing.map((s) => ({
-    user_id: userId,
-    logged_on: loggedOn,
-    meal_type: MEAL_TYPE_ORDER[s.meal_index] ?? 'other',
-    recipe_id: s.recipe_id,
-    servings: Number(s.servings),
-    from_plan: true,
-    plan_week_slot_id: s.id,
-  }));
-
-  const { error: insertError } = await supabase.from('meal_logs').insert(rows);
-  if (insertError) throw insertError;
-  return rows.length;
+  const rows: QuickAddRow[] = [];
+  for (const r of (data ?? []) as unknown as Array<{
+    logged_on: string;
+    recipe: {
+      id: string;
+      name: string;
+      servings: number;
+      deleted_at: string | null;
+      recipe_ingredients: {
+        quantity: number;
+        per_serving: boolean;
+        ingredient: RecipeIngredientJoin['ingredient'];
+      }[];
+    } | null;
+  }>) {
+    if (!r.recipe || r.recipe.deleted_at != null) continue;
+    const { perServing } = computeRecipeMacros({
+      servings: r.recipe.servings,
+      rows: r.recipe.recipe_ingredients.map((ri) => ({
+        ingredient: ri.ingredient,
+        quantity: Number(ri.quantity),
+        perServing: ri.per_serving,
+      })),
+    });
+    rows.push({
+      recipeId: r.recipe.id,
+      name: r.recipe.name,
+      kcalPerServing: Math.round(perServing.kcal),
+      loggedOn: r.logged_on,
+    });
+  }
+  return rows;
 }

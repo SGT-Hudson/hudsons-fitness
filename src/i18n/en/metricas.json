@@ -6,7 +6,9 @@
     "bodyFatPct": "Body fat %",
     "musclePct": "Muscle %",
     "waterPct": "Water %",
-    "notes": "Notes"
+    "notes": "Notes",
+    "estimatedBmr": "Estimated BMR",
+    "estimatedBmrHelp": "Estimated basal metabolic rate (Mifflin-St Jeor) from your profile and latest weight. Informational only: recomputed, never stored, and never feeds protein, TDEE, or targets."
   },
   "latest": {
     "title": "Latest measurement",
@@ -23,7 +25,11 @@
       "yesterday": "yesterday",
       "daysAgo": "{{count}} days ago",
       "usingValues": "using the latest value"
-    }
+    },
+    "weightTrendLabel": "Weight · trend (5-day avg)",
+    "rateUnit": "kg / wk",
+    "sinceStart": "{{n}} kg since the start",
+    "toGoal": "{{n}} kg to goal ({{target}})"
   },
   "list": {
     "title": "Recent measurements",
@@ -53,7 +59,8 @@
     "weight": {
       "title": "Weight trend",
       "raw": "Daily weight",
-      "ma5": "5-day moving avg"
+      "ma5": "5-day moving avg",
+      "targetLine": "goal {{n}} kg"
     },
     "composition": {
       "title": "Body composition",

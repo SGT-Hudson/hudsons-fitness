@@ -7,16 +7,16 @@ import { requiredNumericString } from '@/lib/zod';
 //
 // Parity with the prior hand-rolled validation:
 //
-// Onboarding (`!sex || !birthDate || !heightCm || !initialWeightKg || !boneKg`
+// Onboarding (`!sex || !birthDate || !heightCm || !initialWeightKg`
 // → `t('errors.required')`, plus input min/max attributes):
 //  - sex required (one of male/female/other)
 //  - birth_date required
 //  - height_cm 100–250
 //  - initial_weight_kg 20–400
-//  - bone_kg 0.5–20  (kept as-is — R-03 removes bone_kg later, NOT in R-09;
-//    R-09 is a behavior-preserving refactor)
+//  (bone_kg was removed entirely in R-03 / D-A6 — it fed zero computations
+//  and added mandatory onboarding friction.)
 //
-// Settings biometrics (`!sex || !birthDate || !heightCm || !boneKg` →
+// Settings biometrics (`!sex || !birthDate || !heightCm` →
 // `t('errors.required')`): same fields minus initial_weight_kg (read-only).
 //
 // Settings profile card: display_name optional, trimmed to null when blank
@@ -54,7 +54,6 @@ export const onboardingFormSchema = z.object({
   birth_date: z.string().min(1),
   height_cm: numericString(100, 250),
   initial_weight_kg: numericString(20, 400),
-  bone_kg: numericString(0.5, 20),
 });
 
 // z.input is string-typed (the numericString helper), so this matches the RHF
@@ -66,7 +65,6 @@ export const biometricsFormSchema = z.object({
   sex: sexInput,
   birth_date: z.string().min(1),
   height_cm: numericString(100, 250),
-  bone_kg: numericString(0.5, 20),
 });
 
 export type BiometricsFormValues = z.input<typeof biometricsFormSchema>;

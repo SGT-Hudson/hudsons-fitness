@@ -1,5 +1,7 @@
 # Hudson's Fitness
 
+[![CI](https://github.com/SGT-Hudson/hudsons-fitness/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/SGT-Hudson/hudsons-fitness/actions/workflows/ci.yml)
+
 Bilingual (ES/EN) PWA for tracking body composition, macros, recipes, weekly meal plans, and dietary phases. React 18 + Vite + TypeScript SPA talking directly to Supabase.
 
 ## Quick start

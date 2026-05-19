@@ -3,7 +3,8 @@ import {
   computeDailyMacroTargets,
   computeTargetWeightKg,
   mifflinStJeor,
-  estimateBoneKg,
+  ageYearsFromBirthDate,
+  estimatedBmr,
   fractionToPct,
   pctToFraction,
   PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM,
@@ -237,6 +238,52 @@ describe('mifflinStJeor', () => {
   });
 });
 
+describe('ageYearsFromBirthDate (R-08 / D-B5)', () => {
+  it('counts a birthday that has already passed this year', () => {
+    expect(ageYearsFromBirthDate('1990-01-15', '2026-05-18')).toBe(36);
+  });
+
+  it('does not count a birthday still upcoming this year', () => {
+    expect(ageYearsFromBirthDate('1990-11-20', '2026-05-18')).toBe(35);
+  });
+
+  it('counts the birthday exactly on the day', () => {
+    expect(ageYearsFromBirthDate('1990-05-18', '2026-05-18')).toBe(36);
+  });
+});
+
+describe('estimatedBmr (R-08 / D-B5 — derived, never stored)', () => {
+  const ok = {
+    sex: 'male' as const,
+    birthDate: '1990-05-18',
+    heightCm: 180,
+    weightKg: 80,
+    asOfISO: '2026-05-18',
+  };
+
+  it('matches mifflinStJeor for a complete profile', () => {
+    // age = 36 → base = 800 + 1125 - 180 = 1745 ; male +5 = 1750
+    expect(estimatedBmr(ok)).toBe(1750);
+    expect(estimatedBmr(ok)).toBe(
+      mifflinStJeor({ weightKg: 80, heightCm: 180, ageYears: 36, sex: 'male' }),
+    );
+  });
+
+  it('returns null when any input is missing', () => {
+    expect(estimatedBmr({ ...ok, sex: null })).toBeNull();
+    expect(estimatedBmr({ ...ok, birthDate: null })).toBeNull();
+    expect(estimatedBmr({ ...ok, heightCm: null })).toBeNull();
+    expect(estimatedBmr({ ...ok, weightKg: null })).toBeNull();
+  });
+
+  it('returns null for non-sensible inputs', () => {
+    expect(estimatedBmr({ ...ok, sex: 'unknown' })).toBeNull();
+    expect(estimatedBmr({ ...ok, heightCm: 0 })).toBeNull();
+    expect(estimatedBmr({ ...ok, weightKg: -1 })).toBeNull();
+    expect(estimatedBmr({ ...ok, birthDate: '2030-01-01' })).toBeNull();
+  });
+});
+
 describe('fractionToPct / pctToFraction (D-B3 / R-06)', () => {
   it('fractionToPct multiplies by 100', () => {
     expect(fractionToPct(0.3)).toBeCloseTo(30, 10);
@@ -270,36 +317,5 @@ describe('fractionToPct / pctToFraction (D-B3 / R-06)', () => {
     expect(fractionToPct(1)).toBe(100);
     expect(pctToFraction(0)).toBe(0);
     expect(pctToFraction(100)).toBe(1);
-  });
-});
-
-describe('estimateBoneKg', () => {
-  it('applies the sex factor and rounds to 2 decimals', () => {
-    // base = -0.25 + 0.046*180 + 0.036*80 - 0.012*30
-    //      = -0.25 + 8.28 + 2.88 - 0.36 = 10.55
-    const base = -0.25 + 0.046 * 180 + 0.036 * 80 - 0.012 * 30;
-    const male = estimateBoneKg({
-      heightCm: 180,
-      weightKg: 80,
-      ageYears: 30,
-      sex: 'male',
-    });
-    expect(male).toBe(Math.round(base * 1.05 * 100) / 100);
-
-    const female = estimateBoneKg({
-      heightCm: 180,
-      weightKg: 80,
-      ageYears: 30,
-      sex: 'female',
-    });
-    expect(female).toBe(Math.round(base * 0.95 * 100) / 100);
-
-    const other = estimateBoneKg({
-      heightCm: 180,
-      weightKg: 80,
-      ageYears: 30,
-      sex: 'other',
-    });
-    expect(other).toBe(Math.round(base * 1.0 * 100) / 100);
   });
 });

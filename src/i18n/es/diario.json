@@ -20,7 +20,7 @@
     "other": "Otro"
   },
   "totals": {
-    "title": "Totales del día",
+    "title": "Resumen del día",
     "kcal": "Calorías",
     "protein": "Proteína",
     "carbs": "Carbohidratos",
@@ -30,7 +30,15 @@
     "proteinBasisLean": "× masa magra",
     "proteinBasisFallback": "1,6 g/kg de peso — añade un % de grasa para un objetivo ajustado a la fase",
     "tdeeConfidenceLow": "TDEE en calentamiento — objetivo aproximado",
-    "tdeeConfidenceMedium": "TDEE aún estabilizándose — objetivo aproximado"
+    "tdeeConfidenceMedium": "TDEE aún estabilizándose — objetivo aproximado",
+    "heroRemaining": "kcal restantes",
+    "heroToGoal": "kcal para el objetivo",
+    "heroOver": "kcal de más",
+    "remainingG": "faltan {{n}} g",
+    "overG": "+{{n}} g de más",
+    "floorMet": "✓ cubierto +{{n}} g",
+    "fiberBelowMin": "{{n}} g bajo el mínimo",
+    "consumedOf": "{{consumed}} / {{target}} consumidas"
   },
   "entry": {
     "edit": "Editar entrada",
@@ -71,6 +79,12 @@
     "editTitle": "Editar comida",
     "subtitle": "Registra qué has comido. Una receta, un ingrediente suelto, o introduce los macros a mano.",
     "deleteConfirm": "¿Borrar esta entrada del diario?"
+  },
+  "mealSection": { "empty": "— sin registros" },
+  "quickAdd": {
+    "add": "Añadir {{name}}",
+    "added": "{{name}} añadido",
+    "undo": "Deshacer"
   },
   "errors": {
     "pickRecipe": "Selecciona una receta.",

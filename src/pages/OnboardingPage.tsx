@@ -23,9 +23,7 @@ import {
   type OnboardingFormValues,
   type ParsedOnboardingForm,
 } from '@/features/profile/schema';
-import { estimateBoneKg } from '@/lib/macros';
 import { todayInTZ } from '@/lib/dates';
-import { differenceInYears, parseISO } from 'date-fns';
 
 export function OnboardingPage() {
   const { t } = useTranslation('onboarding');
@@ -42,8 +40,6 @@ export function OnboardingPage() {
     register,
     handleSubmit,
     reset,
-    watch,
-    setValue,
     formState: { errors, isSubmitted },
   } = useForm<OnboardingFormValues, unknown, ParsedOnboardingForm>({
     resolver: zodResolver(onboardingFormSchema),
@@ -52,7 +48,6 @@ export function OnboardingPage() {
       birth_date: '',
       height_cm: '',
       initial_weight_kg: '',
-      bone_kg: '',
     },
   });
 
@@ -66,42 +61,14 @@ export function OnboardingPage() {
       height_cm: profile.height_cm != null ? String(profile.height_cm) : '',
       initial_weight_kg:
         profile.initial_weight_kg != null ? String(profile.initial_weight_kg) : '',
-      bone_kg: profile.bone_kg != null ? String(profile.bone_kg) : '',
     });
   }, [profile, reset]);
-
-  const sex = watch('sex');
-  const birthDate = watch('birth_date');
-  const heightCm = watch('height_cm');
-  const initialWeightKg = watch('initial_weight_kg');
 
   if (isLoading) {
     return <div className="p-8 text-muted-foreground">{tCommon('loading')}</div>;
   }
   if (profile && isProfileOnboarded(profile)) {
     return <Navigate to="/diario" replace />;
-  }
-
-  const canEstimateBone =
-    !!sex &&
-    !!birthDate &&
-    Number.isFinite(Number(heightCm)) &&
-    Number(heightCm) > 0 &&
-    Number.isFinite(Number(initialWeightKg)) &&
-    Number(initialWeightKg) > 0;
-
-  function handleEstimate() {
-    if (!canEstimateBone) return;
-    const ageYears = differenceInYears(new Date(), parseISO(birthDate));
-    const estimated = estimateBoneKg({
-      heightCm: Number(heightCm),
-      weightKg: Number(initialWeightKg),
-      ageYears,
-      sex: sex as 'male' | 'female' | 'other',
-    });
-    if (Number.isFinite(estimated) && estimated > 0) {
-      setValue('bone_kg', estimated.toFixed(2), { shouldValidate: true });
-    }
   }
 
   async function onSubmit(values: ParsedOnboardingForm) {
@@ -112,7 +79,6 @@ export function OnboardingPage() {
         birth_date: values.birth_date,
         height_cm: values.height_cm,
         initial_weight_kg: values.initial_weight_kg,
-        bone_kg: values.bone_kg,
       });
       navigate('/diario', { replace: true });
     } catch (err) {
@@ -205,31 +171,6 @@ export function OnboardingPage() {
                   step="0.1"
                   {...register('initial_weight_kg')}
                 />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="boneKg">{t('boneKg.label')}</Label>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0"
-                    disabled={!canEstimateBone}
-                    onClick={handleEstimate}
-                  >
-                    {t('boneKg.estimate')}
-                  </Button>
-                </div>
-                <Input
-                  id="boneKg"
-                  type="number"
-                  inputMode="decimal"
-                  min={0.5}
-                  max={20}
-                  step="0.01"
-                  {...register('bone_kg')}
-                />
-                <p className="text-xs text-muted-foreground">{t('boneKg.help')}</p>
               </div>
               {showRequired && <p className="text-sm text-destructive">{t('errors.required')}</p>}
               {showRange && <p className="text-sm text-destructive">{t('errors.outOfRange')}</p>}

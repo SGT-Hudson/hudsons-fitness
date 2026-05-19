@@ -4,730 +4,1008 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[];
+  | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.5';
-  };
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       body_measurements: {
         Row: {
-          body_fat_pct: number | null;
-          created_at: string;
-          id: string;
-          measured_on: string;
-          muscle_pct: number | null;
-          notes: string | null;
-          user_id: string;
-          water_pct: number | null;
-          weight_kg: number | null;
-        };
+          body_fat_pct: number | null
+          created_at: string
+          id: string
+          measured_on: string
+          muscle_pct: number | null
+          notes: string | null
+          user_id: string
+          water_pct: number | null
+          weight_kg: number | null
+        }
         Insert: {
-          body_fat_pct?: number | null;
-          created_at?: string;
-          id?: string;
-          measured_on: string;
-          muscle_pct?: number | null;
-          notes?: string | null;
-          user_id: string;
-          water_pct?: number | null;
-          weight_kg?: number | null;
-        };
+          body_fat_pct?: number | null
+          created_at?: string
+          id?: string
+          measured_on: string
+          muscle_pct?: number | null
+          notes?: string | null
+          user_id: string
+          water_pct?: number | null
+          weight_kg?: number | null
+        }
         Update: {
-          body_fat_pct?: number | null;
-          created_at?: string;
-          id?: string;
-          measured_on?: string;
-          muscle_pct?: number | null;
-          notes?: string | null;
-          user_id?: string;
-          water_pct?: number | null;
-          weight_kg?: number | null;
-        };
-        Relationships: [];
-      };
+          body_fat_pct?: number | null
+          created_at?: string
+          id?: string
+          measured_on?: string
+          muscle_pct?: number | null
+          notes?: string | null
+          user_id?: string
+          water_pct?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "body_measurements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_nutrition_history: {
         Row: {
-          computed_at: string;
-          consumed_carbs_g: number | null;
-          consumed_fat_g: number | null;
-          consumed_fiber_g: number | null;
-          consumed_kcal: number | null;
-          consumed_protein_g: number | null;
-          had_active_plan: boolean;
-          logged_on: string;
-          planned_carbs_g: number | null;
-          planned_fat_g: number | null;
-          planned_fiber_g: number | null;
-          planned_kcal: number | null;
-          planned_protein_g: number | null;
-          user_id: string;
-        };
+          computed_at: string
+          consumed_carbs_g: number | null
+          consumed_fat_g: number | null
+          consumed_fiber_g: number | null
+          consumed_kcal: number | null
+          consumed_protein_g: number | null
+          had_active_plan: boolean
+          logged_on: string
+          planned_carbs_g: number | null
+          planned_fat_g: number | null
+          planned_fiber_g: number | null
+          planned_kcal: number | null
+          planned_protein_g: number | null
+          user_id: string
+        }
         Insert: {
-          computed_at?: string;
-          consumed_carbs_g?: number | null;
-          consumed_fat_g?: number | null;
-          consumed_fiber_g?: number | null;
-          consumed_kcal?: number | null;
-          consumed_protein_g?: number | null;
-          had_active_plan?: boolean;
-          logged_on: string;
-          planned_carbs_g?: number | null;
-          planned_fat_g?: number | null;
-          planned_fiber_g?: number | null;
-          planned_kcal?: number | null;
-          planned_protein_g?: number | null;
-          user_id: string;
-        };
+          computed_at?: string
+          consumed_carbs_g?: number | null
+          consumed_fat_g?: number | null
+          consumed_fiber_g?: number | null
+          consumed_kcal?: number | null
+          consumed_protein_g?: number | null
+          had_active_plan?: boolean
+          logged_on: string
+          planned_carbs_g?: number | null
+          planned_fat_g?: number | null
+          planned_fiber_g?: number | null
+          planned_kcal?: number | null
+          planned_protein_g?: number | null
+          user_id: string
+        }
         Update: {
-          computed_at?: string;
-          consumed_carbs_g?: number | null;
-          consumed_fat_g?: number | null;
-          consumed_fiber_g?: number | null;
-          consumed_kcal?: number | null;
-          consumed_protein_g?: number | null;
-          had_active_plan?: boolean;
-          logged_on?: string;
-          planned_carbs_g?: number | null;
-          planned_fat_g?: number | null;
-          planned_fiber_g?: number | null;
-          planned_kcal?: number | null;
-          planned_protein_g?: number | null;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          computed_at?: string
+          consumed_carbs_g?: number | null
+          consumed_fat_g?: number | null
+          consumed_fiber_g?: number | null
+          consumed_kcal?: number | null
+          consumed_protein_g?: number | null
+          had_active_plan?: boolean
+          logged_on?: string
+          planned_carbs_g?: number | null
+          planned_fat_g?: number | null
+          planned_fiber_g?: number | null
+          planned_kcal?: number | null
+          planned_protein_g?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_nutrition_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
-          notes: string | null;
-          target_body_fat_pct: number;
-          updated_at: string;
-          user_id: string;
-        };
+          notes: string | null
+          target_body_fat_pct: number
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          notes?: string | null;
-          target_body_fat_pct?: number;
-          updated_at?: string;
-          user_id: string;
-        };
+          notes?: string | null
+          target_body_fat_pct?: number
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          notes?: string | null;
-          target_body_fat_pct?: number;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          notes?: string | null
+          target_body_fat_pct?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredients: {
         Row: {
-          brand: string | null;
-          carbs_g_per_unit: number;
-          created_at: string;
-          created_by_user_id: string | null;
-          external_id: string | null;
-          fat_g_per_unit: number;
-          fiber_g_per_unit: number;
-          id: string;
-          is_verified: boolean;
-          kcal_per_unit: number;
-          name: string;
-          protein_g_per_unit: number;
-          source: string;
-          unit_type: string;
-          updated_at: string;
-        };
+          brand: string | null
+          carbs_g_per_unit: number
+          created_at: string
+          created_by_user_id: string | null
+          external_id: string | null
+          fat_g_per_unit: number
+          fiber_g_per_unit: number
+          id: string
+          is_verified: boolean
+          kcal_per_unit: number
+          name: string
+          protein_g_per_unit: number
+          source: string
+          unit_type: string
+          updated_at: string
+        }
         Insert: {
-          brand?: string | null;
-          carbs_g_per_unit: number;
-          created_at?: string;
-          created_by_user_id?: string | null;
-          external_id?: string | null;
-          fat_g_per_unit: number;
-          fiber_g_per_unit?: number;
-          id?: string;
-          is_verified?: boolean;
-          kcal_per_unit: number;
-          name: string;
-          protein_g_per_unit: number;
-          source?: string;
-          unit_type?: string;
-          updated_at?: string;
-        };
+          brand?: string | null
+          carbs_g_per_unit: number
+          created_at?: string
+          created_by_user_id?: string | null
+          external_id?: string | null
+          fat_g_per_unit: number
+          fiber_g_per_unit?: number
+          id?: string
+          is_verified?: boolean
+          kcal_per_unit: number
+          name: string
+          protein_g_per_unit: number
+          source?: string
+          unit_type?: string
+          updated_at?: string
+        }
         Update: {
-          brand?: string | null;
-          carbs_g_per_unit?: number;
-          created_at?: string;
-          created_by_user_id?: string | null;
-          external_id?: string | null;
-          fat_g_per_unit?: number;
-          fiber_g_per_unit?: number;
-          id?: string;
-          is_verified?: boolean;
-          kcal_per_unit?: number;
-          name?: string;
-          protein_g_per_unit?: number;
-          source?: string;
-          unit_type?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          brand?: string | null
+          carbs_g_per_unit?: number
+          created_at?: string
+          created_by_user_id?: string | null
+          external_id?: string | null
+          fat_g_per_unit?: number
+          fiber_g_per_unit?: number
+          id?: string
+          is_verified?: boolean
+          kcal_per_unit?: number
+          name?: string
+          protein_g_per_unit?: number
+          source?: string
+          unit_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredients_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_logs: {
         Row: {
-          created_at: string;
-          custom_carbs_g: number | null;
-          custom_fat_g: number | null;
-          custom_fiber_g: number | null;
-          custom_kcal: number | null;
-          custom_name: string | null;
-          custom_protein_g: number | null;
-          from_plan: boolean;
-          id: string;
-          ingredient_id: string | null;
-          logged_on: string;
-          meal_type: string | null;
-          notes: string | null;
-          plan_week_slot_id: string | null;
-          quantity: number | null;
-          recipe_id: string | null;
-          servings: number | null;
-          user_id: string;
-        };
+          created_at: string
+          custom_carbs_g: number | null
+          custom_fat_g: number | null
+          custom_fiber_g: number | null
+          custom_kcal: number | null
+          custom_name: string | null
+          custom_protein_g: number | null
+          from_plan: boolean
+          id: string
+          ingredient_id: string | null
+          logged_on: string
+          meal_type: string | null
+          notes: string | null
+          plan_week_slot_id: string | null
+          quantity: number | null
+          recipe_id: string | null
+          servings: number | null
+          user_id: string
+        }
         Insert: {
-          created_at?: string;
-          custom_carbs_g?: number | null;
-          custom_fat_g?: number | null;
-          custom_fiber_g?: number | null;
-          custom_kcal?: number | null;
-          custom_name?: string | null;
-          custom_protein_g?: number | null;
-          from_plan?: boolean;
-          id?: string;
-          ingredient_id?: string | null;
-          logged_on: string;
-          meal_type?: string | null;
-          notes?: string | null;
-          plan_week_slot_id?: string | null;
-          quantity?: number | null;
-          recipe_id?: string | null;
-          servings?: number | null;
-          user_id: string;
-        };
+          created_at?: string
+          custom_carbs_g?: number | null
+          custom_fat_g?: number | null
+          custom_fiber_g?: number | null
+          custom_kcal?: number | null
+          custom_name?: string | null
+          custom_protein_g?: number | null
+          from_plan?: boolean
+          id?: string
+          ingredient_id?: string | null
+          logged_on: string
+          meal_type?: string | null
+          notes?: string | null
+          plan_week_slot_id?: string | null
+          quantity?: number | null
+          recipe_id?: string | null
+          servings?: number | null
+          user_id: string
+        }
         Update: {
-          created_at?: string;
-          custom_carbs_g?: number | null;
-          custom_fat_g?: number | null;
-          custom_fiber_g?: number | null;
-          custom_kcal?: number | null;
-          custom_name?: string | null;
-          custom_protein_g?: number | null;
-          from_plan?: boolean;
-          id?: string;
-          ingredient_id?: string | null;
-          logged_on?: string;
-          meal_type?: string | null;
-          notes?: string | null;
-          plan_week_slot_id?: string | null;
-          quantity?: number | null;
-          recipe_id?: string | null;
-          servings?: number | null;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          custom_carbs_g?: number | null
+          custom_fat_g?: number | null
+          custom_fiber_g?: number | null
+          custom_kcal?: number | null
+          custom_name?: string | null
+          custom_protein_g?: number | null
+          from_plan?: boolean
+          id?: string
+          ingredient_id?: string | null
+          logged_on?: string
+          meal_type?: string | null
+          notes?: string | null
+          plan_week_slot_id?: string | null
+          quantity?: number | null
+          recipe_id?: string | null
+          servings?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_logs_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_logs_plan_week_slot_id_fkey"
+            columns: ["plan_week_slot_id"]
+            isOneToOne: false
+            referencedRelation: "meal_plan_week_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_logs_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_plan_template_day_times: {
         Row: {
-          day_of_week: number;
-          id: string;
-          meal_times: string[];
-          template_id: string;
-        };
+          day_of_week: number
+          id: string
+          meal_times: string[]
+          template_id: string
+        }
         Insert: {
-          day_of_week: number;
-          id?: string;
-          meal_times: string[];
-          template_id: string;
-        };
+          day_of_week: number
+          id?: string
+          meal_times: string[]
+          template_id: string
+        }
         Update: {
-          day_of_week?: number;
-          id?: string;
-          meal_times?: string[];
-          template_id?: string;
-        };
-        Relationships: [];
-      };
+          day_of_week?: number
+          id?: string
+          meal_times?: string[]
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_template_day_times_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meal_plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_plan_template_slots: {
         Row: {
-          created_at: string;
-          day_of_week: number;
-          display_order: number;
-          id: string;
-          meal_index: number;
-          recipe_id: string;
-          servings: number;
-          template_id: string;
-        };
+          created_at: string
+          day_of_week: number
+          display_order: number
+          id: string
+          meal_index: number
+          recipe_id: string
+          servings: number
+          template_id: string
+        }
         Insert: {
-          created_at?: string;
-          day_of_week: number;
-          display_order?: number;
-          id?: string;
-          meal_index: number;
-          recipe_id: string;
-          servings?: number;
-          template_id: string;
-        };
+          created_at?: string
+          day_of_week: number
+          display_order?: number
+          id?: string
+          meal_index: number
+          recipe_id: string
+          servings?: number
+          template_id: string
+        }
         Update: {
-          created_at?: string;
-          day_of_week?: number;
-          display_order?: number;
-          id?: string;
-          meal_index?: number;
-          recipe_id?: string;
-          servings?: number;
-          template_id?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          day_of_week?: number
+          display_order?: number
+          id?: string
+          meal_index?: number
+          recipe_id?: string
+          servings?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_template_slots_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_template_slots_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meal_plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_plan_templates: {
         Row: {
-          created_at: string;
-          default_meal_times: string[];
-          id: string;
-          is_auto_generated: boolean;
-          name: string;
-          notes: string | null;
-          same_schedule_all_days: boolean;
-          updated_at: string;
-          user_id: string;
-        };
+          created_at: string
+          default_meal_times: string[]
+          id: string
+          is_auto_generated: boolean
+          name: string
+          notes: string | null
+          same_schedule_all_days: boolean
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          created_at?: string;
-          default_meal_times?: string[];
-          id?: string;
-          is_auto_generated?: boolean;
-          name: string;
-          notes?: string | null;
-          same_schedule_all_days?: boolean;
-          updated_at?: string;
-          user_id: string;
-        };
+          created_at?: string
+          default_meal_times?: string[]
+          id?: string
+          is_auto_generated?: boolean
+          name: string
+          notes?: string | null
+          same_schedule_all_days?: boolean
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          created_at?: string;
-          default_meal_times?: string[];
-          id?: string;
-          is_auto_generated?: boolean;
-          name?: string;
-          notes?: string | null;
-          same_schedule_all_days?: boolean;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          default_meal_times?: string[]
+          id?: string
+          is_auto_generated?: boolean
+          name?: string
+          notes?: string | null
+          same_schedule_all_days?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_plan_week_slots: {
         Row: {
-          created_at: string;
-          date: string;
-          display_order: number;
-          id: string;
-          meal_index: number;
-          meal_time: string | null;
-          plan_week_id: string;
-          recipe_id: string;
-          servings: number;
-        };
+          created_at: string
+          date: string
+          display_order: number
+          id: string
+          meal_index: number
+          meal_time: string | null
+          plan_week_id: string
+          recipe_id: string
+          servings: number
+        }
         Insert: {
-          created_at?: string;
-          date: string;
-          display_order?: number;
-          id?: string;
-          meal_index: number;
-          meal_time?: string | null;
-          plan_week_id: string;
-          recipe_id: string;
-          servings?: number;
-        };
+          created_at?: string
+          date: string
+          display_order?: number
+          id?: string
+          meal_index: number
+          meal_time?: string | null
+          plan_week_id: string
+          recipe_id: string
+          servings?: number
+        }
         Update: {
-          created_at?: string;
-          date?: string;
-          display_order?: number;
-          id?: string;
-          meal_index?: number;
-          meal_time?: string | null;
-          plan_week_id?: string;
-          recipe_id?: string;
-          servings?: number;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          date?: string
+          display_order?: number
+          id?: string
+          meal_index?: number
+          meal_time?: string | null
+          plan_week_id?: string
+          recipe_id?: string
+          servings?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_week_slots_plan_week_id_fkey"
+            columns: ["plan_week_id"]
+            isOneToOne: false
+            referencedRelation: "meal_plan_weeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_week_slots_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_plan_weeks: {
         Row: {
-          created_at: string;
-          has_diverged: boolean;
-          id: string;
-          source_template_id: string | null;
-          updated_at: string;
-          user_id: string;
-          week_start: string;
-        };
+          created_at: string
+          has_diverged: boolean
+          id: string
+          source_template_id: string | null
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
         Insert: {
-          created_at?: string;
-          has_diverged?: boolean;
-          id?: string;
-          source_template_id?: string | null;
-          updated_at?: string;
-          user_id: string;
-          week_start: string;
-        };
+          created_at?: string
+          has_diverged?: boolean
+          id?: string
+          source_template_id?: string | null
+          updated_at?: string
+          user_id: string
+          week_start: string
+        }
         Update: {
-          created_at?: string;
-          has_diverged?: boolean;
-          id?: string;
-          source_template_id?: string | null;
-          updated_at?: string;
-          user_id?: string;
-          week_start?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          has_diverged?: boolean
+          id?: string
+          source_template_id?: string | null
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_weeks_source_template_id_fkey"
+            columns: ["source_template_id"]
+            isOneToOne: false
+            referencedRelation: "meal_plan_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_weeks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       phases: {
         Row: {
-          created_at: string;
-          end_date: string | null;
-          fat_pct_of_kcal: number;
-          fiber_mode: string;
-          fiber_value: number;
-          id: string;
-          kcal_mode: string;
-          kcal_value: number;
-          name: string;
-          notes: string | null;
-          phase_type: string;
-          protein_g_per_kg: number;
-          start_date: string;
-          user_id: string;
-        };
+          created_at: string
+          end_date: string | null
+          fat_pct_of_kcal: number
+          fiber_mode: string
+          fiber_value: number
+          id: string
+          kcal_mode: string
+          kcal_value: number
+          name: string
+          notes: string | null
+          phase_type: string
+          protein_g_per_kg: number
+          start_date: string
+          user_id: string
+        }
         Insert: {
-          created_at?: string;
-          end_date?: string | null;
-          fat_pct_of_kcal?: number;
-          fiber_mode?: string;
-          fiber_value?: number;
-          id?: string;
-          kcal_mode: string;
-          kcal_value: number;
-          name: string;
-          notes?: string | null;
-          phase_type: string;
-          protein_g_per_kg?: number;
-          start_date: string;
-          user_id: string;
-        };
+          created_at?: string
+          end_date?: string | null
+          fat_pct_of_kcal?: number
+          fiber_mode?: string
+          fiber_value?: number
+          id?: string
+          kcal_mode: string
+          kcal_value: number
+          name: string
+          notes?: string | null
+          phase_type: string
+          protein_g_per_kg?: number
+          start_date: string
+          user_id: string
+        }
         Update: {
-          created_at?: string;
-          end_date?: string | null;
-          fat_pct_of_kcal?: number;
-          fiber_mode?: string;
-          fiber_value?: number;
-          id?: string;
-          kcal_mode?: string;
-          kcal_value?: number;
-          name?: string;
-          notes?: string | null;
-          phase_type?: string;
-          protein_g_per_kg?: number;
-          start_date?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          end_date?: string | null
+          fat_pct_of_kcal?: number
+          fiber_mode?: string
+          fiber_value?: number
+          id?: string
+          kcal_mode?: string
+          kcal_value?: number
+          name?: string
+          notes?: string | null
+          phase_type?: string
+          protein_g_per_kg?: number
+          start_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
-          birth_date: string | null;
-          bone_kg: number | null;
-          created_at: string;
-          display_name: string | null;
-          height_cm: number | null;
-          id: string;
-          initial_weight_kg: number | null;
-          language: string;
-          sex: string | null;
-          start_date: string;
-          units: string;
-          updated_at: string;
-        };
+          birth_date: string | null
+          created_at: string
+          display_name: string | null
+          height_cm: number | null
+          id: string
+          initial_weight_kg: number | null
+          language: string
+          sex: string | null
+          start_date: string
+          updated_at: string
+        }
         Insert: {
-          birth_date?: string | null;
-          bone_kg?: number | null;
-          created_at?: string;
-          display_name?: string | null;
-          height_cm?: number | null;
-          id: string;
-          initial_weight_kg?: number | null;
-          language?: string;
-          sex?: string | null;
-          start_date?: string;
-          units?: string;
-          updated_at?: string;
-        };
+          birth_date?: string | null
+          created_at?: string
+          display_name?: string | null
+          height_cm?: number | null
+          id: string
+          initial_weight_kg?: number | null
+          language?: string
+          sex?: string | null
+          start_date?: string
+          updated_at?: string
+        }
         Update: {
-          birth_date?: string | null;
-          bone_kg?: number | null;
-          created_at?: string;
-          display_name?: string | null;
-          height_cm?: number | null;
-          id?: string;
-          initial_weight_kg?: number | null;
-          language?: string;
-          sex?: string | null;
-          start_date?: string;
-          units?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          birth_date?: string | null
+          created_at?: string
+          display_name?: string | null
+          height_cm?: number | null
+          id?: string
+          initial_weight_kg?: number | null
+          language?: string
+          sex?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       recipe_ingredients: {
         Row: {
-          created_at: string;
-          display_order: number;
-          id: string;
-          ingredient_id: string;
-          per_serving: boolean;
-          quantity: number;
-          recipe_id: string;
-        };
+          created_at: string
+          display_order: number
+          id: string
+          ingredient_id: string
+          per_serving: boolean
+          quantity: number
+          recipe_id: string
+        }
         Insert: {
-          created_at?: string;
-          display_order?: number;
-          id?: string;
-          ingredient_id: string;
-          per_serving?: boolean;
-          quantity: number;
-          recipe_id: string;
-        };
+          created_at?: string
+          display_order?: number
+          id?: string
+          ingredient_id: string
+          per_serving?: boolean
+          quantity: number
+          recipe_id: string
+        }
         Update: {
-          created_at?: string;
-          display_order?: number;
-          id?: string;
-          ingredient_id?: string;
-          per_serving?: boolean;
-          quantity?: number;
-          recipe_id?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          display_order?: number
+          id?: string
+          ingredient_id?: string
+          per_serving?: boolean
+          quantity?: number
+          recipe_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
-          created_at: string;
-          deleted_at: string | null;
-          description: string | null;
-          id: string;
-          instructions: string | null;
-          name: string;
-          photo_url: string | null;
-          servings: number;
-          updated_at: string;
-          user_id: string;
-        };
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          instructions: string | null
+          name: string
+          photo_url: string | null
+          servings: number
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          created_at?: string;
-          deleted_at?: string | null;
-          description?: string | null;
-          id?: string;
-          instructions?: string | null;
-          name: string;
-          photo_url?: string | null;
-          servings?: number;
-          updated_at?: string;
-          user_id: string;
-        };
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          instructions?: string | null
+          name: string
+          photo_url?: string | null
+          servings?: number
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          created_at?: string;
-          deleted_at?: string | null;
-          description?: string | null;
-          id?: string;
-          instructions?: string | null;
-          name?: string;
-          photo_url?: string | null;
-          servings?: number;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          instructions?: string | null
+          name?: string
+          photo_url?: string | null
+          servings?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tdee_estimates: {
         Row: {
-          activity_kcal: number | null;
-          avg_kcal_intake: number;
-          bmr_kcal: number | null;
-          computed_on: string;
-          // R-07: variance-derived UI confidence band 'low'|'medium'|'high'
-          // (plain text like phases.kcal_mode — allowed set lives in
-          // src/core/tdee.ts). Nullable: rows written before R-07's edge fn
-          // ran (and pre-Wave-3) have no confidence signal.
-          confidence: string | null;
-          created_at: string;
-          estimated_tdee_kcal: number;
-          id: string;
-          // R-07: true while the adaptive filter is in cold-start/long-gap
-          // warm-up (estimate present but low-trust).
-          is_warmup: boolean;
-          neat_residual_kcal: number | null;
-          user_id: string;
-          weight_delta_kg: number;
-          window_days: number;
-          workout_kcal_logged: number | null;
-        };
+          avg_kcal_intake: number
+          computed_on: string
+          confidence: string | null
+          created_at: string
+          estimated_tdee_kcal: number
+          id: string
+          is_warmup: boolean
+          user_id: string
+          weight_delta_kg: number
+          window_days: number
+        }
         Insert: {
-          activity_kcal?: number | null;
-          avg_kcal_intake: number;
-          bmr_kcal?: number | null;
-          computed_on: string;
-          confidence?: string | null;
-          created_at?: string;
-          estimated_tdee_kcal: number;
-          id?: string;
-          is_warmup?: boolean;
-          neat_residual_kcal?: number | null;
-          user_id: string;
-          weight_delta_kg: number;
-          window_days: number;
-          workout_kcal_logged?: number | null;
-        };
+          avg_kcal_intake: number
+          computed_on: string
+          confidence?: string | null
+          created_at?: string
+          estimated_tdee_kcal: number
+          id?: string
+          is_warmup?: boolean
+          user_id: string
+          weight_delta_kg: number
+          window_days: number
+        }
         Update: {
-          activity_kcal?: number | null;
-          avg_kcal_intake?: number;
-          bmr_kcal?: number | null;
-          computed_on?: string;
-          confidence?: string | null;
-          created_at?: string;
-          estimated_tdee_kcal?: number;
-          id?: string;
-          is_warmup?: boolean;
-          neat_residual_kcal?: number | null;
-          user_id?: string;
-          weight_delta_kg?: number;
-          window_days?: number;
-          workout_kcal_logged?: number | null;
-        };
-        Relationships: [];
-      };
-      // R-07 / D-B4: per-user adaptive-TDEE filter memory (one row per
-      // user). The 2x2 symmetric state covariance P is stored as its 3 free
-      // scalars (cov_ww, cov_we == cov_ew, cov_ee). STAGED migration
-      // 20260518020000 — present in types now so the edge adapter + any
-      // future client read compile; live table created at Wave-3.
+          avg_kcal_intake?: number
+          computed_on?: string
+          confidence?: string | null
+          created_at?: string
+          estimated_tdee_kcal?: number
+          id?: string
+          is_warmup?: boolean
+          user_id?: string
+          weight_delta_kg?: number
+          window_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tdee_estimates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tdee_state: {
         Row: {
-          cov_ee: number;
-          cov_we: number;
-          cov_ww: number;
-          created_at: string;
-          expenditure_kcal: number;
-          last_updated_on: string;
-          observations_count: number;
-          trend_weight_kg: number;
-          updated_at: string;
-          user_id: string;
-        };
+          cov_ee: number
+          cov_we: number
+          cov_ww: number
+          created_at: string
+          expenditure_kcal: number
+          last_updated_on: string
+          observations_count: number
+          trend_weight_kg: number
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          cov_ee: number;
-          cov_we: number;
-          cov_ww: number;
-          created_at?: string;
-          expenditure_kcal: number;
-          last_updated_on: string;
-          observations_count?: number;
-          trend_weight_kg: number;
-          updated_at?: string;
-          user_id: string;
-        };
+          cov_ee: number
+          cov_we: number
+          cov_ww: number
+          created_at?: string
+          expenditure_kcal: number
+          last_updated_on: string
+          observations_count?: number
+          trend_weight_kg: number
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          cov_ee?: number;
-          cov_we?: number;
-          cov_ww?: number;
-          created_at?: string;
-          expenditure_kcal?: number;
-          last_updated_on?: string;
-          observations_count?: number;
-          trend_weight_kg?: number;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
-    };
+          cov_ee?: number
+          cov_we?: number
+          cov_ww?: number
+          created_at?: string
+          expenditure_kcal?: number
+          last_updated_on?: string
+          observations_count?: number
+          trend_weight_kg?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tdee_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
     Views: {
       body_measurements_smoothed: {
         Row: {
-          body_fat_pct: number | null;
-          created_at: string | null;
-          id: string | null;
-          measured_on: string | null;
-          muscle_pct: number | null;
-          notes: string | null;
-          user_id: string | null;
-          water_pct: number | null;
-          weight_kg: number | null;
-          weight_kg_5day_avg: number | null;
-        };
-        Relationships: [];
-      };
-    };
+          body_fat_pct: number | null
+          created_at: string | null
+          id: string | null
+          measured_on: string | null
+          muscle_pct: number | null
+          notes: string | null
+          user_id: string | null
+          water_pct: number | null
+          weight_kg: number | null
+          weight_kg_5day_avg: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "body_measurements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    // Post-generation correction: `supabase gen types` cannot infer
+    // nullability of SQL function parameters (Postgres carries no NULL flag
+    // on function args), so it emits every text arg as non-null `string`.
+    // The marked args below are nullable BY DESIGN (a null p_recipe_id /
+    // p_template_id means "create new"); restored to `string | null` so call
+    // sites stay honest instead of casting NULL to ''. Re-apply after any
+    // regen — see docs/conventions.md (generated-types caveats).
     Functions: {
+      apply_template_to_week: {
+        Args: { p_target_date: string; p_template_id: string }
+        Returns: string
+      }
+      apply_template_to_week_admin: {
+        Args: {
+          p_target_date: string
+          p_template_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      materialize_plan_for_date: {
+        Args: { p_date: string; p_user_id: string }
+        Returns: number
+      }
       save_recipe: {
         Args: {
-          p_recipe_id: string | null;
-          p_name: string;
-          p_servings: number;
-          p_description: string | null;
-          p_instructions: string | null;
-          p_ingredients: Json;
-        };
-        Returns: string;
-      };
+          p_description: string | null
+          p_ingredients: Json
+          p_instructions: string | null
+          p_name: string
+          p_recipe_id: string | null
+          p_servings: number
+        }
+        Returns: string
+      }
       save_template: {
         Args: {
-          p_template_id: string | null;
-          p_name: string;
-          p_same_schedule_all_days: boolean;
-          p_default_meal_times: string[];
-          p_slots: Json;
-          p_day_times?: Json;
-        };
-        Returns: string;
-      };
-      apply_template_to_week: {
-        Args: {
-          p_template_id: string;
-          p_target_date: string;
-        };
-        Returns: string;
-      };
+          p_day_times?: Json
+          p_default_meal_times: string[]
+          p_name: string
+          p_same_schedule_all_days: boolean
+          p_slots: Json
+          p_template_id: string | null
+        }
+        Returns: string
+      }
       save_week_as_template: {
-        Args: {
-          p_week_id: string;
-          p_name: string;
-        };
-        Returns: string;
-      };
-    };
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
-};
+        Args: { p_name: string; p_week_id: string }
+        Returns: string
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
 
-type DefaultSchema = Database['public'];
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
-  Name extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views']),
-> = (DefaultSchema['Tables'] & DefaultSchema['Views'])[Name] extends { Row: infer R } ? R : never;
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
-export type TablesInsert<Name extends keyof DefaultSchema['Tables']> =
-  DefaultSchema['Tables'][Name] extends { Insert: infer I } ? I : never;
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
-export type TablesUpdate<Name extends keyof DefaultSchema['Tables']> =
-  DefaultSchema['Tables'][Name] extends { Update: infer U } ? U : never;
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

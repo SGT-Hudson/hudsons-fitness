@@ -29,24 +29,17 @@ tracked in `roadmap.md`).
 ## Types & macros
 
 - DB-sourced rows stay snake_case end-to-end (D-C4).
+- `src/types/database.ts` is **generated** from the live schema (`supabase gen types`, command in `operations.md`), not hand-maintained. Two generator caveats survive every regen: (1) CHECK-constraint enums (`phases.kcal_mode`, `fiber_mode`, `tdee_estimates.confidence`) come through as plain `string` — form/validation code must verify allowed values against `pg_constraint`/the pure core, the type won't; (2) the generator cannot infer SQL-function argument nullability so it emits non-null `string` — the nullable RPC args (`save_recipe`/`save_template` ids = "create new" when null) are restored to `string | null` by a documented post-generation patch (marker comment above the `Functions` block). Re-apply both after any regen (D-A8).
 - camelCase is reserved for computed/derived types — the `Macros` envelope is `{ kcal, proteinG, carbsG, fatG, fiberG }` (D-C4).
-- BMR (Mifflin-St Jeor) and target-weight are derived; recompute, never persist (4 dead `tdee_estimates` columns still present; `mifflinStJeor` not yet wired as display) (D-B5).
-
-> ⚠ Changing — see R-08
-
+- Estimated BMR (Mifflin-St Jeor) and target-weight are derived, never-stored displays — recompute on render, don't persist, no DB column, and never feed protein/TDEE/targets (display only) (D-B5). `estimatedBmr` is wired on `/progreso` (latest-measurement card); the 4 dead `tdee_estimates` BMR/breakdown columns were dropped 2026-05-18 (R-08).
 - Store `phases.fat_pct_of_kcal` as a fraction `0.10`–`0.60`, never a percent (D-B3).
 
 ## Data mutations
 
 - Any operation mutating more than one table atomically MUST be an RPC; single-table mutations stay client-side (D-C5).
 - All user-callable RPCs are `SECURITY INVOKER` with `set search_path = public`; `SECURITY DEFINER` is forbidden without a security review (cron-only `apply_template_to_week_admin` is the documented exception) (D-C5).
-- Plan materialization is a single `SECURITY INVOKER` RPC (client/edge mirrors not yet removed) (D-D6).
-
-> ⚠ Changing — see R-12
-
-- Convert the fat fraction (and any unit/fraction) only at the form boundary via a shared helper, never inline `×100` (helper `fractionToPct`/`pctToFraction` in `src/lib/macros.ts`; the 3 inline sites now use it — rule satisfied in code; only the DB CHECK backstop remains, staged for the Wave-3 prod checkpoint) (D-B3).
-
-> ⚠ Changing — see R-06
+- Plan materialization is a single `SECURITY INVOKER` RPC `materialize_plan_for_date` (`set search_path = public`), DB-idempotent via a partial unique index + `ON CONFLICT DO NOTHING`, bounded to `date <= today` (Europe/Madrid); the client/edge mirrors are removed (live in prod — migration applied then calling code merged 2026-05-18) (D-D6).
+- Convert the fat fraction (and any unit/fraction) only at the form boundary via a shared helper, never inline `×100` (helper `fractionToPct`/`pctToFraction` in `src/lib/macros.ts`; the 3 inline sites use it; the DB CHECK backstop `phases_fat_pct_of_kcal_range` is applied in prod) (D-B3).
 
 ## UI
 
@@ -59,10 +52,7 @@ tracked in `roadmap.md`).
 
 - Bilingual ES/EN; for authenticated users `profile.language` is authoritative and is applied post-auth (AuthProvider's profile→i18n sync); pre-auth and fallback chain is `localStorage → navigator → es` (D-E1).
 - Stored content (recipe/ingredient/template names) is never auto-translated — stays as authored (D-E2).
-- Metric-only (kg/cm/g); no imperial (`profiles.units` legacy column still present, slated for removal) (D-E3).
-
-> ⚠ Changing — see R-14
-
+- Metric-only (kg/cm/g); no imperial (the dead legacy `profiles.units` column was dropped 2026-05-18, R-14) (D-E3).
 - Authenticated language change is Settings-only; the one-click `LanguageSwitcher` appears only on pre-auth and onboarding routes (removed from the `AppLayout` header) (D-E4).
 
 ## Theme

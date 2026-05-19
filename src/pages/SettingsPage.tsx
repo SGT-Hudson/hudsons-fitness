@@ -51,7 +51,7 @@ export function SettingsPage() {
   // Biometrics card — RHF + zod. Numeric inputs coerced via the schema.
   const bioForm = useForm<BiometricsFormValues, unknown, ParsedBiometricsForm>({
     resolver: zodResolver(biometricsFormSchema),
-    defaultValues: { sex: '', birth_date: '', height_cm: '', bone_kg: '' },
+    defaultValues: { sex: '', birth_date: '', height_cm: '' },
   });
 
   useEffect(() => {
@@ -64,7 +64,6 @@ export function SettingsPage() {
         : '',
       birth_date: profile.birth_date ?? '',
       height_cm: profile.height_cm != null ? String(profile.height_cm) : '',
-      bone_kg: profile.bone_kg != null ? String(profile.bone_kg) : '',
     });
   }, [profile, profileForm, bioForm]);
 
@@ -94,7 +93,6 @@ export function SettingsPage() {
       sex: values.sex,
       birth_date: values.birth_date,
       height_cm: values.height_cm,
-      bone_kg: values.bone_kg,
     });
   }
 
@@ -243,33 +241,18 @@ export function SettingsPage() {
                 {...bioForm.register('birth_date')}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="heightCm">{t('biometrics.heightCm')}</Label>
-                <Input
-                  id="heightCm"
-                  type="number"
-                  inputMode="decimal"
-                  min={100}
-                  max={250}
-                  step="0.1"
-                  {...bioForm.register('height_cm')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="boneKg">{t('biometrics.boneKg')}</Label>
-                <Input
-                  id="boneKg"
-                  type="number"
-                  inputMode="decimal"
-                  min={0.5}
-                  max={20}
-                  step="0.01"
-                  {...bioForm.register('bone_kg')}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="heightCm">{t('biometrics.heightCm')}</Label>
+              <Input
+                id="heightCm"
+                type="number"
+                inputMode="decimal"
+                min={100}
+                max={250}
+                step="0.1"
+                {...bioForm.register('height_cm')}
+              />
             </div>
-            <p className="text-xs text-muted-foreground">{t('biometrics.boneKgHelp')}</p>
             <div className="space-y-2">
               <Label htmlFor="initialWeightKg">{t('biometrics.initialWeightKg')}</Label>
               <Input
