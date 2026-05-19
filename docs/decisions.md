@@ -52,6 +52,7 @@ The `R-xx` items are defined in `roadmap.md`.
 - D-F4 — Cron UTC/DST — confirm single-TZ + record pre-specced multi-TZ path
 - D-F5 — Cron Vault auth — confirm + cron liveness alerting + ops runbook
 - D-F6 — Theme localStorage/FOUC — confirm + document the D-E1 contrast
+- D-F7 — Ship flow: develop integration branch + reviewed promotion
 
 ## D-A1 — Shared crowdsourced `ingredients` library — keep
 
@@ -303,7 +304,7 @@ Going public was the cheapest path to make the convention literally true and aut
 
 Executed 2026-05-17: repo made public, CI workflow added, branch protection requiring `lint-build` configured, GitHub auto-merge enabled, main reconciled (via a reconciliation PR), production redeployed.
 
-**Status:** decided · done (2026-05-17)
+**Status:** decided · done (2026-05-17) · **superseded by D-F7** — single-branch auto-merge-to-`main` replaced by the two-tier `develop`→`main` flow
 
 ## D-F3 — Edge Deno+TS+_shared — confirm + shared pure core + edge adapter
 
