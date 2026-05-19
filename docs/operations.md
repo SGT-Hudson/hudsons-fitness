@@ -67,6 +67,13 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
   Row-Level Security).
 - **Discipline:** keep branches short-lived and single-purpose; never push
   directly to `main`/`develop`.
+- **Supporting automation:** `auto-merge.yml` (arms squash auto-merge on
+  `develop` PRs), `delete-merged-branch.yml` (prunes merged feature branches —
+  `delete_branch_on_merge` does not fire on the auto-merge bot path),
+  `backmerge.yml` (opens a `do-not-merge` `main`→`develop` PR after a
+  release/hotfix), `release-tag.yml` (tags + GitHub Release on a
+  `release/*`→`main` merge), Dependabot (grouped, weekly, targets
+  `develop`), and GitHub secret scanning + push protection (D-F2/D-F7).
 
 ## Hosting & deploy
 
