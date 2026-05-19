@@ -18,6 +18,9 @@ desktop.ini
 
 # Claude Code (local user settings only — shared settings.json is fine)
 .claude/settings.local.json
+# Local Claude Code runtime artifacts — never committable: worktrees are
+# embedded git repos that break clones (a stray `git add -A` would add them).
+.claude/worktrees/
 
 # Logs
 logs
