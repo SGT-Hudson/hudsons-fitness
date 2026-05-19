@@ -31,6 +31,7 @@ decision rationale in `decisions.md`.
 - **Sprint 15 — PWA** — `vite-plugin-pwa` with workbox generateSW; manifest (HF monogram SVG icon, theme color `#16a34a`, standalone); Supabase requests bypass cache (NetworkOnly).
 - **Sprint 16 — GDPR delete-account** — Edge function `delete-account` verifies caller JWT then `auth.admin.deleteUser`; CASCADE cleans user data. Two-step email-confirm dialog in Settings.
 - **Sprint 17 — Review fixes** — TDEE wired to frontend (`features/tdee`) so `tdee_delta` phases show targets; lean-mass protein behavior documented in PhaseDialog + architecture; 7 sites switched from UTC slice to `isoDate()`; ingredient delete maps Postgres FK 23503 to friendly "in use" toast.
+- **Process — develop-branch ship flow** — two-tier `develop`→`main` flow; feature PRs auto-merge to `develop`, production via reviewed promotion (D-F7).
 
 ### 2026-05-17 — Conventions review + doc-rework
 
