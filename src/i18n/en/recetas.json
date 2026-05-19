@@ -6,6 +6,10 @@
     "grid": "Grid view",
     "list": "List view"
   },
+  "favorite": {
+    "add": "Mark as favorite",
+    "remove": "Remove from favorites"
+  },
   "list": {
     "empty": "You haven't created any recipes yet. Click \"New recipe\" to get started.",
     "noMatch": "No recipes match your search.",

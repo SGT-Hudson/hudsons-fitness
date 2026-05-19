@@ -81,6 +81,14 @@
     "deleteConfirm": "¿Borrar esta entrada del diario?"
   },
   "mealSection": { "empty": "— sin registros" },
+  "copyDay": {
+    "open": "Copiar un día",
+    "title": "Copiar un día",
+    "subtitle": "Copia las comidas de otro día como entradas nuevas en este.",
+    "sourceLabel": "Día a copiar",
+    "submit": "Copiar",
+    "sameDay": "Elige un día distinto al actual."
+  },
   "quickAdd": {
     "add": "Añadir {{name}}",
     "added": "{{name}} añadido",

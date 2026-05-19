@@ -11,6 +11,7 @@ import {
   type MealType,
 } from './api';
 import { buildQuickAddList, isoMinusDays } from './quickAdd';
+import { buildCopyPayloads } from './copyDay';
 import type { TablesUpdate } from '@/types/database';
 import { toastCreated, toastDeleted, toastError, toastSaved, toastUndoableQuickAdd } from '@/lib/toast-helpers';
 
@@ -63,6 +64,29 @@ export function useMaterializePlan() {
       if (inserted > 0) {
         void qc.invalidateQueries({ queryKey: ['meal_logs', user?.id, loggedOn] });
       }
+    },
+    onError: toastError,
+  });
+}
+
+// Copies a previous day's entries onto `targetDate` as independent manual
+// logs. Uses the raw createMealLog (not useCreateMealLog) so the batch fires
+// ONE invalidate + ONE toast instead of N. Returns how many were copied.
+export function useCopyDay() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { sourceDate: string; targetDate: string }) => {
+      const sourceLogs = await fetchMealLogsForDay(user!.id, v.sourceDate);
+      const payloads = buildCopyPayloads(sourceLogs, v.targetDate);
+      for (const p of payloads) {
+        await createMealLog(user!.id, p);
+      }
+      return payloads.length;
+    },
+    onSuccess: (count, v) => {
+      void qc.invalidateQueries({ queryKey: ['meal_logs', user?.id, v.targetDate] });
+      if (count > 0) toastCreated();
     },
     onError: toastError,
   });
