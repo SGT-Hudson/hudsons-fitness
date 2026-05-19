@@ -1,0 +1,30 @@
+name: auto-merge
+
+# Arms GitHub native auto-merge on every PR targeting main, so a PR
+# merges itself (squash) the moment the required `lint-build` check
+# (ci.yml) goes green — no manual click.
+#
+# Opt out of a given PR by either:
+#   - marking it a draft, or
+#   - adding the `do-not-merge` label.
+# Both are re-evaluated on label/draft changes via the trigger list below.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  arm:
+    if: >
+      github.event.pull_request.draft == false &&
+      !contains(github.event.pull_request.labels.*.name, 'do-not-merge')
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
