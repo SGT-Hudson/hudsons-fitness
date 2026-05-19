@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EyeOff, Plus, RotateCcw, Share2, X } from 'lucide-react';
+import { ClipboardCopy, EyeOff, Plus, RotateCcw, Share2, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -155,8 +155,8 @@ export function ShoppingListDialog({ open, onOpenChange, weekStart }: Props) {
     ? allTotals
     : allTotals.filter((i) => !staples.has(i.ingredientId));
 
-  async function handleShare() {
-    const text = formatShoppingListText({
+  function buildShareText(): string {
+    return formatShoppingListText({
       title: t('shopping.title'),
       items: visibleTotals.map((i) => ({
         name: i.name,
@@ -168,6 +168,19 @@ export function ShoppingListDialog({ open, onOpenChange, weekStart }: Props) {
       extrasTitle: t('shopping.extrasTitle'),
       unitWord: t('shopping.unit'),
     });
+  }
+
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ variant: 'success', title: t('shopping.copied') });
+    } catch {
+      toast({ variant: 'destructive', title: t('shopping.copyFailed') });
+    }
+  }
+
+  async function handleShare() {
+    const text = buildShareText();
     try {
       if (typeof navigator !== 'undefined' && navigator.share) {
         await navigator.share({ title: t('shopping.title'), text });
@@ -176,13 +189,13 @@ export function ShoppingListDialog({ open, onOpenChange, weekStart }: Props) {
     } catch (err) {
       // User dismissed the native share sheet — not an error.
       if ((err as Error)?.name === 'AbortError') return;
+      // Any other share failure → fall through to clipboard.
     }
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({ variant: 'success', title: t('shopping.copied') });
-    } catch {
-      toast({ variant: 'destructive', title: t('shopping.shareFailed') });
-    }
+    await copyText(text);
+  }
+
+  async function handleCopy() {
+    await copyText(buildShareText());
   }
 
   const isLoading = query.isLoading;
@@ -235,6 +248,14 @@ export function ShoppingListDialog({ open, onOpenChange, weekStart }: Props) {
                   >
                     <Share2 className="h-4 w-4" />
                     {t('shopping.share')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void handleCopy()}
+                  >
+                    <ClipboardCopy className="h-4 w-4" />
+                    {t('shopping.copy')}
                   </Button>
                   <Button
                     variant="ghost"
