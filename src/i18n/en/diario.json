@@ -81,6 +81,14 @@
     "deleteConfirm": "Delete this diary entry?"
   },
   "mealSection": { "empty": "— nothing logged" },
+  "copyDay": {
+    "open": "Copy a day",
+    "title": "Copy a day",
+    "subtitle": "Copy another day's meals into this one as new entries.",
+    "sourceLabel": "Day to copy",
+    "submit": "Copy",
+    "sameDay": "Pick a different day."
+  },
   "quickAdd": {
     "add": "Add {{name}}",
     "added": "{{name}} added",

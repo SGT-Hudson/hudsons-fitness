@@ -2,6 +2,25 @@ import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
 
 export type TdeeEstimate = Tables<'tdee_estimates'>;
+export type TdeeState = Tables<'tdee_state'>;
+
+/**
+ * The user's current adaptive-filter state (one row per user, R-07 / D-B4).
+ * `trend_weight_kg` is the filter's de-noised current weight — the cleanest
+ * anchor for a goal-date projection. RLS-scoped to the owner; `null` until
+ * the filter has run at least once.
+ */
+export async function fetchTdeeState(
+  userId: string,
+): Promise<TdeeState | null> {
+  const { data, error } = await supabase
+    .from('tdee_state')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
 
 /** Confidence band the adaptive filter emitted for an estimate (R-07 / D-B4). */
 export type TdeeConfidence = 'low' | 'medium' | 'high';

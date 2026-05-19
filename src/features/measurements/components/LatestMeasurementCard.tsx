@@ -1,10 +1,13 @@
 import { useTranslation } from 'react-i18next';
+import { addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
 import { computeTargetWeightKg, estimatedBmr } from '@/lib/macros';
 import { useProfile } from '@/features/profile/hooks';
+import { useLatestTdee, useTdeeState } from '@/features/tdee/hooks';
+import { computeGoalEta } from '../eta';
 import type { BodyMeasurement, SmoothedMeasurement } from '../api';
 import {
   compositionDelta,
@@ -90,6 +93,8 @@ export function LatestMeasurementCard({
   const { t, i18n } = useTranslation('metricas');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
   const profile = useProfile();
+  const latestTdee = useLatestTdee();
+  const tdeeState = useTdeeState();
 
   const bmr = estimatedBmr({
     sex: profile.data?.sex,
@@ -164,6 +169,38 @@ export function LatestMeasurementCard({
       : null;
   const toGoal =
     targetWeight != null && latestMa5 != null ? latestMa5 - targetWeight : null;
+
+  // Goal-date ETA from the adaptive filter's own dynamics (chosen 2026-05-19:
+  // the Kalman trend-weight rate). Anchored at the filter's de-noised trend
+  // weight; rate = (avgIntake − expenditure)/7700. Purely derived, never
+  // stored — same rule as targetWeight / estimatedBmr.
+  const ts = tdeeState.data;
+  const te = latestTdee.data;
+  const eta =
+    targetWeight != null && ts != null && te != null
+      ? computeGoalEta({
+          currentWeightKg: ts.trend_weight_kg,
+          targetWeightKg: targetWeight,
+          avgIntakeKcal: te.avg_kcal_intake,
+          expenditureKcal: te.estimated_tdee_kcal,
+        })
+      : null;
+  let etaText: string | null = null;
+  if (eta && eta.status !== 'reached') {
+    if (eta.status === 'on_track' && eta.daysToTarget != null) {
+      etaText = t('latest.eta.onTrack', {
+        date: formatDate(
+          addDays(new Date(), eta.daysToTarget),
+          'd MMM yyyy',
+          locale,
+        ),
+      });
+    } else if (eta.status === 'stalled') {
+      etaText = t('latest.eta.stalled');
+    } else if (eta.status === 'wrong_direction') {
+      etaText = t('latest.eta.wrongDirection');
+    }
+  }
 
   function compPoints(field: 'body_fat_pct' | 'muscle_pct' | 'water_pct') {
     return [...recent]
@@ -240,6 +277,11 @@ export function LatestMeasurementCard({
                   n: fmt(Math.abs(toGoal)),
                   target: targetWeight != null ? fmt(targetWeight) : '',
                 })}
+            </div>
+          )}
+          {etaText != null && (
+            <div className="text-[11px] text-muted-foreground mt-1 tabular-nums">
+              {etaText}
             </div>
           )}
         </div>

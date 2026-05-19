@@ -29,7 +29,12 @@
     "weightTrendLabel": "Peso · tendencia (media 5d)",
     "rateUnit": "kg / sem",
     "sinceStart": "{{n}} kg desde el inicio",
-    "toGoal": "faltan {{n}} kg al objetivo ({{target}})"
+    "toGoal": "faltan {{n}} kg al objetivo ({{target}})",
+    "eta": {
+      "onTrack": "≈ {{date}} a este ritmo",
+      "stalled": "A este ritmo no avanzas hacia el objetivo",
+      "wrongDirection": "Te estás alejando del objetivo a este ritmo"
+    }
   },
   "list": {
     "title": "Mediciones recientes",
