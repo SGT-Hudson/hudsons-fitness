@@ -22,7 +22,7 @@ pnpm preview      # preview ./dist locally
 1. Metric-only (kg/cm/g).
 2. DB is canonical; RLS is the sole security boundary (repo is public).
 3. Any >1-table atomic mutation is an RPC (`SECURITY INVOKER` + `set search_path = public`); the cron-only `apply_template_to_week_admin` is the documented `SECURITY DEFINER` exception.
-4. `pnpm lint` + `pnpm build` + `pnpm test` (CI-enforced) must pass before merge; work on a short-lived branch → PR → CI → auto-merge to `main`.
+4. **Ship flow.** `pnpm lint` + `pnpm build` + `pnpm test` (CI-enforced) must pass before merge. Short-lived `claude/*` branch → PR into **`develop`** → CI → auto-merge (squash). `develop` is integration+staging (its Vercel preview is the soak surface). Production = `main`, advanced only by a user-approved `release/*`→`main` PR (merge commit); hotfixes `claude/hotfix-*`→`main` then auto back-merge to `develop`. Never push directly to `main`/`develop`.
 5. BMR (Mifflin-St Jeor) and target-weight are derived — never stored.
 6. Convert units/fractions only at the form boundary via shared helpers.
 7. Never document an un-built design as if it exists — mark it `> ⚠ Changing — see R-xx`.
@@ -39,7 +39,7 @@ pnpm preview      # preview ./dist locally
 - What the app does / flows / origin → `docs/features.md`
 - Code rules (forms, macros, toasts, UI, i18n, theme) → `docs/conventions.md`
 - CI / deploy / Supabase / cron / runbook → `docs/operations.md`
-- Why a decision was made → `docs/decisions.md` (IDs `D-A1…D-F6`)
+- Why a decision was made → `docs/decisions.md` (IDs `D-A1…D-F7`)
 - What's still un-built / backlog → `docs/roadmap.md` (IDs `R-00…R-18`)
 - Shipped history → `docs/changelog.md`
 

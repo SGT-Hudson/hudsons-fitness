@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # App dependencies (pnpm-lock.yaml). PRs target develop and ride the normal
+  # D-F7 flow (CI + auto-merge into staging, then promotion). Grouped to one
+  # PR/week to avoid noise.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: develop
+    open-pull-requests-limit: 5
+    groups:
+      npm-deps:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: develop
+    open-pull-requests-limit: 3
+    groups:
+      gh-actions:
+        patterns: ["*"]

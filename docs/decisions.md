@@ -52,6 +52,7 @@ The `R-xx` items are defined in `roadmap.md`.
 - D-F4 — Cron UTC/DST — confirm single-TZ + record pre-specced multi-TZ path
 - D-F5 — Cron Vault auth — confirm + cron liveness alerting + ops runbook
 - D-F6 — Theme localStorage/FOUC — confirm + document the D-E1 contrast
+- D-F7 — Ship flow: develop integration branch + reviewed promotion
 
 ## D-A1 — Shared crowdsourced `ingredients` library — keep
 
@@ -303,7 +304,7 @@ Going public was the cheapest path to make the convention literally true and aut
 
 Executed 2026-05-17: repo made public, CI workflow added, branch protection requiring `lint-build` configured, GitHub auto-merge enabled, main reconciled (via a reconciliation PR), production redeployed.
 
-**Status:** decided · done (2026-05-17)
+**Status:** decided · done (2026-05-17) · **superseded by D-F7** — single-branch auto-merge-to-`main` replaced by the two-tier `develop`→`main` flow
 
 ## D-F3 — Edge Deno+TS+_shared — confirm + shared pure core + edge adapter
 
@@ -336,3 +337,11 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **Why:** This is the cleanest item in the review — textbook implementation, zero drift: `ThemeProvider` persists only to localStorage (never profiles), resolves `system` via `matchMedia` with a live listener and SSR-safe guards, and `index.html` has a correct pre-paint IIFE reading the *exact same* key. The localStorage-only design is precisely what *enables* the synchronous pre-paint FOUC-prevention script — no async profile fetch is possible before first paint, so a profile-backed theme could only be additive (a login sync-down), not a replacement. The D-E1↔D-F6 asymmetry is intentional and defensible and must be documented as a reasoned contrast, not left looking like inconsistency: `system` is a correct default and a new device adopting its OS light/dark preference is *desirable*, whereas silently losing a *language* preference in a bilingual app (D-E1) is a real UX failure. The key-string coupling between the IIFE and `STORAGE_KEY` is recorded as a footgun (renaming one silently breaks FOUC prevention). Additive profile-theme-sync is noted only as a future option, not adopted.
 
 **Status:** decided
+
+## D-F7 — Ship flow: develop integration branch + reviewed promotion
+
+**Ruling:** Replace direct auto-merge-to-`main` with a two-tier flow. Feature `claude/*` PRs auto-merge (squash) into a long-lived `develop` branch (integration + staging via its Vercel preview). `main` stays the Vercel production branch and advances only via a user-approved `release/YYYY-MM-DD`→`main` PR (merge commit, not squash, so `main` stays a convergent subset of `develop`; such PRs are not auto-armed). Hotfixes go `claude/hotfix-*`→`main` then auto back-merge to `develop`. GitHub default branch becomes `develop`; `auto-merge.yml` triggers on base `develop`; `ci.yml` runs on both. Promotion is on-demand, not scheduled.
+
+**Why:** Under D-F2 `main` was simultaneously the integration target and the Vercel production branch with no required human review, so any green PR auto-deployed to production — the only brake an opt-out label. Decoupling integration from release adds exactly one deliberate gate at the point production risk lives, while preserving the hands-off autonomy for day-to-day feature work (auto-merge simply retargets to `develop`) and yielding a free staging soak surface (the `develop` Vercel preview). Promotion uses an ephemeral `release/*` branch as the PR head because `delete_branch_on_merge=true` would otherwise delete `develop` (it is never a PR head). Supersedes the D-F2 single-branch convention.
+
+**Status:** decided · done (2026-05-19)

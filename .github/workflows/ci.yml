@@ -2,9 +2,16 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   push:
-    branches: [main]
+    branches: [main, develop]
+
+# Cancel superseded in-flight runs on the same ref for PRs (a new push
+# obsoletes the old run), but let push runs on main/develop finish — every
+# protected-branch commit deserves a full build.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint-build:
@@ -29,3 +36,24 @@ jobs:
 
       # Tier-1 tests (D-F1 ruling, R-16): pure-logic unit tests via Vitest.
       - run: pnpm test
+
+  # Deno-side guard for the edge functions. The Vitest parity suite
+  # (supabase/functions/_shared/macros.test.ts) runs under Node and only
+  # covers the pure shared core; this catches Deno-runtime breakage (bad
+  # esm.sh imports, Deno API misuse, TS errors in function entrypoints) that
+  # the Node path structurally cannot. Advisory for now — NOT yet a required
+  # status check; promote to required once it has proven reliably green.
+  edge-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Deno lint + type-check edge functions
+        working-directory: supabase/functions
+        run: |
+          deno lint
+          deno check $(git ls-files '*.ts')
