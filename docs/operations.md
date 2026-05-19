@@ -38,38 +38,43 @@ CI-enforced and blocks auto-merge — see [CI & merge workflow](#ci--merge-workf
 
 ## CI & merge workflow
 
-CI and the merge gate are real and enforced (D-F1, D-F2).
+Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D-F7).
 
-- **Workflow:** `.github/workflows/ci.yml` runs on pnpm 10 / Node 20 and
-  executes `pnpm lint` + `pnpm build`. The `pnpm test` step is stubbed (no
-  test runner wired yet).
+- **Workflow:** `.github/workflows/ci.yml` runs on pnpm 10 / Node 20 on PRs
+  and pushes to `main` and `develop`, executing `pnpm lint` + `pnpm build` +
+  `pnpm test` (real Vitest Tier-1 step — R-16).
+- **`develop` = integration + staging.** Short-lived `claude/*` branch → PR
+  into `develop` → `lint-build` green → `.github/workflows/auto-merge.yml`
+  arms GitHub-native squash auto-merge → merged hands-off; branch
+  auto-deleted. Opt out per PR with a draft or the `do-not-merge` label.
+  `develop`'s Vercel preview is the soak surface.
+- **`main` = production.** `main` advances only via a user-approved
+  `release/YYYY-MM-DD`→`main` PR (merge commit, never squash, so histories
+  stay convergent). These PRs are intentionally NOT auto-armed. Promotion is
+  on-demand ("promote"), not scheduled.
+- **Hotfix:** `claude/hotfix-*` → PR into `main` (human-merged) → then an
+  auto-opened back-merge PR `main`→`develop` so the fix survives the next
+  promotion.
+- **Branch protection on `develop`:** required status check `lint-build`;
+  `strict` false; force-push/deletion blocked; 0 required reviews.
 - **Branch protection on `main`:** required status check `lint-build`;
-  strict (branch must be up to date before merge); force-push and deletion
-  blocked; `enforce_admins` false; 0 required reviews.
-- **Auto-merge:** GitHub-native auto-merge is enabled repo-wide. The workflow
-  is: short-lived single-purpose branch → PR → CI green → `gh pr merge --auto`
-  (squash) → auto-merge to `main` once the required check passes.
-- **Public repo:** `github.com/SGT-Hudson/hudsons-fitness` is public, so RLS is
-  the sole security boundary — there is no server-side application tier in
+  `strict` false; a PR is required before merging (0 required reviews —
+  solo); force-push/deletion blocked; `enforce_admins` false (the solo
+  admin retains an emergency direct-push escape hatch).
+- **Public repo:** `github.com/SGT-Hudson/hudsons-fitness` is public, so RLS
+  is the sole security boundary — there is no server-side application tier in
   front of the database (D-F2; RLS policy shapes in `data-model.md`
   Row-Level Security).
-- **Discipline:** keep branches short-lived and single-purpose; do not let a
-  branch run far ahead of `main` again (the historical 22-commit drift that
-  D-F2 reconciled).
-
-Tiered Vitest coverage is partially built: Tier-1 (pure-logic suites + a real
-CI `pnpm test` step in the `lint-build` job) landed; Tier-2 (component tests)
-rides R-09 and Tier-3 (DB/RLS/RPC via local `supabase start` + pgTAP) is gated
-behind R-00 — both still pending:
-
-> ⚠ Changing — see R-16 (D-F1) — Tier-1 landed; T2/T3 pending
+- **Discipline:** keep branches short-lived and single-purpose; never push
+  directly to `main`/`develop`.
 
 ## Hosting & deploy
 
 - **Vercel project** `hudsonfitness` (`prj_69QdEbnDr836rfFwd24J9ISFuXqv`,
   team `team_EDiBxgsadwU6GbSqodEH0G3Q`), framework Vite.
-- **Production branch** `main`, deploy-on-merge; production alias
-  `hudsonfitness.vercel.app`.
+- **Production branch** `main` (Vercel Production deploy-on-merge); alias
+  `hudsonfitness.vercel.app`. `develop` and feature branches get Preview
+  deploys; the `develop` preview is the staging soak surface (D-F7).
 - **PR previews** auto-deploy for every pull request.
 - `vercel.json` carries the SPA fallback rewrite so client-side routes
   resolve on hard navigation.

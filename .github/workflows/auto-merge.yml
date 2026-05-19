@@ -1,8 +1,9 @@
 name: auto-merge
 
-# Arms GitHub native auto-merge on every PR targeting main, so a PR
+# Arms GitHub native auto-merge on every PR targeting develop, so a PR
 # merges itself (squash) the moment the required `lint-build` check
-# (ci.yml) goes green — no manual click.
+# (ci.yml) goes green — no manual click. PRs into main (release
+# promotions, hotfixes) are intentionally NOT armed and need a human merge.
 #
 # Opt out of a given PR by either:
 #   - marking it a draft, or
@@ -11,7 +12,7 @@ name: auto-merge
 
 on:
   pull_request:
-    branches: [main]
+    branches: [develop]
     types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
 
 permissions:
