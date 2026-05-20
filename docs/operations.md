@@ -487,7 +487,27 @@ complete history rather than the lone Sprint-9 file.
 20260520120060_r01_account_delete_reconcile.sql     # applied 2026-05-20 (R-01, 2nd sanctioned DEFINER)
 20260520120070_r01_rls.sql                          # applied 2026-05-20 (R-01, LAST DDL of the set)
 20260520120080_r01_backup_table_rls.sql             # applied 2026-05-20 (R-01 follow-up — RLS-enable the rollback snapshot)
+20260522120000_training_exercises.sql               # STAGED — R-19 (Training MVP, Wave-3, mandatory user checkpoint)
+20260522120010_training_sessions_sets.sql           # STAGED — R-19
+20260522120020_training_save_workout_rpc.sql        # STAGED — R-19
+20260522120030_training_exercises_rls.sql           # STAGED — R-19 (LAST DDL of the set)
 ```
+
+**R-19 Training MVP Wave-3 apply procedure (mandatory user checkpoint).**
+Apply the four training migrations **in order** (filename-lexicographic
+= build order) via `apply_migration`, **after** R-01's set is already
+applied (the `exercises` table follows the post-R-01 ingredient-pool
+shape verbatim, including the `LIBRARY_ANON_OWNER_ID` sentinel in the
+RLS policies). They are NOT mutually order-free with each other —
+`training_save_workout_rpc` references `workout_sessions` and
+`workout_sets` (Task 2 must run first); `training_exercises_rls`
+references `exercises` (Task 1 must run first) and is the LAST DDL of
+the set. Relative to other staged migrations the set is order-free
+(disjoint object surface). After all four DB migrations apply cleanly,
+flip the four `STAGED — R-19` entries above to
+`applied <date> (R-19)`, mark R-19 in `docs/roadmap.md` as done, and
+move PR #74 out of draft so the auto-merge bot ships it into
+`develop`.
 
 **R-01 Wave-3 apply procedure (executed 2026-05-20).** The eight R-01
 migrations were applied **in order** (filename-lexicographic = build
