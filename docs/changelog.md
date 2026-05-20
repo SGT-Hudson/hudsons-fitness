@@ -39,6 +39,14 @@ decision rationale in `decisions.md`.
 - Executed D-F2 — repo made public, CI workflow + `main` branch protection (`lint-build`) + GitHub auto-merge enabled, `main` reconciled via PR #17 and production redeployed (ended ~7-sprint staleness).
 - Consolidated all docs into `docs/` (this rework).
 
+### 2026-05-20 — R-01 ★ Library Contribution & Lifecycle Model (Phase 1)
+
+- Applied the 8 R-01 Phase 1 migrations to prod via Supabase MCP `apply_migration` (anon seed → ref tables → backfill → drop `recipes.deleted_at` + rename `user_id`→`created_by_user_id` → `hide_owned_*` RPCs → `save_recipe` ext → `reconcile_account_delete` DEFINER → RLS rewrite).
+- Added a 9th follow-up migration (`r01_backup_table_rls`) to enable RLS on the rollback snapshot `_r01_recipes_owner_backup` (advisor gap, deny-all by no-policies).
+- Redeployed the reworked `delete-account` edge function (version 2) — runs `reconcile_account_delete` before `auth.admin.deleteUser`.
+- Flipped the `data-model.md#library-model` "target model" preamble + the matching `features.md` callouts; CLAUDE.md invariant #3 now lists `reconcile_account_delete` as the second live `SECURITY DEFINER` exception.
+- Phase 2 auto-reaper remains blocked on the deferred ratings/voting signal — see R-01 in `roadmap.md`.
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |

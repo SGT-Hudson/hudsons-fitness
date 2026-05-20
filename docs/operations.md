@@ -478,32 +478,34 @@ complete history rather than the lone Sprint-9 file.
 20260518040000_r14_drop_units.sql                   # applied 2026-05-18 (R-14)
 20260518050000_r08_drop_dead_tdee_cols.sql          # applied 2026-05-18 (R-08)
 20260518060000_r12_materialize_rpc.sql              # applied 2026-05-18 (R-12)
-20260520120000_r01_library_anon_seed.sql            # STAGED — R-01 (Wave-3, mandatory user checkpoint)
-20260520120010_r01_user_refs.sql                    # STAGED — R-01
-20260520120020_r01_backfill.sql                     # STAGED — R-01
-20260520120030_r01_drop_deleted_at.sql              # STAGED — R-01
-20260520120040_r01_hide_rpcs.sql                    # STAGED — R-01
-20260520120050_r01_save_recipe_ref.sql              # STAGED — R-01
-20260520120060_r01_account_delete_reconcile.sql     # STAGED — R-01 (2nd sanctioned DEFINER)
-20260520120070_r01_rls.sql                          # STAGED — R-01 (LAST DDL of the set)
+20260520120000_r01_library_anon_seed.sql            # applied 2026-05-20 (R-01)
+20260520120010_r01_user_refs.sql                    # applied 2026-05-20 (R-01)
+20260520120020_r01_backfill.sql                     # applied 2026-05-20 (R-01)
+20260520120030_r01_drop_deleted_at.sql              # applied 2026-05-20 (R-01)
+20260520120040_r01_hide_rpcs.sql                    # applied 2026-05-20 (R-01)
+20260520120050_r01_save_recipe_ref.sql              # applied 2026-05-20 (R-01)
+20260520120060_r01_account_delete_reconcile.sql     # applied 2026-05-20 (R-01, 2nd sanctioned DEFINER)
+20260520120070_r01_rls.sql                          # applied 2026-05-20 (R-01, LAST DDL of the set)
+20260520120080_r01_backup_table_rls.sql             # applied 2026-05-20 (R-01 follow-up — RLS-enable the rollback snapshot)
 ```
 
-**R-01 Wave-3 apply procedure (mandatory user checkpoint).** Apply the
-eight R-01 migrations **in order** (filename-lexicographic = build order)
-via `apply_migration`. They are NOT mutually order-free with each other
-— `r01_backfill` reads `recipes.deleted_at` (must run before
+**R-01 Wave-3 apply procedure (executed 2026-05-20).** The eight R-01
+migrations were applied **in order** (filename-lexicographic = build
+order) via `apply_migration`. They are NOT mutually order-free with each
+other — `r01_backfill` reads `recipes.deleted_at` (must run before
 `r01_drop_deleted_at`); `r01_hide_rpcs` and `r01_save_recipe_ref`
 reference `recipes.created_by_user_id` (must run after the rename in
 `r01_drop_deleted_at`); `r01_rls` is the LAST DDL and references both
 new tables + the renamed column. Relative to the other 2026-05-* staged
 migrations the set is **order-free** (disjoint object surface — see
-spec §11). After all eight DB migrations apply cleanly, redeploy the
-reworked `delete-account` edge function (it calls
-`reconcile_account_delete` — fails loudly if the function isn't there
-yet). Then drop the `⚠ staged, not yet applied; see R-01` qualifier
-from CLAUDE.md invariant #3 (per plan Task 12; the exception becomes
-simply "live" and the data-model.md `> ⚠ Changing — see R-01` callout
-is removed).
+spec §11). After the eight DB migrations applied, the post-apply security
+advisor flagged that `public._r01_recipes_owner_backup` (the rollback
+snapshot from migration 3) was exposed to PostgREST without RLS; the
+`r01_backup_table_rls` follow-up enables RLS with no policies
+(deny-all to anon/authenticated; service_role bypasses RLS for the
+rollback procedure). Then the reworked `delete-account` edge function was
+redeployed (it calls `reconcile_account_delete` — would fail loudly if
+the function wasn't there).
 
 The `20260518*` files were applied **individually** at the Wave-3 checkpoint
 (Supabase MCP `apply_migration`), not via `supabase db push` (prod's recorded

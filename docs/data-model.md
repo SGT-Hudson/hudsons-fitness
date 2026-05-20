@@ -348,9 +348,7 @@ Installed in the `extensions` schema (not `public`):
 ## Library Contribution & Lifecycle Model
 <a id="library-model"></a>
 
-> ⚠ Changing — see R-01 (D-A2/D-A3/D-A4)
-
-This is the **target** model. `ingredients` and `recipes` do **not** yet work this way; today `ingredients` is the shared crowdsourced library described above and `recipes` are private per-user rows with interim soft-delete (`deleted_at`). The model below is documented here as the decided destination, not current reality.
+This is the live model for `ingredients` and `recipes` as of the R-01 Phase 1 apply (2026-05-20). Phase 2 (the auto-reaper) is still gated on the deferred ratings/voting signal — see point 7 below and `roadmap.md` R-01.
 
 1. **Pool + reference.** `ingredients` and `recipes` become shared-pool entities from creation. Creating one inserts a pool item **and** a per-user *reference* row for the creator. "My library" = the set of my reference rows. Discovery = search the whole pool; adding a found item to my library = create a reference.
 2. **Private notes on the reference only.** Per-user notes live on the reference row, never on the pooled item. This is the structural PII firewall — personal data physically cannot enter the shared pool.
