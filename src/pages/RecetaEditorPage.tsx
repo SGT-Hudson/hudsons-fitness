@@ -64,6 +64,13 @@ export function RecetaEditorPage() {
       <h1 className="text-3xl font-bold tracking-tight">
         {isNew ? t('editor.newTitle') : t('editor.editTitle')}
       </h1>
+      {/* R-01 (★ model item 5): make the shared-library contract loud at
+          create time. Private content belongs in the per-user note on the
+          reference row (not yet UI-surfaced — coming with the library
+          notes feature), not in the recipe's name/description. */}
+      {isNew && (
+        <p className="text-sm text-muted-foreground">{t('editor.sharedLibraryHint')}</p>
+      )}
       <RecipeEditorForm
         initial={initial ?? emptyEditorState()}
         submitting={save.isPending}

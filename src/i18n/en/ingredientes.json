@@ -1,6 +1,7 @@
 {
   "pageTitle": "Ingredients",
-  "description": "Shared library. What you add becomes available to all users. You can only edit or delete what you created.",
+  "description": "Shared library. What you add becomes available to all users. You can only edit what you created; \"remove\" sends it to the anonymized library.",
+  "createNoteHint": "This will be contributed to the shared library. Private info (your typical quantity, reminders) belongs in the ingredient's note in your library, not in the name.",
   "newIngredient": "New ingredient",
   "searchPlaceholder": "Search by name or brand…",
   "tabs": {
@@ -40,7 +41,8 @@
     "empty": "No results.",
     "perUnit": "/ unit",
     "per100g": "/ 100 g",
-    "deleteConfirm": "Delete this ingredient? Recipes that use it will block the deletion.",
+    "removeFromLibrary": "Remove from my library",
+    "removeConfirm": "Remove this ingredient from your library? If you created it, it will no longer be editable (it becomes anonymized in the shared library).",
     "readOnly": "Read-only"
   },
   "source": {
@@ -51,8 +53,6 @@
     "manualShort": "Manual"
   },
   "errors": {
-    "invalid": "Check the fields. Some are missing or invalid.",
-    "inUseTitle": "Ingredient in use",
-    "inUseDescription": "Cannot delete because a recipe is still using it. Remove it from the affected recipes first."
+    "invalid": "Check the fields. Some are missing or invalid."
   }
 }

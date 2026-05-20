@@ -15,7 +15,10 @@ export function MealLogEntry({ log, onEdit }: Props) {
   const { t } = useTranslation('diario');
   const macros = computeMealLogMacros(log);
   const desc = describeMealLog(log);
-  const recipeDeleted = log.recipe?.deleted_at != null;
+  // R-01: `recipes.deleted_at` is gone. Anon-owned (creator-hidden)
+  // recipes still resolve via the open pool SELECT — no "recipe deleted"
+  // distinction surfaces here anymore; historical entries render normally
+  // (the never-orphan invariant).
 
   return (
     <li className="flex items-start gap-3 px-4 py-3 hover:bg-accent/40 transition-colors">
@@ -25,11 +28,6 @@ export function MealLogEntry({ log, onEdit }: Props) {
           {desc.detail && <span className="text-xs text-muted-foreground">· {desc.detail}</span>}
           {log.from_plan && (
             <Badge variant="secondary">{t('entry.fromPlan')}</Badge>
-          )}
-          {recipeDeleted && (
-            <span className="text-xs text-muted-foreground italic">
-              {t('entry.recipeDeleted')}
-            </span>
           )}
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums mt-0.5 flex-wrap">

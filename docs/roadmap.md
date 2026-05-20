@@ -65,8 +65,13 @@ reference shard carries it (never edit the decision entry).
 ## R-01 — ★ Library Contribution & Lifecycle Model (Phase 1 migration; Phase 2 reaper)
 - **decision:** D-A2, D-A3, D-A4
 - **blocked-by:** R-00
-- **status:** spec+plan ready (2026-05-18) — awaiting user review before
-  implementation
+- **status:** Phase 1 done (2026-05-20) — 8 staged migrations + the
+  `r01_backup_table_rls` follow-up applied to prod at the Wave-3 checkpoint
+  via Supabase MCP `apply_migration`; reworked `delete-account` edge fn
+  redeployed (version 2). Tier-3 pgTAP for RLS / RPC / backfill remains
+  gated behind R-16-Tier-3 / `supabase start` infra (not yet set up —
+  documented gap). Phase 2 (auto-reaper) still blocked on the deferred
+  ratings/voting signal.
 - **spec:** `docs/superpowers/specs/2026-05-18-library-model-phase1-design.md`
 - **plan:** `docs/superpowers/plans/2026-05-18-library-model-phase1-plan.md`
 - **scope:** Build the unified ★ Library Contribution & Lifecycle Model

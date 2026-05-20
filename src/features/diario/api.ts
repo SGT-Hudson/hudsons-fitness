@@ -23,11 +23,14 @@ export interface RecipeIngredientJoin {
   ingredient: Ingredient;
 }
 
+// R-01: `deleted_at` is gone from `recipes` (migration
+// 20260520120030). Anon-owned recipes (creator-hidden) still resolve via
+// the open pool SELECT — historical diary entries against them keep
+// rendering correctly (the never-orphan invariant).
 export interface RecipeForMealLog {
   id: string;
   name: string;
   servings: number;
-  deleted_at: string | null;
   recipe_ingredients: RecipeIngredientJoin[];
 }
 
@@ -45,7 +48,7 @@ export async function fetchMealLogsForDay(
     .select(
       `*,
        recipe:recipes (
-         id, name, servings, deleted_at,
+         id, name, servings,
          recipe_ingredients (
            id, recipe_id, ingredient_id, quantity, per_serving, display_order,
            ingredient:ingredients (*)
@@ -183,7 +186,7 @@ export async function fetchQuickAddRecipeRows(
     .select(
       `logged_on,
        recipe:recipes (
-         id, name, servings, deleted_at,
+         id, name, servings,
          recipe_ingredients (
            quantity, per_serving,
            ingredient:ingredients (*)
@@ -204,7 +207,6 @@ export async function fetchQuickAddRecipeRows(
       id: string;
       name: string;
       servings: number;
-      deleted_at: string | null;
       recipe_ingredients: {
         quantity: number;
         per_serving: boolean;
@@ -212,7 +214,7 @@ export async function fetchQuickAddRecipeRows(
       }[];
     } | null;
   }>) {
-    if (!r.recipe || r.recipe.deleted_at != null) continue;
+    if (!r.recipe) continue;
     const { perServing } = computeRecipeMacros({
       servings: r.recipe.servings,
       rows: r.recipe.recipe_ingredients.map((ri) => ({

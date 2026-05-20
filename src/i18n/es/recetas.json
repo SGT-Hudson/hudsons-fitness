@@ -18,12 +18,14 @@
     "ingredients_one": "{{count}} ingrediente",
     "ingredients_other": "{{count}} ingredientes",
     "updated": "Actualizada {{date}}",
-    "deleteConfirm": "¿Borrar la receta \"{{name}}\"? Se conserva en el histórico de comidas pero ya no aparecerá en la lista."
+    "removeFromLibrary": "Quitar de mi biblioteca",
+    "removeConfirm": "¿Quitar la receta \"{{name}}\" de tu biblioteca? Si la creaste tú, dejará de ser editable (pasará a la biblioteca compartida anonimizada). El histórico de comidas se conserva."
   },
   "editor": {
     "newTitle": "Nueva receta",
     "editTitle": "Editar receta",
-    "loading": "Cargando…"
+    "loading": "Cargando…",
+    "sharedLibraryHint": "Esta receta se añadirá a la biblioteca compartida. Información privada (notas, recordatorios) va mejor en la nota de la receta en tu biblioteca, no en el nombre o la descripción."
   },
   "form": {
     "name": "Nombre",
