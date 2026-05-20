@@ -16,6 +16,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n';
+
+// `./SessionEditor` transitively imports `@/lib/supabase` (via
+// ./ExerciseBlock → ../exercises/api). Stub it before the component
+// import so module-load doesn't throw under the test env.
+vi.mock('@/lib/supabase', () => ({
+  supabase: { from: vi.fn(), rpc: vi.fn() },
+}));
+
 import type { Exercise } from '../exercises/api';
 import { SessionEditor } from './SessionEditor';
 

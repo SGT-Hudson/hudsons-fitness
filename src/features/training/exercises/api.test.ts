@@ -1,4 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// `./api` imports `@/lib/supabase`, which throws on module load when the
+// VITE_SUPABASE_* env vars aren't set (Tier-1 tests run in Node, no env).
+// The tests below only exercise pure helpers — stub supabase so the
+// transitive import doesn't fail to load.
+vi.mock('@/lib/supabase', () => ({
+  supabase: { from: vi.fn(), rpc: vi.fn() },
+}));
+
 import { exerciseDisplayName, suggestIncrementForEquipment, type Exercise } from './api';
 
 describe('suggestIncrementForEquipment', () => {
