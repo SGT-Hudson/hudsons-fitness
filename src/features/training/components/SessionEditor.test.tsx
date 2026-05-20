@@ -94,28 +94,32 @@ describe('SessionEditor (Tier-2)', () => {
     const { onSubmit, onSaved } = renderEditor();
 
     await user.click(screen.getByTestId('pick-mock'));
-    // Picker now in "selected" state — set inputs are visible.
-    expect(await screen.findByTestId('picker-selected')).toBeTruthy();
+
+    // ExerciseBlock swaps out the picker entirely once an exercise is
+    // picked; the set inputs become visible. Wait on the reps input as
+    // the post-pick render signal.
+    await waitFor(() =>
+      expect(
+        document.querySelector('input[name="blocks.0.sets.0.reps"]'),
+      ).toBeTruthy(),
+    );
 
     const repsInput = document.querySelector<HTMLInputElement>(
       'input[name="blocks.0.sets.0.reps"]',
-    );
+    )!;
     const weightInput = document.querySelector<HTMLInputElement>(
       'input[name="blocks.0.sets.0.weight_kg"]',
-    );
+    )!;
     const rpeInput = document.querySelector<HTMLInputElement>(
       'input[name="blocks.0.sets.0.rpe"]',
-    );
-    expect(repsInput).toBeTruthy();
-    expect(weightInput).toBeTruthy();
-    expect(rpeInput).toBeTruthy();
+    )!;
 
-    await user.clear(repsInput!);
-    await user.type(repsInput!, '8');
-    await user.clear(weightInput!);
-    await user.type(weightInput!, '70');
-    await user.clear(rpeInput!);
-    await user.type(rpeInput!, '7');
+    await user.clear(repsInput);
+    await user.type(repsInput, '8');
+    await user.clear(weightInput);
+    await user.type(weightInput, '70');
+    await user.clear(rpeInput);
+    await user.type(rpeInput, '7');
 
     await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:editor.save') }));
 
