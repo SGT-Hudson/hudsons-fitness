@@ -469,16 +469,41 @@ complete history rather than the lone Sprint-9 file.
 **Migration sequence (the Wave-3 set was applied 2026-05-18).** Filename-lexicographic order:
 
 ```
-20260508080000_r00_baseline_schema.sql      # pre-Sprint-9 baseline (R-00)
-20260514120000_sprint9_cron_and_jobs.sql    # Sprint 9 cron/RPC/Vault helper
-20260518000000_r06_fat_pct_check.sql        # applied 2026-05-18 (R-06)
-20260518010000_r18_cron_healthcheck.sql     # applied 2026-05-18 (R-18)
-20260518020000_r07_adaptive_tdee_state.sql  # applied 2026-05-18 (R-07)
-20260518030000_r03_drop_bone_kg.sql         # applied 2026-05-18 (R-03)
-20260518040000_r14_drop_units.sql           # applied 2026-05-18 (R-14)
-20260518050000_r08_drop_dead_tdee_cols.sql  # applied 2026-05-18 (R-08)
-20260518060000_r12_materialize_rpc.sql      # applied 2026-05-18 (R-12)
+20260508080000_r00_baseline_schema.sql              # pre-Sprint-9 baseline (R-00)
+20260514120000_sprint9_cron_and_jobs.sql            # Sprint 9 cron/RPC/Vault helper
+20260518000000_r06_fat_pct_check.sql                # applied 2026-05-18 (R-06)
+20260518010000_r18_cron_healthcheck.sql             # applied 2026-05-18 (R-18)
+20260518020000_r07_adaptive_tdee_state.sql          # applied 2026-05-18 (R-07)
+20260518030000_r03_drop_bone_kg.sql                 # applied 2026-05-18 (R-03)
+20260518040000_r14_drop_units.sql                   # applied 2026-05-18 (R-14)
+20260518050000_r08_drop_dead_tdee_cols.sql          # applied 2026-05-18 (R-08)
+20260518060000_r12_materialize_rpc.sql              # applied 2026-05-18 (R-12)
+20260520120000_r01_library_anon_seed.sql            # STAGED — R-01 (Wave-3, mandatory user checkpoint)
+20260520120010_r01_user_refs.sql                    # STAGED — R-01
+20260520120020_r01_backfill.sql                     # STAGED — R-01
+20260520120030_r01_drop_deleted_at.sql              # STAGED — R-01
+20260520120040_r01_hide_rpcs.sql                    # STAGED — R-01
+20260520120050_r01_save_recipe_ref.sql              # STAGED — R-01
+20260520120060_r01_account_delete_reconcile.sql     # STAGED — R-01 (2nd sanctioned DEFINER)
+20260520120070_r01_rls.sql                          # STAGED — R-01 (LAST DDL of the set)
 ```
+
+**R-01 Wave-3 apply procedure (mandatory user checkpoint).** Apply the
+eight R-01 migrations **in order** (filename-lexicographic = build order)
+via `apply_migration`. They are NOT mutually order-free with each other
+— `r01_backfill` reads `recipes.deleted_at` (must run before
+`r01_drop_deleted_at`); `r01_hide_rpcs` and `r01_save_recipe_ref`
+reference `recipes.created_by_user_id` (must run after the rename in
+`r01_drop_deleted_at`); `r01_rls` is the LAST DDL and references both
+new tables + the renamed column. Relative to the other 2026-05-* staged
+migrations the set is **order-free** (disjoint object surface — see
+spec §11). After all eight DB migrations apply cleanly, redeploy the
+reworked `delete-account` edge function (it calls
+`reconcile_account_delete` — fails loudly if the function isn't there
+yet). Then drop the `⚠ staged, not yet applied; see R-01` qualifier
+from CLAUDE.md invariant #3 (per plan Task 12; the exception becomes
+simply "live" and the data-model.md `> ⚠ Changing — see R-01` callout
+is removed).
 
 The `20260518*` files were applied **individually** at the Wave-3 checkpoint
 (Supabase MCP `apply_migration`), not via `supabase db push` (prod's recorded

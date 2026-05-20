@@ -65,8 +65,10 @@ reference shard carries it (never edit the decision entry).
 ## R-01 — ★ Library Contribution & Lifecycle Model (Phase 1 migration; Phase 2 reaper)
 - **decision:** D-A2, D-A3, D-A4
 - **blocked-by:** R-00
-- **status:** spec+plan ready (2026-05-18) — awaiting user review before
-  implementation
+- **status:** in-progress (2026-05-20) — Tasks 1–12 staged on
+  `claude/r01-spec`; pending Wave-3 prod apply (mandatory user checkpoint).
+  Tier-3 pgTAP gated behind R-16-Tier-3 / `supabase start` infra (not yet
+  set up — documented gap).
 - **spec:** `docs/superpowers/specs/2026-05-18-library-model-phase1-design.md`
 - **plan:** `docs/superpowers/plans/2026-05-18-library-model-phase1-plan.md`
 - **scope:** Build the unified ★ Library Contribution & Lifecycle Model
