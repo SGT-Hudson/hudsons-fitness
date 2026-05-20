@@ -18,12 +18,14 @@
     "ingredients_one": "{{count}} ingredient",
     "ingredients_other": "{{count}} ingredients",
     "updated": "Updated {{date}}",
-    "deleteConfirm": "Delete recipe \"{{name}}\"? It stays in your meal history but no longer appears in the list."
+    "removeFromLibrary": "Remove from my library",
+    "removeConfirm": "Remove recipe \"{{name}}\" from your library? If you created it, it will no longer be editable (it becomes anonymized in the shared library). Your meal history is preserved."
   },
   "editor": {
     "newTitle": "New recipe",
     "editTitle": "Edit recipe",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "sharedLibraryHint": "This recipe will be contributed to the shared library. Private info (notes, reminders) belongs in the recipe's note in your library, not in the name or description."
   },
   "form": {
     "name": "Name",

@@ -1,0 +1,22 @@
+-- R-01 follow-up — Enable RLS on the Task-3 rollback snapshot table.
+--
+-- Applied 2026-05-20 alongside the eight staged R-01 migrations.
+--
+-- The Task-3 backfill creates `public._r01_recipes_owner_backup` to make
+-- the (recipe_id, user_id, deleted_at) rollback unambiguous. Migration 3
+-- (`r01_backfill`) intentionally leaves the table in place after apply
+-- — it documents the rollback boundary — but did not enable RLS, so the
+-- post-apply Supabase security advisor flagged it (ERROR-level
+-- `rls_disabled_in_public`: any authenticated client could read the
+-- snapshot via PostgREST).
+--
+-- Fix: enable RLS with NO policies. Effect: all access denied for `anon`
+-- and `authenticated`; `service_role` bypasses RLS so the rollback
+-- procedure (operations.md) keeps working. The post-apply advisor
+-- downgrades to INFO `rls_enabled_no_policy`, which is the intended state
+-- for an admin-only snapshot table.
+alter table public._r01_recipes_owner_backup enable row level security;
+
+-- ── ROLLBACK ───────────────────────────────────────────────────────────────
+-- ROLLBACK:
+--   alter table public._r01_recipes_owner_backup disable row level security;

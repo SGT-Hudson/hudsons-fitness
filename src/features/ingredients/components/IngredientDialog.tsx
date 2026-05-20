@@ -164,6 +164,16 @@ export function IngredientDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onValid, onInvalid)} className="space-y-4">
+          {/* R-01 (★ model item 5): explicit shared-library contract at
+              create time. Private content goes in the per-user note on
+              the user_ingredient_refs row (not yet UI-surfaced — coming
+              with the library notes feature), not in the ingredient
+              name/brand. */}
+          {!isEdit && (
+            <p className="text-xs text-muted-foreground rounded-md border border-dashed p-2">
+              {t('createNoteHint')}
+            </p>
+          )}
           {!isEdit ? (
             <Tabs value={tab} onValueChange={(v) => setTab(v as 'off' | 'manual')}>
               <TabsList>

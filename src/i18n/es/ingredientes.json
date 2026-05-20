@@ -1,6 +1,7 @@
 {
   "pageTitle": "Ingredientes",
-  "description": "Biblioteca compartida. Lo que añadas estará disponible para todos los usuarios. Solo puedes editar o borrar lo que tú creaste.",
+  "description": "Biblioteca compartida. Lo que añadas estará disponible para todos los usuarios. Solo puedes editar lo que tú creaste; al \"quitar\" pasa a la biblioteca anonimizada.",
+  "createNoteHint": "Esto se añadirá a la biblioteca compartida. Información privada (cantidad típica para ti, recordatorios) va mejor en la nota del ingrediente en tu biblioteca, no en el nombre.",
   "newIngredient": "Nuevo ingrediente",
   "searchPlaceholder": "Buscar por nombre o marca…",
   "tabs": {
@@ -40,7 +41,8 @@
     "empty": "Sin resultados.",
     "perUnit": "/ ud",
     "per100g": "/ 100 g",
-    "deleteConfirm": "¿Borrar este ingrediente? Las recetas que lo usen impedirán el borrado.",
+    "removeFromLibrary": "Quitar de mi biblioteca",
+    "removeConfirm": "¿Quitar este ingrediente de tu biblioteca? Si lo creaste tú, dejará de ser editable (pasará a la biblioteca compartida anonimizada).",
     "readOnly": "Solo lectura"
   },
   "source": {
@@ -51,8 +53,6 @@
     "manualShort": "Manual"
   },
   "errors": {
-    "invalid": "Revisa los campos. Faltan datos o hay valores no válidos.",
-    "inUseTitle": "Ingrediente en uso",
-    "inUseDescription": "No se puede eliminar porque alguna receta lo está usando. Quítalo primero de las recetas afectadas."
+    "invalid": "Revisa los campos. Faltan datos o hay valores no válidos."
   }
 }

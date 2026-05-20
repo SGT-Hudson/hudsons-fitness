@@ -126,24 +126,25 @@ by 5 servings while the 70 g of rice is counted per plate).
 
 The Recetas list offers a grid/list view toggle persisted to `localStorage`:
 the grid shows recipe cards (photo or initials placeholder, name, kcal/serving,
-ingredient-count badge); the list shows dense rows with the same fields. Recipe
-deletion is currently a soft delete (`deleted_at` + partial unique index where
-`deleted_at is null`).
-
-> ⚠ Changing — see R-01 (D-A2/D-A3/D-A4). Recipes fold into the ★ Library
-> Contribution & Lifecycle Model (shared pool + per-user reference rows;
-> "delete" = drop your reference); the interim `deleted_at` soft-delete is
-> replaced by that structure. See `data-model.md#library-model`.
+ingredient-count badge); the list shows dense rows with the same fields.
+Recipes are part of the ★ Library Contribution & Lifecycle Model
+(`data-model.md#library-model`): the pool is shared, "my library" is the set
+of my `user_recipe_refs` rows, and "delete" = `hide_owned_recipe` (drops my
+ref, and if I was the real owner, transfers pool ownership to the reserved
+anon sentinel).
 
 ## Ingredients (shared library & OFF import)
 
-The ingredient library is shared across all users (the crowdsourced model in
-`data-model.md`): anyone reads the whole pool, anyone inserts (tagged with
-`created_by_user_id`), only the creator edits/deletes their own rows, and
-`created_by_user_id = null` rows are immutable system seeds. Macros are stored
-per 100 g, or per unit when `unit_type = 'unit'` (eggs, egg whites, protein
-scoops). `pg_trgm` trigram indexes back fuzzy name/brand search (so "yogur"
-matches "yogures", "yogurt", and typos).
+The ingredient library is shared across all users under the ★ Library
+Contribution & Lifecycle Model (`data-model.md#library-model`): anyone reads
+the whole pool, anyone inserts (tagged with `created_by_user_id` = self), only
+the real owner edits/deletes their own rows (anon-sentinel-owned and `null`
+seed rows are immutable), and "delete" = `hide_owned_ingredient` (drops my
+`user_ingredient_refs` row and, if I was the real owner, transfers pool
+ownership to the anon sentinel). Macros are stored per 100 g, or per unit when
+`unit_type = 'unit'` (eggs, egg whites, protein scoops). `pg_trgm` trigram
+indexes back fuzzy name/brand search (so "yogur" matches "yogures", "yogurt",
+and typos).
 
 Search (on the Ingredientes page and inside the recipe editor's autocomplete)
 is **local-first**: it queries the shared library, ordering verified rows
@@ -161,12 +162,9 @@ The Create Ingredient modal (opened from "+ Nuevo" on Ingredientes or the
 recipe editor's sticky "+ Crear nuevo" autocomplete item) has a debounced
 OpenFoodFacts search tab and a manual-entry tab; a barcode-import tab is a
 disabled placeholder (a future product idea, below). On save it returns the new
-`ingredient_id` to whatever opened it. Ingredient duplicates are tolerated (no
-dedup in the MVP).
-
-> ⚠ Changing — see R-01 (D-A2/D-A3/D-A4). Ingredients fold into the same ★
-> Library Contribution & Lifecycle Model; tolerated duplicates are structurally
-> resolved by that model's Phase-2 reaper, not a dedicated dedup feature.
+`ingredient_id` to whatever opened it. Ingredient duplicates are tolerated in
+Phase 1; the ★ model's Phase-2 reaper (R-01) is the structural resolution
+(gated on the deferred ratings/voting signal), not a dedicated dedup feature.
 
 ## Macros & phases
 

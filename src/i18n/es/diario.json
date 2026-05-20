@@ -42,8 +42,7 @@
   },
   "entry": {
     "edit": "Editar entrada",
-    "fromPlan": "Del plan",
-    "recipeDeleted": "(receta eliminada)"
+    "fromPlan": "Del plan"
   },
   "tabs": {
     "recipe": "Receta",
