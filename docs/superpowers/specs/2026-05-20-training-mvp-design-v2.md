@@ -32,6 +32,7 @@ Read this first; everything below assumes these are locked unless flagged.
 | 0.8 | Coach approach | transparent rules over the user's own data; **no LLM, ever** — permanent product decision (see §2.2) | settled |
 | 0.9 | Coach rules in MVP | four-rule starter catalog (§7); catalog expands in 2026-05-21 brainstorm | starter set settled; full catalog **open** |
 | 0.10 | Section split / home redesign / onboarding / desktop layout | **out of MVP scope** — each its own spec (§11) | settled |
+| 0.11 | Exercise names bilingual | `name_es text not null` + `name_en text null`; trigram index on both; display picks via `profile.language` with fallback (§4.1, §8) | settled |
 
 ---
 
@@ -147,13 +148,32 @@ applied to exercises.
 | column | type | notes |
 |---|---|---|
 | `id` | uuid pk | |
-| `name` | text not null | trigram-indexed (reuse `pg_trgm`, already enabled) |
+| `name_es` | text not null | Spanish name (primary locale); trigram-indexed |
+| `name_en` | text null | English name; trigram-indexed when present. Nullable so user-contributed exercises in ES don't have to provide EN |
 | `primary_muscle` | text null | controlled vocab (`chest`/`back`/`quads`/…); CHECK constraint, not enum (same stance as `kcal_mode`) |
 | `equipment` | text null | `barbell`/`dumbbell`/`machine`/`cable`/`bodyweight`/`other` |
 | `is_verified` | bool not null default false | curated-quality flag, same as ingredients |
 | `created_by_user_id` | uuid null | `null` ⇒ immutable system seed; non-null ⇒ creator (R-01 anon-ownership applies on creator hide) |
 | `source` | text not null default `'manual'` | `manual` / `system` |
 | `created_at` / `updated_at` | timestamptz | |
+
+**Bilingual rationale (settled §0.11):** unlike ingredients/recipes — open-
+ended namespaces where translations rarely have canonical forms ("Pollo al
+limón" has no direct EN) — exercises are a **controlled, finite, 1:1-mappable
+namespace** ("Bench Press" ↔ "Press de banca"). System seeds populate both
+columns; user contributions provide at least one (the locale they're in)
+and `name_en` is nullable. Two trigram GIN indexes
+(`gin (name_es extensions.gin_trgm_ops)` and a partial
+`gin (name_en extensions.gin_trgm_ops) where name_en is not null`); search
+runs across both, display picks based on `profile.language` and falls back
+to the other column when the preferred one is null. CHECK enforces "at
+least one name present": `check (name_es is not null or name_en is not null)`
+(belt-and-braces; the not-null on `name_es` already gives us this, but the
+CHECK survives any future relaxation).
+
+This is a **deliberate divergence** from the ingredient pattern, justified
+by the controlled-namespace nature. Whether to backfill ingredients to a
+bilingual shape is a separate future R-id, *not* part of this spec.
 
 **RLS — copied from the post-R-01 `ingredients` policies verbatim** (no new
 pattern). Reference rows (per-user "I use this exercise") are a separate
@@ -163,10 +183,10 @@ with whatever R-01 actually ships — that is the whole point of the
 R-01-prerequisite decision.
 
 **Seed migration:** ~30–40 common lifts as system rows
-(`created_by_user_id = null`, `source = 'system'`, `is_verified = true`) —
-squat/bench/deadlift/OHP/row variants, the standard machine/dumbbell
-accessories. Idempotent insert (same pattern as the proposed BEDCA seed,
-direction doc item K).
+(`created_by_user_id = null`, `source = 'system'`, `is_verified = true`,
+`name_es` AND `name_en` both populated) — squat/bench/deadlift/OHP/row
+variants, the standard machine/dumbbell accessories. Idempotent insert
+(same pattern as the proposed BEDCA seed, direction doc item K).
 
 ### 4.2 `workout_sessions` (user-owned, one per logical workout)
 
@@ -422,7 +442,11 @@ New route `/entrenamiento` (ES primary, consistent with `/objetivos`,
 - **Session editor** — date, title/notes, then per-exercise blocks; each
   block has:
   - an exercise autocomplete (reuse the `IngredientAutocomplete` pattern
-    against `exercises`),
+    against `exercises`). **Locale-aware (§4.1):** the picker queries both
+    `name_es` and `name_en` via trigram, displays the row in the user's
+    preferred language (`profile.language`), falling back to the other when
+    that column is null. The query is a single `or (name_es ilike … or
+    name_en ilike …)` — no separate code paths per locale.
   - **coach suggestions** rendered above the set rows (§7.3),
   - an add-set row (reps / kg / RPE / warmup), with the **last working set
     rendered as placeholder** when history exists (§6).
