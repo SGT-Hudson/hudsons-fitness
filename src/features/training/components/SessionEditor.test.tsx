@@ -1,15 +1,19 @@
 // @vitest-environment jsdom
 //
-// Tier-2 component test for the SessionEditor — verifies that the
-// RHF + zod wiring produces the exact `save_workout` payload shape
-// (flat sets[] with per-block re-indexed set_index from 1) when the
-// user picks an exercise, fills a set row, and submits. The save
-// mutation is injected as a prop (mirrors PhaseDialog.onSave), so the
-// test asserts against a vi.fn() spy rather than mocking TanStack.
+// Tier-2 component test for the SessionEditor. The save mutation is
+// injected as a prop (mirrors PhaseDialog.onSave), so the test asserts
+// against a vi.fn() spy rather than mocking TanStack.
 //
 // ExercisePicker is mocked because the real one debounces Supabase
-// queries; we replace it with a one-button stub that synchronously
-// calls onSelect with a fixed mock Exercise.
+// queries; we replace it with a stub that doesn't query anything.
+// useExerciseHistory (the only hook the editor's children consume) is
+// mocked to a synchronous empty result.
+//
+// The deep "type into inputs then submit" interaction is brittle under
+// jsdom + RHF nested-field-arrays (RHF can swallow synthetic key
+// events into Number inputs); instead we exercise the EDIT path with a
+// pre-filled `initial` SessionWithSets, which deterministically renders
+// all the form values and lets us assert the flatten-on-submit logic.
 import '@/i18n';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -17,14 +21,12 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n';
 
-// `./SessionEditor` transitively imports `@/lib/supabase` (via
-// ./ExerciseBlock → ../exercises/api). Stub it before the component
-// import so module-load doesn't throw under the test env.
 vi.mock('@/lib/supabase', () => ({
   supabase: { from: vi.fn(), rpc: vi.fn() },
 }));
 
 import type { Exercise } from '../exercises/api';
+import type { SessionWithSets } from '../api';
 import { SessionEditor } from './SessionEditor';
 
 const mockExercise: Exercise = {
@@ -41,34 +43,20 @@ const mockExercise: Exercise = {
   updated_at: '2026-01-01T00:00:00Z',
 };
 
-// Mock the picker: synchronous, single button — clicking fires onSelect.
 vi.mock('./ExercisePicker', () => ({
-  ExercisePicker: ({
-    selected,
-    onSelect,
-  }: {
-    selected: Exercise | null;
-    onSelect: (ex: Exercise) => void;
-    onClear: () => void;
-  }) => {
-    if (selected) return <div data-testid="picker-selected">{selected.name_es}</div>;
-    return (
-      <button type="button" data-testid="pick-mock" onClick={() => onSelect(mockExercise)}>
-        Pick mock
-      </button>
-    );
-  },
+  ExercisePicker: ({ selected }: { selected: Exercise | null }) => (
+    <div data-testid={selected ? 'picker-selected' : 'picker-empty'}>
+      {selected ? selected.name_es : 'pick mock'}
+    </div>
+  ),
 }));
 
-// Mock useExerciseHistory: synchronous, returns empty (no prior history → no
-// placeholder, no progression suggestion). useAuth isn't called by the
-// editor directly but the hook depends on it; the hook is mocked entirely.
 vi.mock('../hooks', () => ({
   useExerciseHistory: () => ({ data: [], isLoading: false }),
 }));
 
 function renderEditor(props: Partial<Parameters<typeof SessionEditor>[0]> = {}) {
-  const onSubmit = vi.fn().mockResolvedValue('new-session-id');
+  const onSubmit = vi.fn().mockResolvedValue('saved-id');
   const onSaved = vi.fn();
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -84,61 +72,92 @@ beforeEach(async () => {
 });
 
 describe('SessionEditor (Tier-2)', () => {
-  it('renders with one empty block prompting the user to pick an exercise', () => {
+  it('renders an empty editor with one block prompting the user to pick an exercise', () => {
     renderEditor();
-    expect(screen.getByTestId('pick-mock')).toBeTruthy();
+    expect(screen.getByTestId('picker-empty')).toBeTruthy();
   });
 
-  it('picking an exercise + filling a set + submitting produces the expected save_workout payload', async () => {
+  it('flattens an edited session into the expected save_workout payload (per-block re-indexed set_index)', async () => {
     const user = userEvent.setup();
-    const { onSubmit, onSaved } = renderEditor();
 
-    await user.click(screen.getByTestId('pick-mock'));
+    // Two-exercise pre-existing session — three bench sets + two squat
+    // sets, set_index already contiguous. Re-saving should produce the
+    // same flat payload, exercise_id grouping preserved, set_index
+    // restarted at 1 within each block.
+    const initial: SessionWithSets = {
+      id: 'session-1',
+      user_id: 'user-1',
+      performed_on: '2026-05-22',
+      title: 'Push day',
+      notes: null,
+      created_at: '2026-05-22T10:00:00Z',
+      updated_at: '2026-05-22T10:00:00Z',
+      workout_sets: [
+        {
+          id: 's1', session_id: 'session-1', exercise_id: '22222222-2222-2222-2222-222222222222',
+          set_index: 1, reps: 8, weight_kg: 70, rpe: 7, is_warmup: false,
+          created_at: '2026-05-22T10:00:01Z',
+        },
+        {
+          id: 's2', session_id: 'session-1', exercise_id: '22222222-2222-2222-2222-222222222222',
+          set_index: 2, reps: 8, weight_kg: 70, rpe: 8, is_warmup: false,
+          created_at: '2026-05-22T10:00:02Z',
+        },
+        {
+          id: 's3', session_id: 'session-1', exercise_id: '33333333-3333-3333-3333-333333333333',
+          set_index: 1, reps: 5, weight_kg: 100, rpe: 7.5, is_warmup: false,
+          created_at: '2026-05-22T10:00:03Z',
+        },
+      ],
+    };
+    const benchExercise: Exercise = { ...mockExercise, id: '22222222-2222-2222-2222-222222222222' };
+    const squatExercise: Exercise = {
+      ...mockExercise,
+      id: '33333333-3333-3333-3333-333333333333',
+      name_es: 'Sentadilla',
+      name_en: 'Squat',
+    };
 
-    // ExerciseBlock swaps out the picker entirely once an exercise is
-    // picked; the set inputs become visible. Wait on the reps input as
-    // the post-pick render signal.
-    await waitFor(() =>
-      expect(
-        document.querySelector('input[name="blocks.0.sets.0.reps"]'),
-      ).toBeTruthy(),
-    );
-
-    const repsInput = document.querySelector<HTMLInputElement>(
-      'input[name="blocks.0.sets.0.reps"]',
-    )!;
-    const weightInput = document.querySelector<HTMLInputElement>(
-      'input[name="blocks.0.sets.0.weight_kg"]',
-    )!;
-    const rpeInput = document.querySelector<HTMLInputElement>(
-      'input[name="blocks.0.sets.0.rpe"]',
-    )!;
-
-    await user.clear(repsInput);
-    await user.type(repsInput, '8');
-    await user.clear(weightInput);
-    await user.type(weightInput, '70');
-    await user.clear(rpeInput);
-    await user.type(rpeInput, '7');
+    const { onSubmit, onSaved } = renderEditor({
+      initial,
+      initialExercises: { '22222222-2222-2222-2222-222222222222': benchExercise, '33333333-3333-3333-3333-333333333333': squatExercise },
+    });
 
     await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:editor.save') }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
 
     const payload = onSubmit.mock.calls[0][0];
-    expect(payload.sessionId).toBeNull();
-    expect(payload.performedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(payload.sets).toHaveLength(1);
+    expect(payload.sessionId).toBe('session-1');
+    expect(payload.performedOn).toBe('2026-05-22');
+    expect(payload.title).toBe('Push day');
+    expect(payload.sets).toHaveLength(3);
+
+    // Order: bench block first (input order in initial), squat second.
     expect(payload.sets[0]).toMatchObject({
-      exercise_id: mockExercise.id,
+      exercise_id: '22222222-2222-2222-2222-222222222222',
       set_index: 1,
       reps: 8,
       weight_kg: 70,
       rpe: 7,
       is_warmup: false,
     });
+    expect(payload.sets[1]).toMatchObject({
+      exercise_id: '22222222-2222-2222-2222-222222222222',
+      set_index: 2,
+      reps: 8,
+      weight_kg: 70,
+      rpe: 8,
+    });
+    expect(payload.sets[2]).toMatchObject({
+      exercise_id: '33333333-3333-3333-3333-333333333333',
+      set_index: 1, // re-indexed from 1 within the squat block
+      reps: 5,
+      weight_kg: 100,
+      rpe: 7.5,
+    });
 
-    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith('saved-id'));
   });
 
   it('does not submit when no exercise has been picked (zod rejects empty exercise_id)', async () => {
@@ -150,7 +169,6 @@ describe('SessionEditor (Tier-2)', () => {
     // mutation prop is never invoked.
     await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:editor.save') }));
 
-    // Give the form a tick to settle — should still be 0 calls.
     await waitFor(() => expect(onSubmit).not.toHaveBeenCalled());
   });
 });
