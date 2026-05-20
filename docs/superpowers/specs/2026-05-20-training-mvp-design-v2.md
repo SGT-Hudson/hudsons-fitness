@@ -30,9 +30,13 @@ Read this first; everything below assumes these are locked unless flagged.
 | 0.6 | Migration ordering | timestamped after the latest applied; `if not exists`-guarded; regen `database.ts` | mechanical |
 | 0.7 | Repeat-last semantics | prefill the **last working set** only (not the whole sequence; not warmups) | settled |
 | 0.8 | Coach approach | transparent rules over the user's own data; **no LLM, ever** — permanent product decision (see §2.2) | settled |
-| 0.9 | Coach rules in MVP | four-rule starter catalog (§7); catalog expands in 2026-05-21 brainstorm | starter set settled; full catalog **open** |
+| 0.9 | Coach rules in MVP | **five**-rule starter catalog (§7) — Rule 1 (double-progression, RPE-gated), Rule 1b (rep-progression, no RPE), plus rules 2/3/4. Catalog expands in 2026-05-21 brainstorm | starter set settled; full catalog **open** |
 | 0.10 | Section split / home redesign / onboarding / desktop layout | **out of MVP scope** — each its own spec (§11) | settled |
 | 0.11 | Exercise names bilingual | `name_es text not null` + `name_en text null`; trigram index on both; display picks via `profile.language` with fallback (§4.1, §8) | settled |
+| 0.12 | Coach Rule 1b (rep-progression) | NEW rule alongside Rule 1: same exercise + same load + last N sessions' top-set rep count strictly increasing → suggest next load. No RPE needed — serves failure-style training where Rule 1's RPE filter never fires. §7.1 | settled |
+| 0.13 | Equipment vocab (expanded) | 8 values: `barbell, dumbbell, kettlebell, machine, cable, bodyweight, band, other`. `cable` covers pulley exercises (lifters use the words interchangeably). CHECK constraint, not enum. §4.1 | settled |
+| 0.14 | Per-exercise load increment | `default_increment_kg numeric null` column on `exercises`. System seeds populate per movement (bench 2.5, squat 5, OHP 2.5, DB row 1.0, KB swing 4.0). User-contributed exercises auto-suggest from equipment but the user can override at creation. Replaces the static equipment-keyed map. §4.1, §7.1 | settled |
+| 0.15 | Suggestion UX | When any progression rule fires, the suggested next load is shown as **editable** before the user commits — rule-derived default, user-final decision. Stays consistent with the no-LLM trust contract (§2.2). §7.3 | settled |
 
 ---
 
@@ -151,7 +155,8 @@ applied to exercises.
 | `name_es` | text not null | Spanish name (primary locale); trigram-indexed |
 | `name_en` | text null | English name; trigram-indexed when present. Nullable so user-contributed exercises in ES don't have to provide EN |
 | `primary_muscle` | text null | controlled vocab (`chest`/`back`/`quads`/…); CHECK constraint, not enum (same stance as `kcal_mode`) |
-| `equipment` | text null | `barbell`/`dumbbell`/`machine`/`cable`/`bodyweight`/`other` |
+| `equipment` | text null | controlled vocab — 8 values: `barbell`, `dumbbell`, `kettlebell`, `machine`, `cable`, `bodyweight`, `band`, `other`. `cable` covers pulley exercises. CHECK constraint, not enum. |
+| `default_increment_kg` | numeric null | suggested load jump for this exercise when a progression rule fires (§7.1). System seeds populate per movement (bench 2.5, squat 5, OHP 2.5, deadlift 5, dumbbell row 1.0, KB swing 4.0, cable lat-pulldown 2.5, etc.). User-contributed exercises get an equipment-derived auto-default at creation but the user may override before saving. `null` falls back to the equipment-derived default in code. CHECK enforces `> 0` when set. |
 | `is_verified` | bool not null default false | curated-quality flag, same as ingredients |
 | `created_by_user_id` | uuid null | `null` ⇒ immutable system seed; non-null ⇒ creator (R-01 anon-ownership applies on creator hide) |
 | `source` | text not null default `'manual'` | `manual` / `system` |
@@ -352,20 +357,40 @@ the inputs that triggered it ("3 sets at 8 × 70 kg, RPE ≤ 7 over your last
 shape mirrors the adaptive-TDEE coaching surface (post-V1 direction doc
 item A) — surface an engine you already have over the user's own data.
 
-### 7.1 The four MVP rules (starter catalog)
+### 7.1 The five MVP rules (starter catalog)
 
 **Catalog will be expanded in a 2026-05-21 brainstorm** (§0.9, §12).
-These four anchor the surface and prove the design:
+These five anchor the surface and prove the design. Rule 1 and Rule 1b
+are deliberate alternatives — they serve different lifter styles and
+co-exist (each fires when its conditions match; either, both, or neither
+can fire on the same session).
 
-1. **Double progression.** *Trigger:* the last `N` (default 3) sessions
-   containing this exercise have a working set that hit the target reps
-   (default 8) at RPE ≤ `rpeMax` (default 7), at the same `weight_kg`.
-   *Suggestion:* "+`increment` kg next time" (default +2.5 kg barbell,
-   +1.0 kg dumbbell — equipment-aware).
+1. **Double progression (RPE-gated).** Serves sub-maximal lifters who log
+   RPE. *Trigger:* the last `N` (default 3) sessions containing this
+   exercise have a working set that hit the target reps (default 8) at
+   RPE ≤ `rpeMax` (default 7), at the same `weight_kg`. *Suggestion:*
+   "+`increment` kg next time" — the increment comes from
+   `exercises.default_increment_kg` (§4.1), falling back to an
+   equipment-derived default when null. *Refuses to fire when any set in
+   the window has `rpe IS NULL`* (can't conclude a chain without rated
+   sets).
+
+1. b. **Rep-progression (no RPE).** Serves failure-style training and
+   anyone who doesn't log RPE. *Trigger:* the last `N` (default 3)
+   sessions containing this exercise have a top working set at the same
+   `weight_kg`, and the rep count is *strictly increasing* across the
+   window (e.g. 6 → 7 → 8 at 70 kg). *Suggestion:* "+`increment` kg next
+   time" — increment source identical to Rule 1.
+   *Doesn't read RPE at all* — fires regardless of whether sets are rated.
+   Doesn't fire when reps are equal or decreasing; the signal is the
+   *increase* itself ("you're earning more reps at this load, you have
+   more in the tank").
+
 2. **Flat e1RM → deload nudge.** *Trigger:* the per-exercise e1RM trend
    slope is within ±`flatBand` (default ±1 kg) over the last
    `flatWindow` sessions (default 4) for this exercise. *Suggestion:*
    "consider a deload week on this lift; e1RM hasn't moved in 4 sessions."
+
 3. **RPE-climbing fatigue.** *Trigger:* across the last `N` sessions
    (default 3) for this exercise, comparing each session's *top working
    set at the same exact `weight_kg`*, RPE is strictly increasing
@@ -373,9 +398,19 @@ These four anchor the surface and prove the design:
    set at that weight don't reset the chain — they're skipped, so a
    variation week doesn't mask the pattern. *Suggestion:* "fatigue
    accumulating; consider dropping load 10% next session."
+
 4. **Days since muscle group.** *Trigger:* `daysSinceMuscle(primaryMuscle)`
    ≥ `muscleNudgeDays` (default 10). *Suggestion:* "haven't trained
    `primaryMuscle` in N days."
+
+**On Rule 1 + Rule 1b coexistence:** they're not redundant. Rule 1 fires
+on quality (RPE-rated sub-maximal work). Rule 1b fires on output (more
+reps at the same load). A lifter who rates RPE conservatively and also
+adds reps will get both — that's fine; the suggestions are the same
+("+X kg next time"). The engine returns both; the UI can show both with
+their distinct rationales, or de-duplicate by `(ruleId, weightKg,
+suggestedNextWeightKg)` if rendering room is tight (decided at impl
+time).
 
 ### 7.2 Engine shape
 
@@ -388,6 +423,9 @@ export interface CoachContext {
   exerciseId: string;
   primaryMuscle: string | null;
   equipment: string | null;
+  /** Per-exercise load increment from `exercises.default_increment_kg`
+   *  (§4.1). `null` falls back to the equipment-derived default in code. */
+  defaultIncrementKg: number | null;
   history: CoreSessionSet[]; // all of this user's sets for THIS exercise
   todayISO: string;          // caller provides — no clock
 }
@@ -423,9 +461,19 @@ exercise — the moment the lifter would act on a "+2.5 kg" or "drop 10%"
 recommendation is when they're about to enter the set, not on a dashboard
 they'd visit weekly.
 
+**Suggested loads are editable (§0.15).** When any progression rule
+(Rule 1 / 1b) fires, the UI presents the proposed next load as an
+editable numeric field next to the rule's rationale — *"You've earned a
+load increase. Suggested: 72.5 kg [edit]"*. Tapping confirms; editing
+overrides before confirming; ignoring keeps the current load. The rule
+provides the *suggestion*; the user owns the *decision*. This stays
+consistent with the no-LLM trust contract (§2.2) — every recommendation
+is rule-derived, reasoned, and always overridable.
+
 i18n: rule headlines are keys (`coach.rules.doubleProgression.headline`,
-…) resolved with the `detail` params by the UI. Both ES + EN ship complete
-(no English fallback strings — project i18n rule).
+`coach.rules.repProgression.headline`, …) resolved with the `detail`
+params by the UI. Both ES + EN ship complete (no English fallback
+strings — project i18n rule).
 
 **No configurability in MVP** — rules are on by default, no per-user
 toggles, no thresholds editable in UI. If the defaults are wrong for

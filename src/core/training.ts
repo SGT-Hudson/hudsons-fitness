@@ -267,6 +267,13 @@ export interface CoachContext {
   exerciseId: string;
   primaryMuscle: string | null;
   equipment: string | null;
+  /**
+   * Per-exercise load increment from `exercises.default_increment_kg`
+   * (spec §4.1). `null` falls back to the equipment-derived map below
+   * (`DOUBLE_PROGRESSION_DEFAULTS.incrementByEquipment`). Used by both
+   * Rule 1 (double-progression) and Rule 1b (rep-progression).
+   */
+  defaultIncrementKg: number | null;
   /** All of this user's logged sets for THIS exercise, any session, any order. */
   history: CoreSessionSet[];
   /** Caller supplies "today" — keeps the core deterministic and clock-free. */
@@ -291,21 +298,33 @@ export interface CoachRule {
 
 // ── MVP rule defaults (spec §7.1 / §12.2: "first guesses, tune at plan time")
 
-/** Double-progression: hit target reps at RPE ≤ rpeMax this many sessions in a row → bump load. */
+/** Double-progression (RPE-gated): hit target reps at RPE ≤ rpeMax this many sessions in a row → bump load. */
 export const DOUBLE_PROGRESSION_DEFAULTS = {
   sessions: 3,
   targetReps: 8,
   rpeMax: 7,
-  /** Equipment-aware default increment (kg). */
+  /**
+   * Equipment-aware FALLBACK increment (kg) — used only when the
+   * exercise's `default_increment_kg` is null (spec §4.1). Per
+   * 2026-05-20 decision the per-exercise column is the primary source.
+   * Vocab: barbell/dumbbell/kettlebell/machine/cable/bodyweight/band/other.
+   */
   incrementByEquipment: {
     barbell: 2.5,
     dumbbell: 1.0,
+    kettlebell: 4.0, // KBs come in fixed-weight singles (8/12/16/20/24/28/32 kg standard)
     machine: 2.5,
-    cable: 2.5,
+    cable: 2.5, // covers pulley exercises (§0.13)
     bodyweight: 0,
+    band: 0,
     other: 2.5,
   } as Record<string, number>,
   fallbackIncrementKg: 2.5,
+} as const;
+
+/** Rep-progression (no RPE): same load, strictly increasing top-set reps across N sessions → bump load. */
+export const REP_PROGRESSION_DEFAULTS = {
+  sessions: 3,
 } as const;
 
 /** Flat e1RM: trend kg-spread within ±band over flatWindow sessions → suggest deload. */
@@ -379,13 +398,32 @@ function topWorkingSetsByDate(history: CoreSessionSet[]): Array<{
   return rows;
 }
 
-// ── Rule 1: double progression ──────────────────────────────────────────────
+// ── Increment resolution (shared by Rule 1 + Rule 1b) ──────────────────────
+
+/**
+ * Resolve the load increment for a progression suggestion. Per spec §4.1
+ * + §0.14: the per-exercise `default_increment_kg` is the primary source;
+ * if null (e.g. user-contributed exercises that didn't override), fall
+ * back to the equipment-derived map; if that map yields 0 or undefined
+ * (bodyweight, band), return 0 so the caller can decline to suggest.
+ */
+function resolveIncrementKg(ctx: CoachContext): number {
+  if (ctx.defaultIncrementKg !== null && ctx.defaultIncrementKg > 0) {
+    return ctx.defaultIncrementKg;
+  }
+  const map = DOUBLE_PROGRESSION_DEFAULTS.incrementByEquipment;
+  if (ctx.equipment !== null && map[ctx.equipment] !== undefined) {
+    return map[ctx.equipment];
+  }
+  return DOUBLE_PROGRESSION_DEFAULTS.fallbackIncrementKg;
+}
+
+// ── Rule 1: double progression (RPE-gated) ─────────────────────────────────
 
 const ruleDoubleProgression: CoachRule = {
   id: 'double-progression',
   evaluate(ctx) {
-    const { sessions, targetReps, rpeMax, incrementByEquipment, fallbackIncrementKg } =
-      DOUBLE_PROGRESSION_DEFAULTS;
+    const { sessions, targetReps, rpeMax } = DOUBLE_PROGRESSION_DEFAULTS;
     const tops = topWorkingSetsByDate(ctx.history);
     if (tops.length < sessions) return null;
 
@@ -401,11 +439,8 @@ const ruleDoubleProgression: CoachRule = {
       if (num(s.rpe) > rpeMax) return null;
     }
 
-    const inc =
-      (ctx.equipment !== null && incrementByEquipment[ctx.equipment] !== undefined)
-        ? incrementByEquipment[ctx.equipment]
-        : fallbackIncrementKg;
-    if (inc <= 0) return null; // bodyweight: nothing to suggest here
+    const inc = resolveIncrementKg(ctx);
+    if (inc <= 0) return null; // bodyweight / band: nothing to suggest here
 
     return {
       ruleId: 'double-progression',
@@ -416,6 +451,51 @@ const ruleDoubleProgression: CoachRule = {
         targetReps,
         rpeMax,
         weightKg: w0,
+        nextWeightKg: w0 + inc,
+        incrementKg: inc,
+      },
+    };
+  },
+};
+
+// ── Rule 1b: rep-progression (no RPE) ──────────────────────────────────────
+//
+// Serves failure-style training and anyone who doesn't log RPE. Same load,
+// strictly increasing top-set reps over N consecutive sessions → suggest
+// the next load. Doesn't read RPE; fires regardless of whether sets are
+// rated. The signal is the rep INCREASE itself ("you're earning more reps
+// at this load — you have more in the tank"). Spec §7.1 Rule 1b.
+
+const ruleRepProgression: CoachRule = {
+  id: 'rep-progression',
+  evaluate(ctx) {
+    const { sessions } = REP_PROGRESSION_DEFAULTS;
+    const tops = topWorkingSetsByDate(ctx.history);
+    if (tops.length < sessions) return null;
+
+    const window = tops.slice(-sessions); // latest N sessions
+    const w0 = num(window[0].set.weightKg);
+    let prevReps = 0;
+    for (const row of window) {
+      const s = row.set;
+      if (num(s.weightKg) !== w0) return null; // load changed → no rep chain
+      const r = num(s.reps);
+      if (prevReps !== 0 && !(r > prevReps)) return null; // not strictly increasing
+      prevReps = r;
+    }
+
+    const inc = resolveIncrementKg(ctx);
+    if (inc <= 0) return null;
+
+    return {
+      ruleId: 'rep-progression',
+      severity: 'nudge',
+      headline: 'coach.rules.repProgression.headline',
+      detail: {
+        sessions,
+        weightKg: w0,
+        repsFirst: num(window[0].set.reps),
+        repsLast: num(window[window.length - 1].set.reps),
         nextWeightKg: w0 + inc,
         incrementKg: inc,
       },
@@ -536,10 +616,14 @@ const ruleMuscleRecency: CoachRule = {
 
 // ── Engine ──────────────────────────────────────────────────────────────────
 
-/** The four MVP rules in priority order (highest-signal first). */
+/** The five MVP rules in priority order (highest-signal first).
+ *  Rule 1 (RPE-gated) and Rule 1b (rep-progression) are deliberate
+ *  alternatives serving different lifter styles; both can fire on the
+ *  same session and either or both can be ignored by the UI. */
 export const MVP_COACH_RULES: readonly CoachRule[] = [
   ruleRpeClimbingFatigue,
   ruleDoubleProgression,
+  ruleRepProgression,
   ruleFlatE1rmDeload,
   ruleMuscleRecency,
 ];

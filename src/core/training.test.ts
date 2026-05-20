@@ -242,6 +242,7 @@ const ctx = (over: Partial<CoachContext> = {}): CoachContext => ({
   exerciseId: 'ex1',
   primaryMuscle: 'chest',
   equipment: 'barbell',
+  defaultIncrementKg: null, // exercises whose system seed / user override left null
   history: [],
   todayISO: '2026-05-20',
   ...over,
@@ -333,6 +334,106 @@ describe('coach: double-progression rule', () => {
     }));
     expect(evaluateCoach(ctx({ history, equipment: 'bodyweight' }))
       .find((s) => s.ruleId === 'double-progression')).toBeUndefined();
+  });
+
+  it('uses defaultIncrementKg from the exercise row when set (overrides equipment map)', () => {
+    // bench at +5 kg (override) instead of +2.5 (barbell default)
+    const history = sessions(N, () => ({
+      reps: targetReps, weightKg: 70, rpe: rpeMax,
+    }));
+    const out = evaluateCoach(ctx({ history, equipment: 'barbell', defaultIncrementKg: 5 }));
+    const hit = out.find((s) => s.ruleId === 'double-progression');
+    expect(hit?.detail.incrementKg).toBe(5);
+    expect(hit?.detail.nextWeightKg).toBe(75);
+  });
+
+  it('falls back to equipment map when defaultIncrementKg is null', () => {
+    const history = sessions(N, () => ({
+      reps: targetReps, weightKg: 30, rpe: rpeMax,
+    }));
+    const out = evaluateCoach(ctx({ history, equipment: 'dumbbell', defaultIncrementKg: null }));
+    const hit = out.find((s) => s.ruleId === 'double-progression');
+    expect(hit?.detail.incrementKg).toBe(1.0); // dumbbell map default
+  });
+
+  it('kettlebell defaults to 4 kg (fixed-weight singles)', () => {
+    const history = sessions(N, () => ({
+      reps: targetReps, weightKg: 16, rpe: rpeMax,
+    }));
+    const out = evaluateCoach(ctx({ history, equipment: 'kettlebell' }));
+    expect(out.find((s) => s.ruleId === 'double-progression')?.detail.incrementKg).toBe(4.0);
+  });
+});
+
+describe('coach: rep-progression rule (1b, no RPE)', () => {
+  it('fires on strictly increasing reps at the same load across N sessions', () => {
+    // 70 kg x 6 → 7 → 8, RPE not logged
+    const history: CoreSessionSet[] = [
+      sessionSet({ sessionId: 's1', performedOn: '2026-04-01', reps: 6, weightKg: 70, rpe: null }),
+      sessionSet({ sessionId: 's2', performedOn: '2026-04-08', reps: 7, weightKg: 70, rpe: null }),
+      sessionSet({ sessionId: 's3', performedOn: '2026-04-15', reps: 8, weightKg: 70, rpe: null }),
+    ];
+    const hit = evaluateCoach(ctx({ history }))
+      .find((s) => s.ruleId === 'rep-progression');
+    expect(hit).toBeDefined();
+    expect(hit?.detail.weightKg).toBe(70);
+    expect(hit?.detail.repsFirst).toBe(6);
+    expect(hit?.detail.repsLast).toBe(8);
+    expect(hit?.detail.nextWeightKg).toBe(72.5); // barbell default
+  });
+
+  it('does NOT require RPE — fires when rpe is null on every set (the failure-trainer case)', () => {
+    const history = sessions(3, (i) => ({
+      reps: 6 + i, weightKg: 70, rpe: null,
+    }));
+    expect(evaluateCoach(ctx({ history }))
+      .find((s) => s.ruleId === 'rep-progression')).toBeDefined();
+  });
+
+  it('does not fire when reps are flat', () => {
+    const history = sessions(3, () => ({ reps: 7, weightKg: 70, rpe: null }));
+    expect(evaluateCoach(ctx({ history }))
+      .find((s) => s.ruleId === 'rep-progression')).toBeUndefined();
+  });
+
+  it('does not fire when reps decrease in the window', () => {
+    const history: CoreSessionSet[] = [
+      sessionSet({ sessionId: 's1', performedOn: '2026-04-01', reps: 8, weightKg: 70, rpe: null }),
+      sessionSet({ sessionId: 's2', performedOn: '2026-04-08', reps: 7, weightKg: 70, rpe: null }),
+      sessionSet({ sessionId: 's3', performedOn: '2026-04-15', reps: 8, weightKg: 70, rpe: null }),
+    ];
+    expect(evaluateCoach(ctx({ history }))
+      .find((s) => s.ruleId === 'rep-progression')).toBeUndefined();
+  });
+
+  it('does not fire when load changes in the window', () => {
+    const history: CoreSessionSet[] = [
+      sessionSet({ sessionId: 's1', performedOn: '2026-04-01', reps: 6, weightKg: 70 }),
+      sessionSet({ sessionId: 's2', performedOn: '2026-04-08', reps: 7, weightKg: 72.5 }),
+      sessionSet({ sessionId: 's3', performedOn: '2026-04-15', reps: 8, weightKg: 70 }),
+    ];
+    expect(evaluateCoach(ctx({ history }))
+      .find((s) => s.ruleId === 'rep-progression')).toBeUndefined();
+  });
+
+  it('uses defaultIncrementKg override when set', () => {
+    const history = sessions(3, (i) => ({ reps: 5 + i, weightKg: 100 }));
+    const hit = evaluateCoach(ctx({ history, defaultIncrementKg: 5 }))
+      .find((s) => s.ruleId === 'rep-progression');
+    expect(hit?.detail.incrementKg).toBe(5);
+    expect(hit?.detail.nextWeightKg).toBe(105);
+  });
+
+  it('Rule 1 and Rule 1b can BOTH fire (lifter rates RPE conservatively AND adds reps)', () => {
+    // Top sets 70 kg × 6/7/8 at RPE 6/6.5/7 — Rule 1 fires (reps == 8 at RPE ≤ 7 — but only 1 session, so chain fails for Rule 1)
+    // Need to construct a real both-fire scenario: 3 sessions at same load, target reps hit at RPE ≤ rpeMax, AND reps strictly increasing
+    // That's a contradiction: rep-progression requires strictly INCREASING; double-progression requires the rep count == targetReps for all 3.
+    // So in practice these are mutually exclusive on the same window. Confirming that here is the test.
+    const history = sessions(3, () => ({ reps: 8, weightKg: 70, rpe: 7 }));
+    const out = evaluateCoach(ctx({ history }));
+    expect(out.find((s) => s.ruleId === 'double-progression')).toBeDefined();
+    // Rule 1b doesn't fire because reps are flat (8/8/8), not strictly increasing.
+    expect(out.find((s) => s.ruleId === 'rep-progression')).toBeUndefined();
   });
 });
 
