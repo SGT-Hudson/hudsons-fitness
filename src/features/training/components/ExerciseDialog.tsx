@@ -51,14 +51,12 @@ const formSchema = z.object({
     }),
 });
 
-type FormIn = {
-  name_es: string;
-  name_en: string;
-  primary_muscle: string;
-  equipment: string;
-  default_increment_kg: string;
-};
-type FormOut = z.infer<typeof formSchema>;
+// zod transforms make the input shape (what the form fields contain
+// at typing-time, mostly `string | undefined`) and the output shape
+// (post-validation, e.g. `string | null` or `number | null`) diverge.
+// RHF's resolver typing needs both spelled out via z.input / z.output.
+type FormIn = z.input<typeof formSchema>;
+type FormOut = z.output<typeof formSchema>;
 
 interface Props {
   open: boolean;

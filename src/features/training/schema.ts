@@ -19,7 +19,10 @@ export const setSchema = z.object({
     .refine((v) => v * 2 === Math.floor(v * 2), { message: 'RPE must be in 0.5 steps' })
     .nullable()
     .optional(),
-  is_warmup: z.boolean().default(false),
+  // No .default(false) — the form always provides an explicit boolean,
+  // and adding a default makes z.input vs z.output diverge (RHF's
+  // resolver typing then complains the form values don't match).
+  is_warmup: z.boolean(),
 });
 
 export const exerciseBlockSchema = z.object({
