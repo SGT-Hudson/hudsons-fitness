@@ -117,6 +117,52 @@ export type Database = {
           },
         ]
       }
+      // Training MVP hand-edit (interim until R-04 generated-types regen):
+      // exercises pool — see supabase/migrations/20260522120000_training_exercises.sql
+      // for the source of truth (post-R-01 shape, bilingual names,
+      // expanded equipment vocab, per-exercise default_increment_kg).
+      exercises: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          default_increment_kg: number | null
+          equipment: string | null
+          id: string
+          is_verified: boolean
+          name_en: string | null
+          name_es: string
+          primary_muscle: string | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          default_increment_kg?: number | null
+          equipment?: string | null
+          id?: string
+          is_verified?: boolean
+          name_en?: string | null
+          name_es: string
+          primary_muscle?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          default_increment_kg?: number | null
+          equipment?: string | null
+          id?: string
+          is_verified?: boolean
+          name_en?: string | null
+          name_es?: string
+          primary_muscle?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           notes: string | null
@@ -890,6 +936,91 @@ export type Database = {
           },
         ]
       }
+      // Training MVP hand-edit (interim until R-04 generated-types regen):
+      // workout_sessions + workout_sets — see
+      // supabase/migrations/20260522120010_training_sessions_sets.sql
+      // for the source of truth (RLS-via-join on workout_sets per §0.5).
+      workout_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          performed_on: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          performed_on?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          performed_on?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workout_sets: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          is_warmup: boolean
+          reps: number
+          rpe: number | null
+          session_id: string
+          set_index: number
+          weight_kg: number
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          is_warmup?: boolean
+          reps: number
+          rpe?: number | null
+          session_id: string
+          set_index: number
+          weight_kg: number
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          is_warmup?: boolean
+          reps?: number
+          rpe?: number | null
+          session_id?: string
+          set_index?: number
+          weight_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sets_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sets_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       body_measurements_smoothed: {
@@ -976,6 +1107,19 @@ export type Database = {
       }
       save_week_as_template: {
         Args: { p_name: string; p_week_id: string }
+        Returns: string
+      }
+      // Training MVP hand-edit (interim until R-04 generated-types regen):
+      // save_workout — see supabase/migrations/20260522120020_training_save_workout_rpc.sql
+      // (INVOKER, replace-children, mirrors save_recipe shape).
+      save_workout: {
+        Args: {
+          p_notes: string | null
+          p_performed_on: string | null
+          p_session_id: string | null
+          p_sets: Json
+          p_title: string | null
+        }
         Returns: string
       }
     }
