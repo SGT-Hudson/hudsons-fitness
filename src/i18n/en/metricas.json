@@ -29,7 +29,12 @@
     "weightTrendLabel": "Weight · trend (5-day avg)",
     "rateUnit": "kg / wk",
     "sinceStart": "{{n}} kg since the start",
-    "toGoal": "{{n}} kg to goal ({{target}})"
+    "toGoal": "{{n}} kg to goal ({{target}})",
+    "eta": {
+      "onTrack": "≈ {{date}} at this pace",
+      "stalled": "Not progressing toward the target at this pace",
+      "wrongDirection": "Moving away from the target at this pace"
+    }
   },
   "list": {
     "title": "Recent measurements",

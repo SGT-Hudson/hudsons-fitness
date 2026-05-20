@@ -6,6 +6,10 @@
     "grid": "Vista de cuadrícula",
     "list": "Vista de lista"
   },
+  "favorite": {
+    "add": "Marcar como favorita",
+    "remove": "Quitar de favoritas"
+  },
   "list": {
     "empty": "Aún no has creado ninguna receta. Pulsa \"Nueva receta\" para empezar.",
     "noMatch": "Ninguna receta coincide con la búsqueda.",
