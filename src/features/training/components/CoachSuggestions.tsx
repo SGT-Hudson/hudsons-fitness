@@ -37,7 +37,6 @@ const SEVERITY_STYLES: Record<CoachSeverity, string> = {
  * new rule never requires touching this component.
  */
 export function CoachSuggestions({ context, onApplySuggestedLoad }: Props) {
-  const { t } = useTranslation('coach');
   const suggestions = evaluateCoach(context);
 
   if (suggestions.length === 0) return null;
