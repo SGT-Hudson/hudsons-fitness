@@ -2,9 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
 import {
   createManualIngredient,
-  deleteIngredient,
+  hideOwnedIngredient,
   importIngredientFromOFF,
-  IngredientInUseError,
   listIngredients,
   searchLocalIngredients,
   updateIngredient,
@@ -15,8 +14,6 @@ import type { OFFSearchResult } from '@/lib/openfoodfacts';
 import { searchOpenFoodFacts } from '@/lib/openfoodfacts';
 import type { TablesUpdate } from '@/types/database';
 import { toastCreated, toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
-import i18n from '@/i18n';
-import { toast } from '@/hooks/use-toast';
 
 export function useIngredients(limit = 100) {
   return useQuery({
@@ -91,24 +88,19 @@ export function useUpdateIngredient() {
   });
 }
 
-export function useDeleteIngredient() {
+// R-01 (spec §6, §7): replaces `useDeleteIngredient` + `IngredientInUseError`.
+// Hard delete is impossible under the pool model (recipe_ingredients FK
+// keeps the pool row alive); the unified hide RPC drops my ref and, if I
+// am the owner, transfers pool ownership to anon. The "in use" error
+// path is gone — there is no error case to translate.
+export function useHideIngredient() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => deleteIngredient(id),
+    mutationFn: (id: string) => hideOwnedIngredient(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['ingredients'] });
       toastDeleted();
     },
-    onError: (err) => {
-      if (err instanceof IngredientInUseError) {
-        toast({
-          variant: 'destructive',
-          title: i18n.t('ingredientes:errors.inUseTitle'),
-          description: i18n.t('ingredientes:errors.inUseDescription'),
-        });
-        return;
-      }
-      toastError(err);
-    },
+    onError: toastError,
   });
 }

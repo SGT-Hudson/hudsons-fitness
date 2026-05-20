@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Database, Globe, Pencil, Trash2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useDeleteIngredient } from '../hooks';
+import { useHideIngredient } from '../hooks';
 import { useAuth } from '@/features/auth/AuthProvider';
 import type { Ingredient } from '../api';
 
@@ -50,7 +50,7 @@ export function IngredientList({ ingredients, loading, onEdit }: Props) {
   const { t } = useTranslation('ingredientes');
   const { t: tCommon } = useTranslation('common');
   const { user } = useAuth();
-  const del = useDeleteIngredient();
+  const hide = useHideIngredient();
 
   if (loading) {
     return <p className="text-sm text-muted-foreground py-8 text-center">{tCommon('loading')}</p>;
@@ -84,33 +84,34 @@ export function IngredientList({ ingredients, loading, onEdit }: Props) {
               </div>
             </div>
             <div className="shrink-0 flex items-center gap-1">
-              {owned ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={tCommon('edit')}
-                    onClick={() => onEdit(ing)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={tCommon('delete')}
-                    disabled={del.isPending}
-                    onClick={() => {
-                      if (window.confirm(t('list.deleteConfirm'))) {
-                        del.mutate(ing.id);
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <span className="text-xs text-muted-foreground px-2">{t('list.readOnly')}</span>
+              {/* Edit affordance is owner-only (only the creator can edit
+                  pool data). Hide/remove is available for every row in
+                  *my library* — non-owners get a ref drop, owners get the
+                  unified "creator-hide" (ref drop + ownership transfers
+                  to anon). Per R-01 spec §6/§7. */}
+              {owned && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={tCommon('edit')}
+                  onClick={() => onEdit(ing)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
               )}
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t('list.removeFromLibrary')}
+                disabled={hide.isPending}
+                onClick={() => {
+                  if (window.confirm(t('list.removeConfirm'))) {
+                    hide.mutate(ing.id);
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </li>
         );

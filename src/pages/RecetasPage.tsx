@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useRecipes, useSoftDeleteRecipe } from '@/features/recipes/hooks';
+import { useHideRecipe, useRecipes } from '@/features/recipes/hooks';
 import { partitionFavorites, toggleFavorite } from '@/features/recipes/favorites';
 import { formatDate, type Locale } from '@/lib/dates';
 import { cn } from '@/lib/utils';
@@ -54,7 +54,7 @@ export function RecetasPage() {
   }
 
   const recipes = useRecipes();
-  const del = useSoftDeleteRecipe();
+  const hide = useHideRecipe();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -68,9 +68,11 @@ export function RecetasPage() {
     [filtered, favorites],
   );
 
-  function handleDelete(id: string, name: string) {
-    if (!window.confirm(t('list.deleteConfirm', { name }))) return;
-    del.mutate(id);
+  // R-01: "Remove" replaces soft-delete. Owner clicks → creator-hide
+  // (anon-transfer); non-owner clicks → ref drop only.
+  function handleRemove(id: string, name: string) {
+    if (!window.confirm(t('list.removeConfirm', { name }))) return;
+    hide.mutate(id);
   }
 
   return (
@@ -181,8 +183,8 @@ export function RecetasPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={tCommon('delete')}
-                      onClick={() => handleDelete(r.id, r.name)}
+                      aria-label={t('list.removeFromLibrary')}
+                      onClick={() => handleRemove(r.id, r.name)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -237,8 +239,8 @@ export function RecetasPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label={tCommon('delete')}
-                    onClick={() => handleDelete(r.id, r.name)}
+                    aria-label={t('list.removeFromLibrary')}
+                    onClick={() => handleRemove(r.id, r.name)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

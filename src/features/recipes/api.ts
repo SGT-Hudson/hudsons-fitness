@@ -18,24 +18,46 @@ export interface RecipeListItem {
   ingredient_count: number;
 }
 
+// My library (R-01 spec §7) — join user_recipe_refs on auth.uid().
+// The recipe pool is openly readable post-R-01, but this listing
+// intentionally shows only "what I have" (the recipes editor / dashboard
+// surface). Pool discovery is a separate explicit "browse library" flow.
 export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
   const { data, error } = await supabase
-    .from('recipes')
-    .select('id, name, servings, description, updated_at, recipe_ingredients(id)')
+    .from('user_recipe_refs')
+    .select(
+      `recipe:recipes (id, name, servings, description, updated_at, recipe_ingredients(id))`,
+    )
     .eq('user_id', userId)
-    .is('deleted_at', null)
-    .order('updated_at', { ascending: false });
+    .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    name: r.name,
-    servings: r.servings,
-    description: r.description,
-    updated_at: r.updated_at,
-    ingredient_count: r.recipe_ingredients?.length ?? 0,
-  }));
+  type Row = {
+    recipe:
+      | (Pick<Recipe, 'id' | 'name' | 'servings' | 'description' | 'updated_at'> & {
+          recipe_ingredients: Array<{ id: string }> | null;
+        })
+      | null;
+  };
+  const rows = (data ?? []) as unknown as Row[];
+  const out: RecipeListItem[] = [];
+  for (const r of rows) {
+    if (!r.recipe) continue;
+    out.push({
+      id: r.recipe.id,
+      name: r.recipe.name,
+      servings: r.recipe.servings,
+      description: r.recipe.description,
+      updated_at: r.recipe.updated_at,
+      ingredient_count: r.recipe.recipe_ingredients?.length ?? 0,
+    });
+  }
+  out.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  return out;
 }
 
+// Pool SELECT is open under R-01; the recipe is reachable whether or not
+// the caller has a ref. Diary entries for anon-owned recipes still
+// resolve here — the never-orphan win.
 export async function fetchRecipe(recipeId: string): Promise<RecipeWithIngredients> {
   const { data, error } = await supabase
     .from('recipes')
@@ -47,7 +69,6 @@ export async function fetchRecipe(recipeId: string): Promise<RecipeWithIngredien
        )`,
     )
     .eq('id', recipeId)
-    .is('deleted_at', null)
     .single();
   if (error) throw error;
   type RawJoin = RecipeIngredient & { ingredient: Ingredient | Ingredient[] };
@@ -75,6 +96,9 @@ export interface SaveRecipePayload {
   }>;
 }
 
+// Client signature unchanged; the server-side RPC body (migration
+// 20260520120050) now ALSO inserts the creator's user_recipe_refs on
+// CREATE — atomic with the recipes/recipe_ingredients writes, per D-C5.
 export async function saveRecipe(payload: SaveRecipePayload): Promise<string> {
   const { data, error } = await supabase.rpc('save_recipe', {
     p_recipe_id: payload.recipeId,
@@ -88,10 +112,10 @@ export async function saveRecipe(payload: SaveRecipePayload): Promise<string> {
   return data as string;
 }
 
-export async function softDeleteRecipe(recipeId: string): Promise<void> {
-  const { error } = await supabase
-    .from('recipes')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', recipeId);
+// R-01 (spec §6, §7): replaces the old `softDeleteRecipe` (deleted_at
+// flag, dropped in migration 20260520120030). The unified RPC: drops my
+// ref, AND transfers pool ownership to anon if I am the owner.
+export async function hideOwnedRecipe(recipeId: string): Promise<void> {
+  const { error } = await supabase.rpc('hide_owned_recipe', { p_recipe_id: recipeId });
   if (error) throw error;
 }

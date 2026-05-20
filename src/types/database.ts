@@ -661,9 +661,13 @@ export type Database = {
         ]
       }
       recipes: {
+        // R-01 hand-edit (interim until R-04 regen): `deleted_at` removed
+        // (staged migration 20260520120030); `user_id` → `created_by_user_id`
+        // (same migration; semantic shift from per-user FK to the
+        // three-state pool-owner pointer matching `ingredients`).
         Row: {
           created_at: string
-          deleted_at: string | null
+          created_by_user_id: string | null
           description: string | null
           id: string
           instructions: string | null
@@ -671,11 +675,10 @@ export type Database = {
           photo_url: string | null
           servings: number
           updated_at: string
-          user_id: string
         }
         Insert: {
           created_at?: string
-          deleted_at?: string | null
+          created_by_user_id?: string | null
           description?: string | null
           id?: string
           instructions?: string | null
@@ -683,11 +686,10 @@ export type Database = {
           photo_url?: string | null
           servings?: number
           updated_at?: string
-          user_id: string
         }
         Update: {
           created_at?: string
-          deleted_at?: string | null
+          created_by_user_id?: string | null
           description?: string | null
           id?: string
           instructions?: string | null
@@ -695,14 +697,101 @@ export type Database = {
           photo_url?: string | null
           servings?: number
           updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipes_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      // R-01 hand-edit (interim until R-04 regen): two new ref tables that
+      // carry the per-user "I have this in my library" relationship + the
+      // private `note` PII firewall (spec §2/§3, staged migration
+      // 20260520120010).
+      user_ingredient_refs: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          note?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "recipes_user_id_fkey"
+            foreignKeyName: "user_ingredient_refs_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_ingredient_refs_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_recipe_refs: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          recipe_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          recipe_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          recipe_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_recipe_refs_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_recipe_refs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -846,6 +935,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      // R-01 hand-edit (staged migration 20260520120040): "Remove from my
+      // library" surface; same RPC serves "creator-hide" (owner-transfer
+      // to anon happens) and "drop my ref" (UPDATE no-ops, only ref
+      // deleted). See spec §6 + the hide RPC SQL for the full semantics.
+      hide_owned_ingredient: {
+        Args: { p_ingredient_id: string }
+        Returns: undefined
+      }
+      hide_owned_recipe: {
+        Args: { p_recipe_id: string }
+        Returns: undefined
       }
       materialize_plan_for_date: {
         Args: { p_date: string; p_user_id: string }

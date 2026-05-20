@@ -3,9 +3,9 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
 import {
   fetchRecipe,
+  hideOwnedRecipe,
   listRecipes,
   saveRecipe,
-  softDeleteRecipe,
   type SaveRecipePayload,
 } from './api';
 
@@ -38,10 +38,13 @@ export function useSaveRecipe() {
   });
 }
 
-export function useSoftDeleteRecipe() {
+// R-01 (spec §6, §7): replaces `useSoftDeleteRecipe`. Same UX surface
+// ("Remove" / "Borrar" affordance); the server side is now a unified
+// hide RPC — ref drop + owner-transfer-to-anon if I'm the owner.
+export function useHideRecipe() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (recipeId: string) => softDeleteRecipe(recipeId),
+    mutationFn: (recipeId: string) => hideOwnedRecipe(recipeId),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['recipes'] });
       toastDeleted();
