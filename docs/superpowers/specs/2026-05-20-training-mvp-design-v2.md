@@ -29,7 +29,7 @@ Read this first; everything below assumes these are locked unless flagged.
 | 0.5 | `workout_sets.user_id` denormalisation | **no** — RLS via join to `workout_sessions` (mirrors `recipe_ingredients`) | settled by codebase, see §4.3 |
 | 0.6 | Migration ordering | timestamped after the latest applied; `if not exists`-guarded; regen `database.ts` | mechanical |
 | 0.7 | Repeat-last semantics | prefill the **last working set** only (not the whole sequence; not warmups) | settled |
-| 0.8 | Coach approach | transparent rules over the user's own data; **no LLM**, no model | settled |
+| 0.8 | Coach approach | transparent rules over the user's own data; **no LLM, ever** — permanent product decision (see §2.2) | settled |
 | 0.9 | Coach rules in MVP | four-rule starter catalog (§7); catalog expands in 2026-05-21 brainstorm | starter set settled; full catalog **open** |
 | 0.10 | Section split / home redesign / onboarding / desktop layout | **out of MVP scope** — each its own spec (§11) | settled |
 
@@ -65,15 +65,20 @@ over time.
   → v3, possibly never (direction doc item Q).
 - Social feed, sharing, PR celebrations beyond a quiet badge.
 - Wearable / Health-platform integration.
-- LLM "AI coach" narration over the rules → v3 at earliest.
+- LLM / AI "coach narration" or any model-driven coach output —
+  **permanently out of scope**, see §2.
 - Section split (Dieta / Entreno), home redesign, in-app onboarding,
   desktop layout — see §11.
 
-## 2. The one non-negotiable architectural decision
+## 2. Non-negotiable architectural decisions
 
-**Training logging MUST NOT feed the TDEE filter.** Signed off in the
-2026-05-19 brainstorm and unchanged here. Rationale (to be recorded in
-`docs/decisions.md` as a new D-id when this is planned):
+Two structural guardrails that shape every downstream choice in this
+module. Both are to be recorded in `docs/decisions.md` as new D-ids when
+this is planned.
+
+### 2.1 Training logging MUST NOT feed the TDEE filter
+
+Signed off in the 2026-05-19 brainstorm and unchanged here.
 
 - The R-07 adaptive Kalman filter (`src/core/tdee.ts`) already absorbs *all*
   expenditure change implicitly through the weight/intake residual — that is
@@ -91,6 +96,31 @@ over time.
 This constraint shapes the data model: the training tables have **no kcal
 column and no FK into `tdee_*`, `daily_nutrition_history`, or `phases`.** The
 coach (§7) does not read those tables either — it reads training data only.
+
+### 2.2 The coach is rule-based; no LLM, ever
+
+Signed off in the 2026-05-20 brainstorm. Hard "no" — not "not yet", not
+"v3", not "narration layer". This is a permanent product decision, not a
+sequencing decision.
+
+- Every coach suggestion is a pure function (a `CoachRule.evaluate`,
+  §7.2) over the user's own logged sets. Inputs in, suggestion (or
+  `null`) out. Deterministic, testable, explainable.
+- **No model is ever invoked** — not for headline narration, not for
+  threshold tuning, not for rephrasing rule output, not as a "fallback
+  when no rule fires." If a behaviour can't be expressed as a transparent
+  rule the user can read, it doesn't ship.
+- Rationale: the value of this surface is the lifter's *trust* that the
+  number on screen comes from their own data via a rule they can read.
+  Any model-mediated text breaks that contract — hallucinations,
+  silently-shifting recommendations, opaque "why," ongoing cost surface
+  for a solo dev. None of those are acceptable trades for narrative
+  polish.
+
+This constraint shapes the engine surface: `evaluateCoach` and every
+`CoachRule` are synchronous, pure, dependency-free — no async, no network
+client, no fetcher type in the module. New rules land as more pure
+functions; the engine signature never grows a "model client" parameter.
 
 ## 3. R-01 prerequisite
 
