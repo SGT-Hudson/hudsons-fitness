@@ -1,11 +1,20 @@
 {
-  "diario": "Diary",
-  "planificador": "Planner",
-  "menus": "Templates",
-  "recetas": "Recipes",
-  "ingredientes": "Ingredients",
-  "entrenamiento": "Training",
-  "progreso": "Progress",
-  "objetivos": "Goals",
-  "settings": "Settings"
+  "home": "Home",
+  "diary": "Diary",
+  "planner": "Planner",
+  "recipes": "Recipes",
+  "progress": "Progress",
+  "today": "Today",
+  "routine": "Routine",
+  "exercises": "Exercises",
+  "section": {
+    "nutricion": "Nutrition",
+    "entreno": "Training"
+  },
+  "switchSection": "Switch section",
+  "account": "Account",
+  "inProgress": {
+    "title": "In progress",
+    "body": "This section is coming soon."
+  }
 }
