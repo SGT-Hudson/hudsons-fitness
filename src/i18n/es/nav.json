@@ -1,11 +1,22 @@
 {
-  "diario": "Diario",
-  "planificador": "Planificador",
-  "menus": "Plantillas",
-  "recetas": "Recetas",
-  "ingredientes": "Ingredientes",
-  "entrenamiento": "Entrenamiento",
-  "progreso": "Progreso",
-  "objetivos": "Objetivos",
-  "settings": "Ajustes"
+  "home": "Inicio",
+  "diary": "Diario",
+  "planner": "Planificador",
+  "recipes": "Recetas",
+  "ingredients": "Ingredientes",
+  "progress": "Progreso",
+  "today": "Hoy",
+  "routine": "Rutina",
+  "exercises": "Ejercicios",
+  "section": {
+    "nutricion": "Nutrición",
+    "entreno": "Entreno"
+  },
+  "switchSection": "Cambiar de sección",
+  "account": "Cuenta",
+  "settings": "Ajustes",
+  "inProgress": {
+    "title": "En progreso",
+    "body": "Esta sección estará disponible próximamente."
+  }
 }

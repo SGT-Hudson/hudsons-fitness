@@ -29,7 +29,7 @@ const DEFAULT_TIMES = ['08:00', '13:00', '17:00', '21:00'];
 
 export function PlantillaEditorPage() {
   const { id } = useParams<{ id?: string }>();
-  const isNew = !id || id === 'nuevo';
+  const isNew = !id || id === 'new';
   const navigate = useNavigate();
   const { t } = useTranslation('planning');
   const { t: tCommon } = useTranslation('common');
@@ -80,7 +80,7 @@ export function PlantillaEditorPage() {
     return <div className="text-muted-foreground">{tCommon('loading')}</div>;
   }
   if (!isNew && templateQuery.error) {
-    return <Navigate to="/menus" replace />;
+    return <Navigate to="/templates" replace />;
   }
 
   function addSlot(
@@ -147,7 +147,7 @@ export function PlantillaEditorPage() {
           display_order: i,
         })),
       });
-      navigate(isNew ? `/menus/${newId}` : '/menus', { replace: true });
+      navigate(isNew ? `/templates/${newId}` : '/templates', { replace: true });
     } catch (err) {
       setError((err as Error).message);
     }
@@ -160,7 +160,7 @@ export function PlantillaEditorPage() {
           {isNew ? t('editor.newTitle') : t('editor.editTitle')}
         </h1>
         <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={() => navigate('/menus')}>
+          <Button type="button" variant="outline" onClick={() => navigate('/templates')}>
             {tCommon('cancel')}
           </Button>
           <Button type="submit" disabled={save.isPending}>

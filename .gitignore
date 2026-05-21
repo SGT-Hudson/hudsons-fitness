@@ -49,3 +49,6 @@ supabase/.branches
 # Misc
 .cache
 coverage
+
+# Superpowers brainstorm companion (local mockups/state — never committable)
+.superpowers/

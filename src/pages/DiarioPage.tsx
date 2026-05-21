@@ -57,12 +57,12 @@ export function DiarioPage() {
   }, [date, logs.isLoading, logs.isError, materializeMutate]);
 
   function changeDate(newDate: string) {
-    navigate(newDate === today ? '/diario' : `/diario/${newDate}`);
+    navigate(newDate === today ? '/diary' : `/diary/${newDate}`);
   }
 
   useEffect(() => {
     if (params.date && !isValidDate(params.date)) {
-      navigate('/diario', { replace: true });
+      navigate('/diary', { replace: true });
     }
   }, [params.date, navigate]);
 
