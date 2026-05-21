@@ -81,7 +81,12 @@ describe('getProductByBarcode', () => {
     expect(await getProductByBarcode('5000112637922')).toBeNull();
   });
 
-  it('throws on a non-OK HTTP response', async () => {
+  it('returns null on HTTP 404 (OFF answers unknown barcodes with 404)', async () => {
+    mockFetch({ status: 0, status_verbose: 'product not found' }, false, 404);
+    expect(await getProductByBarcode('0000000000000')).toBeNull();
+  });
+
+  it('throws on a genuine non-OK HTTP response (e.g. 5xx)', async () => {
     mockFetch({}, false, 503);
     await expect(getProductByBarcode('5000112637922')).rejects.toThrow();
   });

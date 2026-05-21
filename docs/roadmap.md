@@ -665,7 +665,7 @@ reference shard carries it (never edit the decision entry).
   existing IngredientDialog prefill flow. Client-only; no migration.
 - **plan:** `docs/superpowers/plans/2026-05-21-barcode-scanning.md`
 - **scope:** `getProductByBarcode` + `isValidEan` on `lib/openfoodfacts.ts`
-  (Tier-1 tested); `BarcodeScanner` component (EAN-13/8/UPC-A/E; @zxing/browser
+  (Tier-1 tested); `BarcodeScanner` component (EAN-13/8 + UPC-A; @zxing/browser
   0.2.0 `BrowserMultiFormatOneDReader`, isValidEan filters non-grocery 1D
   formats); `BarcodeTab` in IngredientDialog reusing the OFF
   `pickedOFF`→`setForm` path; ES+EN i18n; `@zxing/browser` code-split. Tier-2

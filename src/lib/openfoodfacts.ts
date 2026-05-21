@@ -99,9 +99,11 @@ interface OFFProductResponse {
 /**
  * Look up a single product by barcode via the OFF v2 product endpoint.
  * Returns the same `OFFSearchResult` shape the search path produces, so the
- * dialog's prefill flow is identical. Returns `null` for not-found
- * (`status: 0`) and for products missing an energy value (consistent with
- * `searchOpenFoodFacts`'s filter). Throws on transport / non-OK HTTP.
+ * dialog's prefill flow is identical. Returns `null` for not-found and for
+ * products missing an energy value (consistent with `searchOpenFoodFacts`'s
+ * filter). OFF v2 answers an unknown barcode with HTTP 404 (body
+ * `status: 0`), so 404 is treated as a clean "not found" (null), not an
+ * error — only genuine transport / 5xx failures throw.
  */
 export async function getProductByBarcode(
   code: string,
@@ -114,6 +116,7 @@ export async function getProductByBarcode(
     signal: options.signal,
     headers: { Accept: 'application/json' },
   });
+  if (res.status === 404) return null; // OFF: unknown barcode
   if (!res.ok) {
     throw new Error(`OpenFoodFacts lookup failed: ${res.status}`);
   }

@@ -49,7 +49,7 @@ decision rationale in `decisions.md`.
 
 ### 2026-05-21 — R-20 Barcode scanning
 
-- Camera + manual-EAN barcode lookup in the New Ingredient dialog, resolving via the new OFF v2 `getProductByBarcode` adapter into the existing prefill flow. Native `BarcodeDetector` fast-path with a lazy `@zxing/browser` fallback (iOS Safari); EAN-13/8/UPC-A/E only, every decode re-validated by `isValidEan`. Client-only, no migration.
+- Camera + manual-EAN barcode lookup in the New Ingredient dialog, resolving via the new OFF v2 `getProductByBarcode` adapter into the existing prefill flow. Native `BarcodeDetector` fast-path with a lazy `@zxing/browser` fallback (iOS Safari); EAN-13/8 + UPC-A, every decode re-validated by `isValidEan`. Client-only, no migration.
 
 ## PR table
 

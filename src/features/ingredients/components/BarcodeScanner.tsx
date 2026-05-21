@@ -18,7 +18,10 @@ interface BarcodeDetectorCtor {
   new (opts: { formats: string[] }): NativeBarcodeDetector;
 }
 
-const EAN_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e'];
+// UPC-E intentionally excluded: isValidEan implements EAN-8/13 + UPC-A
+// checksums, not the UPC-E compression scheme, so a UPC-E decode would be
+// dropped downstream anyway. Restrict the detector to what we can validate.
+const EAN_FORMATS = ['ean_13', 'ean_8', 'upc_a'];
 
 export function BarcodeScanner({ onDetected }: Props) {
   const { t } = useTranslation('ingredientes');

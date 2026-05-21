@@ -358,9 +358,15 @@ export function BarcodeTab({ onResolved }: BarcodeTabProps) {
   async function resolve(code: string) {
     setNotFound(false);
     setScanning(false);
-    const result = await lookup.mutateAsync(code).catch(() => null);
-    if (result) onResolved(result);
-    else setNotFound(true);
+    try {
+      const result = await lookup.mutateAsync(code);
+      if (result) onResolved(result);
+      else setNotFound(true); // genuine "not in OFF" (incl. 404 → null)
+    } catch {
+      // Transport / 5xx error — already surfaced by useBarcodeLookup's
+      // onError toast. Do NOT also show the "not found" message, which
+      // would misattribute a network failure to a missing product.
+    }
   }
 
   return (
