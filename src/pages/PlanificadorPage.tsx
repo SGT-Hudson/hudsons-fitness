@@ -71,6 +71,12 @@ export function PlanificadorPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/templates">
+              <FileBox className="h-4 w-4" />
+              {t('planner.manageTemplates')}
+            </Link>
+          </Button>
           <Button
             variant="outline"
             onClick={() => setApplyOpen(true)}
@@ -137,7 +143,7 @@ export function PlanificadorPage() {
               </Button>
             ) : (
               <Button asChild>
-                <Link to="/menus/nuevo">{t('planner.empty.createCta')}</Link>
+                <Link to="/templates/new">{t('planner.empty.createCta')}</Link>
               </Button>
             )}
           </CardContent>

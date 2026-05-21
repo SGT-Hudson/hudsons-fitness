@@ -55,6 +55,7 @@
   "planner": {
     "pageTitle": "Planificador",
     "weekOf": "Semana del {{date}}",
+    "manageTemplates": "Plantillas",
     "applyTemplate": "Aplicar plantilla",
     "swapTemplate": "Cambiar plantilla",
     "saveAsTemplate": "Guardar como plantilla",
