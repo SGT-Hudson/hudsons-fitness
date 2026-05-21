@@ -491,21 +491,21 @@ complete history rather than the lone Sprint-9 file.
 20260522120010_training_sessions_sets.sql           # applied 2026-05-21 (R-19)
 20260522120020_training_save_workout_rpc.sql        # applied 2026-05-21 (R-19)
 20260522120030_training_exercises_rls.sql           # applied 2026-05-21 (R-19, LAST DDL of the set)
-20260523120000_r21_profiles_contribute_to_off.sql   # STAGED — R-21 (OFF contribute-back opt-out column)
+20260523120000_r21_profiles_contribute_to_off.sql   # applied 2026-05-21 (R-21, OFF contribute-back opt-out column)
 ```
 
-**R-21 OFF contribute-back setup (Wave-3, pending).** Register one Open
-Food Facts contributor account ("HudsonFitness") and set its credentials as
-edge secrets:
+**R-21 OFF contribute-back setup (migration applied 2026-05-21; OFF account +
+edge deploy still pending).** The `profiles.contribute_to_off` migration is
+applied, so the Settings toggle works. Remaining steps to actually push to
+OFF: register one Open Food Facts contributor account ("HudsonFitness") and
+set its credentials as edge secrets:
 `supabase secrets set OFF_USER_ID=<account> OFF_PASSWORD=<pw> --project-ref upvraruehzurbetzrxov`.
 Deploy the writer: `supabase functions deploy off-contribute --project-ref upvraruehzurbetzrxov`.
 Smoke against OFF staging first (set `OFF_BASE` to
-`https://world.openfoodfacts.net` in the function), then flip to `.org`. Apply
-the staged migration `20260523120000_r21_profiles_contribute_to_off.sql` via
-`apply_migration`. The client gates every contribution on the
-`profiles.contribute_to_off` flag; with no OFF secrets set, the edge fn returns
-`missing_off_credentials` and the (fire-and-forget) client call is a silent
-no-op — so shipping the code before the account exists is safe.
+`https://world.openfoodfacts.net` in the function), then flip to `.org`. Until
+the account + secrets exist, the edge fn returns `missing_off_credentials` and
+the (fire-and-forget) client call is a silent no-op — so the code is safe in
+production with the contribution simply dormant.
 
 **R-19 Training MVP Wave-3 apply procedure (executed 2026-05-21).** The
 four training migrations were applied **in order** (filename-lexicographic
