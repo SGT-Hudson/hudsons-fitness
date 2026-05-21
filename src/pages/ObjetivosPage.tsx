@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { ProgressTabs } from './ProgressTabs';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -152,7 +153,7 @@ export function ObjetivosPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
+      <ProgressTabs />
 
       {/* ── Goal ── */}
       <section className="space-y-3">
