@@ -29,7 +29,7 @@ import {
   useUpdateIngredient,
 } from '../hooks';
 import type { Ingredient } from '../api';
-import { isValidEan, type OFFSearchResult } from '@/lib/openfoodfacts';
+import { isValidEan, type OFFProductLookup, type OFFSearchResult } from '@/lib/openfoodfacts';
 import { useBarcodeLookup } from '../hooks';
 import { BarcodeScanner } from './BarcodeScanner';
 import { Label } from '@/components/ui/label';
@@ -86,7 +86,7 @@ export function IngredientDialog({
   const debouncedQuery = useDebouncedValue(offQuery, 350);
   const [pickedOFF, setPickedOFF] = useState<OFFSearchResult | null>(null);
   const [scannedBarcode, setScannedBarcode] = useState<string | null>(null);
-  const [barcodeBanner, setBarcodeBanner] = useState<'new' | 'complete' | null>(null);
+  const [barcodeBanner, setBarcodeBanner] = useState<'new' | 'complete' | 'found' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const offSearch = useOFFSearch(debouncedQuery, open && !isEdit && tab === 'off');
@@ -163,7 +163,7 @@ export function IngredientDialog({
             carbsPer100g: parsed.carbs_g_per_unit,
             fatPer100g: parsed.fat_g_per_unit,
             fiberPer100g: parsed.fiber_g_per_unit,
-            mode: barcodeBanner === 'complete' ? 'complete' : 'new',
+            mode: barcodeBanner === 'new' ? 'new' : 'complete',
           },
           profile?.contribute_to_off ?? true,
         );
@@ -242,7 +242,13 @@ export function IngredientDialog({
               <TabsContent value="manual" className="space-y-4">
                 {barcodeBanner && (
                   <p className="text-sm rounded-md border border-dashed p-2 text-muted-foreground">
-                    {t(barcodeBanner === 'new' ? 'barcode.bannerNew' : 'barcode.bannerComplete')}
+                    {t(
+                      barcodeBanner === 'new'
+                        ? 'barcode.bannerNew'
+                        : barcodeBanner === 'found'
+                          ? 'barcode.bannerFound'
+                          : 'barcode.bannerComplete',
+                    )}
                   </p>
                 )}
                 <IngredientFormFields value={form} onChange={setForm} idPrefix="manual" />
@@ -252,7 +258,9 @@ export function IngredientDialog({
                 <BarcodeTab
                   onResolved={(r) => {
                     setScannedBarcode(r.code);
-                    setBarcodeBanner('complete');
+                    // "found" (OFF already has the energy value) → just review
+                    // & save; "complete" (no energy value) → fill the gaps.
+                    setBarcodeBanner(r.complete ? 'found' : 'complete');
                     setPickedOFF(r);
                     setForm({
                       name: r.name,
@@ -388,7 +396,7 @@ function OFFSearchPanel({
 }
 
 interface BarcodeTabProps {
-  onResolved: (result: OFFSearchResult) => void;
+  onResolved: (result: OFFProductLookup) => void;
   /** 404 / genuinely-not-in-OFF: the parent stashes the barcode + switches to
    *  the manual tab with the "new product" banner (R-21). */
   onNotFound: (code: string) => void;
