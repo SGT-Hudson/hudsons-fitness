@@ -29,7 +29,10 @@ import {
   useUpdateIngredient,
 } from '../hooks';
 import type { Ingredient } from '../api';
-import type { OFFSearchResult } from '@/lib/openfoodfacts';
+import { isValidEan, type OFFSearchResult } from '@/lib/openfoodfacts';
+import { useBarcodeLookup } from '../hooks';
+import { BarcodeScanner } from './BarcodeScanner';
+import { Label } from '@/components/ui/label';
 
 type Mode = 'create' | 'edit';
 
@@ -63,7 +66,7 @@ export function IngredientDialog({
   const { t: tCommon } = useTranslation('common');
   const isEdit = mode === 'edit';
 
-  const [tab, setTab] = useState<'off' | 'manual'>('off');
+  const [tab, setTab] = useState<'off' | 'manual' | 'barcode'>('off');
   const {
     handleSubmit,
     reset,
@@ -175,13 +178,11 @@ export function IngredientDialog({
             </p>
           )}
           {!isEdit ? (
-            <Tabs value={tab} onValueChange={(v) => setTab(v as 'off' | 'manual')}>
+            <Tabs value={tab} onValueChange={(v) => setTab(v as 'off' | 'manual' | 'barcode')}>
               <TabsList>
                 <TabsTrigger value="off">{t('tabs.off')}</TabsTrigger>
                 <TabsTrigger value="manual">{t('tabs.manual')}</TabsTrigger>
-                <TabsTrigger value="imported" disabled title={t('tabs.importedSoon')}>
-                  {t('tabs.imported')}
-                </TabsTrigger>
+                <TabsTrigger value="barcode">{t('tabs.barcode')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="off" className="space-y-4">
@@ -215,6 +216,25 @@ export function IngredientDialog({
 
               <TabsContent value="manual" className="space-y-4">
                 <IngredientFormFields value={form} onChange={setForm} idPrefix="manual" />
+              </TabsContent>
+
+              <TabsContent value="barcode" className="space-y-4">
+                <BarcodeTab
+                  onResolved={(r) => {
+                    setPickedOFF(r);
+                    setForm({
+                      name: r.name,
+                      brand: r.brand ?? '',
+                      unit_type: 'gram',
+                      kcal_per_unit: String(r.kcalPer100g),
+                      protein_g_per_unit: String(r.proteinPer100g),
+                      carbs_g_per_unit: String(r.carbsPer100g),
+                      fat_g_per_unit: String(r.fatPer100g),
+                      fiber_g_per_unit: String(r.fiberPer100g),
+                    });
+                    setTab('manual');
+                  }}
+                />
               </TabsContent>
             </Tabs>
           ) : (
@@ -320,6 +340,66 @@ function OFFSearchPanel({
           })}
         </ul>
       )}
+    </div>
+  );
+}
+
+interface BarcodeTabProps {
+  onResolved: (result: OFFSearchResult) => void;
+}
+
+export function BarcodeTab({ onResolved }: BarcodeTabProps) {
+  const { t } = useTranslation('ingredientes');
+  const [scanning, setScanning] = useState(false);
+  const [manual, setManual] = useState('');
+  const [notFound, setNotFound] = useState(false);
+  const lookup = useBarcodeLookup();
+
+  async function resolve(code: string) {
+    setNotFound(false);
+    setScanning(false);
+    try {
+      const result = await lookup.mutateAsync(code);
+      if (result) onResolved(result);
+      else setNotFound(true); // genuine "not in OFF" (incl. 404 → null)
+    } catch {
+      // Transport / 5xx error — already surfaced by useBarcodeLookup's
+      // onError toast. Do NOT also show the "not found" message, which
+      // would misattribute a network failure to a missing product.
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {scanning ? (
+        <BarcodeScanner onDetected={(code) => void resolve(code)} />
+      ) : (
+        <Button type="button" variant="outline" className="w-full" onClick={() => setScanning(true)}>
+          {t('barcode.startScan')}
+        </Button>
+      )}
+
+      <div className="flex items-end gap-2">
+        <div className="flex-1 space-y-1">
+          <Label htmlFor="barcode-manual">{t('barcode.manualLabel')}</Label>
+          <Input
+            id="barcode-manual"
+            inputMode="numeric"
+            placeholder="5000112637922"
+            value={manual}
+            onChange={(e) => setManual(e.target.value.replace(/\D/g, ''))}
+          />
+        </div>
+        <Button
+          type="button"
+          disabled={!isValidEan(manual) || lookup.isPending}
+          onClick={() => void resolve(manual)}
+        >
+          {lookup.isPending ? t('barcode.looking') : t('barcode.lookup')}
+        </Button>
+      </div>
+
+      {notFound && <p className="text-sm text-muted-foreground">{t('barcode.notFound')}</p>}
     </div>
   );
 }

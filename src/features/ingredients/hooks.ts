@@ -11,7 +11,7 @@ import {
   type ManualIngredientInput,
 } from './api';
 import type { OFFSearchResult } from '@/lib/openfoodfacts';
-import { searchOpenFoodFacts } from '@/lib/openfoodfacts';
+import { getProductByBarcode, searchOpenFoodFacts } from '@/lib/openfoodfacts';
 import type { TablesUpdate } from '@/types/database';
 import { toastCreated, toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
 
@@ -27,6 +27,15 @@ export function useLocalIngredientSearch(query: string, limit = 15) {
     queryKey: ['ingredients', 'search-local', query, limit],
     queryFn: () => searchLocalIngredients(query, limit),
     placeholderData: (prev) => prev,
+  });
+}
+
+export function useBarcodeLookup() {
+  return useMutation({
+    mutationFn: (code: string) => getProductByBarcode(code),
+    onError: toastError,
+    // No success toast — the dialog shows the prefilled form or a
+    // "not found" message; a toast here would double up.
   });
 }
 

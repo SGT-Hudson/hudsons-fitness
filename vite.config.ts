@@ -52,6 +52,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           recharts: ['recharts'],
+          zxing: ['@zxing/browser'],
           supabase: ['@supabase/supabase-js'],
           i18n: ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
           radix: [

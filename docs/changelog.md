@@ -58,6 +58,10 @@ decision rationale in `decisions.md`.
 - Flipped the `data-model.md#library-model` "target model" preamble + the matching `features.md` callouts; CLAUDE.md invariant #3 now lists `reconcile_account_delete` as the second live `SECURITY DEFINER` exception.
 - Phase 2 auto-reaper remains blocked on the deferred ratings/voting signal — see R-01 in `roadmap.md`.
 
+### 2026-05-21 — R-20 Barcode scanning
+
+- Camera + manual-EAN barcode lookup in the New Ingredient dialog, resolving via the new OFF v2 `getProductByBarcode` adapter into the existing prefill flow. Native `BarcodeDetector` fast-path with a lazy `@zxing/browser` fallback (iOS Safari); EAN-13/8 + UPC-A, every decode re-validated by `isValidEan`. Client-only, no migration.
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |

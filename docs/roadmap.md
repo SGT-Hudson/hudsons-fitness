@@ -28,6 +28,8 @@ reference shard carries it (never edit the decision entry).
 - R-17 — Extract shared pure camelCase macro/date core; edge snake adapter; Deno dep-pin
 - R-18 — Cron liveness alerting (stale daily_nutrition_history/tdee_estimates → notify)
 - R-19 — Training MVP (Phase 1: ad-hoc session logging + rule-based coach)
+- R-20 — Barcode scanning for ingredient import (camera + manual EAN → OFF lookup)
+- R-21 — OFF contribute-back: push user-created/completed products to Open Food Facts (SKETCH)
 
 ## R-00 — Baseline current schema into migrations
 - **decision:** D-A8, D-A6, D-E3, D-D6, D-F1
@@ -690,3 +692,91 @@ reference shard carries it (never edit the decision entry).
   (Dieta/Entreno), home redesign, in-app onboarding, desktop layout,
   auto-progression beyond the 5 MVP rules. Each gets its own spec when
   scheduled.
+
+## R-20 — Barcode scanning for ingredient import
+- **decision:** (none — promotes the deferred "barcode-import" product idea in features.md)
+- **blocked-by:** —
+- **status:** done (2026-05-21) — camera scan (native BarcodeDetector
+  fast-path + lazy @zxing/browser fallback) and manual EAN entry, both
+  resolving through the new `getProductByBarcode` OFF v2 adapter into the
+  existing IngredientDialog prefill flow. Client-only; no migration.
+- **plan:** `docs/superpowers/plans/2026-05-21-barcode-scanning.md`
+- **scope:** `getProductByBarcode` + `isValidEan` on `lib/openfoodfacts.ts`
+  (Tier-1 tested); `BarcodeScanner` component (EAN-13/8 + UPC-A; @zxing/browser
+  0.2.0 `BrowserMultiFormatOneDReader`, isValidEan filters non-grocery 1D
+  formats); `BarcodeTab` in IngredientDialog reusing the OFF
+  `pickedOFF`→`setForm` path; ES+EN i18n; `@zxing/browser` code-split. Tier-2
+  test on the manual lookup path; real-camera integration deferred (manual
+  device smoke per release).
+
+## R-21 — OFF contribute-back (SKETCH — not yet specced)
+- **decision:** (none yet)
+- **blocked-by:** R-20 (the barcode/OFF lookup path)
+- **status:** sketch (2026-05-21) — the durable fix for thin Spanish OFF
+  coverage. Commercial barcode DBs (FatSecret etc.) are ruled out: their
+  ToS forbid persisting their data >24h, which is incompatible with this
+  app saving products permanently into a public shared pool. OFF is
+  ODbL (store + redistribute allowed, share-alike), so the license-aligned
+  way to improve coverage is to *give back*: when our user creates or
+  completes a product that OFF lacks, submit it to OFF so the next person
+  (here or elsewhere) gets a hit.
+- **why:** R-20 + the lenient-prefill change (2026-05-21) squeeze more out
+  of existing OFF data, but they can't conjure a product OFF has never
+  seen. Contribute-back is the only coverage-growth lever that fits the
+  app's open-data model.
+
+### Sketch — mechanics
+- **OFF write API:** `POST https://world.openfoodfacts.org/cgi/product_jqm2.pl`
+  (the v1 write endpoint; a v3 write API exists in beta — confirm current
+  recommended endpoint at spec time). Fields: `code` (barcode),
+  `product_name`, `brands`, and per-100g nutriment fields
+  (`nutriment_energy-kcal`, `nutriment_proteins`, `nutriment_carbohydrates`,
+  `nutriment_fat`, `nutriment_fiber`, with `nutrition_data_per=100g`).
+- **Auth:** OFF writes need an account. Two models:
+  1. A single app-owned OFF contributor account (credentials in Supabase
+     Vault, write proxied through a new `off-contribute` **edge function** —
+     same Vault + edge pattern as the cron service key). Simplest; all
+     contributions attributed to one "HudsonFitness" OFF user. **Recommended.**
+  2. Per-user OFF OAuth — overkill for a solo/friends-and-family app.
+- **Trigger points (in our flow):**
+  - After a user **creates** an ingredient that originated from a barcode
+    scan with a valid EAN and OFF returned 404 (genuinely absent) — submit
+    the new product.
+  - After a user **completes** a scanned-but-incomplete OFF product (the
+    R-20 lenient path: name present, macros were 0 and the user filled
+    them) — submit an update with the new nutriments.
+  - Gate both behind the EAN being checksum-valid (`isValidEan`) and the
+    macros being non-trivially complete (don't push all-zero rows back).
+- **Where it hooks:** the `createManualIngredient` / `importIngredientFromOFF`
+  mutations already know the saved row. Add an opt-in, fire-and-forget call
+  to the `off-contribute` edge fn on success. Failures must be silent
+  (a contribution failing must never block the user's own save).
+- **Attribution:** ODbL requires attributing OFF as the source for data we
+  *consume*; for data we *contribute*, OFF's own attribution applies. Add an
+  OFF credit line to the ingredient create dialog / an About section.
+
+### Open questions (resolve at spec time)
+1. **User consent / privacy:** contributing makes the product (name, brand,
+   macros — never the user's private note) public on OFF. Need an explicit
+   opt-in toggle ("Share this product with Open Food Facts") — likely
+   default-on for barcode-scanned products (they're commercial products,
+   not personal data) but confirm. The per-user PII note (R-01
+   `user_*_refs`) must NEVER be sent.
+2. **Image upload:** OFF values product photos. Out of scope for v1 (we
+   don't capture a product image yet); revisit if a photo-capture step is
+   added to the scan flow.
+3. **Quality gating:** only push when macros look sane (kcal in a plausible
+   range, not all-zero). Avoid polluting OFF with junk — a bad contribution
+   is worse than none.
+4. **Rate / abuse:** the single-account model concentrates all writes under
+   one OFF user; check OFF's contributor rate limits and set a sane cap.
+5. **v3 write API:** confirm whether OFF now recommends the v3 write
+   endpoint over `product_jqm2.pl` at spec time.
+
+### Implementation flow once specced
+`/brainstorming` (resolve the open questions, esp. consent default) →
+spec → `/writing-plans`. Likely ~1 edge function (`off-contribute`,
+Vault-held OFF creds), a small client opt-in toggle + fire-and-forget
+call wired into the existing ingredient-create success path, an OFF
+attribution credit, and Tier-1 tests on the field-mapping adapter
+(our `OFFSearchResult`/manual form → OFF write payload). No DB migration.
