@@ -73,12 +73,33 @@ describe('getProductByBarcode', () => {
     expect(await getProductByBarcode('0000000000000')).toBeNull();
   });
 
-  it('returns null when the product has no energy value', async () => {
+  it('returns a partial product (zeros) when nutriments are incomplete — barcode path is lenient', async () => {
     mockFetch({
       status: 1,
-      product: { code: '5000112637922', product_name: 'X', nutriments: {} },
+      product: {
+        code: '8410000000000',
+        product_name: 'Producto español sin macros',
+        brands: 'MarcaES',
+        nutriments: {}, // name present, no energy/macros — common for ES OFF entries
+      },
     });
-    expect(await getProductByBarcode('5000112637922')).toBeNull();
+    const result = await getProductByBarcode('8410000000000');
+    expect(result).toEqual({
+      code: '8410000000000',
+      name: 'Producto español sin macros',
+      brand: 'MarcaES',
+      thumbnailUrl: null,
+      kcalPer100g: 0,
+      proteinPer100g: 0,
+      carbsPer100g: 0,
+      fatPer100g: 0,
+      fiberPer100g: 0,
+    });
+  });
+
+  it('still returns null when the product has no usable name', async () => {
+    mockFetch({ status: 1, product: { code: '8410000000000', nutriments: { 'energy-kcal_100g': 50 } } });
+    expect(await getProductByBarcode('8410000000000')).toBeNull();
   });
 
   it('returns null on HTTP 404 (OFF answers unknown barcodes with 404)', async () => {
