@@ -148,7 +148,7 @@ export function IngredientDialog({
       } else if (pickedOFF) {
         saved = await importOFF.mutateAsync({ product: pickedOFF, overrides: parsed });
       } else {
-        saved = await create.mutateAsync({ ...parsed, barcode: scannedBarcode ?? undefined });
+        saved = await create.mutateAsync(parsed);
       }
       if (scannedBarcode) {
         // R-21: fire-and-forget OFF contribution for barcode-origin products.
