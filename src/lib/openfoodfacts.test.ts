@@ -65,6 +65,7 @@ describe('getProductByBarcode', () => {
       carbsPer100g: 10.6,
       fatPer100g: 0,
       fiberPer100g: 0,
+      complete: true, // OFF had an energy value
     });
   });
 
@@ -94,6 +95,7 @@ describe('getProductByBarcode', () => {
       carbsPer100g: 0,
       fatPer100g: 0,
       fiberPer100g: 0,
+      complete: false, // no energy value → "fill the gaps" path
     });
   });
 
