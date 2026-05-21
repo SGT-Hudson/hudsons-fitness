@@ -27,6 +27,7 @@ reference shard carries it (never edit the decision entry).
 - R-16 — Vitest Tier-1 (spec-first) + Tier-2 (with R-09) + Tier-3 (after R-00)
 - R-17 — Extract shared pure camelCase macro/date core; edge snake adapter; Deno dep-pin
 - R-18 — Cron liveness alerting (stale daily_nutrition_history/tdee_estimates → notify)
+- R-20 — Barcode scanning for ingredient import (camera + manual EAN → OFF lookup)
 
 ## R-00 — Baseline current schema into migrations
 - **decision:** D-A8, D-A6, D-E3, D-D6, D-F1
@@ -654,3 +655,19 @@ reference shard carries it (never edit the decision entry).
      explicitly verify the `cron_service_role_key` value never appeared in any
      commit (expected clean: migration uses the name only); rotation becomes
      more important post go-public.
+
+## R-20 — Barcode scanning for ingredient import
+- **decision:** (none — promotes the deferred "barcode-import" product idea in features.md)
+- **blocked-by:** —
+- **status:** done (2026-05-21) — camera scan (native BarcodeDetector
+  fast-path + lazy @zxing/browser fallback) and manual EAN entry, both
+  resolving through the new `getProductByBarcode` OFF v2 adapter into the
+  existing IngredientDialog prefill flow. Client-only; no migration.
+- **plan:** `docs/superpowers/plans/2026-05-21-barcode-scanning.md`
+- **scope:** `getProductByBarcode` + `isValidEan` on `lib/openfoodfacts.ts`
+  (Tier-1 tested); `BarcodeScanner` component (EAN-13/8/UPC-A/E; @zxing/browser
+  0.2.0 `BrowserMultiFormatOneDReader`, isValidEan filters non-grocery 1D
+  formats); `BarcodeTab` in IngredientDialog reusing the OFF
+  `pickedOFF`→`setForm` path; ES+EN i18n; `@zxing/browser` code-split. Tier-2
+  test on the manual lookup path; real-camera integration deferred (manual
+  device smoke per release).
