@@ -417,23 +417,18 @@ export function BarcodeScanner({ onDetected }: Props) {
           rafId = requestAnimationFrame(tick);
         } else {
           // Fallback: ZXing (iOS Safari). Lazy-import so it never enters the
-          // main bundle.
-          const [{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }] =
-            await Promise.all([import('@zxing/browser'), import('@zxing/library')]);
-          const hints = new Map();
-          hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-            BarcodeFormat.EAN_13,
-            BarcodeFormat.EAN_8,
-            BarcodeFormat.UPC_A,
-            BarcodeFormat.UPC_E,
-          ]);
-          const reader = new BrowserMultiFormatReader(hints);
-          zxingControls = await reader.decodeFromVideoElement(
-            videoRef.current!,
-            (result) => {
-              if (result) fire(result.getText());
-            },
-          );
+          // main bundle. @zxing/browser@0.2.0 does NOT ship @zxing/library
+          // and does not export DecodeHintType as a value, so we use the
+          // 1D-only reader (EAN/UPC/Code128/ITF) instead of passing a hints
+          // Map — `isValidEan` downstream rejects any non-EAN/UPC 1D format,
+          // so scoping to 1D is enough and avoids the QR/Datamatrix surface.
+          const { BrowserMultiFormatOneDReader } = await import('@zxing/browser');
+          const reader = new BrowserMultiFormatOneDReader();
+          // decodeFromVideoElement(source, cb) → Promise<IScannerControls>
+          // (controls expose .stop()). Verified against 0.2.0 typings.
+          zxingControls = await reader.decodeFromVideoElement(videoRef.current!, (result) => {
+            if (result) fire(result.getText());
+          });
         }
       } catch {
         if (!stoppedRef.current) setStatus('error');
@@ -751,11 +746,14 @@ In `vite.config.ts`, inside `build.rollupOptions.output.manualChunks`, add a
 ```ts
         manualChunks: {
           recharts: ['recharts'],
-          zxing: ['@zxing/browser', '@zxing/library'],
+          zxing: ['@zxing/browser'],
           supabase: ['@supabase/supabase-js'],
           // …rest unchanged…
         },
 ```
+
+(`@zxing/browser@0.2.0` bundles its own decoder core — there is no separate
+`@zxing/library` package to list.)
 
 This keeps ZXing out of the first-paint bundle; it loads only when an iOS-Safari
 user taps "Scan" (the `import()` in Task 4 already makes it lazy — the
