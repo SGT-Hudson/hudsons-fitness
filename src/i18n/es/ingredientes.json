@@ -17,7 +17,7 @@
     "lookup": "Buscar",
     "looking": "Buscando…",
     "notFound": "No está en OpenFoodFacts — pasa a Manual para introducirlo a mano.",
-    "bannerNew": "Aún no está en Open Food Facts. Añade sus datos para que otros puedan escanearlo después.",
+    "bannerNew": "No está en Open Food Facts. Introduce sus datos manualmente.",
     "bannerComplete": "Faltan algunos datos. Complétalos para terminar la ficha.",
     "bannerFound": "Producto encontrado - revisa y guarda."
   },
