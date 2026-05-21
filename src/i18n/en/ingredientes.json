@@ -18,7 +18,8 @@
     "looking": "Looking up…",
     "notFound": "Not in OpenFoodFacts — switch to Manual to enter it by hand.",
     "bannerNew": "Not in Open Food Facts yet. Add its details so others can scan it later.",
-    "bannerComplete": "Some values are missing. Fill them in to complete it."
+    "bannerComplete": "Some values are missing. Fill them in to complete it.",
+    "bannerFound": "Product found — review and save."
   },
   "dialog": {
     "createTitle": "New ingredient",

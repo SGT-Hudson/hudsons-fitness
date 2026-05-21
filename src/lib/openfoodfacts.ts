@@ -26,6 +26,13 @@ export interface OFFSearchResult {
   fiberPer100g: number;
 }
 
+/** Barcode-lookup result: an OFFSearchResult plus whether OFF already had an
+ *  energy value (drives the dialog's "review & save" vs "fill the gaps"
+ *  banner). R-21. */
+export interface OFFProductLookup extends OFFSearchResult {
+  complete: boolean;
+}
+
 const OFF_BASE = 'https://world.openfoodfacts.org';
 
 export async function searchOpenFoodFacts(
@@ -115,7 +122,7 @@ interface OFFProductResponse {
 export async function getProductByBarcode(
   code: string,
   options: { signal?: AbortSignal } = {},
-): Promise<OFFSearchResult | null> {
+): Promise<OFFProductLookup | null> {
   const params = new URLSearchParams({
     fields: 'code,product_name,brands,nutriments,image_thumb_url',
   });
@@ -141,5 +148,10 @@ export async function getProductByBarcode(
     carbsPer100g: round2(n?.carbohydrates_100g ?? 0),
     fatPer100g: round2(n?.fat_100g ?? 0),
     fiberPer100g: round2(n?.fiber_100g ?? 0),
+    // Drives the dialog banner: a found product WITH an energy value is
+    // "review & save"; WITHOUT one it's "fill the gaps". (OFF entries often
+    // have a name but no nutriments — the lenient lookup still returns them
+    // with 0s, so completeness is flagged separately.)
+    complete: n?.['energy-kcal_100g'] !== undefined,
   };
 }
