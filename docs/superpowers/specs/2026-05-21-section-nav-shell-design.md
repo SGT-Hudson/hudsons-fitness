@@ -68,13 +68,13 @@ Both shells render from it.
 
 ### Desktop (≥ `md`, 768px) — grouped sidebar
 
-shadcn **sidebar** (Base UI track — `ui.shadcn.com/docs/components/base/sidebar`).
-Order top-to-bottom: **Home → Progreso** (shared, no group label) → **Nutrición**
-group (Diario, Planificador, Recetas) → **Entreno** group (Hoy, Rutina,
-Ejercicios — the last two route to the En progreso page for now). Active
-item shows a left accent bar tinted to its area (ink for shared, green for
-Nutrición, red for Entreno). Footer = avatar → menu (Ajustes, Salir). Collapses
-to an icon rail (reclaims width for item 6). **No section switching** — desktop
+A grouped **sidebar** built in the repo's **shadcn** style (Radix-based, like the
+rest of `components/ui`). Order top-to-bottom: **Home → Progreso** (shared, no
+group label) → **Nutrición** group (Diario, Planificador, Recetas) → **Entreno**
+group (Hoy, Rutina, Ejercicios — the last two route to the En progreso page for
+now). Active item shows a left accent bar tinted to its area (ink for shared,
+green for Nutrición, red for Entreno). Footer = avatar → menu (Ajustes, Salir).
+Collapse-to-icon-rail is a later refinement (item 6). **No section switching** — desktop
 shows everything.
 
 ### Mobile (< `md`) — bottom nav + section switcher

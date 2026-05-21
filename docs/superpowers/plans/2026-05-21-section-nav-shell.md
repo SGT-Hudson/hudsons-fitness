@@ -10,8 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-05-21-section-nav-shell-design.md`
 
-**Two deliberate deviations from the spec (codebase reality):**
-1. The sidebar is **bespoke** (Tailwind + existing primitives), not shadcn's Base-UI `sidebar` — the repo is Radix-classic with no Base UI, and mobile uses the bottom nav (not the sidebar's sheet), so the heavy sidebar machinery isn't needed. The bespoke component reproduces the approved mock.
+**Implementation notes:**
+1. The sidebar is built in the repo's **shadcn** style (Radix + Tailwind + existing `components/ui` primitives + `cn()`), as a focused layout component. Mobile uses the bottom nav, so the sidebar is desktop-only; collapse-to-icon-rail is a later refinement (item 6).
 2. `nav-config.ts` carries **no `built` flag** — the "En progreso" placeholder is purely a router mapping (`/routine` & `/exercises` render `EnProgresoPage`). Shipping a real page later is a one-line router element swap.
 
 ---
@@ -953,7 +953,7 @@ git commit -m "feat(nav): BottomNav mobile bar (per active section)"
 - Create: `src/components/layout/AppSidebar.tsx`
 - Test: `src/components/layout/AppSidebar.test.tsx`
 
-Bespoke grouped sidebar from `sidebarGroups()`. Group labels for nutrición/entreno; shared group has no label. Active item left-accent tinted to its group. Footer = `AvatarMenu` + email.
+Grouped sidebar (shadcn-style: Radix/Tailwind/`cn()`) from `sidebarGroups()`. Group labels for nutrición/entreno; shared group has no label. Active item left-accent tinted to its group. Footer = `AvatarMenu` + email.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1079,7 +1079,7 @@ Expected: PASS.
 
 ```bash
 git add src/components/layout/AppSidebar.tsx src/components/layout/AppSidebar.test.tsx
-git commit -m "feat(nav): bespoke grouped desktop sidebar"
+git commit -m "feat(nav): grouped desktop sidebar (shadcn-style)"
 ```
 
 ---
