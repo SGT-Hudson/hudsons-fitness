@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { ProgressTabs } from './ProgressTabs';
 import { CompositionChart } from '@/features/measurements/components/CompositionChart';
 import { LatestMeasurementCard } from '@/features/measurements/components/LatestMeasurementCard';
 import { MeasurementDialog } from '@/features/measurements/components/MeasurementDialog';
@@ -19,7 +19,6 @@ import type { PhaseType } from '@/features/measurements/trend';
 import { isoDate } from '@/lib/dates';
 
 export function ProgresoPage() {
-  const { t } = useTranslation('metricas');
   const today = isoDate();
 
   const latestQuery = useLatestMeasurement();
@@ -68,9 +67,7 @@ export function ProgresoPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
-      </div>
+      <ProgressTabs />
 
       <LatestMeasurementCard
         latest={latestQuery.data}

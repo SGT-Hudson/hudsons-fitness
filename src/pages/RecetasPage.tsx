@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LayoutGrid, List, Pencil, Plus, Search, Star, Trash2 } from 'lucide-react';
+import { RecipesTabs } from './RecipesTabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -77,9 +78,8 @@ export function RecetasPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
-        <div className="flex items-center gap-2">
+      <RecipesTabs />
+      <div className="flex items-center gap-2">
           <div className="inline-flex rounded-md border bg-background p-0.5">
             <button
               type="button"
@@ -104,11 +104,10 @@ export function RecetasPage() {
               <List className="h-4 w-4" />
             </button>
           </div>
-          <Button onClick={() => navigate('/recetas/nuevo')}>
+          <Button onClick={() => navigate('/recipes/new')}>
             <Plus className="h-4 w-4" />
             {t('newRecipe')}
           </Button>
-        </div>
       </div>
 
       <div className="relative">
@@ -146,7 +145,7 @@ export function RecetasPage() {
               <Card className="h-full hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg leading-tight">
-                    <Link to={`/recetas/${r.id}`} className="hover:underline">
+                    <Link to={`/recipes/${r.id}`} className="hover:underline">
                       {r.name}
                     </Link>
                   </CardTitle>
@@ -176,7 +175,7 @@ export function RecetasPage() {
                       />
                     </Button>
                     <Button asChild variant="ghost" size="icon" aria-label={tCommon('edit')}>
-                      <Link to={`/recetas/${r.id}`}>
+                      <Link to={`/recipes/${r.id}`}>
                         <Pencil className="h-4 w-4" />
                       </Link>
                     </Button>
@@ -203,7 +202,7 @@ export function RecetasPage() {
                 className="flex items-center gap-3 px-4 py-3 hover:bg-accent/40 transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <Link to={`/recetas/${r.id}`} className="font-medium hover:underline truncate">
+                  <Link to={`/recipes/${r.id}`} className="font-medium hover:underline truncate">
                     {r.name}
                   </Link>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
@@ -232,7 +231,7 @@ export function RecetasPage() {
                     />
                   </Button>
                   <Button asChild variant="ghost" size="icon" aria-label={tCommon('edit')}>
-                    <Link to={`/recetas/${r.id}`}>
+                    <Link to={`/recipes/${r.id}`}>
                       <Pencil className="h-4 w-4" />
                     </Link>
                   </Button>

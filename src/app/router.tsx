@@ -7,6 +7,8 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { SignupPage } from '@/pages/SignupPage';
 import { OnboardingPage } from '@/pages/OnboardingPage';
+import { HomePage } from '@/pages/HomePage';
+import { EnProgresoPage } from '@/pages/EnProgresoPage';
 import { DiarioPage } from '@/pages/DiarioPage';
 import { PlanificadorPage } from '@/pages/PlanificadorPage';
 import { PlantillasPage } from '@/pages/PlantillasPage';
@@ -38,7 +40,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <FullPageLoader />;
-  if (user) return <Navigate to="/diario" replace />;
+  if (user) return <Navigate to="/home" replace />;
   return <>{children}</>;
 }
 
@@ -49,74 +51,86 @@ function RequireOnboarded() {
   return <Outlet />;
 }
 
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <RedirectIfAuthed>
+            <LoginPage />
+          </RedirectIfAuthed>
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          <RedirectIfAuthed>
+            <SignupPage />
+          </RedirectIfAuthed>
+        }
+      />
+      <Route
+        path="/onboarding"
+        element={
+          <RequireAuth>
+            <OnboardingPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        element={
+          <RequireAuth>
+            <RequireOnboarded />
+          </RequireAuth>
+        }
+      >
+        <Route element={<AppLayout />}>
+          <Route index element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<HomePage />} />
+
+          {/* Nutrición */}
+          <Route path="/diary" element={<DiarioPage />} />
+          <Route path="/diary/:date" element={<DiarioPage />} />
+          <Route path="/planner" element={<PlanificadorPage />} />
+          <Route path="/templates" element={<PlantillasPage />} />
+          <Route path="/templates/new" element={<PlantillaEditorPage />} />
+          <Route path="/templates/:id" element={<PlantillaEditorPage />} />
+          <Route path="/recipes" element={<RecetasPage />} />
+          <Route path="/recipes/new" element={<RecetaEditorPage />} />
+          <Route path="/recipes/:id" element={<RecetaEditorPage />} />
+          <Route path="/recipes/ingredients" element={<IngredientesPage />} />
+
+          {/* Entreno */}
+          <Route path="/training" element={<EntrenamientoPage />} />
+          <Route path="/training/new" element={<SessionEditorPage />} />
+          <Route path="/training/:id" element={<SessionEditorPage />} />
+          <Route path="/training/exercises/:id" element={<ExerciseHistoryPage />} />
+          <Route path="/routine" element={<EnProgresoPage />} />
+          <Route path="/exercises" element={<EnProgresoPage />} />
+
+          {/* Shared */}
+          <Route
+            path="/progress"
+            element={
+              <Suspense fallback={<FullPageLoader />}>
+                <ProgresoPage />
+              </Suspense>
+            }
+          />
+          <Route path="/progress/goals" element={<ObjetivosPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
 export function AppRouter() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <RedirectIfAuthed>
-              <LoginPage />
-            </RedirectIfAuthed>
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            <RedirectIfAuthed>
-              <SignupPage />
-            </RedirectIfAuthed>
-          }
-        />
-        <Route
-          path="/onboarding"
-          element={
-            <RequireAuth>
-              <OnboardingPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          element={
-            <RequireAuth>
-              <RequireOnboarded />
-            </RequireAuth>
-          }
-        >
-          <Route element={<AppLayout />}>
-            <Route index element={<Navigate to="/diario" replace />} />
-            <Route path="/diario" element={<DiarioPage />} />
-            <Route path="/diario/:date" element={<DiarioPage />} />
-            <Route path="/planificador" element={<PlanificadorPage />} />
-            <Route path="/menus" element={<PlantillasPage />} />
-            <Route path="/menus/nuevo" element={<PlantillaEditorPage />} />
-            <Route path="/menus/:id" element={<PlantillaEditorPage />} />
-            <Route path="/recetas" element={<RecetasPage />} />
-            <Route path="/recetas/nuevo" element={<RecetaEditorPage />} />
-            <Route path="/recetas/:id" element={<RecetaEditorPage />} />
-            <Route path="/ingredientes" element={<IngredientesPage />} />
-            <Route path="/entrenamiento" element={<EntrenamientoPage />} />
-            <Route path="/entrenamiento/nueva" element={<SessionEditorPage />} />
-            <Route path="/entrenamiento/:id" element={<SessionEditorPage />} />
-            <Route
-              path="/entrenamiento/ejercicios/:id"
-              element={<ExerciseHistoryPage />}
-            />
-            <Route
-              path="/progreso"
-              element={
-                <Suspense fallback={<FullPageLoader />}>
-                  <ProgresoPage />
-                </Suspense>
-              }
-            />
-            <Route path="/objetivos" element={<ObjetivosPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

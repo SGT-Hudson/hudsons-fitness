@@ -68,7 +68,7 @@ export function OnboardingPage() {
     return <div className="p-8 text-muted-foreground">{tCommon('loading')}</div>;
   }
   if (profile && isProfileOnboarded(profile)) {
-    return <Navigate to="/diario" replace />;
+    return <Navigate to="/diary" replace />;
   }
 
   async function onSubmit(values: ParsedOnboardingForm) {
@@ -80,7 +80,7 @@ export function OnboardingPage() {
         height_cm: values.height_cm,
         initial_weight_kg: values.initial_weight_kg,
       });
-      navigate('/diario', { replace: true });
+      navigate('/diary', { replace: true });
     } catch (err) {
       setError((err as Error).message);
     }

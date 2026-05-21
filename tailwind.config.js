@@ -45,6 +45,14 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        nutricion: {
+          DEFAULT: 'hsl(var(--nutricion))',
+          foreground: 'hsl(var(--nutricion-foreground))',
+        },
+        entreno: {
+          DEFAULT: 'hsl(var(--entreno))',
+          foreground: 'hsl(var(--entreno-foreground))',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',

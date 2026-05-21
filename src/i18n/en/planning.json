@@ -55,6 +55,7 @@
   "planner": {
     "pageTitle": "Planner",
     "weekOf": "Week of {{date}}",
+    "manageTemplates": "Templates",
     "applyTemplate": "Apply template",
     "swapTemplate": "Swap template",
     "saveAsTemplate": "Save as template",

@@ -40,7 +40,7 @@ export function ExerciseHistoryPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Button asChild size="icon" variant="ghost" aria-label={t('editor.back')}>
-          <Link to="/entrenamiento">
+          <Link to="/training">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
