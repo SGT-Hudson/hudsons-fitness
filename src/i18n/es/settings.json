@@ -19,11 +19,6 @@
     "light": "Claro",
     "dark": "Oscuro"
   },
-  "privacy": {
-    "title": "Privacidad",
-    "description": "Controla qué datos se comparten.",
-    "contributeOff": "Contribuir productos escaneados a Open Food Facts"
-  },
   "biometrics": {
     "title": "Biometría",
     "description": "Datos físicos usados para calcular objetivos y composición corporal.",
