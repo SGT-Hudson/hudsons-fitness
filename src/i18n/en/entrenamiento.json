@@ -1,0 +1,106 @@
+{
+  "page": {
+    "title": "Training",
+    "newSession": "Log workout"
+  },
+  "list": {
+    "emptyTitle": "No workouts logged yet.",
+    "cta": "Log workout",
+    "untitled": "Untitled",
+    "setCount_one": "{{count}} set",
+    "setCount_other": "{{count}} sets",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Delete",
+    "cancel": "Cancel"
+  },
+  "editor": {
+    "newTitle": "New workout",
+    "editTitle": "Edit workout",
+    "back": "Back",
+    "date": "Date",
+    "title": "Title",
+    "titlePlaceholder": "e.g. Push, Leg day…",
+    "notes": "Notes",
+    "notesPlaceholder": "How did it go?",
+    "addExercise": "Add exercise",
+    "save": "Save",
+    "saving": "Saving…"
+  },
+  "block": {
+    "pickExercise": "Pick an exercise",
+    "addSet": "Add set",
+    "remove": "Remove exercise"
+  },
+  "setRow": {
+    "reps": "Reps",
+    "weightKg": "Kg",
+    "rpe": "RPE",
+    "warmup": "Warmup",
+    "useLast": "Use last",
+    "useLastTooltip": "Fill reps / kg / RPE with your last working set.",
+    "remove": "Remove set"
+  },
+  "picker": {
+    "placeholder": "Search exercises…",
+    "searching": "Searching…",
+    "noResults": "No matches",
+    "createNew": "Create \"{{name}}\"",
+    "change": "Change"
+  },
+  "history": {
+    "empty": "No sets logged for this exercise yet.",
+    "e1rmTrend": "Estimated 1RM",
+    "prs": "Personal records",
+    "pastSessions": "Past sessions",
+    "warmup": "Warmup",
+    "volume": "Volume: {{kg}} kg"
+  },
+  "exerciseDialog": {
+    "title": "New exercise",
+    "subtitle": "Adds to the shared library.",
+    "libraryHint": "Exercises are a shared library — use generic names (no personal notes).",
+    "fields": {
+      "nameEs": "Name (Spanish)",
+      "nameEsPlaceholder": "e.g. Press de banca",
+      "nameEn": "Name (English)",
+      "nameEnPlaceholder": "e.g. Bench press",
+      "namesHelp": "Spanish required. English optional (system seeds ship both).",
+      "primaryMuscle": "Primary muscle",
+      "primaryMusclePlaceholder": "Optional",
+      "primaryMuscleNone": "— None",
+      "equipment": "Equipment",
+      "equipmentPlaceholder": "Optional",
+      "equipmentNone": "— None",
+      "defaultIncrementKg": "Default load increment (kg)",
+      "defaultIncrementKgHelp": "How much to add when a rule suggests progressing. Auto-filled from equipment."
+    },
+    "errors": {
+      "nameEsRequired": "Spanish name is required."
+    },
+    "primaryMuscle": {
+      "chest": "Chest",
+      "back": "Back",
+      "shoulders": "Shoulders",
+      "quads": "Quads",
+      "hamstrings": "Hamstrings",
+      "glutes": "Glutes",
+      "calves": "Calves",
+      "biceps": "Biceps",
+      "triceps": "Triceps",
+      "core": "Core",
+      "forearms": "Forearms",
+      "full_body": "Full body"
+    },
+    "equipment": {
+      "barbell": "Barbell",
+      "dumbbell": "Dumbbell",
+      "kettlebell": "Kettlebell",
+      "machine": "Machine",
+      "cable": "Cable",
+      "bodyweight": "Bodyweight",
+      "band": "Band",
+      "other": "Other"
+    }
+  }
+}

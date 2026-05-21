@@ -1,0 +1,106 @@
+{
+  "page": {
+    "title": "Entrenamiento",
+    "newSession": "Registrar entreno"
+  },
+  "list": {
+    "emptyTitle": "Aún no has registrado entrenos.",
+    "cta": "Registrar entreno",
+    "untitled": "Sin título",
+    "setCount_one": "{{count}} serie",
+    "setCount_other": "{{count}} series",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirmDelete": "Eliminar",
+    "cancel": "Cancelar"
+  },
+  "editor": {
+    "newTitle": "Nuevo entreno",
+    "editTitle": "Editar entreno",
+    "back": "Volver",
+    "date": "Fecha",
+    "title": "Título",
+    "titlePlaceholder": "p. ej. Empuje, Pierna…",
+    "notes": "Notas",
+    "notesPlaceholder": "¿Cómo te ha ido?",
+    "addExercise": "Añadir ejercicio",
+    "save": "Guardar",
+    "saving": "Guardando…"
+  },
+  "block": {
+    "pickExercise": "Elige un ejercicio",
+    "addSet": "Añadir serie",
+    "remove": "Quitar ejercicio"
+  },
+  "setRow": {
+    "reps": "Reps",
+    "weightKg": "Kg",
+    "rpe": "RPE",
+    "warmup": "Calent.",
+    "useLast": "Usar última",
+    "useLastTooltip": "Rellena reps / kg / RPE con la última serie no de calentamiento.",
+    "remove": "Quitar serie"
+  },
+  "picker": {
+    "placeholder": "Buscar ejercicio…",
+    "searching": "Buscando…",
+    "noResults": "Sin resultados",
+    "createNew": "Crear \"{{name}}\"",
+    "change": "Cambiar"
+  },
+  "history": {
+    "empty": "Aún no has registrado series para este ejercicio.",
+    "e1rmTrend": "1RM estimado",
+    "prs": "Récords personales",
+    "pastSessions": "Sesiones anteriores",
+    "warmup": "Calent.",
+    "volume": "Volumen: {{kg}} kg"
+  },
+  "exerciseDialog": {
+    "title": "Nuevo ejercicio",
+    "subtitle": "Se añade a la biblioteca compartida.",
+    "libraryHint": "Los ejercicios son una biblioteca compartida — usa nombres genéricos (sin notas personales).",
+    "fields": {
+      "nameEs": "Nombre (español)",
+      "nameEsPlaceholder": "p. ej. Press de banca",
+      "nameEn": "Nombre (inglés)",
+      "nameEnPlaceholder": "p. ej. Bench press",
+      "namesHelp": "Español obligatorio. Inglés opcional (los nombres del sistema vienen en ambos).",
+      "primaryMuscle": "Músculo principal",
+      "primaryMusclePlaceholder": "Opcional",
+      "primaryMuscleNone": "— Sin elegir",
+      "equipment": "Equipamiento",
+      "equipmentPlaceholder": "Opcional",
+      "equipmentNone": "— Sin elegir",
+      "defaultIncrementKg": "Incremento por defecto (kg)",
+      "defaultIncrementKgHelp": "Cuánto subir cuando una regla sugiere progresar. Se autocompleta con el equipamiento."
+    },
+    "errors": {
+      "nameEsRequired": "El nombre en español es obligatorio."
+    },
+    "primaryMuscle": {
+      "chest": "Pecho",
+      "back": "Espalda",
+      "shoulders": "Hombros",
+      "quads": "Cuádriceps",
+      "hamstrings": "Femorales",
+      "glutes": "Glúteos",
+      "calves": "Gemelos",
+      "biceps": "Bíceps",
+      "triceps": "Tríceps",
+      "core": "Core",
+      "forearms": "Antebrazos",
+      "full_body": "Cuerpo entero"
+    },
+    "equipment": {
+      "barbell": "Barra",
+      "dumbbell": "Mancuerna",
+      "kettlebell": "Kettlebell",
+      "machine": "Máquina",
+      "cable": "Polea",
+      "bodyweight": "Peso corporal",
+      "band": "Goma",
+      "other": "Otro"
+    }
+  }
+}

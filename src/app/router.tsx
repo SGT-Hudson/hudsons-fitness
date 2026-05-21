@@ -16,6 +16,9 @@ import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { EntrenamientoPage } from '@/pages/EntrenamientoPage';
+import { SessionEditorPage } from '@/pages/SessionEditorPage';
+import { ExerciseHistoryPage } from '@/pages/ExerciseHistoryPage';
 
 const ProgresoPage = lazy(() =>
   import('@/pages/ProgresoPage').then((m) => ({ default: m.ProgresoPage })),
@@ -93,6 +96,13 @@ export function AppRouter() {
             <Route path="/recetas/nuevo" element={<RecetaEditorPage />} />
             <Route path="/recetas/:id" element={<RecetaEditorPage />} />
             <Route path="/ingredientes" element={<IngredientesPage />} />
+            <Route path="/entrenamiento" element={<EntrenamientoPage />} />
+            <Route path="/entrenamiento/nueva" element={<SessionEditorPage />} />
+            <Route path="/entrenamiento/:id" element={<SessionEditorPage />} />
+            <Route
+              path="/entrenamiento/ejercicios/:id"
+              element={<ExerciseHistoryPage />}
+            />
             <Route
               path="/progreso"
               element={

@@ -1,0 +1,27 @@
+{
+  "severity": {
+    "info": "Info",
+    "nudge": "Suggestion",
+    "warn": "Warning"
+  },
+  "suggestedNextLoad": "Suggested next load:",
+  "apply": "Apply",
+  "rules": {
+    "doubleProgression": {
+      "headline": "You've hit {{sessions}} sessions at {{weightKg}} kg × {{targetReps}} reps with RPE ≤ {{rpeMax}}. Move up to {{nextWeightKg}} kg next time."
+    },
+    "repProgression": {
+      "headline": "Reps climbed from {{repsFirst}} to {{repsLast}} at {{weightKg}} kg over {{sessions}} sessions. Move up to {{nextWeightKg}} kg next time."
+    },
+    "flatE1rmDeload": {
+      "headline": "Your estimated 1RM has been flat for {{sessions}} sessions (±{{spreadKg}} kg). Consider a deload week."
+    },
+    "rpeClimbingFatigue": {
+      "headline": "RPE climbed from {{rpeFirst}} to {{rpeLast}} at {{weightKg}} kg over {{sessions}} sessions — fatigue building. Consider dropping the load to {{suggestedWeightKg}} kg."
+    },
+    "muscleRecency": {
+      "headline": "It's been {{daysSince}} days since you trained {{primaryMuscle}}.",
+      "headlineNever": "You haven't trained {{primaryMuscle}} yet."
+    }
+  }
+}
