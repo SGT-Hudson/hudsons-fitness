@@ -718,8 +718,10 @@ reference shard carries it (never edit the decision entry).
   server-side fill-missing-only for completions), client fire-and-forget
   gated on the new `profiles.contribute_to_off` toggle, scanned barcode
   retained as `external_id` on manual create, 404/complete transition
-  banners. **Pending Wave-3:** apply the staged migration, register the OFF
-  account + set edge secrets, deploy the edge fn (see operations.md runbook).
+  banners. The `profiles.contribute_to_off` migration is applied (2026-05-21).
+  **Pending:** register the OFF account + set edge secrets, deploy the edge fn
+  (see operations.md runbook) — until then the contribution is a dormant
+  no-op.
   Commercial barcode DBs (FatSecret etc.) were ruled out — their ToS forbid
   persisting data >24h, incompatible with our permanent public pool; OFF's
   ODbL allows store+redistribute, so contribute-back is the license-aligned
