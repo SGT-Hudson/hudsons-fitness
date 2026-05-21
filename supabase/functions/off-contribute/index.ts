@@ -12,8 +12,6 @@
 //
 // Switch OFF_BASE to https://world.openfoodfacts.net (staging) for smoke tests.
 
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-
 const OFF_BASE = 'https://world.openfoodfacts.org';
 const UA = 'HudsonFitness/1.0 (https://hudsonfitness.vercel.app)';
 
