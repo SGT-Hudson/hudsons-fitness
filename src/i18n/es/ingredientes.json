@@ -7,8 +7,16 @@
   "tabs": {
     "off": "Buscar (OpenFoodFacts)",
     "manual": "Manual",
-    "imported": "Importado",
-    "importedSoon": "Próximamente — escáner de código de barras"
+    "barcode": "Código de barras"
+  },
+  "barcode": {
+    "startScan": "Escanear con la cámara",
+    "aimHint": "Apunta al código de barras dentro del recuadro.",
+    "cameraError": "No se pudo acceder a la cámara. Escribe el código abajo.",
+    "manualLabel": "Código de barras (EAN/UPC)",
+    "lookup": "Buscar",
+    "looking": "Buscando…",
+    "notFound": "No está en OpenFoodFacts — pasa a Manual para introducirlo a mano."
   },
   "dialog": {
     "createTitle": "Nuevo ingrediente",
