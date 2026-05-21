@@ -709,21 +709,24 @@ reference shard carries it (never edit the decision entry).
   test on the manual lookup path; real-camera integration deferred (manual
   device smoke per release).
 
-## R-21 — OFF contribute-back (SKETCH — not yet specced)
+## R-21 — OFF contribute-back
 - **decision:** (none yet)
 - **blocked-by:** R-20 (the barcode/OFF lookup path)
-- **status:** sketch (2026-05-21) — the durable fix for thin Spanish OFF
-  coverage. Commercial barcode DBs (FatSecret etc.) are ruled out: their
-  ToS forbid persisting their data >24h, which is incompatible with this
-  app saving products permanently into a public shared pool. OFF is
-  ODbL (store + redistribute allowed, share-alike), so the license-aligned
-  way to improve coverage is to *give back*: when our user creates or
-  completes a product that OFF lacks, submit it to OFF so the next person
-  (here or elsewhere) gets a hit.
-- **why:** R-20 + the lenient-prefill change (2026-05-21) squeeze more out
-  of existing OFF data, but they can't conjure a product OFF has never
-  seen. Contribute-back is the only coverage-growth lever that fits the
-  app's open-data model.
+- **status:** implemented (2026-05-21), pending Wave-3 — code complete on
+  `claude/r21-off-contribute`: pure eligibility gate + payload mapper
+  (`core/offContribute.ts`, Tier-1), the `off-contribute` edge fn (new +
+  server-side fill-missing-only for completions), client fire-and-forget
+  gated on the new `profiles.contribute_to_off` toggle, scanned barcode
+  retained as `external_id` on manual create, 404/complete transition
+  banners. **Pending Wave-3:** apply the staged migration, register the OFF
+  account + set edge secrets, deploy the edge fn (see operations.md runbook).
+  Commercial barcode DBs (FatSecret etc.) were ruled out — their ToS forbid
+  persisting data >24h, incompatible with our permanent public pool; OFF's
+  ODbL allows store+redistribute, so contribute-back is the license-aligned
+  coverage lever (R-20 + the lenient-prefill change squeeze existing OFF
+  data, but can't conjure a product OFF has never seen).
+- **spec:** `docs/superpowers/specs/2026-05-21-off-contribute-back-design.md`
+- **plan:** `docs/superpowers/plans/2026-05-21-off-contribute-back.md`
 
 ### Sketch — mechanics
 - **OFF write API:** `POST https://world.openfoodfacts.org/cgi/product_jqm2.pl`

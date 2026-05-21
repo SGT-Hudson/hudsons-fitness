@@ -16,7 +16,9 @@
     "manualLabel": "Código de barras (EAN/UPC)",
     "lookup": "Buscar",
     "looking": "Buscando…",
-    "notFound": "No está en OpenFoodFacts — pasa a Manual para introducirlo a mano."
+    "notFound": "No está en OpenFoodFacts — pasa a Manual para introducirlo a mano.",
+    "bannerNew": "Aún no está en Open Food Facts. Añade sus datos para que otros puedan escanearlo después.",
+    "bannerComplete": "Faltan algunos datos. Complétalos para terminar la ficha."
   },
   "dialog": {
     "createTitle": "Nuevo ingrediente",

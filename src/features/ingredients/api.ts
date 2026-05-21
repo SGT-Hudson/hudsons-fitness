@@ -15,6 +15,11 @@ export interface ManualIngredientInput {
   carbs_g_per_unit: number;
   fat_g_per_unit: number;
   fiber_g_per_unit: number;
+  /** Optional EAN/UPC when this manual product originated from a barcode
+   *  scan that OFF didn't have. Persisted as `external_id` so the row keeps
+   *  its identity (and the unique(source, external_id) constraint dedupes
+   *  repeat scans). R-21. */
+  barcode?: string;
 }
 
 // Pool search (R-01 spec §7 — intentionally over the WHOLE pool, including
@@ -84,6 +89,7 @@ export async function createManualIngredient(
   const payload: TablesInsert<'ingredients'> = {
     created_by_user_id: userId,
     source: 'manual',
+    external_id: input.barcode ?? null,
     name: input.name,
     brand: input.brand,
     unit_type: input.unit_type,

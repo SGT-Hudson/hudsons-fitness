@@ -29,14 +29,14 @@ vi.mock('../hooks', () => ({
 
 import { BarcodeTab } from './IngredientDialog';
 
-function renderTab(onResolved = vi.fn()) {
+function renderTab(onResolved = vi.fn(), onNotFound = vi.fn()) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={qc}>
-      <BarcodeTab onResolved={onResolved} />
+      <BarcodeTab onResolved={onResolved} onNotFound={onNotFound} />
     </QueryClientProvider>,
   );
-  return { onResolved };
+  return { onResolved, onNotFound };
 }
 
 beforeEach(async () => {
@@ -72,17 +72,15 @@ describe('BarcodeTab (Tier-2)', () => {
     await waitFor(() => expect(onResolved).toHaveBeenCalledWith(result));
   });
 
-  it('shows "not found" when lookup resolves null', async () => {
+  it('calls onNotFound with the code when lookup resolves null (404 → parent owns the UX)', async () => {
     const user = userEvent.setup();
     mutateAsync.mockResolvedValue(null);
-    renderTab();
+    const { onNotFound } = renderTab();
     await user.type(
       screen.getByLabelText(i18n.t('ingredientes:barcode.manualLabel')),
       '5000112637922',
     );
     await user.click(screen.getByRole('button', { name: i18n.t('ingredientes:barcode.lookup') }));
-    await waitFor(() =>
-      expect(screen.getByText(i18n.t('ingredientes:barcode.notFound'))).toBeTruthy(),
-    );
+    await waitFor(() => expect(onNotFound).toHaveBeenCalledWith('5000112637922'));
   });
 });
