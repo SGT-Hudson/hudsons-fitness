@@ -19,6 +19,11 @@
     "light": "Light",
     "dark": "Dark"
   },
+  "privacy": {
+    "title": "Privacy",
+    "description": "Control what data is shared.",
+    "contributeOff": "Contribute scanned products to Open Food Facts"
+  },
   "biometrics": {
     "title": "Biometrics",
     "description": "Physical data used to compute targets and body composition.",

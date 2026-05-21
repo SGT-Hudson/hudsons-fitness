@@ -33,6 +33,8 @@ import { isValidEan, type OFFSearchResult } from '@/lib/openfoodfacts';
 import { useBarcodeLookup } from '../hooks';
 import { BarcodeScanner } from './BarcodeScanner';
 import { Label } from '@/components/ui/label';
+import { useProfile } from '@/features/profile/hooks';
+import { contributeToOff } from '@/lib/offContribute';
 
 type Mode = 'create' | 'edit';
 
@@ -83,17 +85,22 @@ export function IngredientDialog({
   const [offQuery, setOffQuery] = useState('');
   const debouncedQuery = useDebouncedValue(offQuery, 350);
   const [pickedOFF, setPickedOFF] = useState<OFFSearchResult | null>(null);
+  const [scannedBarcode, setScannedBarcode] = useState<string | null>(null);
+  const [barcodeBanner, setBarcodeBanner] = useState<'new' | 'complete' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const offSearch = useOFFSearch(debouncedQuery, open && !isEdit && tab === 'off');
   const create = useCreateManualIngredient();
   const importOFF = useImportFromOFF();
   const update = useUpdateIngredient();
+  const { data: profile } = useProfile();
 
   useEffect(() => {
     if (!open) return;
     setError(null);
     setPickedOFF(null);
+    setScannedBarcode(null);
+    setBarcodeBanner(null);
     if (isEdit && initial) {
       setTab('manual');
       reset(ingredientToForm(initial));
@@ -141,7 +148,25 @@ export function IngredientDialog({
       } else if (pickedOFF) {
         saved = await importOFF.mutateAsync({ product: pickedOFF, overrides: parsed });
       } else {
-        saved = await create.mutateAsync(parsed);
+        saved = await create.mutateAsync({ ...parsed, barcode: scannedBarcode ?? undefined });
+      }
+      if (scannedBarcode) {
+        // R-21: fire-and-forget OFF contribution for barcode-origin products.
+        contributeToOff(
+          {
+            barcode: scannedBarcode,
+            name: parsed.name,
+            brand: parsed.brand,
+            unitType: parsed.unit_type,
+            kcalPer100g: parsed.kcal_per_unit,
+            proteinPer100g: parsed.protein_g_per_unit,
+            carbsPer100g: parsed.carbs_g_per_unit,
+            fatPer100g: parsed.fat_g_per_unit,
+            fiberPer100g: parsed.fiber_g_per_unit,
+            mode: barcodeBanner === 'complete' ? 'complete' : 'new',
+          },
+          profile?.contribute_to_off ?? true,
+        );
       }
       onSaved?.(saved);
       onOpenChange(false);
@@ -215,12 +240,19 @@ export function IngredientDialog({
               </TabsContent>
 
               <TabsContent value="manual" className="space-y-4">
+                {barcodeBanner && (
+                  <p className="text-sm rounded-md border border-dashed p-2 text-muted-foreground">
+                    {t(barcodeBanner === 'new' ? 'barcode.bannerNew' : 'barcode.bannerComplete')}
+                  </p>
+                )}
                 <IngredientFormFields value={form} onChange={setForm} idPrefix="manual" />
               </TabsContent>
 
               <TabsContent value="barcode" className="space-y-4">
                 <BarcodeTab
                   onResolved={(r) => {
+                    setScannedBarcode(r.code);
+                    setBarcodeBanner('complete');
                     setPickedOFF(r);
                     setForm({
                       name: r.name,
@@ -232,6 +264,12 @@ export function IngredientDialog({
                       fat_g_per_unit: String(r.fatPer100g),
                       fiber_g_per_unit: String(r.fiberPer100g),
                     });
+                    setTab('manual');
+                  }}
+                  onNotFound={(code) => {
+                    setScannedBarcode(code);
+                    setBarcodeBanner('new');
+                    setPickedOFF(null);
                     setTab('manual');
                   }}
                 />
@@ -346,26 +384,27 @@ function OFFSearchPanel({
 
 interface BarcodeTabProps {
   onResolved: (result: OFFSearchResult) => void;
+  /** 404 / genuinely-not-in-OFF: the parent stashes the barcode + switches to
+   *  the manual tab with the "new product" banner (R-21). */
+  onNotFound: (code: string) => void;
 }
 
-export function BarcodeTab({ onResolved }: BarcodeTabProps) {
+export function BarcodeTab({ onResolved, onNotFound }: BarcodeTabProps) {
   const { t } = useTranslation('ingredientes');
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState('');
-  const [notFound, setNotFound] = useState(false);
   const lookup = useBarcodeLookup();
 
   async function resolve(code: string) {
-    setNotFound(false);
     setScanning(false);
     try {
       const result = await lookup.mutateAsync(code);
       if (result) onResolved(result);
-      else setNotFound(true); // genuine "not in OFF" (incl. 404 → null)
+      else onNotFound(code); // genuine "not in OFF" (incl. 404 → null)
     } catch {
       // Transport / 5xx error — already surfaced by useBarcodeLookup's
-      // onError toast. Do NOT also show the "not found" message, which
-      // would misattribute a network failure to a missing product.
+      // onError toast. The parent's banner is reserved for the not-found
+      // path, so we don't mislabel a network failure here.
     }
   }
 
@@ -398,8 +437,6 @@ export function BarcodeTab({ onResolved }: BarcodeTabProps) {
           {lookup.isPending ? t('barcode.looking') : t('barcode.lookup')}
         </Button>
       </div>
-
-      {notFound && <p className="text-sm text-muted-foreground">{t('barcode.notFound')}</p>}
     </div>
   );
 }

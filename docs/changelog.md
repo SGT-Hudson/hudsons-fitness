@@ -62,6 +62,10 @@ decision rationale in `decisions.md`.
 
 - Camera + manual-EAN barcode lookup in the New Ingredient dialog, resolving via the new OFF v2 `getProductByBarcode` adapter into the existing prefill flow. Native `BarcodeDetector` fast-path with a lazy `@zxing/browser` fallback (iOS Safari); EAN-13/8 + UPC-A, every decode re-validated by `isValidEan`. Client-only, no migration.
 
+### 2026-05-21 — R-21 OFF contribute-back (implemented, pending Wave-3)
+
+- When a user creates a barcoded product OFF lacked, or completes an incomplete one, the app pushes the objective data back to Open Food Facts under a single app account (new `off-contribute` edge fn; server-side fill-missing-only for completions), gated by a default-on `profiles.contribute_to_off` toggle in Settings. Eligibility gate (name + kcal + Atwater ±20% + gram-only) lives in the pure `core/offContribute.ts` (Tier-1). Fire-and-forget — never blocks the user. The scanned barcode now persists as `external_id` on manual create (with dedupe), and a 404 auto-switches to the manual tab with a "not in OFF yet — add it" banner. STAGED migration (`profiles.contribute_to_off`); OFF account + edge secrets are the pending Wave-3 step.
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |
