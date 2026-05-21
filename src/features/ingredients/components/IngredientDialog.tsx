@@ -270,6 +270,11 @@ export function IngredientDialog({
                     setScannedBarcode(code);
                     setBarcodeBanner('new');
                     setPickedOFF(null);
+                    // OFF has nothing for this barcode — clear any data left
+                    // over from a previous scan/resolve so the manual form
+                    // starts blank (otherwise the prior product's macros leak
+                    // into this unknown product, risking a wrong save/contrib).
+                    setForm({ ...emptyForm });
                     setTab('manual');
                   }}
                 />
