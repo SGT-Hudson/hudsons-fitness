@@ -11,8 +11,10 @@
 // §5/§6/§7. Eligibility was already checked client-side; this is the writer.
 //
 // Switch OFF_BASE to https://world.openfoodfacts.net (staging) for smoke tests.
-
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+//
+// Uses the Deno global runtime (Deno.serve / Deno.env) directly, matching the
+// other functions here — no edge-runtime.d.ts import (deno lint forbids the
+// unversioned specifier, and the Deno globals are available without it).
 
 const OFF_BASE = 'https://world.openfoodfacts.org';
 const UA = 'HudsonFitness/1.0 (https://hudsonfitness.vercel.app)';
