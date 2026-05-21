@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LayoutGrid, List, Pencil, Plus, Search, Star, Trash2 } from 'lucide-react';
+import { RecipesTabs } from './RecipesTabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -77,9 +78,8 @@ export function RecetasPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
-        <div className="flex items-center gap-2">
+      <RecipesTabs />
+      <div className="flex items-center gap-2">
           <div className="inline-flex rounded-md border bg-background p-0.5">
             <button
               type="button"
@@ -108,7 +108,6 @@ export function RecetasPage() {
             <Plus className="h-4 w-4" />
             {t('newRecipe')}
           </Button>
-        </div>
       </div>
 
       <div className="relative">

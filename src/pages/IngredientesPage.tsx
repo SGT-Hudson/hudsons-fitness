@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Search } from 'lucide-react';
+import { RecipesTabs } from './RecipesTabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IngredientList } from '@/features/ingredients/components/IngredientList';
@@ -28,8 +29,8 @@ export function IngredientesPage() {
 
   return (
     <div className="space-y-4">
+      <RecipesTabs />
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
           {t('newIngredient')}
