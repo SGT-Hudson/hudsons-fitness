@@ -39,7 +39,6 @@ export function SettingsPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const [language, setLanguage] = useState<Lang>('es');
-  const [contributeOff, setContributeOff] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savedSection, setSavedSection] = useState<string | null>(null);
 
@@ -58,7 +57,6 @@ export function SettingsPage() {
   useEffect(() => {
     if (!profile) return;
     setLanguage((profile.language === 'en' ? 'en' : 'es') as Lang);
-    setContributeOff(profile.contribute_to_off ?? true);
     profileForm.reset({ display_name: profile.display_name ?? '' });
     bioForm.reset({
       sex: (['male', 'female', 'other'] as const).includes(profile.sex as 'male')
@@ -88,11 +86,6 @@ export function SettingsPage() {
     setLanguage(next);
     await i18n.changeLanguage(next);
     await saveSection('language', { language: next });
-  }
-
-  async function handleToggleContribute(next: boolean) {
-    setContributeOff(next);
-    await saveSection('contribute', { contribute_to_off: next });
   }
 
   async function onSaveBiometrics(values: ParsedBiometricsForm) {
@@ -207,27 +200,6 @@ export function SettingsPage() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('privacy.title')}</CardTitle>
-          <CardDescription>{t('privacy.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              className="h-4 w-4"
-              checked={contributeOff}
-              onChange={(e) => void handleToggleContribute(e.target.checked)}
-            />
-            {t('privacy.contributeOff')}
-          </label>
-          {savedSection === 'contribute' && !update.isPending && (
-            <p className="text-sm text-muted-foreground mt-2">{t('actions.saved')}</p>
-          )}
         </CardContent>
       </Card>
 

@@ -33,8 +33,6 @@ import { isValidEan, type OFFProductLookup, type OFFSearchResult } from '@/lib/o
 import { useBarcodeLookup } from '../hooks';
 import { BarcodeScanner } from './BarcodeScanner';
 import { Label } from '@/components/ui/label';
-import { useProfile } from '@/features/profile/hooks';
-import { contributeToOff } from '@/lib/offContribute';
 
 type Mode = 'create' | 'edit';
 
@@ -85,7 +83,6 @@ export function IngredientDialog({
   const [offQuery, setOffQuery] = useState('');
   const debouncedQuery = useDebouncedValue(offQuery, 350);
   const [pickedOFF, setPickedOFF] = useState<OFFSearchResult | null>(null);
-  const [scannedBarcode, setScannedBarcode] = useState<string | null>(null);
   const [barcodeBanner, setBarcodeBanner] = useState<'new' | 'complete' | 'found' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,13 +90,11 @@ export function IngredientDialog({
   const create = useCreateManualIngredient();
   const importOFF = useImportFromOFF();
   const update = useUpdateIngredient();
-  const { data: profile } = useProfile();
 
   useEffect(() => {
     if (!open) return;
     setError(null);
     setPickedOFF(null);
-    setScannedBarcode(null);
     setBarcodeBanner(null);
     if (isEdit && initial) {
       setTab('manual');
@@ -149,24 +144,6 @@ export function IngredientDialog({
         saved = await importOFF.mutateAsync({ product: pickedOFF, overrides: parsed });
       } else {
         saved = await create.mutateAsync(parsed);
-      }
-      if (scannedBarcode) {
-        // R-21: fire-and-forget OFF contribution for barcode-origin products.
-        contributeToOff(
-          {
-            barcode: scannedBarcode,
-            name: parsed.name,
-            brand: parsed.brand,
-            unitType: parsed.unit_type,
-            kcalPer100g: parsed.kcal_per_unit,
-            proteinPer100g: parsed.protein_g_per_unit,
-            carbsPer100g: parsed.carbs_g_per_unit,
-            fatPer100g: parsed.fat_g_per_unit,
-            fiberPer100g: parsed.fiber_g_per_unit,
-            mode: barcodeBanner === 'new' ? 'new' : 'complete',
-          },
-          profile?.contribute_to_off ?? true,
-        );
       }
       onSaved?.(saved);
       onOpenChange(false);
@@ -257,7 +234,6 @@ export function IngredientDialog({
               <TabsContent value="barcode" className="space-y-4">
                 <BarcodeTab
                   onResolved={(r) => {
-                    setScannedBarcode(r.code);
                     // "found" (OFF already has the energy value) → just review
                     // & save; "complete" (no energy value) → fill the gaps.
                     setBarcodeBanner(r.complete ? 'found' : 'complete');
@@ -274,8 +250,7 @@ export function IngredientDialog({
                     });
                     setTab('manual');
                   }}
-                  onNotFound={(code) => {
-                    setScannedBarcode(code);
+                  onNotFound={() => {
                     setBarcodeBanner('new');
                     setPickedOFF(null);
                     // OFF has nothing for this barcode — clear any data left

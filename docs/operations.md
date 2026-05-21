@@ -491,21 +491,19 @@ complete history rather than the lone Sprint-9 file.
 20260522120010_training_sessions_sets.sql           # applied 2026-05-21 (R-19)
 20260522120020_training_save_workout_rpc.sql        # applied 2026-05-21 (R-19)
 20260522120030_training_exercises_rls.sql           # applied 2026-05-21 (R-19, LAST DDL of the set)
-20260523120000_r21_profiles_contribute_to_off.sql   # applied 2026-05-21 (R-21, OFF contribute-back opt-out column)
+20260523120000_r21_profiles_contribute_to_off.sql   # applied 2026-05-21 (R-21 — later removed)
+20260524120000_r21_drop_contribute_to_off.sql       # STAGED — R-21 REMOVED (drops the column; apply after the removal reaches main)
 ```
 
-**R-21 OFF contribute-back setup (migration applied 2026-05-21; OFF account +
-edge deploy still pending).** The `profiles.contribute_to_off` migration is
-applied, so the Settings toggle works. Remaining steps to actually push to
-OFF: register one Open Food Facts contributor account ("HudsonFitness") and
-set its credentials as edge secrets:
-`supabase secrets set OFF_USER_ID=<account> OFF_PASSWORD=<pw> --project-ref upvraruehzurbetzrxov`.
-Deploy the writer: `supabase functions deploy off-contribute --project-ref upvraruehzurbetzrxov`.
-Smoke against OFF staging first (set `OFF_BASE` to
-`https://world.openfoodfacts.net` in the function), then flip to `.org`. Until
-the account + secrets exist, the edge fn returns `missing_off_credentials` and
-the (fire-and-forget) client call is a silent no-op — so the code is safe in
-production with the contribution simply dormant.
+**R-21 OFF contribute-back — REMOVED (2026-05-21).** The feature was pulled as
+a product decision before it was ever activated. Removal steps: (1) the
+`off-contribute` edge function + client/core code are deleted in-repo; (2) drop
+the `profiles.contribute_to_off` column via
+`20260524120000_r21_drop_contribute_to_off.sql` — **apply only after the
+removal is on `main`** (the Settings toggle WROTE the column; dropping it while
+old prod code is live would break, R-01-style); (3) delete the `off-contribute`
+edge function from the project; (4) remove the `OFF_USER_ID` / `OFF_PASSWORD`
+edge secrets. **Barcode scanning (R-20) is unaffected.**
 
 **R-19 Training MVP Wave-3 apply procedure (executed 2026-05-21).** The
 four training migrations were applied **in order** (filename-lexicographic

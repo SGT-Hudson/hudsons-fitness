@@ -27,8 +27,10 @@ absorbed into the Training MVP and are DONE (spec + plan + pure core on
   §2.2.
 
 The remaining **4 themes are app-wide UX**, each agreed to become its own
-spec, sequenced AFTER the Training MVP ships. They are this brainstorm's
-subject. Original framing + the prior recommendations are below.
+spec, sequenced AFTER the Training MVP ships. The Training MVP **has now
+shipped** (see updated state below), so these are unblocked. They are this
+brainstorm's subject. Original framing + the prior recommendations are
+below.
 
 ## The 4 items to brainstorm (with prior takes — react, don't treat as settled)
 
@@ -121,16 +123,28 @@ spread out on PC."
 Each is independent enough to spec + ship on its own. Don't try to do all
 four as one mega-spec — that's how nothing ships.
 
-## State of the codebase you're starting from (all on `develop`)
+## State of the codebase you're starting from (all on `develop` — UPDATED 2026-05-21)
 
-- **Training MVP:** `docs/superpowers/specs/2026-05-20-training-mvp-design-v2.md`
-  + `docs/superpowers/plans/2026-05-20-training-mvp-plan.md`. Pure core at
-  `src/core/training.ts` (55 Vitest tests). **NOT yet implemented** — the
-  build (plan Tasks 1–21) is gated on R-01 shipping first.
-- **R-01 (★ Library Lifecycle Model):** spec + plan on `develop`
-  (`…/specs/2026-05-18-library-model-phase1-design.md`). Implementation is
-  on an open draft PR (#71) pending a manual Wave-3 prod-apply ceremony —
-  do not assume R-01 tables exist on prod yet.
+> This section was corrected on 2026-05-21 after a burst of parallel work
+> landed. Verify against the live tree before relying on it — the repo is
+> moving fast.
+
+- **Training MVP (R-19): SHIPPED & MERGED.** The full feature is on
+  `develop`: `src/features/training/**` (api, hooks, schema, components —
+  SessionEditor, SessionList, ExerciseBlock, ExercisePicker,
+  ExerciseDialog, ExerciseHistory, SetRow, CoachSuggestions), pages
+  (`EntrenamientoPage`, `SessionEditorPage`, …), the
+  `entrenamiento`/`coach` i18n namespaces, the staged training migrations
+  (`supabase/migrations/20260522120000_training_*`), and the pure core
+  `src/core/training.ts` (5 coach rules incl. Rule 1b). Spec + plan still
+  at `…/specs/2026-05-20-training-mvp-design-v2.md` +
+  `…/plans/2026-05-20-training-mvp-plan.md`.
+- **R-01 (★ Library Lifecycle Model): Phase 1 DONE & MERGED** (PR #71,
+  2026-05-20), incl. a 9th migration adding RLS on the backfill backup
+  table. The exercises pool follows this model.
+- **Also shipped in the same window:** Barcode scanning (R-20) and
+  OpenFoodFacts contribute-back (R-21). A `release/2026-05-21` PR (#80)
+  bundles R-19 + R-20 + R-21 toward `main`.
 - **Rule-catalogue brainstorm** (separate, training-internal):
   `docs/superpowers/brainstorms/2026-05-21-training-rule-catalogue.md`.
   Different subject from this doc — that one expands the coach rules; this
@@ -138,6 +152,13 @@ four as one mega-spec — that's how nothing ships.
 - **Post-V1 direction doc** (the competitive analysis + ranked backlog,
   incl. "item A"): lives on the unmerged draft PR #49, NOT on `develop`.
   The relevant bits for item 4 are summarised above so you don't need it.
+
+**Implication for item 3 (section split):** the Training routes
+(`/entrenamiento*`) and nav link already exist in today's single-section
+nav. The section split is now a *refactor of live nav*, not a
+forward-looking design — account for the real routes in
+`src/router.tsx` and the real nav component when brainstorming where the
+Dieta/Entreno boundary falls.
 
 ## Working preferences (from CLAUDE.md — honor these)
 

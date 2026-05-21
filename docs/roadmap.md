@@ -29,7 +29,7 @@ reference shard carries it (never edit the decision entry).
 - R-18 — Cron liveness alerting (stale daily_nutrition_history/tdee_estimates → notify)
 - R-19 — Training MVP (Phase 1: ad-hoc session logging + rule-based coach)
 - R-20 — Barcode scanning for ingredient import (camera + manual EAN → OFF lookup)
-- R-21 — OFF contribute-back: push user-created/completed products to Open Food Facts (SKETCH)
+- R-21 — OFF contribute-back: push products to Open Food Facts (REMOVED 2026-05-21)
 
 ## R-00 — Baseline current schema into migrations
 - **decision:** D-A8, D-A6, D-E3, D-D6, D-F1
@@ -709,26 +709,21 @@ reference shard carries it (never edit the decision entry).
   test on the manual lookup path; real-camera integration deferred (manual
   device smoke per release).
 
-## R-21 — OFF contribute-back
-- **decision:** (none yet)
-- **blocked-by:** R-20 (the barcode/OFF lookup path)
-- **status:** implemented (2026-05-21), pending Wave-3 — code complete on
-  `claude/r21-off-contribute`: pure eligibility gate + payload mapper
-  (`core/offContribute.ts`, Tier-1), the `off-contribute` edge fn (new +
-  server-side fill-missing-only for completions), client fire-and-forget
-  gated on the new `profiles.contribute_to_off` toggle, scanned barcode
-  retained as `external_id` on manual create, 404/complete transition
-  banners. The `profiles.contribute_to_off` migration is applied (2026-05-21).
-  **Pending:** register the OFF account + set edge secrets, deploy the edge fn
-  (see operations.md runbook) — until then the contribution is a dormant
-  no-op.
-  Commercial barcode DBs (FatSecret etc.) were ruled out — their ToS forbid
-  persisting data >24h, incompatible with our permanent public pool; OFF's
-  ODbL allows store+redistribute, so contribute-back is the license-aligned
-  coverage lever (R-20 + the lenient-prefill change squeeze existing OFF
-  data, but can't conjure a product OFF has never seen).
-- **spec:** `docs/superpowers/specs/2026-05-21-off-contribute-back-design.md`
-- **plan:** `docs/superpowers/plans/2026-05-21-off-contribute-back.md`
+## R-21 — OFF contribute-back (REMOVED)
+- **decision:** (none)
+- **status:** **removed (2026-05-21)** — built and shipped, then pulled as a
+  product decision before it was ever activated (the OFF account/secrets were
+  never finalised, so it never pushed anything to OFF). Removed: the
+  `off-contribute` edge fn, `core/offContribute.ts`, `lib/offContribute.ts`,
+  the `contributeToOff` trigger in IngredientDialog, the Settings opt-out
+  toggle, and the `profiles.contribute_to_off` column (drop migration
+  `20260524120000_r21_drop_contribute_to_off.sql`). **Barcode scanning (R-20)
+  is unaffected** — the camera scan, OFF lookup, and manual prefill stay; only
+  the *upload back to OFF* is gone. The spec/plan below remain as historical
+  record. If revisited, the contribution path + the licensing analysis
+  (OFF ODbL OK; commercial DBs' no-persist ToS not) are documented there.
+- **spec:** `docs/superpowers/specs/2026-05-21-off-contribute-back-design.md` (historical)
+- **plan:** `docs/superpowers/plans/2026-05-21-off-contribute-back.md` (historical)
 
 ### Sketch — mechanics
 - **OFF write API:** `POST https://world.openfoodfacts.org/cgi/product_jqm2.pl`
