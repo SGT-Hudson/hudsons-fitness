@@ -662,11 +662,12 @@ reference shard carries it (never edit the decision entry).
 - **blocked-by:** R-01 (the `exercises` table is born into the post-R-01
   shared-pool lifecycle model verbatim — copying the ingredients RLS +
   three-state owner semantics)
-- **status:** in-progress (2026-05-20) — Tasks 1–21 staged on
-  `claude/training-mvp-impl`; pending Wave-3 prod apply (4 training
-  migrations, mandatory user checkpoint). Tier-3 pgTAP for RLS / RPC /
-  save-workout-replace-children remains gated behind R-16-Tier-3 /
-  `supabase start` infra (not yet set up — documented gap).
+- **status:** done (2026-05-21) — Tasks 1–21 implemented; the 4 training
+  migrations applied to prod 2026-05-21 (34 system-seed exercises,
+  `workout_sessions`/`workout_sets`, `save_workout` RPC, 12 RLS policies).
+  Tier-3 pgTAP for RLS / RPC / save-workout-replace-children remains gated
+  behind R-16-Tier-3 / `supabase start` infra (not yet set up — documented
+  gap).
 - **spec:** `docs/superpowers/specs/2026-05-20-training-mvp-design-v2.md`
 - **plan:** `docs/superpowers/plans/2026-05-20-training-mvp-plan.md`
 - **scope:** First instance of the Training module. 3 tables
