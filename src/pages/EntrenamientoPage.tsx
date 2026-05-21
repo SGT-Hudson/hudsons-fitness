@@ -12,7 +12,7 @@ export function EntrenamientoPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">{t('page.title')}</h1>
         <Button asChild>
-          <Link to="/entrenamiento/nueva">
+          <Link to="/training/new">
             <Plus className="h-4 w-4 mr-1" />
             {t('page.newSession')}
           </Link>

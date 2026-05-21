@@ -11,7 +11,7 @@ import { useRecipe, useSaveRecipe } from '@/features/recipes/hooks';
 
 export function RecetaEditorPage() {
   const { id } = useParams<{ id?: string }>();
-  const isNew = !id || id === 'nuevo';
+  const isNew = !id || id === 'new';
   const navigate = useNavigate();
   const { t } = useTranslation('recetas');
 
@@ -23,7 +23,7 @@ export function RecetaEditorPage() {
     return <div className="text-muted-foreground">{t('editor.loading')}</div>;
   }
   if (!isNew && recipeQuery.error) {
-    return <Navigate to="/recetas" replace />;
+    return <Navigate to="/recipes" replace />;
   }
 
   const initial: EditorState | undefined =
@@ -47,7 +47,7 @@ export function RecetaEditorPage() {
             display_order: i,
           })),
       });
-      navigate(isNew ? `/recetas/${newId}` : '/recetas', { replace: true });
+      navigate(isNew ? `/recipes/${newId}` : '/recipes', { replace: true });
     } catch (err) {
       setError((err as Error).message);
     }
@@ -56,7 +56,7 @@ export function RecetaEditorPage() {
   function handleDuplicate() {
     if (!recipeQuery.data) return;
     const dup = recipeToEditorState(recipeQuery.data);
-    navigate('/recetas/nuevo', { state: { duplicate: { ...dup, name: `${dup.name} (copia)` } } });
+    navigate('/recipes/new', { state: { duplicate: { ...dup, name: `${dup.name} (copia)` } } });
   }
 
   return (
@@ -76,7 +76,7 @@ export function RecetaEditorPage() {
         submitting={save.isPending}
         error={error}
         onSubmit={handleSubmit}
-        onCancel={() => navigate('/recetas')}
+        onCancel={() => navigate('/recipes')}
         onDuplicate={!isNew && recipeQuery.data ? handleDuplicate : undefined}
       />
     </div>

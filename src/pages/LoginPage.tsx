@@ -35,7 +35,7 @@ export function LoginPage() {
       setError(t('errors.invalidCredentials'));
       return;
     }
-    navigate('/diario', { replace: true });
+    navigate('/diary', { replace: true });
   }
 
   return (

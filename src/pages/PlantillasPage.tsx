@@ -25,7 +25,7 @@ export function PlantillasPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-3xl font-bold tracking-tight">{t('list.pageTitle')}</h1>
-        <Button onClick={() => navigate('/menus/nuevo')}>
+        <Button onClick={() => navigate('/templates/new')}>
           <Plus className="h-4 w-4" />
           {t('list.newTemplate')}
         </Button>
@@ -59,7 +59,7 @@ export function PlantillasPage() {
                 <CardContent className="pt-5 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <Link
-                      to={`/menus/${tpl.id}`}
+                      to={`/templates/${tpl.id}`}
                       className="font-semibold leading-tight hover:underline"
                     >
                       {tpl.name}
@@ -90,7 +90,7 @@ export function PlantillasPage() {
                   </div>
                   <div className="flex justify-end gap-1">
                     <Button asChild variant="ghost" size="icon" aria-label={tCommon('edit')}>
-                      <Link to={`/menus/${tpl.id}`}>
+                      <Link to={`/templates/${tpl.id}`}>
                         <Pencil className="h-4 w-4" />
                       </Link>
                     </Button>

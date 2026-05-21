@@ -30,7 +30,7 @@ export function SessionList() {
       <div className="text-center py-12 text-muted-foreground">
         <p className="mb-3">{t('list.emptyTitle')}</p>
         <Button asChild>
-          <Link to="/entrenamiento/nueva">{t('list.cta')}</Link>
+          <Link to="/training/new">{t('list.cta')}</Link>
         </Button>
       </div>
     );
@@ -40,7 +40,7 @@ export function SessionList() {
     <ul className="divide-y rounded-lg border bg-card">
       {(sessions.data ?? []).map((s) => (
         <li key={s.id} className="flex items-center gap-3 p-3">
-          <Link to={`/entrenamiento/${s.id}`} className="flex-1 min-w-0">
+          <Link to={`/training/${s.id}`} className="flex-1 min-w-0">
             <div className="font-medium truncate">{s.title ?? t('list.untitled')}</div>
             <div className="text-xs text-muted-foreground">
               {formatDate(s.performed_on, 'EEEE d MMM yyyy', locale)}
@@ -50,7 +50,7 @@ export function SessionList() {
             {t('list.setCount', { count: s.set_count })}
           </Badge>
           <Button asChild size="icon" variant="ghost" aria-label={t('list.edit')}>
-            <Link to={`/entrenamiento/${s.id}`}>
+            <Link to={`/training/${s.id}`}>
               <Pencil className="h-4 w-4" />
             </Link>
           </Button>
