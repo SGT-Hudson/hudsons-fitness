@@ -1,0 +1,27 @@
+{
+  "severity": {
+    "info": "Info",
+    "nudge": "Sugerencia",
+    "warn": "Aviso"
+  },
+  "suggestedNextLoad": "Próxima carga sugerida:",
+  "apply": "Aplicar",
+  "rules": {
+    "doubleProgression": {
+      "headline": "Has hecho {{sessions}} sesiones a {{weightKg}} kg × {{targetReps}} reps con RPE ≤ {{rpeMax}}. Sube a {{nextWeightKg}} kg en la próxima."
+    },
+    "repProgression": {
+      "headline": "Has subido de {{repsFirst}} a {{repsLast}} reps a {{weightKg}} kg en {{sessions}} sesiones. Sube a {{nextWeightKg}} kg en la próxima."
+    },
+    "flatE1rmDeload": {
+      "headline": "Tu 1RM estimado lleva {{sessions}} sesiones plano (±{{spreadKg}} kg). Considera una semana de descarga."
+    },
+    "rpeClimbingFatigue": {
+      "headline": "El RPE sube de {{rpeFirst}} a {{rpeLast}} a {{weightKg}} kg en {{sessions}} sesiones — fatiga acumulándose. Considera bajar la carga a {{suggestedWeightKg}} kg."
+    },
+    "muscleRecency": {
+      "headline": "Llevas {{daysSince}} días sin entrenar {{primaryMuscle}}.",
+      "headlineNever": "Aún no has entrenado {{primaryMuscle}}."
+    }
+  }
+}

@@ -487,7 +487,23 @@ complete history rather than the lone Sprint-9 file.
 20260520120060_r01_account_delete_reconcile.sql     # applied 2026-05-20 (R-01, 2nd sanctioned DEFINER)
 20260520120070_r01_rls.sql                          # applied 2026-05-20 (R-01, LAST DDL of the set)
 20260520120080_r01_backup_table_rls.sql             # applied 2026-05-20 (R-01 follow-up — RLS-enable the rollback snapshot)
+20260522120000_training_exercises.sql               # applied 2026-05-21 (R-19, Training MVP)
+20260522120010_training_sessions_sets.sql           # applied 2026-05-21 (R-19)
+20260522120020_training_save_workout_rpc.sql        # applied 2026-05-21 (R-19)
+20260522120030_training_exercises_rls.sql           # applied 2026-05-21 (R-19, LAST DDL of the set)
 ```
+
+**R-19 Training MVP Wave-3 apply procedure (executed 2026-05-21).** The
+four training migrations were applied **in order** (filename-lexicographic
+= build order) via `apply_migration`, after R-01's set (the `exercises`
+table follows the post-R-01 ingredient-pool shape verbatim, including the
+`LIBRARY_ANON_OWNER_ID` sentinel in the RLS policies). They are NOT
+mutually order-free with each other — `training_save_workout_rpc`
+references `workout_sessions` and `workout_sets` (Task 2 first);
+`training_exercises_rls` references `exercises` (Task 1 first) and is the
+LAST DDL of the set. Post-apply check confirmed 34 system-seed exercises,
+the two workout tables, the `save_workout` RPC, and 12 RLS policies; the
+security advisor flagged nothing new.
 
 **R-01 Wave-3 apply procedure (executed 2026-05-20).** The eight R-01
 migrations were applied **in order** (filename-lexicographic = build

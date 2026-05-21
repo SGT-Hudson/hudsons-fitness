@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: '/menus', key: 'menus' },
   { to: '/recetas', key: 'recetas' },
   { to: '/ingredientes', key: 'ingredientes' },
+  { to: '/entrenamiento', key: 'entrenamiento' },
   { to: '/progreso', key: 'progreso' },
   { to: '/objetivos', key: 'objetivos' },
   { to: '/settings', key: 'settings' },

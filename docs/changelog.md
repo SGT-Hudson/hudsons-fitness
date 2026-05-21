@@ -39,6 +39,17 @@ decision rationale in `decisions.md`.
 - Executed D-F2 — repo made public, CI workflow + `main` branch protection (`lint-build`) + GitHub auto-merge enabled, `main` reconciled via PR #17 and production redeployed (ended ~7-sprint staleness).
 - Consolidated all docs into `docs/` (this rework).
 
+### 2026-05-20 — R-19 Training MVP — Phase 1 (staged on `claude/training-mvp-impl`, awaiting Wave-3)
+
+- 4 staged migrations: `exercises` shared pool (post-R-01 shape, bilingual names, per-exercise `default_increment_kg`, 34-row system seed), `workout_sessions` + `workout_sets` (RLS-via-join on sets, no denormalised user_id), `save_workout` INVOKER RPC (replace-children, mirrors `save_recipe`), and `exercises` RLS (verbatim copy of the post-R-01 ingredients policies).
+- `src/types/database.ts` hand-edited with the 3 new tables + the RPC (interim until R-04 regen).
+- `src/features/training/`: exercises api/hooks/picker/dialog (bilingual trigram search + auto-suggested load increment from equipment); sessions api/hooks/schema; SetRow with last-working-set placeholder (§6); CoachSuggestions rendering the 5 `MVP_COACH_RULES` from `core/training.ts` with editable progression-rule suggestions (§0.15); ExerciseBlock composing picker + coach + sets; SessionEditor with FormProvider + nested useFieldArray; SessionList and ExerciseHistory views.
+- 3 new pages (`EntrenamientoPage`, `SessionEditorPage`, `ExerciseHistoryPage`) wired into `src/app/router.tsx` and an `entrenamiento` nav link added to `AppLayout`.
+- Two new i18n namespaces (`entrenamiento`, `coach`) shipped complete in ES + EN; nav.json gains the `entrenamiento` label.
+- Test coverage: `exercises/api.test.ts` (12 unit tests on `suggestIncrementForEquipment` + `exerciseDisplayName`), `schema.test.ts` (17 zod tests on set/block/session bounds), `SessionEditor.test.tsx` (Tier-2 jsdom test asserting the flatten-on-submit logic against a pre-filled session — exercise grouping preserved, set_index re-indexed from 1 within each block).
+- Tier-3 pgTAP for RLS / RPC / save-workout-replace-children still gated behind R-16-Tier-3 / `supabase start` infra (documented gap, same as R-01).
+- Migrations are STAGED — not auto-applied. Wave-3 apply procedure documented in `docs/operations.md`.
+
 ### 2026-05-20 — R-01 ★ Library Contribution & Lifecycle Model (Phase 1)
 
 - Applied the 8 R-01 Phase 1 migrations to prod via Supabase MCP `apply_migration` (anon seed → ref tables → backfill → drop `recipes.deleted_at` + rename `user_id`→`created_by_user_id` → `hide_owned_*` RPCs → `save_recipe` ext → `reconcile_account_delete` DEFINER → RLS rewrite).
