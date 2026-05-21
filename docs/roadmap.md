@@ -27,6 +27,9 @@ reference shard carries it (never edit the decision entry).
 - R-16 — Vitest Tier-1 (spec-first) + Tier-2 (with R-09) + Tier-3 (after R-00)
 - R-17 — Extract shared pure camelCase macro/date core; edge snake adapter; Deno dep-pin
 - R-18 — Cron liveness alerting (stale daily_nutrition_history/tdee_estimates → notify)
+- R-19 — Training MVP (Phase 1: ad-hoc session logging + rule-based coach)
+- R-20 — Barcode scanning for ingredient import (camera + manual EAN → OFF lookup)
+- R-21 — OFF contribute-back: push user-created/completed products to Open Food Facts (SKETCH)
 
 ## R-00 — Baseline current schema into migrations
 - **decision:** D-A8, D-A6, D-E3, D-D6, D-F1
@@ -654,3 +657,131 @@ reference shard carries it (never edit the decision entry).
      explicitly verify the `cron_service_role_key` value never appeared in any
      commit (expected clean: migration uses the name only); rotation becomes
      more important post go-public.
+
+## R-19 — Training MVP (Phase 1: ad-hoc session logging + rule-based coach)
+- **decision:** (none yet — architectural guardrails §2.1 / §2.2 / §0.x
+  in the spec are pending a D-id at impl-time follow-up)
+- **blocked-by:** R-01 (the `exercises` table is born into the post-R-01
+  shared-pool lifecycle model verbatim — copying the ingredients RLS +
+  three-state owner semantics)
+- **status:** done (2026-05-21) — Tasks 1–21 implemented; the 4 training
+  migrations applied to prod 2026-05-21 (34 system-seed exercises,
+  `workout_sessions`/`workout_sets`, `save_workout` RPC, 12 RLS policies).
+  Tier-3 pgTAP for RLS / RPC / save-workout-replace-children remains gated
+  behind R-16-Tier-3 / `supabase start` infra (not yet set up — documented
+  gap).
+- **spec:** `docs/superpowers/specs/2026-05-20-training-mvp-design-v2.md`
+- **plan:** `docs/superpowers/plans/2026-05-20-training-mvp-plan.md`
+- **scope:** First instance of the Training module. 3 tables
+  (`exercises` shared pool with post-R-01 shape, bilingual names,
+  per-exercise `default_increment_kg`; `workout_sessions` user-owned;
+  `workout_sets` user-owned with RLS-via-join through `workout_sessions`,
+  no denormalised user_id), 1 RPC `save_workout` (INVOKER,
+  replace-children, mirrors save_recipe), 1 route `/entrenamiento` with
+  list/edit/history pages, 5 starter coach rules (double-progression,
+  rep-progression, flat-e1rm-deload, rpe-climbing-fatigue,
+  muscle-recency) over the pure `core/training.ts` module (~55 Vitest
+  tests, already in repo). Repeat-last-working-set placeholder on set
+  rows (spec §6, Hevy pattern). Editable progression-rule suggestions
+  (§0.15: rule provides the suggestion, user owns the decision).
+  Bilingual exercise names (name_es required, name_en optional) with
+  trigram search across both columns. NO LLM in the coach, ever —
+  permanent product decision (§2.2).
+- **out-of-scope (sequenced for future waves):** routines / programmed
+  training, bodyweight/assisted/cardio modelling, the section split
+  (Dieta/Entreno), home redesign, in-app onboarding, desktop layout,
+  auto-progression beyond the 5 MVP rules. Each gets its own spec when
+  scheduled.
+
+## R-20 — Barcode scanning for ingredient import
+- **decision:** (none — promotes the deferred "barcode-import" product idea in features.md)
+- **blocked-by:** —
+- **status:** done (2026-05-21) — camera scan (native BarcodeDetector
+  fast-path + lazy @zxing/browser fallback) and manual EAN entry, both
+  resolving through the new `getProductByBarcode` OFF v2 adapter into the
+  existing IngredientDialog prefill flow. Client-only; no migration.
+- **plan:** `docs/superpowers/plans/2026-05-21-barcode-scanning.md`
+- **scope:** `getProductByBarcode` + `isValidEan` on `lib/openfoodfacts.ts`
+  (Tier-1 tested); `BarcodeScanner` component (EAN-13/8 + UPC-A; @zxing/browser
+  0.2.0 `BrowserMultiFormatOneDReader`, isValidEan filters non-grocery 1D
+  formats); `BarcodeTab` in IngredientDialog reusing the OFF
+  `pickedOFF`→`setForm` path; ES+EN i18n; `@zxing/browser` code-split. Tier-2
+  test on the manual lookup path; real-camera integration deferred (manual
+  device smoke per release).
+
+## R-21 — OFF contribute-back
+- **decision:** (none yet)
+- **blocked-by:** R-20 (the barcode/OFF lookup path)
+- **status:** implemented (2026-05-21), pending Wave-3 — code complete on
+  `claude/r21-off-contribute`: pure eligibility gate + payload mapper
+  (`core/offContribute.ts`, Tier-1), the `off-contribute` edge fn (new +
+  server-side fill-missing-only for completions), client fire-and-forget
+  gated on the new `profiles.contribute_to_off` toggle, scanned barcode
+  retained as `external_id` on manual create, 404/complete transition
+  banners. The `profiles.contribute_to_off` migration is applied (2026-05-21).
+  **Pending:** register the OFF account + set edge secrets, deploy the edge fn
+  (see operations.md runbook) — until then the contribution is a dormant
+  no-op.
+  Commercial barcode DBs (FatSecret etc.) were ruled out — their ToS forbid
+  persisting data >24h, incompatible with our permanent public pool; OFF's
+  ODbL allows store+redistribute, so contribute-back is the license-aligned
+  coverage lever (R-20 + the lenient-prefill change squeeze existing OFF
+  data, but can't conjure a product OFF has never seen).
+- **spec:** `docs/superpowers/specs/2026-05-21-off-contribute-back-design.md`
+- **plan:** `docs/superpowers/plans/2026-05-21-off-contribute-back.md`
+
+### Sketch — mechanics
+- **OFF write API:** `POST https://world.openfoodfacts.org/cgi/product_jqm2.pl`
+  (the v1 write endpoint; a v3 write API exists in beta — confirm current
+  recommended endpoint at spec time). Fields: `code` (barcode),
+  `product_name`, `brands`, and per-100g nutriment fields
+  (`nutriment_energy-kcal`, `nutriment_proteins`, `nutriment_carbohydrates`,
+  `nutriment_fat`, `nutriment_fiber`, with `nutrition_data_per=100g`).
+- **Auth:** OFF writes need an account. Two models:
+  1. A single app-owned OFF contributor account (credentials in Supabase
+     Vault, write proxied through a new `off-contribute` **edge function** —
+     same Vault + edge pattern as the cron service key). Simplest; all
+     contributions attributed to one "HudsonFitness" OFF user. **Recommended.**
+  2. Per-user OFF OAuth — overkill for a solo/friends-and-family app.
+- **Trigger points (in our flow):**
+  - After a user **creates** an ingredient that originated from a barcode
+    scan with a valid EAN and OFF returned 404 (genuinely absent) — submit
+    the new product.
+  - After a user **completes** a scanned-but-incomplete OFF product (the
+    R-20 lenient path: name present, macros were 0 and the user filled
+    them) — submit an update with the new nutriments.
+  - Gate both behind the EAN being checksum-valid (`isValidEan`) and the
+    macros being non-trivially complete (don't push all-zero rows back).
+- **Where it hooks:** the `createManualIngredient` / `importIngredientFromOFF`
+  mutations already know the saved row. Add an opt-in, fire-and-forget call
+  to the `off-contribute` edge fn on success. Failures must be silent
+  (a contribution failing must never block the user's own save).
+- **Attribution:** ODbL requires attributing OFF as the source for data we
+  *consume*; for data we *contribute*, OFF's own attribution applies. Add an
+  OFF credit line to the ingredient create dialog / an About section.
+
+### Open questions (resolve at spec time)
+1. **User consent / privacy:** contributing makes the product (name, brand,
+   macros — never the user's private note) public on OFF. Need an explicit
+   opt-in toggle ("Share this product with Open Food Facts") — likely
+   default-on for barcode-scanned products (they're commercial products,
+   not personal data) but confirm. The per-user PII note (R-01
+   `user_*_refs`) must NEVER be sent.
+2. **Image upload:** OFF values product photos. Out of scope for v1 (we
+   don't capture a product image yet); revisit if a photo-capture step is
+   added to the scan flow.
+3. **Quality gating:** only push when macros look sane (kcal in a plausible
+   range, not all-zero). Avoid polluting OFF with junk — a bad contribution
+   is worse than none.
+4. **Rate / abuse:** the single-account model concentrates all writes under
+   one OFF user; check OFF's contributor rate limits and set a sane cap.
+5. **v3 write API:** confirm whether OFF now recommends the v3 write
+   endpoint over `product_jqm2.pl` at spec time.
+
+### Implementation flow once specced
+`/brainstorming` (resolve the open questions, esp. consent default) →
+spec → `/writing-plans`. Likely ~1 edge function (`off-contribute`,
+Vault-held OFF creds), a small client opt-in toggle + fire-and-forget
+call wired into the existing ingredient-create success path, an OFF
+attribution credit, and Tier-1 tests on the field-mapping adapter
+(our `OFFSearchResult`/manual form → OFF write payload). No DB migration.

@@ -159,10 +159,12 @@ user already imported that barcode, so the existing row is fetched and reused
 instead.
 
 The Create Ingredient modal (opened from "+ Nuevo" on Ingredientes or the
-recipe editor's sticky "+ Crear nuevo" autocomplete item) has a debounced
-OpenFoodFacts search tab and a manual-entry tab; a barcode-import tab is a
-disabled placeholder (a future product idea, below). On save it returns the new
-`ingredient_id` to whatever opened it. Ingredient duplicates are tolerated in
+recipe editor's sticky "+ Crear nuevo" autocomplete item) has three tabs: a
+debounced OpenFoodFacts search, a manual-entry form, and a **barcode** tab
+(camera scan via the native `BarcodeDetector` with a lazy `@zxing/browser`
+fallback, plus a manual EAN/UPC field) that looks the product up in
+OpenFoodFacts by barcode and prefills the manual form (R-20). On save it returns
+the new `ingredient_id` to whatever opened it. Ingredient duplicates are tolerated in
 Phase 1; the ★ model's Phase-2 reaper (R-01) is the structural resolution
 (gated on the deferred ratings/voting signal), not a dedicated dedup feature.
 

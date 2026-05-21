@@ -7,8 +7,18 @@
   "tabs": {
     "off": "Search (OpenFoodFacts)",
     "manual": "Manual",
-    "imported": "Imported",
-    "importedSoon": "Coming soon — barcode scanner"
+    "barcode": "Barcode"
+  },
+  "barcode": {
+    "startScan": "Scan with camera",
+    "aimHint": "Aim at the barcode inside the box.",
+    "cameraError": "Couldn't access the camera. Type the code below.",
+    "manualLabel": "Barcode (EAN/UPC)",
+    "lookup": "Look up",
+    "looking": "Looking up…",
+    "notFound": "Not in OpenFoodFacts — switch to Manual to enter it by hand.",
+    "bannerNew": "Not in Open Food Facts yet. Add its details so others can scan it later.",
+    "bannerComplete": "Some values are missing. Fill them in to complete it."
   },
   "dialog": {
     "createTitle": "New ingredient",
