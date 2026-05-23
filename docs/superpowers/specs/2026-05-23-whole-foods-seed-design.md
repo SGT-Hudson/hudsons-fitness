@@ -53,8 +53,16 @@ macros are generic, so "has a label" is the wrong test.
 - Per-100 g; carries every field we need: energy, protein, carbs, fat, fiber,
   sugars, saturated fat.
 
-**Numbers are never typed from memory.** They are extracted from the dataset by a
-build script (below) so every value traces to a USDA FDC id.
+Accessed via the **FDC REST API** (`api.nal.usda.gov/fdc/v1`, free api.data.gov
+key) rather than the bulk file download — same authoritative values, no
+hundreds-of-MB binary to manage, and the search endpoint doubles as the
+fdc-id-finding aid during curation. The key lives in an env var (`FDC_API_KEY`),
+never committed.
+
+**Numbers are never typed from memory.** They are fetched from the FDC API by the
+build script (below) keyed on each food's `fdc_id`, so every value traces to a
+USDA entry. The curated food *list and names* are authored by hand; only the
+ids + macro values come from USDA.
 
 A handful of Spanish-specific staples (merluza, certain cheeses) are better
 characterized in BEDCA, but its license keeps it out. USDA has close generic
@@ -135,11 +143,19 @@ end $$;
 ## Data pipeline (in the worktree)
 
 - `scripts/whole-foods/foods.json` — curated source of truth, one entry per food:
-  `{ fdc_id, name_es, name_en, category }`. Human-auditable; holds provenance.
-- USDA SR Legacy bulk file downloaded locally — **gitignored**, build input only.
-- `scripts/whole-foods/build-seed.ts` — joins `foods.json` to the dataset by
-  `fdc_id`, extracts per-100 g fields, emits the seed migration SQL. Re-runnable;
-  the migration is the committed artifact, the bulk file is not.
+  `{ query, name_es, name_en, category, fdc_id, fdc_description }`. Hand-authored
+  `query` + bilingual names; `fdc_id` + `fdc_description` (the matched USDA entry
+  text) are filled by the resolve step and reviewed. Human-auditable; holds
+  provenance (the pinned `fdc_id`).
+- `scripts/whole-foods/resolve.ts` — for entries missing an `fdc_id`, calls the
+  FDC **search** endpoint (`dataType=SR Legacy`) with `query`, writes the top
+  match's `fdc_id` + `fdc_description` back into `foods.json`. Re-runnable;
+  skips already-resolved entries. Output reviewed before build.
+- `scripts/whole-foods/build-seed.ts` — fetches per-100 g nutrients for the
+  pinned `fdc_id`s via the FDC **detail** endpoint (`/foods?fdcIds=` batched),
+  extracts the fields, emits the seed migration SQL. Re-runnable; the migration
+  is the committed artifact.
+- FDC API key in `FDC_API_KEY` (env), never committed.
 
 ## Code touchpoints (small)
 
