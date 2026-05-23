@@ -8,6 +8,7 @@ import {
   saveTemplate,
   type SaveTemplatePayload,
 } from './api';
+import { fetchRecipeMacrosByIds } from './recipeMacros';
 
 export function useTemplates() {
   const { user } = useAuth();
@@ -47,5 +48,14 @@ export function useDeleteTemplate() {
       toastDeleted();
     },
     onError: toastError,
+  });
+}
+
+export function useRecipeMacros(recipeIds: string[]) {
+  const key = [...new Set(recipeIds)].sort();
+  return useQuery({
+    enabled: key.length > 0,
+    queryKey: ['recipes', 'macros', key],
+    queryFn: () => fetchRecipeMacrosByIds(key),
   });
 }
