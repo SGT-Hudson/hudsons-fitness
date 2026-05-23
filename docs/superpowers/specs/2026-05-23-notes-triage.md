@@ -21,14 +21,31 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   user-editable, nullable. Confirm OFF provides them (it does: `sugars_100g`,
   `saturated-fat_100g`). Schema + form + macro display + OFF import mapping.
   Enabler for U-3 (low-sugar filter).
-- **status:** triage
+- **decisions (2026-05-23):**
+  - **Full roll-up (option B):** sugar + saturated fat propagate ingredient →
+    recipe → meal log → daily total → planner (user wants a daily "sugar consumed"
+    number). Extends the `Macros` core envelope (+`sugarG`, +`satFatG`), the edge
+    parity net, and `daily_nutrition_history` columns.
+  - **Honest-partial totals:** fields stay optional/nullable; a daily/recipe total
+    sums only known values and surfaces a qualifier when some items lack data (e.g.
+    "≥ 32 g sugar · 2 items missing"). Null ≠ 0 for sugar (sugar-free is a real
+    value). Do NOT make the fields required (would break existing ingredients + the
+    lenient OFF/barcode import).
+- **spec:** `2026-05-23-sub-macros-design.md`
+- **status:** specced (awaiting user review of the spec before writing the plan)
 
 ### U-2 — Recipe meal-type tagging
 - **raw:** "tambien podemos poner una seccion en las recetas para que los usuarios
   pongan si la receta es para desayuno, comida, cena, etc o para varias a la vez"
 - **read:** Tag a recipe with one-or-more meal types (breakfast/lunch/dinner/snack…).
   Many-to-many or array column. Enabler for U-3.
-- **status:** triage
+- **decisions (2026-05-23):** flat 5-tag vocabulary locked —
+  `breakfast / lunch / snack / dinner / dessert` (snack doubles as merienda; dessert
+  is recipe-only). Stored as `recipes.meal_types text[]` (array, not junction) with a
+  subset CHECK + GIN index; optional/multi-valued; saved atomically via a new
+  `p_meal_types` arg on the existing `save_recipe` RPC. Logging enum left untouched.
+- **spec:** `2026-05-23-recipe-meal-types-design.md`
+- **status:** specced (awaiting user review of the spec before writing the plan)
 
 ### U-3 — Recipe search filters (nutrition-aware + meal-type)
 - **raw:** "con esta informacion podemos mejorar el buscador de recetas. Podemos
@@ -37,7 +54,15 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
 - **read:** Filter/search recipes by macro profile (high-protein, low-carb,
   low-sugar) and by meal type. Depends on U-1 (sugar) + U-2 (meal type). Need to
   define the thresholds for each label (per-serving or per-100kcal?).
-- **status:** triage
+- **decisions (2026-05-23):** density/ratio basis (% of per-serving energy). Two
+  label kinds — **goal filters** (searchable: high protein 30%E, low carb 25%E, low
+  fat 30%E, high fiber 6g/100kcal, low sugar 10%E⚠, low sat-fat 10%E⚠) and **warning
+  badges** (display-only: high sugar 20%E⚠, high sat-fat 10%E⚠). One pure helper
+  `recipeLabels()` is the single source for badges + filter predicates. In-memory
+  compute via the existing macro core (no SQL macro math); ⚠ labels gated on complete
+  data (U-1); faceted combine (within meal-types OR, across AND).
+- **spec:** `2026-05-23-recipe-search-filters-design.md`
+- **status:** specced (awaiting user review of the spec before writing the plan)
 
 ### U-4 — Extract more from OFF (Nutri-Score? NOVA?)
 - **raw:** "what other relevant information can we extract from OFF? maybe nutrition
@@ -133,6 +158,20 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   shaded body map + ranked %. Needs each exercise mapped to muscle group(s) — a data
   model addition on `exercises`. Part of the visual direction (U-8).
 - **status:** triage
+
+### F-5 — Micronutrient storage (DEFERRED — pairs with F-1)
+- **raw:** "what do you think about storing micronutrients? would that be too much?"
+- **read:** Store vitamins/minerals (and possibly fatty-acid breakdown) per
+  ingredient. Deferred deliberately, for two reasons: (1) **data source** — OFF
+  reliably has only the "big 8" (energy/fat/sat-fat/carbs/sugar/protein/salt/fiber)
+  and almost no vitamins/minerals, so micros would be mostly "unknown" noise until a
+  whole-foods composition DB exists. Micros are naturally a child of **F-1 (BEDCA)**,
+  whose whole purpose is rich nutrient profiles. (2) **shape** — micros must NOT
+  extend the tight 5-field `Macros` core; they want a flexible store
+  (`ingredient_nutrients(ingredient_id, nutrient_key, amount_per_unit)` or JSONB)
+  with their own lazy roll-up. Design this *with* F-1, once a composition source is
+  picked.
+- **status:** triage (deferred to after F-1)
 
 ---
 
