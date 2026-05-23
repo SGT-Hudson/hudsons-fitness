@@ -44,6 +44,10 @@ export interface CoreIngredient {
   carbsGPerUnit: Numeric;
   fatGPerUnit: Numeric;
   fiberGPerUnit: Numeric | null;
+  /** Optional "of which" sub-macros (U-1). `null`/absent = unknown (≠ 0).
+   *  Ignored by the primary 5-field arithmetic; consumed only by `subMacros.ts`. */
+  sugarGPerUnit?: Numeric | null;
+  satFatGPerUnit?: Numeric | null;
 }
 
 export interface CoreRecipeIngredient {

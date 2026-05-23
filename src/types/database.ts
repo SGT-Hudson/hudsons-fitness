@@ -58,6 +58,9 @@ export type Database = {
           },
         ]
       }
+      // U-1 sub-macros interim hand-edit (until R-04 generated-types regen):
+      // sugar/saturated-fat known-sum grams + per-field completeness booleans —
+      // see supabase/migrations/20260525120000_u1_sub_macros.sql.
       daily_nutrition_history: {
         Row: {
           computed_at: string
@@ -66,6 +69,10 @@ export type Database = {
           consumed_fiber_g: number | null
           consumed_kcal: number | null
           consumed_protein_g: number | null
+          consumed_saturated_fat_complete: boolean
+          consumed_saturated_fat_g: number | null
+          consumed_sugar_complete: boolean
+          consumed_sugar_g: number | null
           had_active_plan: boolean
           logged_on: string
           planned_carbs_g: number | null
@@ -73,6 +80,10 @@ export type Database = {
           planned_fiber_g: number | null
           planned_kcal: number | null
           planned_protein_g: number | null
+          planned_saturated_fat_complete: boolean
+          planned_saturated_fat_g: number | null
+          planned_sugar_complete: boolean
+          planned_sugar_g: number | null
           user_id: string
         }
         Insert: {
@@ -82,6 +93,10 @@ export type Database = {
           consumed_fiber_g?: number | null
           consumed_kcal?: number | null
           consumed_protein_g?: number | null
+          consumed_saturated_fat_complete?: boolean
+          consumed_saturated_fat_g?: number | null
+          consumed_sugar_complete?: boolean
+          consumed_sugar_g?: number | null
           had_active_plan?: boolean
           logged_on: string
           planned_carbs_g?: number | null
@@ -89,6 +104,10 @@ export type Database = {
           planned_fiber_g?: number | null
           planned_kcal?: number | null
           planned_protein_g?: number | null
+          planned_saturated_fat_complete?: boolean
+          planned_saturated_fat_g?: number | null
+          planned_sugar_complete?: boolean
+          planned_sugar_g?: number | null
           user_id: string
         }
         Update: {
@@ -98,6 +117,10 @@ export type Database = {
           consumed_fiber_g?: number | null
           consumed_kcal?: number | null
           consumed_protein_g?: number | null
+          consumed_saturated_fat_complete?: boolean
+          consumed_saturated_fat_g?: number | null
+          consumed_sugar_complete?: boolean
+          consumed_sugar_g?: number | null
           had_active_plan?: boolean
           logged_on?: string
           planned_carbs_g?: number | null
@@ -105,6 +128,10 @@ export type Database = {
           planned_fiber_g?: number | null
           planned_kcal?: number | null
           planned_protein_g?: number | null
+          planned_saturated_fat_complete?: boolean
+          planned_saturated_fat_g?: number | null
+          planned_sugar_complete?: boolean
+          planned_sugar_g?: number | null
           user_id?: string
         }
         Relationships: [
@@ -192,6 +219,8 @@ export type Database = {
           },
         ]
       }
+      // U-1 sub-macros interim hand-edit (until R-04 regen): optional sugar +
+      // saturated fat per unit (nullable; NULL = unknown).
       ingredients: {
         Row: {
           brand: string | null
@@ -206,7 +235,9 @@ export type Database = {
           kcal_per_unit: number
           name: string
           protein_g_per_unit: number
+          saturated_fat_g_per_unit: number | null
           source: string
+          sugar_g_per_unit: number | null
           unit_type: string
           updated_at: string
         }
@@ -223,7 +254,9 @@ export type Database = {
           kcal_per_unit: number
           name: string
           protein_g_per_unit: number
+          saturated_fat_g_per_unit?: number | null
           source?: string
+          sugar_g_per_unit?: number | null
           unit_type?: string
           updated_at?: string
         }
@@ -240,7 +273,9 @@ export type Database = {
           kcal_per_unit?: number
           name?: string
           protein_g_per_unit?: number
+          saturated_fat_g_per_unit?: number | null
           source?: string
+          sugar_g_per_unit?: number | null
           unit_type?: string
           updated_at?: string
         }
@@ -263,6 +298,8 @@ export type Database = {
           custom_kcal: number | null
           custom_name: string | null
           custom_protein_g: number | null
+          custom_saturated_fat_g: number | null
+          custom_sugar_g: number | null
           from_plan: boolean
           id: string
           ingredient_id: string | null
@@ -283,6 +320,8 @@ export type Database = {
           custom_kcal?: number | null
           custom_name?: string | null
           custom_protein_g?: number | null
+          custom_saturated_fat_g?: number | null
+          custom_sugar_g?: number | null
           from_plan?: boolean
           id?: string
           ingredient_id?: string | null
@@ -303,6 +342,8 @@ export type Database = {
           custom_kcal?: number | null
           custom_name?: string | null
           custom_protein_g?: number | null
+          custom_saturated_fat_g?: number | null
+          custom_sugar_g?: number | null
           from_plan?: boolean
           id?: string
           ingredient_id?: string | null
@@ -711,12 +752,15 @@ export type Database = {
         // (staged migration 20260520120030); `user_id` → `created_by_user_id`
         // (same migration; semantic shift from per-user FK to the
         // three-state pool-owner pointer matching `ingredients`).
+        // U-2 interim hand-edit (until R-04 regen): + meal_types text[]
+        // (migration 20260526120000).
         Row: {
           created_at: string
           created_by_user_id: string | null
           description: string | null
           id: string
           instructions: string | null
+          meal_types: string[]
           name: string
           photo_url: string | null
           servings: number
@@ -728,6 +772,7 @@ export type Database = {
           description?: string | null
           id?: string
           instructions?: string | null
+          meal_types?: string[]
           name: string
           photo_url?: string | null
           servings?: number
@@ -739,6 +784,7 @@ export type Database = {
           description?: string | null
           id?: string
           instructions?: string | null
+          meal_types?: string[]
           name?: string
           photo_url?: string | null
           servings?: number
@@ -1084,10 +1130,13 @@ export type Database = {
         Returns: number
       }
       save_recipe: {
+        // U-2 interim hand-edit (until R-04 regen): + p_meal_types (defaulted,
+        // so optional) — see migration 20260526120000_u2_recipe_meal_types.sql.
         Args: {
           p_description: string | null
           p_ingredients: Json
           p_instructions: string | null
+          p_meal_types?: string[]
           p_name: string
           p_recipe_id: string | null
           p_servings: number

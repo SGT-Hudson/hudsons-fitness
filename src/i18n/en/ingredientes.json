@@ -46,7 +46,10 @@
     "protein": "Protein (g)",
     "carbs": "Carbs (g)",
     "fat": "Fat (g)",
-    "fiber": "Fiber (g)"
+    "fiber": "Fiber (g)",
+    "sugar": "of which sugars (g)",
+    "satFat": "of which saturated (g)",
+    "subMacroWarning": "Sugar can't exceed total carbs, nor saturated exceed total fat — check the value."
   },
   "list": {
     "empty": "No results.",

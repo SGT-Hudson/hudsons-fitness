@@ -1,5 +1,12 @@
-import type { Macros } from '@/features/recipes/macros';
-import { computeRecipeMacros } from '@/features/recipes/macros';
+import type { Macros, SubMacros } from '@/features/recipes/macros';
+import { computeRecipeMacros, computeRecipeSub } from '@/features/recipes/macros';
+import {
+  addSub,
+  ingredientSub,
+  scaleSub,
+  ZERO_SUB,
+  type PartialSub,
+} from '@/core/subMacros';
 import type { MealLogWithJoins } from './api';
 
 export const ZERO_MACROS: Macros = {
@@ -64,6 +71,45 @@ export function computeMealLogMacros(log: MealLogWithJoins): Macros {
     fatG: log.custom_fat_g ?? 0,
     fiberG: log.custom_fiber_g ?? 0,
   };
+}
+
+// --- U-1 sub-macros (sugar + saturated fat), null-aware ---------------------
+
+/** A custom-entry value → PartialSub: null/undefined = unknown (missing 1). */
+function customField(v: number | null | undefined): PartialSub {
+  return v === null || v === undefined ? { known: 0, missing: 1 } : { known: v, missing: 0 };
+}
+
+export function computeMealLogSub(log: MealLogWithJoins): SubMacros {
+  if (log.recipe_id && log.recipe) {
+    const { perServing } = computeRecipeSub({
+      servings: log.recipe.servings,
+      rows: log.recipe.recipe_ingredients.map((ri) => ({
+        ingredient: ri.ingredient,
+        quantity: Number(ri.quantity),
+        perServing: ri.per_serving,
+      })),
+    });
+    return scaleSub(perServing, Number(log.servings ?? 1));
+  }
+  if (log.ingredient_id && log.ingredient && log.quantity != null) {
+    return ingredientSub(
+      {
+        unitType: log.ingredient.unit_type,
+        sugarGPerUnit: log.ingredient.sugar_g_per_unit ?? null,
+        satFatGPerUnit: log.ingredient.saturated_fat_g_per_unit ?? null,
+      },
+      Number(log.quantity),
+    );
+  }
+  return {
+    sugarG: customField(log.custom_sugar_g),
+    satFatG: customField(log.custom_saturated_fat_g),
+  };
+}
+
+export function sumSub(items: SubMacros[]): SubMacros {
+  return items.reduce<SubMacros>((acc, s) => addSub(acc, s), ZERO_SUB);
 }
 
 export function sumMacros(items: Macros[]): Macros {

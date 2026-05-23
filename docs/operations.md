@@ -137,8 +137,15 @@ The four functions:
 **Deploy** (per function):
 
 ```bash
-supabase functions deploy <function-name> --project-ref upvraruehzurbetzrxov
+supabase functions deploy <function-name> --project-ref upvraruehzurbetzrxov \
+  --use-api --import-map supabase/functions/deno.json
 ```
+
+Both flags are **required**: `--use-api` does Docker-free server-side bundling and
+follows the cross-root `src/core/*.ts` imports (R-17); `--import-map
+supabase/functions/deno.json` is needed because there is no `supabase/config.toml`,
+so the CLI does **not** auto-detect the import map and the bare `@supabase/supabase-js`
+specifier otherwise fails to bundle (HTTP 400). Run from the repo root.
 
 **Manual invocation (smoke tests).** Each function returns a JSON array with
 one entry per profile and a status (`ok` / `already_exists` / `no_template` /
@@ -205,7 +212,11 @@ and uploads the cross-root files (the upload log lists `src/core/*.ts`, and
 the deployed functions execute them correctly). The vendor/relocate fallback
 was **not** needed; the D-F3 shared core stays single-source at `src/core/`.
 Operational note: deploys must use `--use-api` (server-side bundling) — the
-default path needs Docker, which is not available in the deploy environment.
+default path needs Docker, which is not available in the deploy environment —
+**and** `--import-map supabase/functions/deno.json` (no `config.toml` exists, so
+the import map is not auto-detected; without it the `@supabase/supabase-js` bare
+specifier fails to bundle with HTTP 400). Confirmed re-deploying
+`daily-nutrition-snapshot` on 2026-05-23 (U-1).
 
 **R-07 adaptive-TDEE deploy (applied 2026-05-18 — ordered).** The R-07
 rewrite of `recalculate-tdee` + `supabase/migrations/20260518020000_r07_adaptive_tdee_state.sql`

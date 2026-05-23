@@ -17,6 +17,8 @@ import {
   recipeFormSchema,
   type RecipeFormValues,
 } from '../schema';
+import { RECIPE_MEAL_TYPES, toRecipeMealTypes, type RecipeMealType } from '../mealTypes';
+import { cn } from '@/lib/utils';
 
 let rowIdCounter = 0;
 function newRowId() {
@@ -37,6 +39,7 @@ export function emptyEditorState(): EditorState {
     servings: '1',
     description: '',
     instructions: '',
+    mealTypes: [],
     rows: [{ rowId: newRowId(), ingredient: null, quantity: '', per_serving: false }],
   };
 }
@@ -47,6 +50,7 @@ export function recipeToEditorState(recipe: RecipeWithIngredients): EditorState 
     servings: String(recipe.servings),
     description: recipe.description ?? '',
     instructions: recipe.instructions ?? '',
+    mealTypes: toRecipeMealTypes(recipe.meal_types),
     rows: recipe.recipe_ingredients.map((ri) => ({
       rowId: newRowId(),
       ingredient: ri.ingredient,
@@ -101,6 +105,14 @@ export function RecipeEditorForm({
 
   const rows = watch('rows');
   const servingsNum = Number(watch('servings'));
+  const mealTypes = watch('mealTypes') ?? [];
+
+  function toggleMealType(key: RecipeMealType) {
+    const next = mealTypes.includes(key)
+      ? mealTypes.filter((m) => m !== key)
+      : [...mealTypes, key];
+    setValue('mealTypes', next, { shouldDirty: true });
+  }
   const macroRows = (rows ?? [])
     .filter((r) => r.ingredient && Number(r.quantity) > 0)
     .map((r) => ({
@@ -160,6 +172,30 @@ export function RecipeEditorForm({
             <div className="space-y-2">
               <Label htmlFor="recipe-instructions">{t('form.instructions')}</Label>
               <Textarea id="recipe-instructions" rows={4} {...register('instructions')} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('form.mealTypes')}</Label>
+              <div className="flex flex-wrap gap-2">
+                {RECIPE_MEAL_TYPES.map((key) => {
+                  const active = mealTypes.includes(key);
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => toggleMealType(key)}
+                      className={cn(
+                        'rounded-full border px-3 py-1 text-sm transition-colors',
+                        active
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-input bg-background text-muted-foreground hover:bg-accent',
+                      )}
+                    >
+                      {t(`mealTypes.${key}`)}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>

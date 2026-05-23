@@ -36,7 +36,28 @@
     "addRow": "Añadir ingrediente",
     "quantity": "Cantidad",
     "perServing": "Por ración",
-    "units": "ud"
+    "units": "ud",
+    "mealTypes": "Tipos de comida"
+  },
+  "mealTypes": {
+    "breakfast": "Desayuno",
+    "lunch": "Comida",
+    "snack": "Snack",
+    "dinner": "Cena",
+    "dessert": "Postre"
+  },
+  "filters": {
+    "heading": "Nutrición",
+    "highProtein": "Alto en proteína",
+    "lowCarb": "Bajo en carbos",
+    "lowFat": "Bajo en grasa",
+    "highFiber": "Alto en fibra",
+    "lowSugar": "Bajo en azúcar",
+    "lowSatFat": "Baja grasa saturada"
+  },
+  "warnings": {
+    "highSugar": "Alto en azúcar",
+    "highSatFat": "Alta grasa saturada"
   },
   "macros": {
     "title": "Macros",

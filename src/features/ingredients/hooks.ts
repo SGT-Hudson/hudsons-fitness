@@ -22,11 +22,14 @@ export function useIngredients(limit = 100) {
   });
 }
 
-export function useLocalIngredientSearch(query: string, limit = 15) {
+export function useLocalIngredientSearch(query: string, limit = 15, enabled = true) {
   return useQuery({
     queryKey: ['ingredients', 'search-local', query, limit],
     queryFn: () => searchLocalIngredients(query, limit),
     placeholderData: (prev) => prev,
+    // U-7: callers can disable the fetch (e.g. the recipe autocomplete skips the
+    // empty-query search until the user types). Defaults true for other callers.
+    enabled,
   });
 }
 
