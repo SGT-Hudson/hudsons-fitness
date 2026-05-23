@@ -40,7 +40,7 @@ export async function searchLocalIngredients(query: string, limit = 15): Promise
   const { data, error } = await supabase
     .from('ingredients')
     .select('*')
-    .or(`name.ilike.%${safe}%,brand.ilike.%${safe}%`)
+    .or(`name.ilike.%${safe}%,name_en.ilike.%${safe}%,brand.ilike.%${safe}%`)
     .order('is_verified', { ascending: false })
     .order('name')
     .limit(limit);
