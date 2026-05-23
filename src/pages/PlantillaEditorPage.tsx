@@ -12,7 +12,8 @@ import {
   TemplateGrid,
   type TemplateSlotInput,
 } from '@/features/planning/components/TemplateGrid';
-import { useSaveTemplate, useTemplate } from '@/features/templates/hooks';
+import { useSaveTemplate, useTemplate, useRecipeMacros } from '@/features/templates/hooks';
+import { useDailyTarget } from '@/features/planning/useDailyTarget';
 import {
   firstTemplateError,
   templateFormSchema,
@@ -51,6 +52,8 @@ export function PlantillaEditorPage() {
   });
   const mealTimes = watch('meal_times');
   const [slots, setSlots] = useState<TemplateSlotInput[]>([]);
+  const recipeMacros = useRecipeMacros(slots.map((s) => s.recipe_id));
+  const { targets, phaseType } = useDailyTarget();
 
   useEffect(() => {
     if (isNew) return;
@@ -201,6 +204,9 @@ export function PlantillaEditorPage() {
             onAdd={addSlot}
             onUpdate={updateSlot}
             onRemove={removeSlot}
+            recipeMacros={recipeMacros.data}
+            targets={targets}
+            phaseType={phaseType}
           />
         </CardContent>
       </Card>
