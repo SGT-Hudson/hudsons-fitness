@@ -24,6 +24,7 @@ export interface ActiveWeek {
   source_template_id: string | null;
   source_template_name: string | null;
   has_diverged: boolean;
+  meal_times: string[];
   slots: WeekSlotWithRecipe[];
 }
 
@@ -34,7 +35,7 @@ export async function fetchActiveWeek(
   const { data, error } = await supabase
     .from('meal_plan_weeks')
     .select(
-      `id, week_start, source_template_id, has_diverged,
+      `id, week_start, meal_times, source_template_id, has_diverged,
        source_template:meal_plan_templates (id, name),
        meal_plan_week_slots (
          id, date, meal_index, meal_time, recipe_id, servings, display_order,
@@ -87,6 +88,7 @@ export async function fetchActiveWeek(
   const raw = data as unknown as {
     id: string;
     week_start: string;
+    meal_times: string[];
     source_template_id: string | null;
     has_diverged: boolean;
     source_template: { id: string; name: string } | { id: string; name: string }[] | null;
@@ -96,6 +98,7 @@ export async function fetchActiveWeek(
   return {
     id: raw.id,
     week_start: raw.week_start,
+    meal_times: raw.meal_times ?? [],
     source_template_id: raw.source_template_id,
     source_template_name: tpl?.name ?? null,
     has_diverged: raw.has_diverged,

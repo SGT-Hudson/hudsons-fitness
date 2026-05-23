@@ -156,6 +156,7 @@ export function PlanificadorPage() {
           <WeekGrid
             weekStart={week.data.week_start}
             slots={week.data.slots}
+            mealTimes={week.data.meal_times}
             todayIso={today}
             busy={busy}
             targets={targets}
