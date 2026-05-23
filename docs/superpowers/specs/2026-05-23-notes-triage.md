@@ -33,9 +33,9 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
     lenient OFF/barcode import).
 - **spec:** `2026-05-23-sub-macros-design.md`
 - **plan:** `../plans/2026-05-23-u1-sub-macros.md`
-- **status:** implemented — PR #95 into develop (lint/build/typecheck/test green). Gated:
-  apply migration `20260525120000_u1_sub_macros.sql` to prod + deploy
-  `daily-nutrition-snapshot` (ordered: migration → merge → edge deploy).
+- **status:** **done (2026-05-23)** — merged (#95); migration applied to prod +
+  `daily-nutrition-snapshot` edge fn deployed & live-verified (writes sugar/sat-fat
+  with honest-partial completeness).
 
 ### U-2 — Recipe meal-type tagging
 - **raw:** "tambien podemos poner una seccion en las recetas para que los usuarios
@@ -48,7 +48,9 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   subset CHECK + GIN index; optional/multi-valued; saved atomically via a new
   `p_meal_types` arg on the existing `save_recipe` RPC. Logging enum left untouched.
 - **spec:** `2026-05-23-recipe-meal-types-design.md`
-- **status:** specced (awaiting user review of the spec before writing the plan)
+- **status:** **done (2026-05-23)** — merged (#96); migration (column + GIN index +
+  `save_recipe` p_meal_types) applied to prod & verified. Editor chips + card badges
+  shipped; `features/recipes/mealTypes.ts` is the shared vocabulary.
 
 ### U-3 — Recipe search filters (nutrition-aware + meal-type)
 - **raw:** "con esta informacion podemos mejorar el buscador de recetas. Podemos
@@ -57,6 +59,9 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
 - **read:** Filter/search recipes by macro profile (high-protein, low-carb,
   low-sugar) and by meal type. Depends on U-1 (sugar) + U-2 (meal type). Need to
   define the thresholds for each label (per-serving or per-100kcal?).
+- **status:** implemented — PR into develop (client-only, no migration). Pure
+  `recipeLabels()` + `recipeFilter` modules (Tier-1 tested); list query computes
+  labels in-memory; meal-type + goal chips + warning badges on cards.
 - **decisions (2026-05-23):** density/ratio basis (% of per-serving energy). Two
   label kinds — **goal filters** (searchable: high protein 30%E, low carb 25%E, low
   fat 30%E, high fiber 6g/100kcal, low sugar 10%E⚠, low sat-fat 10%E⚠) and **warning

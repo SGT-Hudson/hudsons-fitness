@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
 import type { Ingredient } from '@/features/ingredients/api';
+import { computeRecipeMacros, computeRecipeSub, type RecipeRowMacrosInput } from './macros';
+import { recipeLabels, type RecipeLabels } from './labels';
 
 export type Recipe = Tables<'recipes'>;
 export type RecipeIngredient = Tables<'recipe_ingredients'>;
@@ -17,28 +19,52 @@ export interface RecipeListItem {
   updated_at: string;
   ingredient_count: number;
   meal_types: string[];
+  // U-3: per-serving nutrition labels (goal filters + warning badges), computed
+  // in-memory from the joined ingredient macros via the shared core.
+  labels: RecipeLabels;
 }
+
+// Ingredient macro shape pulled per row for U-3 label computation.
+type RowIngredient = RecipeRowMacrosInput['ingredient'];
 
 // My library (R-01 spec §7) — join user_recipe_refs on auth.uid().
 // The recipe pool is openly readable post-R-01, but this listing
 // intentionally shows only "what I have" (the recipes editor / dashboard
 // surface). Pool discovery is a separate explicit "browse library" flow.
 export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
+  // U-3: pull each recipe's ingredient macros (incl. sugar/sat-fat) so the page
+  // can compute goal-filter labels + warning badges in-memory via the shared
+  // core. Heavier than a count, but fine at personal-library scale (spec §2.4);
+  // denormalised macro columns are the escape hatch if libraries ever grow.
   const { data, error } = await supabase
     .from('user_recipe_refs')
     .select(
-      `recipe:recipes (id, name, servings, description, updated_at, meal_types, recipe_ingredients(id))`,
+      `recipe:recipes (
+         id, name, servings, description, updated_at, meal_types,
+         recipe_ingredients (
+           quantity, per_serving,
+           ingredient:ingredients (
+             unit_type, kcal_per_unit, protein_g_per_unit, carbs_g_per_unit,
+             fat_g_per_unit, fiber_g_per_unit, sugar_g_per_unit, saturated_fat_g_per_unit
+           )
+         )
+       )`,
     )
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
+  type MacroRow = {
+    quantity: number;
+    per_serving: boolean;
+    ingredient: RowIngredient | RowIngredient[] | null;
+  };
   type Row = {
     recipe:
       | (Pick<
           Recipe,
           'id' | 'name' | 'servings' | 'description' | 'updated_at' | 'meal_types'
         > & {
-          recipe_ingredients: Array<{ id: string }> | null;
+          recipe_ingredients: MacroRow[] | null;
         })
       | null;
   };
@@ -46,14 +72,29 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
   const out: RecipeListItem[] = [];
   for (const r of rows) {
     if (!r.recipe) continue;
+    const ri = r.recipe.recipe_ingredients ?? [];
+    const macroRows: RecipeRowMacrosInput[] = ri
+      .map((row) => {
+        const ing = Array.isArray(row.ingredient) ? row.ingredient[0] : row.ingredient;
+        return ing
+          ? { ingredient: ing, quantity: Number(row.quantity), perServing: row.per_serving }
+          : null;
+      })
+      .filter((x): x is RecipeRowMacrosInput => x !== null);
+    const opts = { servings: Number(r.recipe.servings) || 1, rows: macroRows };
+    const labels = recipeLabels(
+      computeRecipeMacros(opts).perServing,
+      computeRecipeSub(opts).perServing,
+    );
     out.push({
       id: r.recipe.id,
       name: r.recipe.name,
       servings: r.recipe.servings,
       description: r.recipe.description,
       updated_at: r.recipe.updated_at,
-      ingredient_count: r.recipe.recipe_ingredients?.length ?? 0,
+      ingredient_count: ri.length,
       meal_types: r.recipe.meal_types ?? [],
+      labels,
     });
   }
   out.sort((a, b) => b.updated_at.localeCompare(a.updated_at));

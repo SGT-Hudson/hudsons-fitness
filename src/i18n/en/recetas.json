@@ -46,6 +46,19 @@
     "dinner": "Dinner",
     "dessert": "Dessert"
   },
+  "filters": {
+    "heading": "Nutrition",
+    "highProtein": "High protein",
+    "lowCarb": "Low carb",
+    "lowFat": "Low fat",
+    "highFiber": "High fiber",
+    "lowSugar": "Low sugar",
+    "lowSatFat": "Low saturated fat"
+  },
+  "warnings": {
+    "highSugar": "High sugar",
+    "highSatFat": "High saturated fat"
+  },
   "macros": {
     "title": "Macros",
     "label": "Macros",
