@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyMacro, KCAL_MAINTENANCE_BAND_PCT, essentialFatFloorG, ESSENTIAL_FAT_PCT_OF_KCAL } from './macroStatus';
+import { classifyMacro, essentialFatFloorG, ESSENTIAL_FAT_PCT_OF_KCAL } from './macroStatus';
 
 const F = (consumed: number, target: number, phase: 'cut'|'maintenance'|'bulk', floor?: number) =>
   classifyMacro('kcal', consumed, target, phase, { essentialFatFloorG: floor });
