@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { FoodEntry } from './build-seed';
 
 const FDC = 'https://api.nal.usda.gov/fdc/v1';
@@ -37,6 +38,6 @@ async function main(): Promise<void> {
   console.log(`resolved ${filled} entries; review fdc_description values before building`);
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   void main();
 }

@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 export interface FoodEntry {
   query: string; // FDC search term (hand-authored)
@@ -118,6 +119,6 @@ async function main(): Promise<void> {
 }
 
 // Run main() only when invoked directly, never on import (keeps the test pure).
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   void main();
 }
