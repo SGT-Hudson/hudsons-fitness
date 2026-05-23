@@ -32,7 +32,7 @@ export function RecetaEditorPage() {
   async function handleSubmit(state: EditorState) {
     setError(null);
     try {
-      const newId = await save.mutateAsync({
+      await save.mutateAsync({
         recipeId: isNew ? null : id!,
         name: state.name.trim(),
         servings: Number(state.servings),
@@ -48,7 +48,9 @@ export function RecetaEditorPage() {
             display_order: i,
           })),
       });
-      navigate(isNew ? `/recipes/${newId}` : '/recipes', { replace: true });
+      // B-1: after a successful save (create OR edit) go back to the recipe
+      // list, rather than staying inside the editor on the new recipe.
+      navigate('/recipes', { replace: true });
     } catch (err) {
       setError((err as Error).message);
     }

@@ -32,7 +32,8 @@ export function IngredientAutocomplete({ selected, onSelect, onClear }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const search = useLocalIngredientSearch(debounced, 12);
+  // U-7: don't run the empty-query search — only fetch once the user has typed.
+  const search = useLocalIngredientSearch(debounced, 12, debounced.trim() !== '');
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -77,13 +78,18 @@ export function IngredientAutocomplete({ selected, onSelect, onClear }: Props) {
           className="pl-9"
           placeholder={t('autocomplete.placeholder')}
           value={query}
-          onFocus={() => setOpen(true)}
+          // U-7: don't surface the dropdown on focus — only once the user has
+          // started typing (an unfiltered "first few ingredients" list on focus
+          // isn't useful). Re-focusing a non-empty field reopens it.
+          onFocus={() => {
+            if (query.trim() !== '') setOpen(true);
+          }}
           onChange={(e) => {
             setQuery(e.target.value);
-            setOpen(true);
+            setOpen(e.target.value.trim() !== '');
           }}
         />
-        {open && (
+        {open && query.trim() !== '' && (
           <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md">
             <ul className="max-h-64 overflow-y-auto py-1">
               {search.isLoading && (
