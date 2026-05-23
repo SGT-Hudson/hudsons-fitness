@@ -25,9 +25,9 @@ describe('amountFor', () => {
 });
 
 describe('buildRow', () => {
-  it('emits a VALUES tuple with null for absent sub-macros and escaped quotes', () => {
+  it('emits a data-only VALUES tuple with null for absent sub-macros and escaped quotes', () => {
     expect(buildRow(entry, food)).toBe(
-      "      ('Arroz blanco', 'White rice', 'gram', 130, 2.69, 28.17, 0.28, 0.4, null, 0.08, true, null, 'system')",
+      "      ('Arroz blanco', 'White rice', 'gram', 130, 2.69, 28.17, 0.28, 0.4, null, 0.08)",
     );
   });
   it('throws when energy is missing', () => {
