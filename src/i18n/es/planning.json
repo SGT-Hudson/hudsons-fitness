@@ -92,6 +92,19 @@
       "nameRequired": "Pon un nombre a la plantilla."
     }
   },
+  "summary": {
+    "kcalUnit": "Kcal",
+    "protein": "Prot",
+    "carbs": "Carbs",
+    "fat": "Grasa",
+    "fiber": "Fibra",
+    "fatLow": "⚠ Falta grasa",
+    "fatLowLabel": "Por qué falta grasa",
+    "fatLowHelpLabel": "Ayuda sobre grasa",
+    "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (20% de tus kcal). La grasa es esencial para las hormonas y para absorber vitaminas.",
+    "totalRow": "Total",
+    "emptyDay": "Día sin comidas todavía"
+  },
   "shopping": {
     "open": "Lista de la compra",
     "title": "Lista de la compra",

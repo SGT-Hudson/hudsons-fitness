@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
+import { computeRecipeMacros, type Macros } from '@/features/recipes/macros';
 import type { ShoppingSlotInput } from './shopping';
 
 export type PlanWeek = Tables<'meal_plan_weeks'>;
@@ -14,6 +15,7 @@ export interface WeekSlotWithRecipe {
   recipe_name: string;
   servings: number;
   display_order: number;
+  macros: Macros; // U-5: per-slot macros (recipe per-serving × servings)
 }
 
 export interface ActiveWeek {
@@ -36,7 +38,16 @@ export async function fetchActiveWeek(
        source_template:meal_plan_templates (id, name),
        meal_plan_week_slots (
          id, date, meal_index, meal_time, recipe_id, servings, display_order,
-         recipe:recipes (id, name)
+         recipe:recipes (
+           id, name, servings,
+           recipe_ingredients (
+             quantity, per_serving,
+             ingredient:ingredients (
+               unit_type, kcal_per_unit, protein_g_per_unit,
+               carbs_g_per_unit, fat_g_per_unit, fiber_g_per_unit
+             )
+           )
+         )
        )`,
     )
     .eq('user_id', userId)
@@ -44,6 +55,25 @@ export async function fetchActiveWeek(
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
+  interface RawIng {
+    unit_type: string;
+    kcal_per_unit: number;
+    protein_g_per_unit: number;
+    carbs_g_per_unit: number;
+    fat_g_per_unit: number;
+    fiber_g_per_unit: number;
+  }
+  interface RawRi {
+    quantity: number;
+    per_serving: boolean;
+    ingredient: RawIng | RawIng[] | null;
+  }
+  interface RawRecipe {
+    id: string;
+    name: string;
+    servings: number;
+    recipe_ingredients: RawRi[];
+  }
   interface RawSlot {
     id: string;
     date: string;
@@ -52,7 +82,7 @@ export async function fetchActiveWeek(
     recipe_id: string;
     servings: number;
     display_order: number;
-    recipe: { name: string } | { name: string }[];
+    recipe: RawRecipe | RawRecipe[] | null;
   }
   const raw = data as unknown as {
     id: string;
@@ -72,6 +102,31 @@ export async function fetchActiveWeek(
     slots: raw.meal_plan_week_slots
       .map((s) => {
         const recipe = Array.isArray(s.recipe) ? s.recipe[0] : s.recipe;
+        const recipeServings = Number(recipe?.servings) > 0 ? Number(recipe?.servings) : 1;
+        const rows = (recipe?.recipe_ingredients ?? []).map((ri) => {
+          const ing = Array.isArray(ri.ingredient) ? ri.ingredient[0] : ri.ingredient;
+          return {
+            quantity: Number(ri.quantity),
+            perServing: ri.per_serving,
+            ingredient: {
+              unit_type: ing?.unit_type ?? 'g',
+              kcal_per_unit: Number(ing?.kcal_per_unit ?? 0),
+              protein_g_per_unit: Number(ing?.protein_g_per_unit ?? 0),
+              carbs_g_per_unit: Number(ing?.carbs_g_per_unit ?? 0),
+              fat_g_per_unit: Number(ing?.fat_g_per_unit ?? 0),
+              fiber_g_per_unit: Number(ing?.fiber_g_per_unit ?? 0),
+            },
+          };
+        });
+        const perServing = computeRecipeMacros({ servings: recipeServings, rows }).perServing;
+        const slotServings = Number(s.servings);
+        const macros = {
+          kcal: perServing.kcal * slotServings,
+          proteinG: perServing.proteinG * slotServings,
+          carbsG: perServing.carbsG * slotServings,
+          fatG: perServing.fatG * slotServings,
+          fiberG: perServing.fiberG * slotServings,
+        };
         return {
           id: s.id,
           date: s.date,
@@ -79,8 +134,9 @@ export async function fetchActiveWeek(
           meal_time: s.meal_time,
           recipe_id: s.recipe_id,
           recipe_name: recipe?.name ?? '?',
-          servings: Number(s.servings),
+          servings: slotServings,
           display_order: s.display_order,
+          macros,
         };
       })
       .sort(

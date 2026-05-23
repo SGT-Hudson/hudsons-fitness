@@ -92,6 +92,19 @@
       "nameRequired": "Give the template a name."
     }
   },
+  "summary": {
+    "kcalUnit": "Kcal",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat",
+    "fiber": "Fiber",
+    "fatLow": "⚠ Low fat",
+    "fatLowLabel": "Why low fat",
+    "fatLowHelpLabel": "Fat info",
+    "fatLowHelp": "You are below the healthy fat minimum (20% of your kcal). Fat is essential for hormones and for absorbing vitamins.",
+    "totalRow": "Total",
+    "emptyDay": "No meals yet"
+  },
   "shopping": {
     "open": "Shopping list",
     "title": "Shopping list",

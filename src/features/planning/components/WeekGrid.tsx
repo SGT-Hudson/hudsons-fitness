@@ -1,7 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { addDays, parseISO } from 'date-fns';
 import { SlotCell, type SlotEntry } from './SlotCell';
+import { DaySummary } from './DaySummary';
+import { aggregateDayMacros } from '@/features/planning/daySummary';
+import { ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { formatDate, type Locale } from '@/lib/dates';
+import type { PhaseType } from '@/lib/macroStatus';
 import type { WeekSlotWithRecipe } from '@/features/planner/api';
 
 interface Props {
@@ -22,6 +26,8 @@ interface Props {
   ) => void | Promise<void>;
   onRemove: (slotId: string) => void | Promise<void>;
   busy?: boolean;
+  targets?: Macros;
+  phaseType?: PhaseType;
 }
 
 interface DayBucket {
@@ -38,6 +44,8 @@ export function WeekGrid({
   onUpdate,
   onRemove,
   busy,
+  targets,
+  phaseType,
 }: Props) {
   const { t, i18n } = useTranslation('planning');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
@@ -72,6 +80,8 @@ export function WeekGrid({
     day.meals.set(key, bucket);
   }
 
+  const dayTotals = aggregateDayMacros(slots.map((s) => ({ key: s.date, macros: s.macros })));
+
   return (
     <div className="overflow-x-auto -mx-2 px-2">
       <div
@@ -103,6 +113,12 @@ export function WeekGrid({
                   {formatDate(date, 'd MMM', locale)}
                 </span>
               </div>
+              <DaySummary
+                totals={dayTotals.get(day.date) ?? ZERO_MACROS}
+                targets={targets}
+                phaseType={phaseType}
+                className="pb-2 border-b"
+              />
               {buckets.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-2">{t('week.noSlots')}</p>
               ) : (
