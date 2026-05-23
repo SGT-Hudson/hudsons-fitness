@@ -19,9 +19,22 @@ export async function fetchRecipeMacrosByIds(ids: string[]): Promise<Map<string,
     )
     .in('id', ids);
   if (error) throw error;
+  interface RawIng {
+    unit_type: string;
+    kcal_per_unit: number | string | null;
+    protein_g_per_unit: number | string | null;
+    carbs_g_per_unit: number | string | null;
+    fat_g_per_unit: number | string | null;
+    fiber_g_per_unit: number | string | null;
+  }
+  interface RawRi {
+    quantity: number | string;
+    per_serving: boolean;
+    ingredient: RawIng | RawIng[] | null;
+  }
   for (const r of (data ?? []) as unknown as Array<{
     id: string; servings: number;
-    recipe_ingredients: Array<{ quantity: number; per_serving: boolean; ingredient: any }>;
+    recipe_ingredients: RawRi[];
   }>) {
     const rows = (r.recipe_ingredients ?? []).map((ri) => {
       const ing = Array.isArray(ri.ingredient) ? ri.ingredient[0] : ri.ingredient;
