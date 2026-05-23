@@ -2,7 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { roundMacro, type Macros } from '@/features/recipes/macros';
+import { roundMacro, type Macros, type SubMacros } from '@/features/recipes/macros';
+import type { PartialSub } from '@/core/subMacros';
 import type { TdeeConfidence } from '@/features/tdee/api';
 import {
   classifyMacro,
@@ -16,11 +17,36 @@ export type ProteinBasis = 'lean' | 'fallback';
 
 interface Props {
   totals: Macros;
+  /** Optional sugar + saturated-fat totals (U-1, honest-partial). */
+  subTotals?: SubMacros;
   targets?: Macros;
   proteinBasis?: ProteinBasis;
   tdeeConfidence?: TdeeConfidence | null;
   /** Active phase type — drives kcal budget vs goal semantics (Theme 1). */
   phaseType?: PhaseType;
+}
+
+/** Secondary "of which" line: sugar / saturated fat, honest about missing data. */
+function SubMacroLine({ label, part }: { label: string; part: PartialSub }) {
+  const { t } = useTranslation('diario');
+  const incomplete = part.missing > 0;
+  const qualifier = t('totals.subPartial', { count: part.missing });
+  return (
+    <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <span>{label}</span>
+      <span className="tabular-nums">
+        {part.known === 0 && incomplete ? (
+          qualifier
+        ) : (
+          <>
+            {incomplete && '≥ '}
+            {roundMacro(part.known)} g
+            {incomplete && <span className="ml-1">· {qualifier}</span>}
+          </>
+        )}
+      </span>
+    </div>
+  );
 }
 
 const TEXT_TONE: Record<MacroTone, string> = {
@@ -104,6 +130,7 @@ function MacroBlock({
 
 export function DayTotalsCard({
   totals,
+  subTotals,
   targets,
   proteinBasis,
   tdeeConfidence,
@@ -203,6 +230,13 @@ export function DayTotalsCard({
             phaseType={phaseType}
           />
         </div>
+
+        {subTotals && (
+          <div className="mt-4 pt-4 border-t space-y-1.5">
+            <SubMacroLine label={t('totals.sugar')} part={subTotals.sugarG} />
+            <SubMacroLine label={t('totals.satFat')} part={subTotals.satFatG} />
+          </div>
+        )}
 
         {!targets && (
           <p className="mt-4 text-xs text-muted-foreground">{t('totals.targetsHint')}</p>
