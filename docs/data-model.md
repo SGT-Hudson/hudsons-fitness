@@ -57,13 +57,14 @@ Note: there is no `bone_kg` column here — bone mass is stored once per user on
 
 ### `ingredients` (shared library)
 
-Shared across all users (crowdsourced library). `created_by_user_id = null` indicates a system-seeded ingredient (immutable). Trigram indexes `idx_ingredients_name_trgm` (gin on `name`) and `idx_ingredients_brand_trgm` (gin on `brand` where `brand is not null`).
+Shared across all users (crowdsourced library). `created_by_user_id = null` indicates a system-seeded ingredient (immutable). Trigram indexes `idx_ingredients_name_trgm` (gin on `name`), `idx_ingredients_name_en_trgm` (gin on `name_en` where not null), and `idx_ingredients_brand_trgm` (gin on `brand` where `brand is not null`).
 
 | Column | Type / constraint |
 |---|---|
 | `id` | `uuid` primary key default `gen_random_uuid()` |
 | `created_by_user_id` | `uuid`, references `profiles(id)` on delete set null |
 | `name` | `text` not null |
+| `name_en` | `text` — optional EN secondary name; `name` is the ES-primary (F-1) |
 | `brand` | `text` |
 | `unit_type` | `text` not null default `'gram'`, check in (`'gram'`, `'unit'`) |
 | `kcal_per_unit` | `numeric(7,2)` not null |

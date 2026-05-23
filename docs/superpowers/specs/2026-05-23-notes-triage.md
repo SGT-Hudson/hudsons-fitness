@@ -154,7 +154,7 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   (Spanish food composition DB) preferred over translating the German DBs the user
   has. Interacts with R-01 shared-pool library model + the metric-only invariant.
   Licensing of BEDCA needs checking.
-- **status:** triage
+- **status:** **done (2026-05-23)** — curated 215-item generic whole-foods system seed (USDA SR Legacy, per-100 g) + additive `ingredients.name_en` (bilingual) with locale-aware display/search. spec+plan in `docs/superpowers/`.
 
 ### F-2 — Training routines + non-week-based planner
 - **raw:** "I want a way to create routines. The planner can be similar to the
