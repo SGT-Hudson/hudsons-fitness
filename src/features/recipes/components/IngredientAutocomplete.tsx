@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useLocalIngredientSearch } from '@/features/ingredients/hooks';
 import { IngredientDialog } from '@/features/ingredients/components/IngredientDialog';
-import type { Ingredient } from '@/features/ingredients/api';
+import { ingredientDisplayName, type Ingredient } from '@/features/ingredients/api';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -24,7 +24,8 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export function IngredientAutocomplete({ selected, onSelect, onClear }: Props) {
-  const { t } = useTranslation('recetas');
+  const { t, i18n } = useTranslation('recetas');
+  const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const debounced = useDebouncedValue(query, 200);
@@ -49,7 +50,7 @@ export function IngredientAutocomplete({ selected, onSelect, onClear }: Props) {
   if (selected) {
     return (
       <div className="flex items-center gap-2 w-full rounded-md border border-input bg-background px-3 h-10 text-sm">
-        <span className="font-medium truncate flex-1 min-w-0">{selected.name}</span>
+        <span className="font-medium truncate flex-1 min-w-0">{ingredientDisplayName(selected, lang)}</span>
         {selected.brand && (
           <span className="text-muted-foreground truncate text-xs">{selected.brand}</span>
         )}
@@ -117,7 +118,7 @@ export function IngredientAutocomplete({ selected, onSelect, onClear }: Props) {
                     }}
                   >
                     <span className="flex-1 min-w-0">
-                      <span className="font-medium truncate">{ing.name}</span>
+                      <span className="font-medium truncate">{ingredientDisplayName(ing, lang)}</span>
                       {ing.brand && (
                         <span className="text-muted-foreground ml-2 text-xs">{ing.brand}</span>
                       )}
