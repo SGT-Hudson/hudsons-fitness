@@ -105,7 +105,16 @@ export function RecipePickerDialog({
           <DialogTitle>{isEdit ? t('picker.editTitle') : t('picker.addTitle')}</DialogTitle>
           <DialogDescription>{t('picker.subtitle')}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onValid)} className="space-y-4">
+        <form
+          // The dialog is portaled but stays in the React tree, so its submit
+          // would otherwise bubble to an ancestor <form> (e.g. the template
+          // editor), saving stale state + navigating away. Stop it at the source.
+          onSubmit={(e) => {
+            e.stopPropagation();
+            void handleSubmit(onValid)(e);
+          }}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label>{t('picker.recipe')}</Label>
             <RecipeAutocomplete
