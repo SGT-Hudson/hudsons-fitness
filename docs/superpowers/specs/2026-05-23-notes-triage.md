@@ -83,7 +83,24 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
 - **read:** While planning a day, surface the user's phase-derived target kcal/macros
   and the running day total, with over/under feedback. Targets already exist
   (`computeDailyMacroTargets`, R-05). This is wiring + UI in the planner.
-- **status:** triage
+- **decisions (2026-05-23):**
+  - **Scope:** planner (`WeekGrid`, summary at top of each day card) **and** the
+    template editor (`TemplateGrid`, a "Total" row per day column). Same shared
+    `<DaySummary>` component; reference target = the user's current phase target,
+    applied to all days. Meal-cell restyle → **deferred to U-8**.
+  - **Phase-aware kcal bands** (absolute margins): cut → blue `<−50` / green `±50` /
+    amber `+50…+100` / red `>+100`; bulk → red `<−50` ("no llegas", incl. today) /
+    green `−50…+200` / amber `>+200`; maintenance → existing ±5% band, unchanged.
+  - **Macros:** protein/fibra are floors (over = **dark-green** excess; under = silent
+    grey — the old low-fiber amber/warning is **removed**). Grasa gains an
+    **essential-fat floor = 20%E** (below → red "⚠ Falta grasa" + min-line tick + `?`).
+    Carbs/grasa over → **dark-red** excess. `?` lives inside an aviso (no aviso → no `?`).
+  - **Shared classifier** (`classifyMacro`) moves to `src/lib/macroStatus.ts`; the bar
+    changes also apply to the Diario `DayTotalsCard` (intended consistency).
+  - **Display-only** — no SQL macro math, no edge/parity changes; macros computed
+    in-memory via the existing core from an ingredient-bearing fetch.
+- **spec:** `2026-05-23-planner-day-targets-design.md`
+- **status:** specced (awaiting user review of the spec before writing the plan)
 
 ### U-6 — Copy/paste a "meal" across days
 - **raw:** "hay que añadir la opcion en el creador de templates y en el planificador
@@ -99,7 +116,12 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   cuantos ingredientes."
 - **read:** Small UX fix — the ingredient picker should not open its list on focus;
   only after the user starts typing a query.
-- **status:** triage
+- **decisions (2026-05-23):** open the dropdown only when `query.trim()` is non-empty
+  (≥1 char; local search is in-memory so no 2–3 char gate); empty focus shows nothing
+  (no dropdown, no "recents"), and the empty-query local search is not run. The
+  "+ Crear «X»" affordance is unchanged. Isolated to `IngredientAutocomplete`.
+- **spec:** `2026-05-23-ingredient-picker-defer-design.md`
+- **status:** specced (awaiting user review of the spec before writing the plan)
 
 ### U-8 — Visual attractiveness pass (richer styling, NOT fewer tables/graphs)
 - **raw:** "I want a more visual atractive app and website. Right now there is a lot
