@@ -13,10 +13,8 @@ import {
   type MacroKey,
   type MacroTone,
   type PhaseType,
+  type ProteinBasis,
 } from '@/lib/macroStatus';
-
-/** Which protein basis the active target was computed on (D-B1). */
-export type ProteinBasis = 'lean' | 'fallback';
 
 interface Props {
   totals: Macros;
