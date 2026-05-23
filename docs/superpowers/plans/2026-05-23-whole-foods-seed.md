@@ -69,35 +69,34 @@ git commit -m "feat(f1): add ingredients.name_en column + trigram index"
 
 ---
 
-## Task 2: Apply schema migration + regenerate types **[CHECKPOINT — needs user approval]**
+## Task 2: Add `name_en` to the generated types (hand-edit; regen reconciles at Task 8)
+
+The types are generated from prod, but applying the migration to prod now (just to
+regen) would force an early prod checkpoint and stall execution. Instead hand-add
+`name_en` to keep the branch CI-green; the real `supabase gen types` run at the
+Task 8 checkpoint (after both migrations are applied) reproduces this identically.
+R-03 used the same hand-edit-until-regen bridge.
 
 **Files:**
 - Modify: `src/types/database.ts`
 
-- [ ] **Step 1: Apply migration 1 to the Supabase project**
+- [ ] **Step 1: Hand-add `name_en` to the `ingredients` type**
 
-Use the Supabase MCP `apply_migration` with the contents of `20260523120000_f1_ingredients_name_en.sql` (name: `f1_ingredients_name_en`). Confirm success with `list_migrations`.
+In `src/types/database.ts`, locate the `ingredients` table block (Row / Insert / Update). Mirror the shape `exercises` already uses for `name_en`:
+- In `Row`: add `name_en: string | null` (next to the existing `name: string`).
+- In `Insert`: add `name_en?: string | null`.
+- In `Update`: add `name_en?: string | null`.
 
-- [ ] **Step 2: Regenerate the generated types**
-
-Run (per `docs/operations.md`):
-`supabase gen types typescript --project-id upvraruehzurbetzrxov > src/types/database.ts`
-
-- [ ] **Step 3: Verify `name_en` landed on the ingredients type**
-
-Run: `git diff src/types/database.ts`
-Expected: `ingredients` Row gains `name_en: string | null`; Insert/Update gain `name_en?: string | null`.
-
-- [ ] **Step 4: Typecheck**
+- [ ] **Step 2: Typecheck**
 
 Run: `pnpm typecheck`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
 git add src/types/database.ts
-git commit -m "chore(f1): regenerate types for ingredients.name_en"
+git commit -m "chore(f1): add ingredients.name_en to generated types (hand-bridge)"
 ```
 
 ---
@@ -612,22 +611,36 @@ git commit -m "feat(f1): curated whole-foods seed (~240 generic basics)"
 
 ---
 
-## Task 8: Apply seed + verify end-to-end **[CHECKPOINT — needs user approval]**
+## Task 8: Apply both migrations + regen types + verify end-to-end **[CHECKPOINT — needs user approval]**
 
-- [ ] **Step 1: Apply migration 2 to the Supabase project**
+- [ ] **Step 1: Apply migration 1 (schema) to the Supabase project**
+
+Use Supabase MCP `apply_migration` with the contents of `20260523120000_f1_ingredients_name_en.sql` (name: `f1_ingredients_name_en`). Confirm with `list_migrations`.
+
+- [ ] **Step 2: Apply migration 2 (seed) to the Supabase project**
 
 Use Supabase MCP `apply_migration` with the contents of `20260523120100_f1_whole_foods_seed.sql` (name: `f1_whole_foods_seed`). Confirm with `execute_sql`: `select count(*) from ingredients where source='system';` → ~240.
 
-- [ ] **Step 2: Run the full suite**
+- [ ] **Step 3: Regenerate types (reconciles the Task 2 hand-edit)**
+
+Run (per `docs/operations.md`):
+`supabase gen types typescript --project-id upvraruehzurbetzrxov > src/types/database.ts`
+Then `git diff src/types/database.ts` — expect no change vs. the Task 2 hand-edit (or a trivial reconcile). Commit if it differs:
+```bash
+git add src/types/database.ts
+git commit -m "chore(f1): regenerate types after applying name_en migration"
+```
+
+- [ ] **Step 4: Run the full suite**
 
 Run: `pnpm lint && pnpm build && pnpm test`
 Expected: all PASS (CI gate).
 
-- [ ] **Step 3: Manual verification on the develop preview**
+- [ ] **Step 5: Manual verification on the develop preview**
 
 In the recipe editor's ingredient autocomplete, type "arroz" (ES locale) and "rice" (EN locale); confirm the seeded whole food appears in both, with the locale-correct name, and selecting it fills correct per-100 g macros. Confirm an OFF/manual ingredient (null `name_en`) still shows its `name` in EN.
 
-- [ ] **Step 4: No commit** (verification only).
+- [ ] **Step 6: No further commit** (verification only).
 
 ---
 
