@@ -38,6 +38,7 @@ export function RecetaEditorPage() {
         servings: Number(state.servings),
         description: state.description.trim() === '' ? null : state.description.trim(),
         instructions: state.instructions.trim() === '' ? null : state.instructions.trim(),
+        mealTypes: state.mealTypes,
         ingredients: state.rows
           .filter((r) => r.ingredient && Number(r.quantity) > 0)
           .map((r, i) => ({

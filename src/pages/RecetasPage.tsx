@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { toRecipeMealTypes } from '@/features/recipes/mealTypes';
 import { useHideRecipe, useRecipes } from '@/features/recipes/hooks';
 import { partitionFavorites, toggleFavorite } from '@/features/recipes/favorites';
 import { formatDate, type Locale } from '@/lib/dates';
@@ -159,6 +161,15 @@ export function RecetasPage() {
                   <p className="text-xs text-muted-foreground">
                     {t('list.updated', { date: formatDate(r.updated_at, 'd MMM yyyy', locale) })}
                   </p>
+                  {r.meal_types.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {toRecipeMealTypes(r.meal_types).map((m) => (
+                        <Badge key={m} variant="secondary">
+                          {t(`mealTypes.${m}`)}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex justify-end gap-1">
                     <Button
                       variant="ghost"
@@ -214,6 +225,15 @@ export function RecetasPage() {
                       {t('list.updated', { date: formatDate(r.updated_at, 'd MMM yyyy', locale) })}
                     </span>
                   </div>
+                  {r.meal_types.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {toRecipeMealTypes(r.meal_types).map((m) => (
+                        <Badge key={m} variant="secondary">
+                          {t(`mealTypes.${m}`)}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="shrink-0 flex items-center gap-1">
                   <Button

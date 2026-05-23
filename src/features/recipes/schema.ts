@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { pickFirstError } from '@/lib/zod';
+import { recipeMealTypeSchema } from './mealTypes';
 
 // Co-located zod schema for the recipe editor form (D-C2/D-C3, R-09).
 //
@@ -46,6 +47,8 @@ export const recipeFormSchema = z
     description: z.string(),
     instructions: z.string(),
     rows: z.array(rowSchema),
+    // U-2: optional meal-type tags, any combination (empty = untagged).
+    mealTypes: z.array(recipeMealTypeSchema).default([]),
   })
   .superRefine((v, ctx) => {
     if (v.name.trim() === '') {

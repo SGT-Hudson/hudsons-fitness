@@ -36,7 +36,15 @@
     "addRow": "Añadir ingrediente",
     "quantity": "Cantidad",
     "perServing": "Por ración",
-    "units": "ud"
+    "units": "ud",
+    "mealTypes": "Tipos de comida"
+  },
+  "mealTypes": {
+    "breakfast": "Desayuno",
+    "lunch": "Comida",
+    "snack": "Snack",
+    "dinner": "Cena",
+    "dessert": "Postre"
   },
   "macros": {
     "title": "Macros",

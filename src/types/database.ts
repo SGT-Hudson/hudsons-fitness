@@ -752,12 +752,15 @@ export type Database = {
         // (staged migration 20260520120030); `user_id` → `created_by_user_id`
         // (same migration; semantic shift from per-user FK to the
         // three-state pool-owner pointer matching `ingredients`).
+        // U-2 interim hand-edit (until R-04 regen): + meal_types text[]
+        // (migration 20260526120000).
         Row: {
           created_at: string
           created_by_user_id: string | null
           description: string | null
           id: string
           instructions: string | null
+          meal_types: string[]
           name: string
           photo_url: string | null
           servings: number
@@ -769,6 +772,7 @@ export type Database = {
           description?: string | null
           id?: string
           instructions?: string | null
+          meal_types?: string[]
           name: string
           photo_url?: string | null
           servings?: number
@@ -780,6 +784,7 @@ export type Database = {
           description?: string | null
           id?: string
           instructions?: string | null
+          meal_types?: string[]
           name?: string
           photo_url?: string | null
           servings?: number
@@ -1125,10 +1130,13 @@ export type Database = {
         Returns: number
       }
       save_recipe: {
+        // U-2 interim hand-edit (until R-04 regen): + p_meal_types (defaulted,
+        // so optional) — see migration 20260526120000_u2_recipe_meal_types.sql.
         Args: {
           p_description: string | null
           p_ingredients: Json
           p_instructions: string | null
+          p_meal_types?: string[]
           p_name: string
           p_recipe_id: string | null
           p_servings: number
