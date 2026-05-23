@@ -26,6 +26,8 @@ export const emptyForm: IngredientFormState = {
   carbs_g_per_unit: '',
   fat_g_per_unit: '',
   fiber_g_per_unit: '',
+  sugar_g_per_unit: '',
+  saturated_fat_g_per_unit: '',
 };
 
 interface Props {
@@ -40,6 +42,13 @@ export function IngredientFormFields({ value, onChange, idPrefix = 'ing' }: Prop
     onChange({ ...value, [key]: v });
   }
   const unitSuffix = value.unit_type === 'unit' ? t('form.perUnit') : t('form.per100g');
+  // Soft, non-blocking sanity check: sugar ⊂ carbs, saturated ⊂ fat. Only when
+  // both sides are filled in (blank = unknown). Never blocks save.
+  const exceeds = (sub: string, parent: string) =>
+    sub.trim() !== '' && parent.trim() !== '' && Number(sub) > Number(parent);
+  const showSubWarning =
+    exceeds(value.sugar_g_per_unit, value.carbs_g_per_unit) ||
+    exceeds(value.saturated_fat_g_per_unit, value.fat_g_per_unit);
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-4">
@@ -125,7 +134,26 @@ export function IngredientFormFields({ value, onChange, idPrefix = 'ing' }: Prop
             min={0}
             max={100}
           />
+          <NumberField
+            id={`${idPrefix}-sugar`}
+            label={t('form.sugar')}
+            value={value.sugar_g_per_unit}
+            onChange={(v) => set('sugar_g_per_unit', v)}
+            min={0}
+            max={100}
+          />
+          <NumberField
+            id={`${idPrefix}-satfat`}
+            label={t('form.satFat')}
+            value={value.saturated_fat_g_per_unit}
+            onChange={(v) => set('saturated_fat_g_per_unit', v)}
+            min={0}
+            max={100}
+          />
         </div>
+        {showSubWarning && (
+          <p className="text-xs text-amber-600 dark:text-amber-500">{t('form.subMacroWarning')}</p>
+        )}
       </div>
     </div>
   );
@@ -171,6 +199,8 @@ export function ingredientToForm(ing: {
   carbs_g_per_unit: number;
   fat_g_per_unit: number;
   fiber_g_per_unit: number;
+  sugar_g_per_unit?: number | null;
+  saturated_fat_g_per_unit?: number | null;
 }): IngredientFormState {
   return {
     name: ing.name,
@@ -181,6 +211,10 @@ export function ingredientToForm(ing: {
     carbs_g_per_unit: String(ing.carbs_g_per_unit),
     fat_g_per_unit: String(ing.fat_g_per_unit),
     fiber_g_per_unit: String(ing.fiber_g_per_unit),
+    // NULL (unknown) → blank input, NOT "0".
+    sugar_g_per_unit: ing.sugar_g_per_unit == null ? '' : String(ing.sugar_g_per_unit),
+    saturated_fat_g_per_unit:
+      ing.saturated_fat_g_per_unit == null ? '' : String(ing.saturated_fat_g_per_unit),
   };
 }
 
@@ -193,6 +227,8 @@ export interface ParsedIngredient {
   carbs_g_per_unit: number;
   fat_g_per_unit: number;
   fiber_g_per_unit: number;
+  sugar_g_per_unit: number | null;
+  saturated_fat_g_per_unit: number | null;
 }
 
 /**
@@ -214,5 +250,7 @@ export function parseForm(form: IngredientFormState): ParsedIngredient | null {
     carbs_g_per_unit: v.carbs_g_per_unit,
     fat_g_per_unit: v.fat_g_per_unit,
     fiber_g_per_unit: v.fiber_g_per_unit,
+    sugar_g_per_unit: v.sugar_g_per_unit,
+    saturated_fat_g_per_unit: v.saturated_fat_g_per_unit,
   };
 }
