@@ -8,7 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { toRecipeMealTypes } from '@/features/recipes/mealTypes';
+import {
+  RECIPE_MEAL_TYPES,
+  toRecipeMealTypes,
+  type RecipeMealType,
+} from '@/features/recipes/mealTypes';
+import { RECIPE_GOAL_KEYS, type RecipeGoalKey, type RecipeLabels } from '@/features/recipes/labels';
+import { isRecipeFilterActive, matchesRecipeFilter } from '@/features/recipes/recipeFilter';
 import { useHideRecipe, useRecipes } from '@/features/recipes/hooks';
 import { partitionFavorites, toggleFavorite } from '@/features/recipes/favorites';
 import { formatDate, type Locale } from '@/lib/dates';
@@ -28,6 +34,36 @@ function loadFavorites(): Set<string> {
   }
 }
 
+function hasWarnings(labels: RecipeLabels): boolean {
+  return labels.warnings.highSugar === true || labels.warnings.highSatFat === true;
+}
+
+function FilterChip({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'rounded-full border px-3 py-1 text-xs transition-colors',
+        active
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-input bg-background text-muted-foreground hover:bg-accent',
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
 export function RecetasPage() {
   const { t, i18n } = useTranslation('recetas');
   const { t: tCommon } = useTranslation('common');
@@ -39,7 +75,20 @@ export function RecetasPage() {
     return (window.localStorage.getItem(STORAGE_KEY) as View) || 'grid';
   });
   const [query, setQuery] = useState('');
+  const [selectedMealTypes, setSelectedMealTypes] = useState<RecipeMealType[]>([]);
+  const [selectedGoals, setSelectedGoals] = useState<RecipeGoalKey[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
+
+  function toggleMealType(key: RecipeMealType) {
+    setSelectedMealTypes((prev) =>
+      prev.includes(key) ? prev.filter((m) => m !== key) : [...prev, key],
+    );
+  }
+  function toggleGoal(key: RecipeGoalKey) {
+    setSelectedGoals((prev) =>
+      prev.includes(key) ? prev.filter((g) => g !== key) : [...prev, key],
+    );
+  }
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, view);
@@ -59,12 +108,21 @@ export function RecetasPage() {
   const recipes = useRecipes();
   const hide = useHideRecipe();
 
+  const filter = useMemo(
+    () => ({ query, mealTypes: selectedMealTypes, goals: selectedGoals }),
+    [query, selectedMealTypes, selectedGoals],
+  );
+  const filterActive = isRecipeFilterActive(filter);
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
     if (!recipes.data) return [];
-    if (q === '') return recipes.data;
-    return recipes.data.filter((r) => r.name.toLowerCase().includes(q));
-  }, [recipes.data, query]);
+    return recipes.data.filter((r) =>
+      matchesRecipeFilter(
+        { name: r.name, mealTypes: r.meal_types, labels: r.labels },
+        filter,
+      ),
+    );
+  }, [recipes.data, filter]);
 
   const ordered = useMemo(
     () => partitionFavorites(filtered, favorites),
@@ -122,6 +180,30 @@ export function RecetasPage() {
         />
       </div>
 
+      {/* U-3 facets: meal-type tags (OR within) + nutrition goal filters (AND). */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground mr-1">{t('form.mealTypes')}</span>
+        {RECIPE_MEAL_TYPES.map((key) => (
+          <FilterChip
+            key={key}
+            active={selectedMealTypes.includes(key)}
+            label={t(`mealTypes.${key}`)}
+            onClick={() => toggleMealType(key)}
+          />
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground mr-1">{t('filters.heading')}</span>
+        {RECIPE_GOAL_KEYS.map((key) => (
+          <FilterChip
+            key={key}
+            active={selectedGoals.includes(key)}
+            label={t(`filters.${key}`)}
+            onClick={() => toggleGoal(key)}
+          />
+        ))}
+      </div>
+
       {recipes.isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -137,7 +219,7 @@ export function RecetasPage() {
       ) : filtered.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
-            {recipes.data?.length === 0 ? t('list.empty') : t('list.noMatch')}
+            {filterActive ? t('list.noMatch') : t('list.empty')}
           </CardContent>
         </Card>
       ) : view === 'grid' ? (
@@ -161,13 +243,19 @@ export function RecetasPage() {
                   <p className="text-xs text-muted-foreground">
                     {t('list.updated', { date: formatDate(r.updated_at, 'd MMM yyyy', locale) })}
                   </p>
-                  {r.meal_types.length > 0 && (
+                  {(r.meal_types.length > 0 || hasWarnings(r.labels)) && (
                     <div className="flex flex-wrap gap-1">
                       {toRecipeMealTypes(r.meal_types).map((m) => (
                         <Badge key={m} variant="secondary">
                           {t(`mealTypes.${m}`)}
                         </Badge>
                       ))}
+                      {r.labels.warnings.highSugar === true && (
+                        <Badge variant="warning">{t('warnings.highSugar')}</Badge>
+                      )}
+                      {r.labels.warnings.highSatFat === true && (
+                        <Badge variant="warning">{t('warnings.highSatFat')}</Badge>
+                      )}
                     </div>
                   )}
                   <div className="flex justify-end gap-1">
@@ -225,13 +313,19 @@ export function RecetasPage() {
                       {t('list.updated', { date: formatDate(r.updated_at, 'd MMM yyyy', locale) })}
                     </span>
                   </div>
-                  {r.meal_types.length > 0 && (
+                  {(r.meal_types.length > 0 || hasWarnings(r.labels)) && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {toRecipeMealTypes(r.meal_types).map((m) => (
                         <Badge key={m} variant="secondary">
                           {t(`mealTypes.${m}`)}
                         </Badge>
                       ))}
+                      {r.labels.warnings.highSugar === true && (
+                        <Badge variant="warning">{t('warnings.highSugar')}</Badge>
+                      )}
+                      {r.labels.warnings.highSatFat === true && (
+                        <Badge variant="warning">{t('warnings.highSatFat')}</Badge>
+                      )}
                     </div>
                   )}
                 </div>
