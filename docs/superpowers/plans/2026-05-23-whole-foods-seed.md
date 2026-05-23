@@ -436,7 +436,18 @@ if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
 Run: `pnpm vitest run scripts/whole-foods/build-seed.test.ts`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Write the README**
+- [ ] **Step 5: Add a runner (tsx is not yet a dependency)**
+
+Run: `pnpm add -D tsx`
+Then add to `package.json` `scripts`:
+
+```json
+    "whole-foods:build": "tsx scripts/whole-foods/build-seed.ts",
+```
+
+Invoke as `pnpm whole-foods:build <path-to-sr_legacy.json>` (passes the path through as `process.argv[2]`).
+
+- [ ] **Step 6: Write the README**
 
 Create `scripts/whole-foods/README.md`:
 
@@ -451,13 +462,13 @@ Create `scripts/whole-foods/README.md`:
    Pick the generic *raw/dry* SR Legacy entry (e.g. "Rice, white, long-grain,
    regular, raw, unenriched"). The `fdc_id` is the provenance record.
 3. Generate the seed migration:
-   `pnpm tsx scripts/whole-foods/build-seed.ts /path/to/sr_legacy.json`
+   `pnpm whole-foods:build /path/to/sr_legacy.json`
    The script fails loudly if any `fdc_id` is absent or any food lacks energy.
 4. Spot-check ~10 generated rows against the FDC web entries, then commit the
    migration.
 ```
 
-- [ ] **Step 6: Gitignore the dataset**
+- [ ] **Step 7: Gitignore the dataset**
 
 Add to `.gitignore`:
 
@@ -465,10 +476,10 @@ Add to `.gitignore`:
 scripts/whole-foods/*sr_legacy*.json
 ```
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add scripts/whole-foods/build-seed.ts scripts/whole-foods/build-seed.test.ts scripts/whole-foods/README.md .gitignore
+git add scripts/whole-foods/build-seed.ts scripts/whole-foods/build-seed.test.ts scripts/whole-foods/README.md package.json pnpm-lock.yaml .gitignore
 git commit -m "feat(f1): whole-foods seed build pipeline"
 ```
 
@@ -498,7 +509,7 @@ Rules: raw/dry canonical form; no branded/processed/canned items; ES name is the
 
 - [ ] **Step 2: Generate the seed migration**
 
-Run: `pnpm tsx scripts/whole-foods/build-seed.ts ./scripts/whole-foods/<sr_legacy_file>.json`
+Run: `pnpm whole-foods:build ./scripts/whole-foods/<sr_legacy_file>.json`
 Expected: `wrote 24x rows -> supabase/migrations/20260523120100_f1_whole_foods_seed.sql`. If it throws on a missing `fdc_id` or missing energy, fix that entry in `foods.json` and re-run.
 
 - [ ] **Step 3: Eyeball the generated SQL**
