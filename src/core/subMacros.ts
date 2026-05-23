@@ -9,7 +9,13 @@
 // Same rules as `macros.ts`: dependency-free, runtime-agnostic, camelCase;
 // imported directly by the Vite client and the Deno edge.
 
-import type { Numeric } from './macros';
+// Numeric is re-declared locally (rather than imported from `./macros`) so this
+// module has NO intra-core relative import: the client resolves `@/core/*` via
+// alias (no extension) while Deno's strict `deno check` requires a `.ts`
+// extension on relative imports — a local type alias sidesteps that conflict.
+// Identical to `macros.ts`'s `Numeric`; the R-16 golden-vector parity net guards
+// against drift. PostgREST returns numeric columns as strings, hence `| string`.
+type Numeric = number | string;
 
 /** One optional sub-macro carried through aggregation. */
 export interface PartialSub {
