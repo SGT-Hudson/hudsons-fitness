@@ -24,6 +24,21 @@ export interface MacroStatus {
 /** Maintenance kcal is "on target" within ±this percent of the target. */
 export const KCAL_MAINTENANCE_BAND_PCT = 5 as const;
 
+/** Absolute kcal margins (named so they're trivially tunable). */
+export const KCAL_CUT_GREEN_MARGIN = 50 as const;
+export const KCAL_CUT_AMBER_MARGIN = 100 as const;
+export const KCAL_BULK_GREEN_UNDER_MARGIN = 50 as const;
+export const KCAL_BULK_SURPLUS_HIGH_MARGIN = 200 as const;
+
+/** Essential-fat floor as a percent of target energy (U-5). */
+export const ESSENTIAL_FAT_PCT_OF_KCAL = 20 as const;
+
+/** Essential-fat minimum in grams, derived from target kcal (9 kcal/g). */
+export function essentialFatFloorG(targetKcal: number): number {
+  if (!Number.isFinite(targetKcal) || targetKcal <= 0) return 0;
+  return Math.round((ESSENTIAL_FAT_PCT_OF_KCAL / 100) * targetKcal / 9);
+}
+
 /**
  * Classify a macro's status for the Diario targets card.
  *

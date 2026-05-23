@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyMacro, KCAL_MAINTENANCE_BAND_PCT } from './macroStatus';
+import { classifyMacro, KCAL_MAINTENANCE_BAND_PCT, essentialFatFloorG, ESSENTIAL_FAT_PCT_OF_KCAL } from './macroStatus';
 
 describe('classifyMacro', () => {
   it('no target → flex', () => {
@@ -71,5 +71,16 @@ describe('classifyMacro', () => {
 
   it('exposes the maintenance band constant', () => {
     expect(KCAL_MAINTENANCE_BAND_PCT).toBe(5);
+  });
+});
+
+describe('essentialFatFloorG', () => {
+  it('is 20% of target kcal converted to grams (9 kcal/g), rounded', () => {
+    expect(ESSENTIAL_FAT_PCT_OF_KCAL).toBe(20);
+    expect(essentialFatFloorG(2000)).toBe(44); // 2000 → 400 kcal → 44.4 g → 44
+    expect(essentialFatFloorG(3000)).toBe(67); // 3000 → 600 → 66.7 → 67
+  });
+  it('is 0 for a non-positive target', () => {
+    expect(essentialFatFloorG(0)).toBe(0);
   });
 });
