@@ -6,19 +6,29 @@ export type MacroKey = 'kcal' | 'proteinG' | 'carbsG' | 'fatG' | 'fiberG';
 export type PhaseType = 'cut' | 'maintenance' | 'bulk';
 
 export type MacroTone =
-  | 'budget' // in budget / to-go (blue)
-  | 'overBudget' // over a kcal ceiling (red)
-  | 'floorMet' // floor reached: protein/fiber met, bulk kcal reached (green)
-  | 'floorUnderSoft' // protein under: just "remaining" (neutral)
-  | 'floorUnderWarn' // fiber under a health minimum (amber)
-  | 'flex'; // carbs/fat informational, or no target (grey)
+  | 'budget'      // blue  — comfortably in budget (cut under, maintenance under-band)
+  | 'onTarget'    // green — kcal within the on-target band
+  | 'floorMet'    // green — protein/fiber floor met or exceeded
+  | 'slightOver'  // amber — cut kcal +50..+100 tolerance
+  | 'surplusHigh' // amber — bulk kcal > +200
+  | 'over'        // red   — cut > +100 / maintenance > +5% / bulk under (not there yet)
+  | 'fatLow'      // red   — fat below the essential floor
+  | 'neutral';    // grey  — informational (carbs; protein/fiber under; fat in [floor,target]; no target)
+
+/** Colour of the over-target segment: good (dark green), bad (dark red), tolerance (dark amber), or none. */
+export type ExcessKind = 'good' | 'bad' | 'tolerance' | null;
 
 export interface MacroStatus {
-  /** target - consumed; may be negative when over. */
+  /** target - consumed; negative when over. */
   remaining: number;
-  /** clamp(consumed / target, 0, 1) * 100. */
+  /** clamp(consumed/target, 0, 1) * 100 — the in-budget fill. */
   fillPct: number;
+  /** max(0, consumed - target). */
+  overG: number;
   tone: MacroTone;
+  excess: ExcessKind;
+  /** Fat only: the essential floor in grams, set when fat is low (drives the min tick). */
+  minFloorG?: number;
 }
 
 /** Maintenance kcal is "on target" within ±this percent of the target. */
@@ -39,48 +49,54 @@ export function essentialFatFloorG(targetKcal: number): number {
   return Math.round((ESSENTIAL_FAT_PCT_OF_KCAL / 100) * targetKcal / 9);
 }
 
-/**
- * Classify a macro's status for the Diario targets card.
- *
- * @param phaseType Active dietary phase. Defaults to `'cut'` for kcal when
- *   `undefined` (e.g. before phase data resolves); callers should pass the
- *   real phase once loaded so bulk/maintenance kcal isn't shown as a deficit.
- */
 export function classifyMacro(
   key: MacroKey,
   consumed: number,
   target: number | undefined,
   phaseType: PhaseType | undefined,
+  opts?: { essentialFatFloorG?: number },
 ): MacroStatus {
   if (target == null || target <= 0) {
-    return { remaining: 0, fillPct: 0, tone: 'flex' };
+    return { remaining: 0, fillPct: 0, overG: 0, tone: 'neutral', excess: null };
   }
-
   const remaining = target - consumed;
   const fillPct = Math.max(0, Math.min(consumed / target, 1)) * 100;
+  const overG = Math.max(0, consumed - target);
 
-  let tone: MacroTone;
   if (key === 'kcal') {
+    const d = consumed - target;
     const pt = phaseType ?? 'cut';
     if (pt === 'bulk') {
-      tone = consumed >= target ? 'floorMet' : 'budget';
-    } else if (pt === 'maintenance') {
-      const band = (target * KCAL_MAINTENANCE_BAND_PCT) / 100;
-      if (consumed > target + band) tone = 'overBudget';
-      else if (consumed < target - band) tone = 'budget';
-      else tone = 'floorMet';
-    } else {
-      // cut
-      tone = consumed > target ? 'overBudget' : 'budget';
+      if (d < -KCAL_BULK_GREEN_UNDER_MARGIN) return { remaining, fillPct, overG, tone: 'over', excess: null };
+      if (d > KCAL_BULK_SURPLUS_HIGH_MARGIN) return { remaining, fillPct, overG, tone: 'surplusHigh', excess: 'tolerance' };
+      return { remaining, fillPct, overG, tone: 'onTarget', excess: null };
     }
-  } else if (key === 'proteinG') {
-    tone = consumed >= target ? 'floorMet' : 'floorUnderSoft';
-  } else if (key === 'fiberG') {
-    tone = consumed >= target ? 'floorMet' : 'floorUnderWarn';
-  } else {
-    // carbsG, fatG — informational
-    tone = 'flex';
+    if (pt === 'maintenance') {
+      const band = (target * KCAL_MAINTENANCE_BAND_PCT) / 100;
+      if (d > band) return { remaining, fillPct, overG, tone: 'over', excess: 'bad' };
+      if (d < -band) return { remaining, fillPct, overG, tone: 'budget', excess: null };
+      return { remaining, fillPct, overG, tone: 'onTarget', excess: null };
+    }
+    // cut
+    if (d > KCAL_CUT_AMBER_MARGIN) return { remaining, fillPct, overG, tone: 'over', excess: 'bad' };
+    if (d > KCAL_CUT_GREEN_MARGIN) return { remaining, fillPct, overG, tone: 'slightOver', excess: 'tolerance' };
+    if (d < -KCAL_CUT_GREEN_MARGIN) return { remaining, fillPct, overG, tone: 'budget', excess: null };
+    return { remaining, fillPct, overG, tone: 'onTarget', excess: null };
   }
 
-  return { remaining, fillPct, tone };
+  if (key === 'proteinG' || key === 'fiberG') {
+    if (consumed >= target) return { remaining, fillPct, overG, tone: 'floorMet', excess: overG > 0 ? 'good' : null };
+    return { remaining, fillPct, overG, tone: 'neutral', excess: null }; // under = informational (no warning)
+  }
+
+  if (key === 'fatG') {
+    const floor = opts?.essentialFatFloorG ?? 0;
+    if (floor > 0 && consumed < floor) {
+      return { remaining, fillPct, overG, tone: 'fatLow', excess: null, minFloorG: floor };
+    }
+    return { remaining, fillPct, overG, tone: 'neutral', excess: overG > 0 ? 'bad' : null };
+  }
+
+  // carbsG — informational; over is mildly bad
+  return { remaining, fillPct, overG, tone: 'neutral', excess: overG > 0 ? 'bad' : null };
 }

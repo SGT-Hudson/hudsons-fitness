@@ -1,76 +1,102 @@
 import { describe, it, expect } from 'vitest';
 import { classifyMacro, KCAL_MAINTENANCE_BAND_PCT, essentialFatFloorG, ESSENTIAL_FAT_PCT_OF_KCAL } from './macroStatus';
 
-describe('classifyMacro', () => {
-  it('no target → flex', () => {
-    expect(classifyMacro('kcal', 500, undefined, 'cut')).toEqual({
-      remaining: 0,
-      fillPct: 0,
-      tone: 'flex',
-    });
-  });
+const F = (consumed: number, target: number, phase: 'cut'|'maintenance'|'bulk', floor?: number) =>
+  classifyMacro('kcal', consumed, target, phase, { essentialFatFloorG: floor });
 
-  it('cut kcal under target → budget', () => {
-    const s = classifyMacro('kcal', 1180, 2000, 'cut');
-    expect(s.tone).toBe('budget');
-    expect(s.remaining).toBe(820);
-    expect(s.fillPct).toBeCloseTo(59, 0);
+describe('classifyMacro — kcal cut bands (target 2000)', () => {
+  it('< -50 under → budget (blue), no excess', () => {
+    const s = F(1850, 2000, 'cut');
+    expect(s.tone).toBe('budget'); expect(s.excess).toBeNull();
   });
-
-  it('cut kcal over target → overBudget', () => {
-    expect(classifyMacro('kcal', 2200, 2000, 'cut').tone).toBe('overBudget');
+  it('within ±50 → onTarget (green)', () => {
+    expect(F(1960, 2000, 'cut').tone).toBe('onTarget'); // -40
+    expect(F(2040, 2000, 'cut').tone).toBe('onTarget'); // +40
   });
-
-  it('bulk kcal under target → budget (to-go)', () => {
-    expect(classifyMacro('kcal', 1800, 2600, 'bulk').tone).toBe('budget');
+  it('+50..+100 → slightOver (amber) with tolerance excess', () => {
+    const s = F(2080, 2000, 'cut');
+    expect(s.tone).toBe('slightOver'); expect(s.excess).toBe('tolerance'); expect(s.overG).toBe(80);
   });
-
-  it('bulk kcal at/over target → floorMet', () => {
-    expect(classifyMacro('kcal', 2600, 2600, 'bulk').tone).toBe('floorMet');
+  it('> +100 → over (red) with bad excess', () => {
+    const s = F(2150, 2000, 'cut');
+    expect(s.tone).toBe('over'); expect(s.excess).toBe('bad'); expect(s.overG).toBe(150);
   });
+});
 
-  it('maintenance kcal within band → floorMet', () => {
-    expect(classifyMacro('kcal', 2050, 2000, 'maintenance').tone).toBe('floorMet');
+describe('classifyMacro — kcal bulk bands (target 3000)', () => {
+  it('< -50 → over (red), under (no excess)', () => {
+    const s = F(2600, 3000, 'bulk');
+    expect(s.tone).toBe('over'); expect(s.excess).toBeNull();
   });
-
-  it('maintenance kcal far over band → overBudget', () => {
-    expect(classifyMacro('kcal', 2400, 2000, 'maintenance').tone).toBe('overBudget');
+  it('-50..+200 → onTarget (green); over within band shows no dark excess', () => {
+    expect(F(2970, 3000, 'bulk').tone).toBe('onTarget'); // -30
+    const over = F(3100, 3000, 'bulk');                  // +100
+    expect(over.tone).toBe('onTarget'); expect(over.excess).toBeNull();
   });
-
-  it('maintenance kcal far under band → budget', () => {
-    expect(classifyMacro('kcal', 1800, 2000, 'maintenance').tone).toBe('budget');
+  it('> +200 → surplusHigh (amber) with tolerance excess', () => {
+    const s = F(3350, 3000, 'bulk');
+    expect(s.tone).toBe('surplusHigh'); expect(s.excess).toBe('tolerance');
   });
+});
 
-  it('protein over target → floorMet (over-protein is good, never red)', () => {
-    const s = classifyMacro('proteinG', 175, 165, 'cut');
-    expect(s.tone).toBe('floorMet');
-    expect(s.remaining).toBe(-10);
+describe('classifyMacro — kcal maintenance (target 2200, ±5% ≈ ±110)', () => {
+  it('within band → onTarget', () => { expect(F(2150, 2200, 'maintenance').tone).toBe('onTarget'); });
+  it('under band → budget', () => { expect(F(2000, 2200, 'maintenance').tone).toBe('budget'); });
+  it('over band → over with bad excess', () => {
+    const s = F(2400, 2200, 'maintenance');
+    expect(s.tone).toBe('over'); expect(s.excess).toBe('bad');
   });
+});
 
-  it('protein under target → floorUnderSoft (neutral, not alarming)', () => {
-    expect(classifyMacro('proteinG', 110, 165, 'cut').tone).toBe('floorUnderSoft');
+describe('classifyMacro — protein floor (target 150)', () => {
+  it('under → neutral (grey), no warning', () => {
+    expect(classifyMacro('proteinG', 120, 150, 'cut').tone).toBe('neutral');
   });
-
-  it('fiber under minimum → floorUnderWarn (amber)', () => {
-    expect(classifyMacro('fiberG', 18, 30, 'cut').tone).toBe('floorUnderWarn');
+  it('met → floorMet (green)', () => {
+    expect(classifyMacro('proteinG', 150, 150, 'cut').tone).toBe('floorMet');
   });
-
-  it('fiber met → floorMet', () => {
-    expect(classifyMacro('fiberG', 30, 30, 'cut').tone).toBe('floorMet');
+  it('over → floorMet with good excess (dark green)', () => {
+    const s = classifyMacro('proteinG', 158, 150, 'cut');
+    expect(s.tone).toBe('floorMet'); expect(s.excess).toBe('good'); expect(s.overG).toBe(8);
   });
+});
 
-  it('carbs and fat are always flex (informational)', () => {
-    expect(classifyMacro('carbsG', 95, 180, 'cut').tone).toBe('flex');
-    expect(classifyMacro('fatG', 80, 60, 'cut').tone).toBe('flex');
+describe('classifyMacro — fiber is informational (target 30)', () => {
+  it('under → neutral (grey), NOT amber, no warning', () => {
+    expect(classifyMacro('fiberG', 12, 30, 'cut').tone).toBe('neutral');
   });
-
-  it('fillPct clamps to 0..100', () => {
-    expect(classifyMacro('proteinG', 300, 100, 'cut').fillPct).toBe(100);
-    expect(classifyMacro('kcal', -5, 2000, 'cut').fillPct).toBe(0);
+  it('over → floorMet with good excess', () => {
+    expect(classifyMacro('fiberG', 35, 30, 'cut').excess).toBe('good');
   });
+});
 
-  it('exposes the maintenance band constant', () => {
-    expect(KCAL_MAINTENANCE_BAND_PCT).toBe(5);
+describe('classifyMacro — carbs informational (target 200)', () => {
+  it('under/at → neutral, no excess', () => {
+    expect(classifyMacro('carbsG', 180, 200, 'cut').tone).toBe('neutral');
+  });
+  it('over → neutral with bad excess (dark red)', () => {
+    const s = classifyMacro('carbsG', 240, 200, 'cut');
+    expect(s.tone).toBe('neutral'); expect(s.excess).toBe('bad');
+  });
+});
+
+describe('classifyMacro — fat floor (target 65, essential floor 44)', () => {
+  it('below floor → fatLow (red) with minFloorG set', () => {
+    const s = classifyMacro('fatG', 30, 65, 'cut', { essentialFatFloorG: 44 });
+    expect(s.tone).toBe('fatLow'); expect(s.minFloorG).toBe(44); expect(s.excess).toBeNull();
+  });
+  it('between floor and target → neutral', () => {
+    expect(classifyMacro('fatG', 55, 65, 'cut', { essentialFatFloorG: 44 }).tone).toBe('neutral');
+  });
+  it('over target → neutral with bad excess', () => {
+    expect(classifyMacro('fatG', 78, 65, 'cut', { essentialFatFloorG: 44 }).excess).toBe('bad');
+  });
+});
+
+describe('classifyMacro — no target → neutral flat', () => {
+  it('returns neutral with zeros', () => {
+    const s = classifyMacro('kcal', 100, 0, 'cut');
+    expect(s.tone).toBe('neutral'); expect(s.fillPct).toBe(0); expect(s.excess).toBeNull();
   });
 });
 
