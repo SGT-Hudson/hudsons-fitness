@@ -1,12 +1,15 @@
 import { useTranslation } from 'react-i18next';
+import { HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { MacroBar } from '@/components/ui/MacroBar';
 import { roundMacro, type Macros, type SubMacros } from '@/features/recipes/macros';
 import type { PartialSub } from '@/core/subMacros';
 import type { TdeeConfidence } from '@/features/tdee/api';
 import {
   classifyMacro,
+  essentialFatFloorG,
   type MacroKey,
   type MacroTone,
   type PhaseType,
@@ -51,20 +54,13 @@ function SubMacroLine({ label, part }: { label: string; part: PartialSub }) {
 
 const TEXT_TONE: Record<MacroTone, string> = {
   budget: 'text-sky-600 dark:text-sky-400',
-  overBudget: 'text-destructive',
+  onTarget: 'text-emerald-600 dark:text-emerald-400',
   floorMet: 'text-emerald-600 dark:text-emerald-400',
-  floorUnderSoft: 'text-muted-foreground',
-  floorUnderWarn: 'text-amber-600 dark:text-amber-400',
-  flex: 'text-muted-foreground',
-};
-
-const BAR_TONE: Record<MacroTone, string> = {
-  budget: 'bg-sky-600 dark:bg-sky-500',
-  overBudget: 'bg-destructive',
-  floorMet: 'bg-emerald-600 dark:bg-emerald-500',
-  floorUnderSoft: 'bg-muted-foreground/50',
-  floorUnderWarn: 'bg-amber-500 dark:bg-amber-400',
-  flex: 'bg-muted-foreground/40',
+  slightOver: 'text-amber-600 dark:text-amber-400',
+  surplusHigh: 'text-amber-600 dark:text-amber-400',
+  over: 'text-destructive',
+  fatLow: 'text-destructive',
+  neutral: 'text-muted-foreground',
 };
 
 function MacroBlock({
@@ -74,6 +70,7 @@ function MacroBlock({
   target,
   phaseType,
   note,
+  fatFloor,
 }: {
   label: string;
   macroKey: MacroKey;
@@ -81,9 +78,16 @@ function MacroBlock({
   target?: number;
   phaseType?: PhaseType;
   note?: string;
+  fatFloor?: number;
 }) {
   const { t } = useTranslation('diario');
-  const s = classifyMacro(macroKey, consumed, target, phaseType);
+  const s = classifyMacro(
+    macroKey,
+    consumed,
+    target,
+    phaseType,
+    macroKey === 'fatG' && fatFloor != null ? { essentialFatFloorG: fatFloor } : undefined,
+  );
   const hasTarget = target != null && target > 0;
 
   let sub: string | null = null;
@@ -92,7 +96,8 @@ function MacroBlock({
     if (macroKey === 'proteinG') {
       sub = s.tone === 'floorMet' ? t('totals.floorMet', { n }) : t('totals.remainingG', { n });
     } else if (macroKey === 'fiberG') {
-      sub = s.tone === 'floorMet' ? t('totals.floorMet', { n }) : t('totals.fiberBelowMin', { n });
+      // fiber is informational: only show "met" state, no warning when under
+      sub = s.tone === 'floorMet' ? t('totals.floorMet', { n }) : t('totals.remainingG', { n });
     } else {
       sub = s.remaining >= 0 ? t('totals.remainingG', { n }) : t('totals.overG', { n });
     }
@@ -111,15 +116,29 @@ function MacroBlock({
       {note && <div className="text-[11px] text-muted-foreground leading-tight">{note}</div>}
       {hasTarget && (
         <>
-          <div className="h-1 bg-muted rounded-full overflow-hidden">
-            <div
-              className={cn('h-full rounded-full transition-all', BAR_TONE[s.tone])}
-              style={{ width: `${s.fillPct}%` }}
-            />
-          </div>
+          <MacroBar
+            consumed={consumed}
+            target={target!}
+            tone={s.tone}
+            excess={s.excess}
+            minFloorG={s.minFloorG}
+          />
           {sub && (
             <div className={cn('text-[11px] leading-tight tabular-nums', TEXT_TONE[s.tone])}>
               {sub}
+            </div>
+          )}
+          {s.tone === 'fatLow' && (
+            <div className="flex items-center gap-1 text-[10px] font-semibold text-destructive">
+              <span>{t('totals.fatLow')}</span>
+              <button
+                type="button"
+                aria-label={t('totals.fatLowHelpLabel')}
+                title={t('totals.fatLowHelp')}
+                className="opacity-80"
+              >
+                <HelpCircle className="h-3 w-3" />
+              </button>
             </div>
           )}
         </>
@@ -148,6 +167,8 @@ export function DayTotalsCard({
   const showTdeeBadge =
     !!targets && (tdeeConfidence === 'low' || tdeeConfidence === 'medium');
 
+  const fatFloor = targets ? essentialFatFloorG(targets.kcal) : 0;
+
   // kcal hero (phase-aware). Hidden when no target.
   let hero: { value: number; label: string; tone: MacroTone } | null = null;
   if (targets) {
@@ -155,8 +176,8 @@ export function DayTotalsCard({
     const remaining = roundMacro(k.remaining);
     if (phaseType === 'bulk') {
       hero = { value: Math.max(remaining, 0), label: t('totals.heroToGoal'), tone: k.tone };
-    } else if (k.tone === 'overBudget') {
-      hero = { value: Math.abs(remaining), label: t('totals.heroOver'), tone: 'overBudget' };
+    } else if (k.tone === 'over') {
+      hero = { value: Math.abs(remaining), label: t('totals.heroOver'), tone: 'over' };
     } else {
       hero = { value: Math.max(remaining, 0), label: t('totals.heroRemaining'), tone: k.tone };
     }
@@ -221,6 +242,7 @@ export function DayTotalsCard({
             consumed={totals.fatG}
             target={targets?.fatG}
             phaseType={phaseType}
+            fatFloor={fatFloor}
           />
           <MacroBlock
             label={t('totals.fiber')}
