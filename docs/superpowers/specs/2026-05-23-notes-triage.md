@@ -32,7 +32,10 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
     value). Do NOT make the fields required (would break existing ingredients + the
     lenient OFF/barcode import).
 - **spec:** `2026-05-23-sub-macros-design.md`
-- **status:** specced (awaiting user review of the spec before writing the plan)
+- **plan:** `../plans/2026-05-23-u1-sub-macros.md`
+- **status:** implemented — PR #95 into develop (lint/build/typecheck/test green). Gated:
+  apply migration `20260525120000_u1_sub_macros.sql` to prod + deploy
+  `daily-nutrition-snapshot` (ordered: migration → merge → edge deploy).
 
 ### U-2 — Recipe meal-type tagging
 - **raw:** "tambien podemos poner una seccion en las recetas para que los usuarios
