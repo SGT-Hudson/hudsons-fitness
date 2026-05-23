@@ -35,4 +35,27 @@ describe('DayTotalsCard', () => {
     render(<DayTotalsCard totals={{ ...Z, kcal: 500 }} />);
     expect(screen.getByText(/active phase|fase activa/i)).toBeInTheDocument();
   });
+
+  it('complete sub-macros render plain grams (no ≥, no qualifier)', () => {
+    render(
+      <DayTotalsCard
+        totals={{ ...Z, kcal: 500 }}
+        subTotals={{ sugarG: { known: 12, missing: 0 }, satFatG: { known: 4, missing: 0 } }}
+      />,
+    );
+    expect(screen.getByText('12 g')).toBeInTheDocument();
+    expect(screen.getByText('4 g')).toBeInTheDocument();
+  });
+
+  it('partial sugar data renders the ≥ prefix and missing-count qualifier', () => {
+    render(
+      <DayTotalsCard
+        totals={{ ...Z, kcal: 500 }}
+        subTotals={{ sugarG: { known: 12, missing: 2 }, satFatG: { known: 4, missing: 0 } }}
+      />,
+    );
+    // honest-partial: "≥ 12 g · 2 missing/sin datos"
+    expect(screen.getByText(/≥/)).toBeInTheDocument();
+    expect(screen.getByText(/2 (missing|sin datos)/i)).toBeInTheDocument();
+  });
 });
