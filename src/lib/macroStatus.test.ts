@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyMacro, KCAL_MAINTENANCE_BAND_PCT } from './targetStatus';
+import { classifyMacro, KCAL_MAINTENANCE_BAND_PCT } from './macroStatus';
 
 describe('classifyMacro', () => {
   it('no target → flex', () => {
