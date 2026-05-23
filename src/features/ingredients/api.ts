@@ -199,3 +199,14 @@ export async function hideOwnedIngredient(ingredientId: string): Promise<void> {
   });
   if (error) throw error;
 }
+
+/**
+ * Display-name picker for the bilingual library. Falls back to the ES-primary
+ * `name` when the preferred locale column is null — mirrors `exerciseDisplayName`
+ * (R-19). EN-only callers therefore never see an empty label for OFF/manual rows
+ * (which leave `name_en` null).
+ */
+export function ingredientDisplayName(ing: Ingredient, lang: 'es' | 'en'): string {
+  if (lang === 'en') return ing.name_en ?? ing.name;
+  return ing.name;
+}
