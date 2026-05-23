@@ -16,8 +16,13 @@ import {
   type CoreIngredient,
   type Macros,
 } from '@/core/macros';
+import {
+  computeRecipeSub as coreComputeRecipeSub,
+  type SubMacros,
+} from '@/core/subMacros';
 
 export type { Macros } from '@/core/macros';
+export type { SubMacros } from '@/core/subMacros';
 
 export interface RecipeRowMacrosInput {
   ingredient: Pick<
@@ -28,7 +33,12 @@ export interface RecipeRowMacrosInput {
     | 'carbs_g_per_unit'
     | 'fat_g_per_unit'
     | 'fiber_g_per_unit'
-  >;
+  > & {
+    // U-1 sub-macros: optional so the primary macro path / existing callers
+    // don't have to supply them; consumed only by computeRecipeSub.
+    sugar_g_per_unit?: number | null;
+    saturated_fat_g_per_unit?: number | null;
+  };
   quantity: number;
   perServing: boolean;
 }
@@ -65,6 +75,27 @@ export function computeRecipeMacros(opts: {
       quantity: r.quantity,
       perServing: r.perServing,
       ingredient: toCoreIngredient(r.ingredient),
+    })),
+  });
+}
+
+// Per-serving + total sugar/saturated-fat (U-1). Parallel to computeRecipeMacros,
+// delegating to the separate null-aware sub-macro core. `sugar_g_per_unit` /
+// `saturated_fat_g_per_unit` may be absent on partially-typed callers → `null`.
+export function computeRecipeSub(opts: {
+  servings: number;
+  rows: RecipeRowMacrosInput[];
+}): { total: SubMacros; perServing: SubMacros } {
+  return coreComputeRecipeSub({
+    servings: opts.servings,
+    ingredients: opts.rows.map((r) => ({
+      quantity: r.quantity,
+      perServing: r.perServing,
+      ingredient: {
+        unitType: r.ingredient.unit_type,
+        sugarGPerUnit: r.ingredient.sugar_g_per_unit ?? null,
+        satFatGPerUnit: r.ingredient.saturated_fat_g_per_unit ?? null,
+      },
     })),
   });
 }

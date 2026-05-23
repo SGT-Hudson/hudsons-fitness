@@ -39,6 +39,22 @@ export {
   mondayOfTodayInTZ,
 } from '../../../src/core/dates.ts';
 
+// U-1 sub-macros (sugar + saturated fat) — the same null-aware core the client
+// uses, re-exported for the edge. Persisted as known-sum + completeness flag at
+// the daily_nutrition_history write boundary (see the snapshot function).
+export {
+  addSub,
+  scaleSub,
+  ingredientSub,
+  computeRecipeSub,
+  isComplete,
+  ZERO_SUB,
+  type SubMacros,
+  type PartialSub,
+  type CoreIngredientSub,
+  type CoreRecipeSub,
+} from '../../../src/core/subMacros.ts';
+
 import type { Macros } from '../../../src/core/macros.ts';
 
 /**

@@ -11,7 +11,7 @@ import { DayTotalsCard, type ProteinBasis } from '@/features/diario/components/D
 import { MealLogDialog } from '@/features/diario/components/MealLogDialog';
 import { MealSection } from '@/features/diario/components/MealSection';
 import { useMaterializePlan, useMealLogsForDay, useQuickAddRecipes } from '@/features/diario/hooks';
-import { computeMealLogMacros, sumMacros } from '@/features/diario/macros';
+import { computeMealLogMacros, computeMealLogSub, sumMacros, sumSub } from '@/features/diario/macros';
 import { MEAL_TYPE_ORDER, type MealLogWithJoins, type MealType } from '@/features/diario/api';
 import { useLatestMeasurement } from '@/features/measurements/hooks';
 import { useActivePhase } from '@/features/phases/hooks';
@@ -83,6 +83,11 @@ export function DiarioPage() {
     [logs.data],
   );
 
+  const subTotals = useMemo(
+    () => sumSub((logs.data ?? []).map((l) => computeMealLogSub(l))),
+    [logs.data],
+  );
+
   const targets = useMemo(() => {
     if (!activePhase.data || !latestMeasurement.data?.weight_kg) return undefined;
     return (
@@ -142,6 +147,7 @@ export function DiarioPage() {
 
       <DayTotalsCard
         totals={totals}
+        subTotals={subTotals}
         targets={targets}
         proteinBasis={proteinBasis}
         tdeeConfidence={tdeeConfidence}

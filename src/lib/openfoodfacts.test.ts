@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getProductByBarcode, isValidEan } from './openfoodfacts';
+import { getProductByBarcode, isValidEan, mapOFFNutriments } from './openfoodfacts';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -65,6 +65,8 @@ describe('getProductByBarcode', () => {
       carbsPer100g: 10.6,
       fatPer100g: 0,
       fiberPer100g: 0,
+      sugarPer100g: null, // OFF omitted sugars → unknown, not 0
+      satFatPer100g: null,
       complete: true, // OFF had an energy value
     });
   });
@@ -95,6 +97,8 @@ describe('getProductByBarcode', () => {
       carbsPer100g: 0,
       fatPer100g: 0,
       fiberPer100g: 0,
+      sugarPer100g: null,
+      satFatPer100g: null,
       complete: false, // no energy value → "fill the gaps" path
     });
   });
@@ -112,5 +116,41 @@ describe('getProductByBarcode', () => {
   it('throws on a genuine non-OK HTTP response (e.g. 5xx)', async () => {
     mockFetch({}, false, 503);
     await expect(getProductByBarcode('5000112637922')).rejects.toThrow();
+  });
+
+  it('maps sugar + saturated fat when OFF provides them', async () => {
+    mockFetch({
+      status: 1,
+      product: {
+        code: '5000112637922',
+        product_name: 'Galleta',
+        nutriments: {
+          'energy-kcal_100g': 480,
+          sugars_100g: 28,
+          'saturated-fat_100g': 9.5,
+        },
+      },
+    });
+    const result = await getProductByBarcode('5000112637922');
+    expect(result?.sugarPer100g).toBe(28);
+    expect(result?.satFatPer100g).toBe(9.5);
+  });
+});
+
+describe('mapOFFNutriments', () => {
+  it('maps sugar and saturated fat when present', () => {
+    const r = mapOFFNutriments({ 'energy-kcal_100g': 100, sugars_100g: 9, 'saturated-fat_100g': 3 });
+    expect(r.sugarPer100g).toBe(9);
+    expect(r.satFatPer100g).toBe(3);
+  });
+  it('returns null (not 0) when OFF omits them', () => {
+    const r = mapOFFNutriments({ 'energy-kcal_100g': 100 });
+    expect(r.sugarPer100g).toBeNull();
+    expect(r.satFatPer100g).toBeNull();
+  });
+  it('rounds to 2 decimals', () => {
+    const r = mapOFFNutriments({ sugars_100g: 9.005, 'saturated-fat_100g': 3.001 });
+    expect(r.sugarPer100g).toBe(9.01);
+    expect(r.satFatPer100g).toBe(3);
   });
 });

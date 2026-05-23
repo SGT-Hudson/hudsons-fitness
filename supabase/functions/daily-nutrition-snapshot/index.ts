@@ -25,9 +25,19 @@ import {
   toSnakeMacros,
   ZERO_MACROS,
   EMPTY_SNAKE,
+  addSub,
+  ingredientSub,
+  scaleSub,
+  computeRecipeSub,
+  isComplete,
+  ZERO_SUB,
   type CoreIngredient,
+  type CoreIngredientSub,
   type CoreRecipe,
+  type CoreRecipeSub,
   type Macros,
+  type SubMacros,
+  type PartialSub,
   type Numeric,
 } from '../_shared/macros.ts';
 
@@ -40,6 +50,8 @@ interface IngredientRow {
   carbs_g_per_unit: Numeric;
   fat_g_per_unit: Numeric;
   fiber_g_per_unit: Numeric | null;
+  sugar_g_per_unit?: Numeric | null;
+  saturated_fat_g_per_unit?: Numeric | null;
 }
 
 interface RecipeIngredientRow {
@@ -75,6 +87,35 @@ function toCoreRecipe(recipe: RecipeRow): CoreRecipe {
   };
 }
 
+// --- U-1 sub-macro mappers (parallel to the macro ones above) ---------------
+function toCoreIngredientSub(ing: IngredientRow): CoreIngredientSub {
+  return {
+    unitType: ing.unit_type,
+    sugarGPerUnit: ing.sugar_g_per_unit ?? null,
+    satFatGPerUnit: ing.saturated_fat_g_per_unit ?? null,
+  };
+}
+
+function toCoreRecipeSub(recipe: RecipeRow): CoreRecipeSub {
+  return {
+    servings: recipe.servings,
+    ingredients: (recipe.recipe_ingredients ?? []).map((ri) => ({
+      quantity: ri.quantity,
+      perServing: ri.per_serving,
+      ingredient: toCoreIngredientSub(ri.ingredient),
+    })),
+  };
+}
+
+function recipePerServingSub(recipe: RecipeRow): SubMacros {
+  return computeRecipeSub(toCoreRecipeSub(recipe)).perServing;
+}
+
+/** Custom-log value → PartialSub: null = unknown (missing 1). */
+function customSubField(v: Numeric | null): PartialSub {
+  return v === null || v === undefined ? { known: 0, missing: 1 } : { known: Number(v), missing: 0 };
+}
+
 interface SlotRow {
   servings: Numeric;
   recipe: RecipeRow | null;
@@ -88,15 +129,17 @@ interface MealLogRow {
   custom_carbs_g: Numeric | null;
   custom_fat_g: Numeric | null;
   custom_fiber_g: Numeric | null;
+  custom_sugar_g: Numeric | null;
+  custom_saturated_fat_g: Numeric | null;
   recipe: RecipeRow | null;
   ingredient: IngredientRow | null;
 }
 
 const RECIPE_SELECT =
-  'recipe:recipes(servings, recipe_ingredients(quantity, per_serving, ingredient:ingredients(unit_type, kcal_per_unit, protein_g_per_unit, carbs_g_per_unit, fat_g_per_unit, fiber_g_per_unit)))';
+  'recipe:recipes(servings, recipe_ingredients(quantity, per_serving, ingredient:ingredients(unit_type, kcal_per_unit, protein_g_per_unit, carbs_g_per_unit, fat_g_per_unit, fiber_g_per_unit, sugar_g_per_unit, saturated_fat_g_per_unit)))';
 
 const INGREDIENT_SELECT =
-  'ingredient:ingredients(unit_type, kcal_per_unit, protein_g_per_unit, carbs_g_per_unit, fat_g_per_unit, fiber_g_per_unit)';
+  'ingredient:ingredients(unit_type, kcal_per_unit, protein_g_per_unit, carbs_g_per_unit, fat_g_per_unit, fiber_g_per_unit, sugar_g_per_unit, saturated_fat_g_per_unit)';
 
 Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -142,8 +185,12 @@ Deno.serve(async (req) => {
         { p_user_id: profile.id, p_date: targetDate },
       );
       if (materializeError) throw materializeError;
-      const { planned, hadActivePlan } = await computePlanned(supabase, profile.id, targetDate);
-      const consumed = await computeConsumed(supabase, profile.id, targetDate);
+      const { planned, plannedSub, hadActivePlan } = await computePlanned(
+        supabase,
+        profile.id,
+        targetDate,
+      );
+      const { consumed, consumedSub } = await computeConsumed(supabase, profile.id, targetDate);
 
       // snake_case appears ONLY here — the DB write boundary (D-F3 / D-C4).
       const plannedSnake = planned ? toSnakeMacros(planned) : null;
@@ -165,6 +212,16 @@ Deno.serve(async (req) => {
             consumed_carbs_g: consumedSnake?.carbs_g ?? null,
             consumed_fat_g: consumedSnake?.fat_g ?? null,
             consumed_fiber_g: consumedSnake?.fiber_g ?? null,
+            // U-1: known-sum grams + per-field completeness flag (NULL grams +
+            // complete=true when there was nothing to sum).
+            planned_sugar_g: plannedSub ? plannedSub.sugarG.known : null,
+            planned_sugar_complete: plannedSub ? isComplete(plannedSub.sugarG) : true,
+            planned_saturated_fat_g: plannedSub ? plannedSub.satFatG.known : null,
+            planned_saturated_fat_complete: plannedSub ? isComplete(plannedSub.satFatG) : true,
+            consumed_sugar_g: consumedSub ? consumedSub.sugarG.known : null,
+            consumed_sugar_complete: consumedSub ? isComplete(consumedSub.sugarG) : true,
+            consumed_saturated_fat_g: consumedSub ? consumedSub.satFatG.known : null,
+            consumed_saturated_fat_complete: consumedSub ? isComplete(consumedSub.satFatG) : true,
             had_active_plan: hadActivePlan,
             computed_at: new Date().toISOString(),
           },
@@ -200,7 +257,7 @@ async function computePlanned(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   date: string,
-): Promise<{ planned: Macros | null; hadActivePlan: boolean }> {
+): Promise<{ planned: Macros | null; plannedSub: SubMacros | null; hadActivePlan: boolean }> {
   const { data: weeks, error: weekError } = await supabase
     .from('meal_plan_weeks')
     .select('id')
@@ -209,7 +266,8 @@ async function computePlanned(
     .order('week_start', { ascending: false })
     .limit(1);
   if (weekError) throw weekError;
-  if (!weeks || weeks.length === 0) return { planned: null, hadActivePlan: false };
+  if (!weeks || weeks.length === 0)
+    return { planned: null, plannedSub: null, hadActivePlan: false };
 
   const { data: slots, error: slotsError } = await supabase
     .from('meal_plan_week_slots')
@@ -217,41 +275,46 @@ async function computePlanned(
     .eq('plan_week_id', weeks[0].id)
     .eq('date', date);
   if (slotsError) throw slotsError;
-  if (!slots || slots.length === 0) return { planned: null, hadActivePlan: false };
+  if (!slots || slots.length === 0)
+    return { planned: null, plannedSub: null, hadActivePlan: false };
 
   let total: Macros = ZERO_MACROS;
+  let totalSub: SubMacros = ZERO_SUB;
   for (const slot of slots as unknown as SlotRow[]) {
     if (!slot.recipe) continue;
-    const perServing = recipePerServingMacros(toCoreRecipe(slot.recipe));
-    total = add(total, scale(perServing, Number(slot.servings)));
+    const servings = Number(slot.servings);
+    total = add(total, scale(recipePerServingMacros(toCoreRecipe(slot.recipe)), servings));
+    totalSub = addSub(totalSub, scaleSub(recipePerServingSub(slot.recipe), servings));
   }
-  return { planned: total, hadActivePlan: true };
+  return { planned: total, plannedSub: totalSub, hadActivePlan: true };
 }
 
 async function computeConsumed(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   date: string,
-): Promise<Macros | null> {
+): Promise<{ consumed: Macros | null; consumedSub: SubMacros | null }> {
   const { data: logs, error } = await supabase
     .from('meal_logs')
     .select(
-      `servings, quantity, custom_kcal, custom_protein_g, custom_carbs_g, custom_fat_g, custom_fiber_g, ${RECIPE_SELECT}, ${INGREDIENT_SELECT}`,
+      `servings, quantity, custom_kcal, custom_protein_g, custom_carbs_g, custom_fat_g, custom_fiber_g, custom_sugar_g, custom_saturated_fat_g, ${RECIPE_SELECT}, ${INGREDIENT_SELECT}`,
     )
     .eq('user_id', userId)
     .eq('logged_on', date);
   if (error) throw error;
-  if (!logs || logs.length === 0) return null;
+  if (!logs || logs.length === 0) return { consumed: null, consumedSub: null };
 
   let total: Macros = ZERO_MACROS;
+  let totalSub: SubMacros = ZERO_SUB;
   for (const log of logs as unknown as MealLogRow[]) {
     if (log.recipe) {
-      total = add(
-        total,
-        scale(recipePerServingMacros(toCoreRecipe(log.recipe)), Number(log.servings ?? 1)),
-      );
+      const servings = Number(log.servings ?? 1);
+      total = add(total, scale(recipePerServingMacros(toCoreRecipe(log.recipe)), servings));
+      totalSub = addSub(totalSub, scaleSub(recipePerServingSub(log.recipe), servings));
     } else if (log.ingredient && log.quantity != null) {
-      total = add(total, ingredientMacros(toCoreIngredient(log.ingredient), Number(log.quantity)));
+      const qty = Number(log.quantity);
+      total = add(total, ingredientMacros(toCoreIngredient(log.ingredient), qty));
+      totalSub = addSub(totalSub, ingredientSub(toCoreIngredientSub(log.ingredient), qty));
     } else {
       // custom log line: snake_case columns → camelCase core envelope.
       const empty = EMPTY_SNAKE;
@@ -262,7 +325,11 @@ async function computeConsumed(
         fatG: Number(log.custom_fat_g ?? empty.fat_g),
         fiberG: Number(log.custom_fiber_g ?? empty.fiber_g),
       });
+      totalSub = addSub(totalSub, {
+        sugarG: customSubField(log.custom_sugar_g),
+        satFatG: customSubField(log.custom_saturated_fat_g),
+      });
     }
   }
-  return total;
+  return { consumed: total, consumedSub: totalSub };
 }

@@ -4,6 +4,8 @@ export interface OFFNutriments {
   carbohydrates_100g?: number;
   fat_100g?: number;
   fiber_100g?: number;
+  sugars_100g?: number;
+  'saturated-fat_100g'?: number;
 }
 
 export interface OFFProduct {
@@ -24,6 +26,10 @@ export interface OFFSearchResult {
   carbsPer100g: number;
   fatPer100g: number;
   fiberPer100g: number;
+  // U-1: optional "of which" sub-macros. `null` = OFF did not provide it
+  // (≠ 0 — never assert "sugar-free" from a missing value).
+  sugarPer100g: number | null;
+  satFatPer100g: number | null;
 }
 
 /** Barcode-lookup result: an OFFSearchResult plus whether OFF already had an
@@ -73,11 +79,25 @@ export async function searchOpenFoodFacts(
       carbsPer100g: round2(p.nutriments!.carbohydrates_100g ?? 0),
       fatPer100g: round2(p.nutriments!.fat_100g ?? 0),
       fiberPer100g: round2(p.nutriments!.fiber_100g ?? 0),
+      ...mapOFFNutriments(p.nutriments!),
     }));
 }
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/** Map OFF's optional sub-macro nutriments, preserving `null` when absent
+ *  (U-1: a missing OFF value must NOT become 0 — that would falsely assert
+ *  "sugar-free"). Used by both the search and barcode-lookup paths. */
+export function mapOFFNutriments(n: OFFNutriments): {
+  sugarPer100g: number | null;
+  satFatPer100g: number | null;
+} {
+  return {
+    sugarPer100g: n.sugars_100g != null ? round2(n.sugars_100g) : null,
+    satFatPer100g: n['saturated-fat_100g'] != null ? round2(n['saturated-fat_100g']) : null,
+  };
 }
 
 /**
@@ -148,6 +168,7 @@ export async function getProductByBarcode(
     carbsPer100g: round2(n?.carbohydrates_100g ?? 0),
     fatPer100g: round2(n?.fat_100g ?? 0),
     fiberPer100g: round2(n?.fiber_100g ?? 0),
+    ...mapOFFNutriments(n ?? {}),
     // Drives the dialog banner: a found product WITH an energy value is
     // "review & save"; WITHOUT one it's "fill the gaps". (OFF entries often
     // have a name but no nutriments — the lenient lookup still returns them

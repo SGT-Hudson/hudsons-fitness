@@ -19,6 +19,7 @@ import { describe, it, expect } from 'vitest';
 
 import {
   computeRecipeMacros as clientComputeRecipeMacros,
+  computeRecipeSub as clientComputeRecipeSub,
   rowContribution as clientRowContribution,
   roundMacro as clientRoundMacro,
   type RecipeRowMacrosInput,
@@ -31,6 +32,7 @@ import {
   roundMacro as edgeRoundMacro,
   add as edgeAdd,
   scale as edgeScale,
+  computeRecipeSub as edgeComputeRecipeSub,
   toSnakeMacros,
   EMPTY_SNAKE,
   isoDateInTZ as edgeIsoDateInTZ,
@@ -200,6 +202,63 @@ describe('R-17 parity — recipe macros (client vs edge, golden vectors)', () =>
     for (const n of [1.24, 1.25, 199.999, 0, 33.3333, -2.05]) {
       expect(edgeRoundMacro(n)).toBe(clientRoundMacro(n));
     }
+  });
+});
+
+// ── Sub-macro parity: client path === edge path (incl. null/unknown) ───────
+
+describe('U-1 parity — sub-macros (client vs edge, null-aware)', () => {
+  // ingredient with a KNOWN sugar but UNKNOWN (null) saturated fat.
+  const subRow = {
+    ingredient: {
+      unit_type: 'gram',
+      kcal_per_unit: 100,
+      protein_g_per_unit: 10,
+      carbs_g_per_unit: 5,
+      fat_g_per_unit: 2,
+      fiber_g_per_unit: 1,
+      sugar_g_per_unit: 8,
+      saturated_fat_g_per_unit: null,
+    },
+    quantity: 250,
+    perServing: false,
+  };
+  const subRow2 = {
+    ingredient: {
+      unit_type: 'gram',
+      kcal_per_unit: 50,
+      protein_g_per_unit: 1,
+      carbs_g_per_unit: 9,
+      fat_g_per_unit: 4,
+      fiber_g_per_unit: 0,
+      sugar_g_per_unit: null,
+      saturated_fat_g_per_unit: 3,
+    },
+    quantity: 100,
+    perServing: false,
+  };
+
+  it('computeRecipeSub total/perServing identical across paths', () => {
+    const opts = { servings: 2, rows: [subRow, subRow2] };
+    const client = clientComputeRecipeSub(opts);
+    const edge = edgeComputeRecipeSub({
+      servings: opts.servings,
+      ingredients: opts.rows.map((r) => ({
+        quantity: r.quantity,
+        perServing: r.perServing,
+        ingredient: {
+          unitType: r.ingredient.unit_type,
+          sugarGPerUnit: r.ingredient.sugar_g_per_unit,
+          satFatGPerUnit: r.ingredient.saturated_fat_g_per_unit,
+        },
+      })),
+    });
+    expect(edge.total).toEqual(client.total);
+    expect(edge.perServing).toEqual(client.perServing);
+    // sanity on the golden values: sugar known (8×2.5=20), one unknown sat row;
+    // sat known (3×1=3), one unknown sugar row.
+    expect(client.total.sugarG).toEqual({ known: 20, missing: 1 });
+    expect(client.total.satFatG).toEqual({ known: 3, missing: 1 });
   });
 });
 
