@@ -16,6 +16,7 @@ export interface RecipeListItem {
   description: string | null;
   updated_at: string;
   ingredient_count: number;
+  meal_types: string[];
 }
 
 // My library (R-01 spec §7) — join user_recipe_refs on auth.uid().
@@ -26,14 +27,17 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
   const { data, error } = await supabase
     .from('user_recipe_refs')
     .select(
-      `recipe:recipes (id, name, servings, description, updated_at, recipe_ingredients(id))`,
+      `recipe:recipes (id, name, servings, description, updated_at, meal_types, recipe_ingredients(id))`,
     )
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
   type Row = {
     recipe:
-      | (Pick<Recipe, 'id' | 'name' | 'servings' | 'description' | 'updated_at'> & {
+      | (Pick<
+          Recipe,
+          'id' | 'name' | 'servings' | 'description' | 'updated_at' | 'meal_types'
+        > & {
           recipe_ingredients: Array<{ id: string }> | null;
         })
       | null;
@@ -49,6 +53,7 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
       description: r.recipe.description,
       updated_at: r.recipe.updated_at,
       ingredient_count: r.recipe.recipe_ingredients?.length ?? 0,
+      meal_types: r.recipe.meal_types ?? [],
     });
   }
   out.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
@@ -88,6 +93,7 @@ export interface SaveRecipePayload {
   servings: number;
   description: string | null;
   instructions: string | null;
+  mealTypes: string[];
   ingredients: Array<{
     ingredient_id: string;
     quantity: number;
@@ -107,6 +113,7 @@ export async function saveRecipe(payload: SaveRecipePayload): Promise<string> {
     p_description: payload.description,
     p_instructions: payload.instructions,
     p_ingredients: payload.ingredients,
+    p_meal_types: payload.mealTypes,
   });
   if (error) throw error;
   return data as string;

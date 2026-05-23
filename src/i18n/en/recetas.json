@@ -36,7 +36,15 @@
     "addRow": "Add ingredient",
     "quantity": "Quantity",
     "perServing": "Per serving",
-    "units": "units"
+    "units": "units",
+    "mealTypes": "Meal types"
+  },
+  "mealTypes": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "snack": "Snack",
+    "dinner": "Dinner",
+    "dessert": "Dessert"
   },
   "macros": {
     "title": "Macros",
