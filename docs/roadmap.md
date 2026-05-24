@@ -734,6 +734,12 @@ reference shard carries it (never edit the decision entry).
   applied to prod & verified (4 tables RLS-enabled with policies,
   `workout_sessions` program_id/routine_id stamps, 4 INVOKER RPCs incl. the
   7-arg `save_workout`). Security advisor clean for the new objects.
+- **post-launch batch (2026-05-24):** B-2-family visual fixes — routine
+  exercise names no longer wiped on add, edit-session shows logged exercises
+  (#126); search exercises by muscle (dropdown filter + muscle-name text
+  match) (#127); warm-up sets in routines as % of working weight + reps,
+  computed client-side on workout start, rounded to 2.5 kg (#128, migration
+  `20260529120000_f2b_warmup_sets.sql` applied to prod 2026-05-24).
 - **spec:** `docs/superpowers/specs/2026-05-24-training-routines-planner-design.md`
 - **plan:** `docs/superpowers/plans/2026-05-24-training-routines-planner.md`
 - **scope:**
