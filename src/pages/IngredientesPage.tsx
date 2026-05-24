@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Search } from 'lucide-react';
 import { RecipesTabs } from './RecipesTabs';
@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IngredientList } from '@/features/ingredients/components/IngredientList';
 import { IngredientDialog } from '@/features/ingredients/components/IngredientDialog';
-import { useLocalIngredientSearch } from '@/features/ingredients/hooks';
+import { useLocalIngredientSearchPage } from '@/features/ingredients/hooks';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationBar } from '@/components/ui/PaginationBar';
 import type { Ingredient } from '@/features/ingredients/api';
 
 export function IngredientesPage() {
@@ -15,7 +17,15 @@ export function IngredientesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Ingredient | null>(null);
 
-  const search = useLocalIngredientSearch(query, 50);
+  const [total, setTotal] = useState(0);
+  const { page, pageSize, pageCount, setPage, setPageSize } = usePagination({
+    total,
+    resetKey: query,
+  });
+  const search = useLocalIngredientSearchPage(query, page, pageSize);
+  useEffect(() => {
+    if (search.data) setTotal(search.data.total);
+  }, [search.data]);
 
   function openCreate() {
     setEditing(null);
@@ -50,9 +60,17 @@ export function IngredientesPage() {
       </div>
 
       <IngredientList
-        ingredients={search.data ?? []}
+        ingredients={search.data?.rows ?? []}
         loading={search.isLoading}
         onEdit={openEdit}
+      />
+      <PaginationBar
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        pageCount={pageCount}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
       />
 
       <IngredientDialog
