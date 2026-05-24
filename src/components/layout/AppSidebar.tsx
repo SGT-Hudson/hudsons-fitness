@@ -18,7 +18,7 @@ export function AppSidebar() {
   const groups = sidebarGroups();
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r bg-card md:flex">
+    <aside className="hidden w-60 shrink-0 flex-col border-r bg-card md:flex md:sticky md:top-0 md:h-dvh">
       <div className="flex items-center gap-2 px-4 py-4 font-bold">
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground text-background">
           H
