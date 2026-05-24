@@ -234,6 +234,7 @@ export type Database = {
           is_verified: boolean
           kcal_per_unit: number
           name: string
+          name_en: string | null
           protein_g_per_unit: number
           saturated_fat_g_per_unit: number | null
           source: string
@@ -253,6 +254,7 @@ export type Database = {
           is_verified?: boolean
           kcal_per_unit: number
           name: string
+          name_en?: string | null
           protein_g_per_unit: number
           saturated_fat_g_per_unit?: number | null
           source?: string
@@ -272,6 +274,7 @@ export type Database = {
           is_verified?: boolean
           kcal_per_unit?: number
           name?: string
+          name_en?: string | null
           protein_g_per_unit?: number
           saturated_fat_g_per_unit?: number | null
           source?: string

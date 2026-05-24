@@ -14,6 +14,7 @@ import esObjetivos from './es/objetivos.json';
 import esSettings from './es/settings.json';
 import esEntrenamiento from './es/entrenamiento.json';
 import esCoach from './es/coach.json';
+import esPagination from './es/pagination.json';
 import enCommon from './en/common.json';
 import enAuth from './en/auth.json';
 import enNav from './en/nav.json';
@@ -27,6 +28,7 @@ import enObjetivos from './en/objetivos.json';
 import enSettings from './en/settings.json';
 import enEntrenamiento from './en/entrenamiento.json';
 import enCoach from './en/coach.json';
+import enPagination from './en/pagination.json';
 
 void i18n
   .use(LanguageDetector)
@@ -47,6 +49,7 @@ void i18n
         settings: esSettings,
         entrenamiento: esEntrenamiento,
         coach: esCoach,
+        pagination: esPagination,
       },
       en: {
         common: enCommon,
@@ -62,11 +65,12 @@ void i18n
         settings: enSettings,
         entrenamiento: enEntrenamiento,
         coach: enCoach,
+        pagination: enPagination,
       },
     },
     fallbackLng: 'es',
     supportedLngs: ['es', 'en'],
-    ns: ['common', 'auth', 'nav', 'onboarding', 'metricas', 'ingredientes', 'recetas', 'diario', 'planning', 'objetivos', 'settings', 'entrenamiento', 'coach'],
+    ns: ['common', 'auth', 'nav', 'onboarding', 'metricas', 'ingredientes', 'recetas', 'diario', 'planning', 'objetivos', 'settings', 'entrenamiento', 'coach', 'pagination'],
     defaultNS: 'common',
     interpolation: { escapeValue: false },
     detection: {

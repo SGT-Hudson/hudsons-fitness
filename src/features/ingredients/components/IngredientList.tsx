@@ -3,7 +3,7 @@ import { Database, Globe, Pencil, Trash2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useHideIngredient } from '../hooks';
 import { useAuth } from '@/features/auth/AuthProvider';
-import type { Ingredient } from '../api';
+import { ingredientDisplayName, type Ingredient } from '../api';
 
 interface Props {
   ingredients: Ingredient[];
@@ -47,7 +47,8 @@ function SourceBadge({ source }: { source: string }) {
 }
 
 export function IngredientList({ ingredients, loading, onEdit }: Props) {
-  const { t } = useTranslation('ingredientes');
+  const { t, i18n } = useTranslation('ingredientes');
+  const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const { t: tCommon } = useTranslation('common');
   const { user } = useAuth();
   const hide = useHideIngredient();
@@ -68,7 +69,7 @@ export function IngredientList({ ingredients, loading, onEdit }: Props) {
           <li key={ing.id} className="flex items-center gap-3 px-4 py-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-medium truncate">{ing.name}</span>
+                <span className="font-medium truncate">{ingredientDisplayName(ing, lang)}</span>
                 {ing.brand && (
                   <span className="text-sm text-muted-foreground truncate">· {ing.brand}</span>
                 )}

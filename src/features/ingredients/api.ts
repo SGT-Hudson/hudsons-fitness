@@ -40,7 +40,7 @@ export async function searchLocalIngredients(query: string, limit = 15): Promise
   const { data, error } = await supabase
     .from('ingredients')
     .select('*')
-    .or(`name.ilike.%${safe}%,brand.ilike.%${safe}%`)
+    .or(`name.ilike.%${safe}%,name_en.ilike.%${safe}%,brand.ilike.%${safe}%`)
     .order('is_verified', { ascending: false })
     .order('name')
     .limit(limit);
@@ -198,4 +198,52 @@ export async function hideOwnedIngredient(ingredientId: string): Promise<void> {
     p_ingredient_id: ingredientId,
   });
   if (error) throw error;
+}
+
+/**
+ * Display-name picker for the bilingual library. Falls back to the ES-primary
+ * `name` when the preferred locale column is null — mirrors `exerciseDisplayName`
+ * (R-19). EN-only callers therefore never see an empty label for OFF/manual rows
+ * (which leave `name_en` null).
+ */
+export function ingredientDisplayName(ing: Ingredient, lang: 'es' | 'en'): string {
+  if (lang === 'en') return ing.name_en ?? ing.name;
+  return ing.name;
+}
+
+export interface PagedIngredients {
+  rows: Ingredient[];
+  total: number;
+}
+
+/**
+ * Server-side paged pool search (R-01: over the WHOLE pool). Returns the page's
+ * rows plus the exact total for the pagination control. Order is deterministic
+ * (`is_verified desc, name asc, id asc`) so offset paging never skips/dupes —
+ * `name` is not unique, hence the `id` tiebreaker. Searches `name_en` too so the
+ * paginated list is bilingual (F-1), matching the autocomplete/list search.
+ */
+export async function searchLocalIngredientsPage(
+  query: string,
+  { page, pageSize }: { page: number; pageSize: number },
+): Promise<PagedIngredients> {
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const trimmed = query.trim();
+
+  let q = supabase
+    .from('ingredients')
+    .select('*', { count: 'exact' })
+    .order('is_verified', { ascending: false })
+    .order('name')
+    .order('id');
+
+  if (trimmed !== '') {
+    const safe = trimmed.replace(/[%_,]/g, '');
+    q = q.or(`name.ilike.%${safe}%,name_en.ilike.%${safe}%,brand.ilike.%${safe}%`);
+  }
+
+  const { data, error, count } = await q.range(from, to);
+  if (error) throw error;
+  return { rows: data ?? [], total: count ?? 0 };
 }
