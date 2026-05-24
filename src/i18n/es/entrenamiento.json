@@ -46,7 +46,8 @@
     "searching": "Buscando…",
     "noResults": "Sin resultados",
     "createNew": "Crear \"{{name}}\"",
-    "change": "Cambiar"
+    "change": "Cambiar",
+    "allMuscles": "Todos los músculos"
   },
   "history": {
     "empty": "Aún no has registrado series para este ejercicio.",

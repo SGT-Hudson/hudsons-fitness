@@ -4,7 +4,13 @@ import { Plus, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useExerciseSearch } from '../exercises/hooks';
-import { exerciseDisplayName, type Exercise } from '../exercises/api';
+import {
+  exerciseDisplayName,
+  PRIMARY_MUSCLE_VALUES,
+  type Exercise,
+  type PrimaryMuscle,
+} from '../exercises/api';
+import { musclesMatchingQuery } from '../exercises/muscleSearch';
 import { ExerciseDialog } from './ExerciseDialog';
 import { cn } from '@/lib/utils';
 
@@ -30,11 +36,20 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [selectedMuscle, setSelectedMuscle] = useState<PrimaryMuscle | ''>('');
   const debounced = useDebouncedValue(query, 200);
   const containerRef = useRef<HTMLDivElement>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const search = useExerciseSearch(debounced, 20);
+  const labelByCode = Object.fromEntries(
+    PRIMARY_MUSCLE_VALUES.map((c) => [c, t(`exerciseDialog.primaryMuscle.${c}`)]),
+  );
+  const textMuscles = musclesMatchingQuery(debounced, labelByCode);
+
+  const search = useExerciseSearch(debounced, {
+    muscle: selectedMuscle || null,
+    textMuscles,
+  });
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -75,20 +90,39 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
 
   return (
     <>
-      <div ref={containerRef} className="relative w-full">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          className="pl-9"
-          placeholder={t('picker.placeholder')}
-          value={query}
-          onFocus={() => setOpen(true)}
+      <div ref={containerRef} className="relative w-full flex flex-col gap-1">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            placeholder={t('picker.placeholder')}
+            value={query}
+            onFocus={() => setOpen(true)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+          />
+        </div>
+        <select
+          role="combobox"
+          aria-label={t('picker.allMuscles')}
+          value={selectedMuscle}
           onChange={(e) => {
-            setQuery(e.target.value);
+            setSelectedMuscle(e.target.value as PrimaryMuscle | '');
             setOpen(true);
           }}
-        />
+          className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">{t('picker.allMuscles')}</option>
+          {PRIMARY_MUSCLE_VALUES.map((code) => (
+            <option key={code} value={code}>
+              {t(`exerciseDialog.primaryMuscle.${code}`)}
+            </option>
+          ))}
+        </select>
         {open && (
-          <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md">
+          <div className="absolute z-20 top-full mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md">
             <ul className="max-h-64 overflow-y-auto py-1">
               {search.isLoading && (
                 <li className="px-3 py-2 text-sm text-muted-foreground">

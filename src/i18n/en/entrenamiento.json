@@ -46,7 +46,8 @@
     "searching": "Searching…",
     "noResults": "No matches",
     "createNew": "Create \"{{name}}\"",
-    "change": "Change"
+    "change": "Change",
+    "allMuscles": "All muscles"
   },
   "history": {
     "empty": "No sets logged for this exercise yet.",
