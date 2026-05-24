@@ -11,6 +11,21 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
 
 ---
 
+## Status summary (2026-05-24)
+
+- **Done:** U-1 (#95), U-2 (#96), U-3 (#97), U-5 (#101), U-6 (#116), U-7 (#98),
+  F-1 (#113), F-2 / R-22 (#122), B-1 (#98), B-2 (#122).
+- **Dropped:** U-4 (OFF Nutri-Score/NOVA), F-5 (micronutrients).
+- **In progress:** U-8 (visual pass — partial: planner matrix #119, sidebar fix
+  #121, settings redesign #124; broad home/dashboard pass still pending).
+- **Pending:** F-3 (guided workout runner — **next up**, unblocked by F-2),
+  F-4 (muscle heatmap — needs an exercise→muscle-group model).
+
+> Not in this batch but shipped recently: list pagination (#112), planner
+> regression fixes (#107/#109), recipe-picker form-isolation fix (#104).
+
+---
+
 ## Upgrades — improvements to existing functionality
 
 ### U-1 — Sub-macros: carbs→(total, sugar), fat→(total, saturated)
@@ -70,7 +85,7 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   compute via the existing macro core (no SQL macro math); ⚠ labels gated on complete
   data (U-1); faceted combine (within meal-types OR, across AND).
 - **spec:** `2026-05-23-recipe-search-filters-design.md`
-- **status:** specced (awaiting user review of the spec before writing the plan)
+- **status:** **done (2026-05-23)** — merged (#97); client-only (no migration).
 
 ### U-4 — Extract more from OFF (Nutri-Score? NOVA?)
 - **raw:** "what other relevant information can we extract from OFF? maybe nutrition
@@ -110,7 +125,7 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   - **Display-only** — no SQL macro math, no edge/parity changes; macros computed
     in-memory via the existing core from an ingredient-bearing fetch.
 - **spec:** `2026-05-23-planner-day-targets-design.md`
-- **status:** specced (awaiting user review of the spec before writing the plan)
+- **status:** **done (2026-05-23)** — merged (#101); day totals vs target in planner, templates & diario.
 
 ### U-6 — Copy/paste a "meal" across days
 - **raw:** "hay que añadir la opcion en el creador de templates y en el planificador
@@ -124,7 +139,7 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   surfaces; template copy is pure local state, planner copy is a new atomic
   `copy_week_meal` RPC.
 - **spec:** `2026-05-24-copy-meal-across-days-design.md`
-- **status:** specced (awaiting user review of the spec before writing the plan)
+- **status:** **done (2026-05-24)** — merged (#116); `copy_week_meal` RPC applied to prod.
 
 ### U-7 — Recipe editor: defer ingredient dropdown until typing
 - **raw:** "cuando se crea una receta, no tiene que abrirse un desplegable hasta que
@@ -137,7 +152,7 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   (no dropdown, no "recents"), and the empty-query local search is not run. The
   "+ Crear «X»" affordance is unchanged. Isolated to `IngredientAutocomplete`.
 - **spec:** `2026-05-23-ingredient-picker-defer-design.md`
-- **status:** specced (awaiting user review of the spec before writing the plan)
+- **status:** **done (2026-05-23)** — merged (#98).
 
 ### U-8 — Visual attractiveness pass (richer styling, NOT fewer tables/graphs)
 - **raw:** "I want a more visual atractive app and website. Right now there is a lot
@@ -149,7 +164,10 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   already there (and new surfaces). The muscle-icon "Find a workout" browse screen is
   the style example. Likely informs the training refactor and a home/dashboard
   redesign. Needs its own design pass.
-- **status:** triage
+- **status:** **in progress (partial)** — increments shipped toward this: planner
+  aligned matrix + red meal-time control (#119), desktop sidebar pin fix (#121),
+  settings grouped-list redesign (#124). The broad pass (home/dashboard redesign,
+  muscle-icon browse style) is still pending its own design.
 
 ---
 
@@ -175,7 +193,11 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
 - **read:** A routine builder + a training planner that repeats an N-day cycle (not
   Mon–Sun). Per-exercise/per-set configurable rest times stored on the routine.
   Builds on R-19 training MVP (sessions/sets exist). Major.
-- **status:** triage
+- **status:** **done (2026-05-24)** — merged (#122), tracked as R-22: routine +
+  program/cycle builders, planner-first `/training`, `save_routine` /
+  `save_program` / `set_active_program` RPCs, 4 migrations applied to prod.
+  B-2 fixed as part of this.
+- **spec:** `2026-05-24-training-routines-planner-design.md`
 
 ### F-3 — Guided active-workout mode (rest timer + inline logging)
 - **raw:** "temporizador de descanso que durante el descanso te pide lo que has hecho
@@ -188,7 +210,7 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
 - **read:** A "start workout" runner that steps through the routine's exercises,
   with a rest timer that prompts for reps/weight (prefilled from the last session of
   that exercise). Folds in the standalone rest-timer note. Depends on F-2 (routines).
-- **status:** triage
+- **status:** triage — **next up** (unblocked now F-2 shipped); not yet specced.
 
 ### F-4 — Muscle activity visualization (body heatmap)
 - **raw:** "we can also display something like this, where we display the muscles that
@@ -198,7 +220,7 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
 - **read:** A "body activity" view: per-muscle volume over a window, rendered as a
   shaded body map + ranked %. Needs each exercise mapped to muscle group(s) — a data
   model addition on `exercises`. Part of the visual direction (U-8).
-- **status:** triage
+- **status:** triage — pending; needs an exercise→muscle-group data model first.
 
 ### F-5 — Micronutrient storage (DEFERRED — pairs with F-1)
 - **raw:** "what do you think about storing micronutrients? would that be too much?"
@@ -212,7 +234,8 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   (`ingredient_nutrients(ingredient_id, nutrient_key, amount_per_unit)` or JSONB)
   with their own lazy roll-up. Design this *with* F-1, once a composition source is
   picked.
-- **status:** triage (deferred to after F-1)
+- **status:** **dropped (2026-05-24)** — won't be built; micronutrient storage is
+  out of scope. Rationale above retained for the record if ever revisited.
 
 ---
 
@@ -223,7 +246,7 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   quedarse dentro."
 - **read:** After a successful recipe save, redirect to the recipe list instead of
   staying in the editor. Small.
-- **status:** triage
+- **status:** **done (2026-05-23)** — merged (#98).
 
 ### B-2 — Add-exercise broken on /training/new (deferred)
 - **raw:** "no funciona la funcionalidad de añadir ejercicios en la pagina
@@ -232,7 +255,7 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
 - **read:** Adding exercises on `/training/new` doesn't work. User wants it
   investigated but NOT fixed now — the training refactor (F-2/F-3) will rework this
   surface anyway. Find root cause, log it, defer the fix.
-- **status:** triage (fix deferred to training refactor)
+- **status:** **done (2026-05-24)** — fixed as part of F-2 (#122).
 
 ---
 
