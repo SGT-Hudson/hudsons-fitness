@@ -31,6 +31,8 @@ export interface SaveWorkoutPayload {
   title: string | null;
   notes: string | null;
   sets: SaveWorkoutSet[];
+  programId?: string | null;
+  routineId?: string | null;
 }
 
 export async function listSessions(userId: string, limit = 50): Promise<SessionListItem[]> {
@@ -121,6 +123,8 @@ export async function saveWorkout(payload: SaveWorkoutPayload): Promise<string> 
     p_title: payload.title,
     p_notes: payload.notes,
     p_sets: payload.sets as unknown as Json,
+    p_program_id: payload.programId ?? null,
+    p_routine_id: payload.routineId ?? null,
   });
   if (error) throw error;
   return data as string;
