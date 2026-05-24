@@ -118,7 +118,13 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
   resto de dias."
 - **read:** Duplicate a planned meal (e.g. Monday breakfast) to other days in both
   the template editor and the planner. UX + mutation.
-- **status:** triage
+- **decisions (2026-05-24):** copy icon on a meal opens a modal to pick target days;
+  copies only that meal (not the day), overwrites the target's slots at the same meal
+  index, none preselected + "select all", overwrite badge per occupied target. Both
+  surfaces; template copy is pure local state, planner copy is a new atomic
+  `copy_week_meal` RPC.
+- **spec:** `2026-05-24-copy-meal-across-days-design.md`
+- **status:** specced (awaiting user review of the spec before writing the plan)
 
 ### U-7 — Recipe editor: defer ingredient dropdown until typing
 - **raw:** "cuando se crea una receta, no tiene que abrirse un desplegable hasta que
