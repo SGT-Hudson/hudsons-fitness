@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, X } from 'lucide-react';
+import { Copy, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RecipePickerDialog } from './RecipePickerDialog';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,8 @@ interface Props {
   onRemove: (entryId: string) => void | Promise<void>;
   busy?: boolean;
   className?: string;
+  onCopy?: () => void;
+  copyLabel?: string;
 }
 
 export function SlotCell({
@@ -39,10 +41,13 @@ export function SlotCell({
   onRemove,
   busy,
   className,
+  onCopy,
+  copyLabel,
 }: Props) {
   const { t } = useTranslation('planning');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editing, setEditing] = useState<SlotEntry | null>(null);
+  const showCopy = !!onCopy && entries.length > 0;
 
   function openAdd() {
     setEditing(null);
@@ -54,11 +59,38 @@ export function SlotCell({
   }
 
   return (
-    <div className={cn('rounded-md border bg-card p-2 space-y-1.5', className)}>
-      {mealLabel && (
-        <div className="text-xs font-medium text-muted-foreground tabular-nums">
-          {mealLabel}
+    <div className={cn('relative group rounded-md border bg-card p-2 space-y-1.5', className)}>
+      {mealLabel ? (
+        <div className="flex items-center justify-between gap-1">
+          <div className="text-xs font-medium text-muted-foreground tabular-nums">
+            {mealLabel}
+          </div>
+          {showCopy && (
+            <button
+              type="button"
+              onClick={onCopy}
+              aria-label={copyLabel}
+              title={copyLabel}
+              disabled={busy}
+              className="shrink-0 text-muted-foreground opacity-60 hover:opacity-100"
+            >
+              <Copy className="h-3 w-3" />
+            </button>
+          )}
         </div>
+      ) : (
+        showCopy && (
+          <button
+            type="button"
+            onClick={onCopy}
+            aria-label={copyLabel}
+            title={copyLabel}
+            disabled={busy}
+            className="absolute right-1 top-1 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+          >
+            <Copy className="h-3 w-3" />
+          </button>
+        )
       )}
       <ul className="space-y-1">
         {entries.map((e) => (

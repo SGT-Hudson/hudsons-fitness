@@ -32,9 +32,20 @@ interface Props {
   recipeMacros?: Map<string, Macros>; // per-serving macros by recipe id
   targets?: Macros;
   phaseType?: PhaseType;
+  onCopyMeal?: (dayOfWeek: number, mealIndex: number) => void;
 }
 
-export function TemplateGrid({ mealTimes, slots, onAdd, onUpdate, onRemove, recipeMacros, targets, phaseType }: Props) {
+export function TemplateGrid({
+  mealTimes,
+  slots,
+  onAdd,
+  onUpdate,
+  onRemove,
+  recipeMacros,
+  targets,
+  phaseType,
+  onCopyMeal,
+}: Props) {
   const { t } = useTranslation('planning');
 
   const dayTotals = aggregateDayMacros(
@@ -99,6 +110,8 @@ export function TemplateGrid({ mealTimes, slots, onAdd, onUpdate, onRemove, reci
                   onUpdate(rowId, recipeId, recipeName, servings)
                 }
                 onRemove={(rowId) => onRemove(rowId)}
+                onCopy={onCopyMeal ? () => onCopyMeal(dayIdx, mealIdx) : undefined}
+                copyLabel={t('slot.copy')}
               />
             ))}
           </>
