@@ -1,5 +1,5 @@
 import i18n from '@/i18n';
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WeekGrid } from './WeekGrid';
@@ -25,49 +25,79 @@ const slot = (over: Partial<WeekSlotWithRecipe>): WeekSlotWithRecipe => ({
 
 const noop = () => {};
 
-// jsdom defaults to English; the assertions below match the Spanish copy.
 beforeAll(() => {
-  void i18n.changeLanguage('es');
+  void i18n.changeLanguage('es'); // jsdom defaults to English; assert Spanish copy
 });
 
-describe('WeekGrid — all periods visible', () => {
-  it('renders every meal period from mealTimes, including empty ones', () => {
+describe('WeekGrid — aligned matrix', () => {
+  it('renders each configured meal time once in the gutter', () => {
     renderWithClient(
       <WeekGrid
-        weekStart="2026-05-25"
-        todayIso="2026-05-25"
+        weekStart="2026-05-25" todayIso="2026-05-25"
         mealTimes={['08:00', '13:00', '17:00', '21:00']}
         slots={[slot({ id: 's1', meal_index: 0, recipe_name: 'Avena' })]}
-        onAdd={noop}
-        onUpdate={noop}
-        onRemove={noop}
+        onAdd={noop} onUpdate={noop} onRemove={noop}
       />,
     );
-    expect(screen.getAllByText('08:00').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('13:00').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('17:00').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('21:00').length).toBeGreaterThan(0);
-    // Empty periods expose the add affordance: 4 periods × 7 days.
+    // Gutter holds one label per meal time (not one per day).
+    expect(screen.getByText('08:00')).toBeInTheDocument();
+    expect(screen.getByText('21:00')).toBeInTheDocument();
+    // 4 periods × 7 days of add affordances.
     expect(screen.getAllByText(/Añadir/i).length).toBeGreaterThanOrEqual(4 * 7);
   });
 
-  it('renders the day summary AFTER the meal periods (bottom of the card)', () => {
+  it('puts the TOTAL row before the meal periods', () => {
     const { container } = renderWithClient(
       <WeekGrid
-        weekStart="2026-05-25"
-        todayIso="2026-05-25"
-        mealTimes={['08:00']}
-        slots={[]}
+        weekStart="2026-05-25" todayIso="2026-05-25"
+        mealTimes={['08:00']} slots={[]}
         targets={{ kcal: 2000, proteinG: 150, carbsG: 200, fatG: 65, fiberG: 30 }}
         phaseType="cut"
-        onAdd={noop}
-        onUpdate={noop}
-        onRemove={noop}
+        onAdd={noop} onUpdate={noop} onRemove={noop}
       />,
     );
-    const card = container.querySelector('.grid > div') as HTMLElement;
-    const html = card.innerHTML;
-    expect(html.indexOf('Añadir')).toBeGreaterThan(-1);
-    expect(html.toLowerCase().indexOf('kcal')).toBeGreaterThan(html.indexOf('Añadir'));
+    const html = container.innerHTML.toLowerCase();
+    // The macro total (kcal) row is rendered above the meal "add" cells.
+    expect(html.indexOf('kcal')).toBeGreaterThan(-1);
+    expect(html.indexOf('kcal')).toBeLessThan(html.indexOf('añadir'));
+  });
+
+  it("shows a populated cell's recipe", () => {
+    renderWithClient(
+      <WeekGrid
+        weekStart="2026-05-25" todayIso="2026-05-25"
+        mealTimes={['08:00']}
+        slots={[slot({ id: 's1', date: '2026-05-26', recipe_name: 'Tortilla' })]}
+        onAdd={noop} onUpdate={noop} onRemove={noop}
+      />,
+    );
+    expect(screen.getByText('Tortilla')).toBeInTheDocument();
+  });
+
+  it('renders an orphan slot (meal_index beyond mealTimes) in its own row', () => {
+    renderWithClient(
+      <WeekGrid
+        weekStart="2026-05-25" todayIso="2026-05-25"
+        mealTimes={['08:00']}
+        slots={[slot({ id: 'o1', date: '2026-05-27', meal_index: 3, meal_time: '23:00', recipe_name: 'Snack' })]}
+        onAdd={noop} onUpdate={noop} onRemove={noop}
+      />,
+    );
+    expect(screen.getByText('23:00')).toBeInTheDocument();
+    expect(screen.getByText('Snack')).toBeInTheDocument();
+  });
+
+  it('marks today (ring) and past days (dimmed)', () => {
+    const { container } = renderWithClient(
+      <WeekGrid
+        weekStart="2026-05-25" todayIso="2026-05-27"
+        mealTimes={['08:00']} slots={[]}
+        targets={{ kcal: 2000, proteinG: 150, carbsG: 200, fatG: 65, fiberG: 30 }}
+        onAdd={noop} onUpdate={noop} onRemove={noop}
+      />,
+    );
+    // 2026-05-25/26 are past (before the 27th); the 27th is today.
+    expect(container.querySelector('.ring-primary')).not.toBeNull();
+    expect(container.querySelector('.opacity-60')).not.toBeNull();
   });
 });

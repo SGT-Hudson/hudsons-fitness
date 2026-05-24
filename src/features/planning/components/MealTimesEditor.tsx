@@ -40,13 +40,13 @@ export function MealTimesEditor({ times, onChange }: Props) {
             {times.length > 1 && (
               <Button
                 type="button"
-                variant="ghost"
+                variant="destructive"
                 size="icon"
                 aria-label={t('editor.removeMeal')}
                 onClick={() => removeAt(idx)}
-                className="h-8 w-8"
+                className="h-6 w-6"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>
