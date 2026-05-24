@@ -26,9 +26,15 @@ vi.mock('@/pages/IngredientesPage', () => ({ IngredientesPage: () => <div>Ingred
 vi.mock('@/pages/EntrenamientoPage', () => ({ EntrenamientoPage: () => <div>EntrenamientoPage</div> }));
 vi.mock('@/pages/SessionEditorPage', () => ({ SessionEditorPage: () => <div>SessionEditorPage</div> }));
 vi.mock('@/pages/ExerciseHistoryPage', () => ({ ExerciseHistoryPage: () => <div>ExerciseHistoryPage</div> }));
+vi.mock('@/pages/RoutinePage', () => ({ RoutinePage: () => <div>RoutinePage</div> }));
+vi.mock('@/pages/RoutineEditorPage', () => ({ RoutineEditorPage: () => <div>RoutineEditorPage</div> }));
+vi.mock('@/pages/ProgramEditorPage', () => ({ ProgramEditorPage: () => <div>ProgramEditorPage</div> }));
 vi.mock('@/pages/ProgresoPage', () => ({ ProgresoPage: () => <div>ProgresoPage</div> }));
 vi.mock('@/pages/ObjetivosPage', () => ({ ObjetivosPage: () => <div>ObjetivosPage</div> }));
 vi.mock('@/pages/SettingsPage', () => ({ SettingsPage: () => <div>SettingsPage</div> }));
+vi.mock('@/pages/settings/SettingsProfilePage', () => ({ SettingsProfilePage: () => <div>SettingsProfilePage</div> }));
+vi.mock('@/pages/settings/SettingsBiometricsPage', () => ({ SettingsBiometricsPage: () => <div>SettingsBiometricsPage</div> }));
+vi.mock('@/pages/settings/SettingsAccountPage', () => ({ SettingsAccountPage: () => <div>SettingsAccountPage</div> }));
 vi.mock('@/pages/LoginPage', () => ({ LoginPage: () => <div>LoginPage</div> }));
 vi.mock('@/pages/SignupPage', () => ({ SignupPage: () => <div>SignupPage</div> }));
 vi.mock('@/pages/OnboardingPage', () => ({ OnboardingPage: () => <div>OnboardingPage</div> }));
@@ -47,9 +53,9 @@ beforeEach(async () => { await i18n.changeLanguage('es'); localStorage.clear(); 
 afterEach(() => vi.unstubAllGlobals());
 
 describe('AppRoutes', () => {
-  it('routes /routine to the En progreso placeholder', () => {
+  it('routes /routine to the RoutinePage', () => {
     render(<MemoryRouter initialEntries={['/routine']}><AppRoutes /></MemoryRouter>);
-    expect(screen.getByText('En progreso')).toBeInTheDocument();
+    expect(screen.getByText('RoutinePage')).toBeInTheDocument();
   });
 
   it('routes /exercises to the En progreso placeholder', () => {

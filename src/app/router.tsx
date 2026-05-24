@@ -18,9 +18,15 @@ import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { SettingsProfilePage } from '@/pages/settings/SettingsProfilePage';
+import { SettingsBiometricsPage } from '@/pages/settings/SettingsBiometricsPage';
+import { SettingsAccountPage } from '@/pages/settings/SettingsAccountPage';
 import { EntrenamientoPage } from '@/pages/EntrenamientoPage';
 import { SessionEditorPage } from '@/pages/SessionEditorPage';
 import { ExerciseHistoryPage } from '@/pages/ExerciseHistoryPage';
+import { RoutinePage } from '@/pages/RoutinePage';
+import { RoutineEditorPage } from '@/pages/RoutineEditorPage';
+import { ProgramEditorPage } from '@/pages/ProgramEditorPage';
 
 const ProgresoPage = lazy(() =>
   import('@/pages/ProgresoPage').then((m) => ({ default: m.ProgresoPage })),
@@ -106,7 +112,11 @@ export function AppRoutes() {
           <Route path="/training/new" element={<SessionEditorPage />} />
           <Route path="/training/:id" element={<SessionEditorPage />} />
           <Route path="/training/exercises/:id" element={<ExerciseHistoryPage />} />
-          <Route path="/routine" element={<EnProgresoPage />} />
+          <Route path="/routine" element={<RoutinePage />} />
+          <Route path="/routine/rutinas/nueva" element={<RoutineEditorPage />} />
+          <Route path="/routine/rutinas/:id" element={<RoutineEditorPage />} />
+          <Route path="/routine/programas/nuevo" element={<ProgramEditorPage />} />
+          <Route path="/routine/programas/:id" element={<ProgramEditorPage />} />
           <Route path="/exercises" element={<EnProgresoPage />} />
 
           {/* Shared */}
@@ -120,6 +130,9 @@ export function AppRoutes() {
           />
           <Route path="/progress/goals" element={<ObjetivosPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/profile" element={<SettingsProfilePage />} />
+          <Route path="/settings/biometrics" element={<SettingsBiometricsPage />} />
+          <Route path="/settings/account" element={<SettingsAccountPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

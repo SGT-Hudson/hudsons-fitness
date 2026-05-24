@@ -1,11 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Link } from 'react-router-dom';
+import { ChevronRight, Globe, Palette, Ruler, User, UserCog } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -13,295 +8,145 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
-import {
-  biometricsFormSchema,
-  displayNameFormSchema,
-  type BiometricsFormValues,
-  type DisplayNameFormValues,
-  type ParsedBiometricsForm,
-} from '@/features/profile/schema';
 import { useTheme, type Theme } from '@/features/theme/ThemeProvider';
-import { DeleteAccountDialog } from '@/features/account/components/DeleteAccountDialog';
-import { todayInTZ } from '@/lib/dates';
 
 type Lang = 'es' | 'en';
+type Tone = 'indigo' | 'green' | 'amber' | 'rose';
+
+const TONE: Record<Tone, string> = {
+  indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400',
+  green: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
+  amber: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400',
+  rose: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400',
+};
+
+function IconChip({ tone, children }: { tone: Tone; children: React.ReactNode }) {
+  return (
+    <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', TONE[tone])}>
+      {children}
+    </span>
+  );
+}
+
+function Group({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="overflow-hidden rounded-xl border bg-card">{children}</div>
+    </div>
+  );
+}
+
+function ControlRow({
+  icon, tone, label, children,
+}: { icon: React.ReactNode; tone: Tone; label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0">
+      <IconChip tone={tone}>{icon}</IconChip>
+      <span className="flex-1 text-sm font-medium">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function LinkRow({
+  to, icon, tone, label,
+}: { to: string; icon: React.ReactNode; tone: Tone; label: string }) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center gap-3 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-accent"
+    >
+      <IconChip tone={tone}>{icon}</IconChip>
+      <span className="flex-1 text-sm font-medium">{label}</span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </Link>
+  );
+}
 
 export function SettingsPage() {
   const { t } = useTranslation('settings');
   const { t: tCommon } = useTranslation('common');
   const { i18n } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { data: profile, isLoading } = useProfile();
   const update = useUpdateProfile();
   const { theme, setTheme } = useTheme();
-  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const [language, setLanguage] = useState<Lang>('es');
-  const [error, setError] = useState<string | null>(null);
-  const [savedSection, setSavedSection] = useState<string | null>(null);
+  const language: Lang = profile?.language === 'en' ? 'en' : 'es';
 
-  // Profile card (display_name) — RHF + zod (D-C2/D-C3).
-  const profileForm = useForm<DisplayNameFormValues>({
-    resolver: zodResolver(displayNameFormSchema),
-    defaultValues: { display_name: '' },
-  });
-
-  // Biometrics card — RHF + zod. Numeric inputs coerced via the schema.
-  const bioForm = useForm<BiometricsFormValues, unknown, ParsedBiometricsForm>({
-    resolver: zodResolver(biometricsFormSchema),
-    defaultValues: { sex: '', birth_date: '', height_cm: '' },
-  });
-
-  useEffect(() => {
-    if (!profile) return;
-    setLanguage((profile.language === 'en' ? 'en' : 'es') as Lang);
-    profileForm.reset({ display_name: profile.display_name ?? '' });
-    bioForm.reset({
-      sex: (['male', 'female', 'other'] as const).includes(profile.sex as 'male')
-        ? (profile.sex as BiometricsFormValues['sex'])
-        : '',
-      birth_date: profile.birth_date ?? '',
-      height_cm: profile.height_cm != null ? String(profile.height_cm) : '',
-    });
-  }, [profile, profileForm, bioForm]);
-
-  async function saveSection<T extends object>(section: string, patch: T) {
-    setError(null);
-    setSavedSection(null);
-    try {
-      await update.mutateAsync(patch);
-      setSavedSection(section);
-    } catch (err) {
-      setError((err as Error).message || t('errors.saveFailed'));
-    }
-  }
-
-  async function onSaveProfile(values: DisplayNameFormValues) {
-    await saveSection('profile', { display_name: values.display_name.trim() || null });
-  }
-
-  async function handleSaveLanguage(next: Lang) {
-    setLanguage(next);
+  async function changeLanguage(next: Lang) {
+    if (next === language) return;
     await i18n.changeLanguage(next);
-    await saveSection('language', { language: next });
+    update.mutate({ language: next });
   }
-
-  async function onSaveBiometrics(values: ParsedBiometricsForm) {
-    await saveSection('biometrics', {
-      sex: values.sex,
-      birth_date: values.birth_date,
-      height_cm: values.height_cm,
-    });
-  }
-
-  // Combined biometrics message line(s): shown only after a submit attempt,
-  // never per-field. The schema now tags an out-of-bound numeric value with
-  // the distinct `range` code (vs `required` for a blank field), so an
-  // out-of-range value surfaces a range-specific line instead of the
-  // misleading "fill in all fields" copy. Enforcement is unchanged.
-  const bioErrorList = Object.values(bioForm.formState.errors);
-  const bioRange =
-    bioForm.formState.isSubmitted &&
-    bioErrorList.some((e) => e?.message === 'range');
-  const bioRequired =
-    bioForm.formState.isSubmitted &&
-    bioErrorList.some((e) => e?.message !== 'range');
 
   if (isLoading || !profile) {
     return <p className="text-sm text-muted-foreground">{tCommon('loading')}</p>;
   }
 
+  const name = profile.display_name?.trim() || (user?.email?.split('@')[0] ?? '');
+  const initial = (name || 'U').charAt(0).toUpperCase();
+
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="max-w-2xl space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
 
-      {error && (
-        <div className="rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
+      <Link
+        to="/settings/profile"
+        className="flex items-center gap-4 rounded-xl border bg-gradient-to-br from-primary/5 to-primary/10 p-4 transition-colors hover:from-primary/10 hover:to-primary/15"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
+          {initial}
+        </span>
+        <div className="min-w-0">
+          <div className="truncate font-semibold">{name}</div>
+          <div className="truncate text-sm text-muted-foreground">{user?.email}</div>
         </div>
-      )}
+        <ChevronRight className="ml-auto h-5 w-5 shrink-0 text-muted-foreground" />
+      </Link>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('profile.title')}</CardTitle>
-          <CardDescription>{t('profile.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={profileForm.handleSubmit(onSaveProfile)}
-            className="space-y-4"
-          >
-            <div className="space-y-2">
-              <Label htmlFor="displayName">{t('profile.displayName')}</Label>
-              <Input id="displayName" {...profileForm.register('display_name')} />
-            </div>
-            <div className="flex items-center gap-3">
-              <Button type="submit" disabled={update.isPending}>
-                {update.isPending ? t('actions.saving') : t('actions.save')}
-              </Button>
-              {savedSection === 'profile' && !update.isPending && (
-                <span className="text-sm text-muted-foreground">{t('actions.saved')}</span>
-              )}
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('language.title')}</CardTitle>
-          <CardDescription>{t('language.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Language is an instant-apply single control (persists to
-              profile.language on change, per D-E1) — not a validated submit
-              form, so it stays a controlled Select (no RHF needed). */}
-          <div className="space-y-2 max-w-xs">
-            <Label htmlFor="language">{t('language.title')}</Label>
-            <Select
-              value={language}
-              onValueChange={(v) => void handleSaveLanguage(v as Lang)}
-            >
-              <SelectTrigger id="language">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="es">{t('language.es')}</SelectItem>
-                <SelectItem value="en">{t('language.en')}</SelectItem>
-              </SelectContent>
-            </Select>
-            {savedSection === 'language' && !update.isPending && (
-              <p className="text-sm text-muted-foreground">{t('actions.saved')}</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('appearance.title')}</CardTitle>
-          <CardDescription>{t('appearance.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Theme is localStorage-only (D-F6, never profile-backed) and
-              instant-apply — a controlled Select, not a form. */}
-          <div className="space-y-2 max-w-xs">
-            <Label htmlFor="theme">{t('appearance.theme')}</Label>
-            <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
-              <SelectTrigger id="theme">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="system">{t('appearance.system')}</SelectItem>
-                <SelectItem value="light">{t('appearance.light')}</SelectItem>
-                <SelectItem value="dark">{t('appearance.dark')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('biometrics.title')}</CardTitle>
-          <CardDescription>{t('biometrics.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={bioForm.handleSubmit(onSaveBiometrics)}
-            className="space-y-4"
-          >
-            <div className="space-y-2">
-              <Label htmlFor="sex">{t('biometrics.sex')}</Label>
-              <Controller
-                control={bioForm.control}
-                name="sex"
-                render={({ field }) => (
-                  <Select value={field.value ?? ''} onValueChange={field.onChange}>
-                    <SelectTrigger id="sex">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">{t('biometrics.sexMale')}</SelectItem>
-                      <SelectItem value="female">{t('biometrics.sexFemale')}</SelectItem>
-                      <SelectItem value="other">{t('biometrics.sexOther')}</SelectItem>
-                    </SelectContent>
-                  </Select>
+      <Group label={t('groups.preferences')}>
+        <ControlRow icon={<Globe className="h-4 w-4" />} tone="green" label={t('language.title')}>
+          <div className="flex rounded-lg border p-0.5 text-xs">
+            {(['es', 'en'] as const).map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => void changeLanguage(l)}
+                className={cn(
+                  'rounded-md px-3 py-1 font-semibold transition-colors',
+                  language === l ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
                 )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="birthDate">{t('biometrics.birthDate')}</Label>
-              <Input
-                id="birthDate"
-                type="date"
-                max={todayInTZ()}
-                {...bioForm.register('birth_date')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="heightCm">{t('biometrics.heightCm')}</Label>
-              <Input
-                id="heightCm"
-                type="number"
-                inputMode="decimal"
-                min={100}
-                max={250}
-                step="0.1"
-                {...bioForm.register('height_cm')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="initialWeightKg">{t('biometrics.initialWeightKg')}</Label>
-              <Input
-                id="initialWeightKg"
-                value={profile.initial_weight_kg != null ? String(profile.initial_weight_kg) : ''}
-                disabled
-              />
-              <p className="text-xs text-muted-foreground">{t('biometrics.initialWeightKgHelp')}</p>
-            </div>
-            {bioRequired && (
-              <p className="text-sm text-destructive">{t('errors.required')}</p>
-            )}
-            {bioRange && (
-              <p className="text-sm text-destructive">{t('errors.outOfRange')}</p>
-            )}
-            <div className="flex items-center gap-3">
-              <Button type="submit" disabled={update.isPending}>
-                {update.isPending ? t('actions.saving') : t('actions.save')}
-              </Button>
-              {savedSection === 'biometrics' && !update.isPending && (
-                <span className="text-sm text-muted-foreground">{t('actions.saved')}</span>
-              )}
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('account.title')}</CardTitle>
-          <CardDescription>{t('account.description')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">{t('account.email')}</Label>
-            <Input id="email" value={user?.email ?? ''} disabled />
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => void signOut()}>
-              {t('account.signOut')}
-            </Button>
-            <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-              {t('account.delete.button')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </ControlRow>
+        <ControlRow icon={<Palette className="h-4 w-4" />} tone="amber" label={t('appearance.theme')}>
+          <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
+            <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="system">{t('appearance.system')}</SelectItem>
+              <SelectItem value="light">{t('appearance.light')}</SelectItem>
+              <SelectItem value="dark">{t('appearance.dark')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </ControlRow>
+      </Group>
 
-      <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
+      <Group label={t('groups.you')}>
+        <LinkRow to="/settings/profile" icon={<User className="h-4 w-4" />} tone="indigo" label={t('profile.title')} />
+        <LinkRow to="/settings/biometrics" icon={<Ruler className="h-4 w-4" />} tone="indigo" label={t('biometrics.title')} />
+      </Group>
+
+      <Group label={t('groups.account')}>
+        <LinkRow to="/settings/account" icon={<UserCog className="h-4 w-4" />} tone="rose" label={t('rows.accountAndSession')} />
+      </Group>
     </div>
   );
 }

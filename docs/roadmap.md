@@ -30,6 +30,7 @@ reference shard carries it (never edit the decision entry).
 - R-19 — Training MVP (Phase 1: ad-hoc session logging + rule-based coach)
 - R-20 — Barcode scanning for ingredient import (camera + manual EAN → OFF lookup)
 - R-21 — OFF contribute-back: push products to Open Food Facts (REMOVED 2026-05-21)
+- R-22 — Training Routines & Cyclic Planner (F-2)
 
 ## R-00 — Baseline current schema into migrations
 - **decision:** D-A8, D-A6, D-E3, D-D6, D-F1
@@ -724,6 +725,47 @@ reference shard carries it (never edit the decision entry).
   (OFF ODbL OK; commercial DBs' no-persist ToS not) are documented there.
 - **spec:** `docs/superpowers/specs/2026-05-21-off-contribute-back-design.md` (historical)
 - **plan:** `docs/superpowers/plans/2026-05-21-off-contribute-back.md` (historical)
+
+## R-22 — Training Routines & Cyclic Planner (F-2)
+- **decision:** (none yet — decisions recorded as D-F8 at impl time)
+- **blocked-by:** R-19 prod apply (already applied 2026-05-21 — `exercises`,
+  `workout_sessions`, `workout_sets`, `save_workout` live in prod)
+- **status:** done (2026-05-24) — merged (#122); the four F-2 migrations
+  applied to prod & verified (4 tables RLS-enabled with policies,
+  `workout_sessions` program_id/routine_id stamps, 4 INVOKER RPCs incl. the
+  7-arg `save_workout`). Security advisor clean for the new objects.
+- **post-launch batch (2026-05-24):** B-2-family visual fixes — routine
+  exercise names no longer wiped on add, edit-session shows logged exercises
+  (#126); search exercises by muscle (dropdown filter + muscle-name text
+  match) (#127); warm-up sets in routines as % of working weight + reps,
+  computed client-side on workout start, rounded to 2.5 kg (#128, migration
+  `20260529120000_f2b_warmup_sets.sql` applied to prod 2026-05-24).
+- **spec:** `docs/superpowers/specs/2026-05-24-training-routines-planner-design.md`
+- **plan:** `docs/superpowers/plans/2026-05-24-training-routines-planner.md`
+- **scope:**
+  - **Routine builder** (`/routine`, child editor routes) — reusable named
+    exercise templates with target sets/reps/RPE/rest; `save_routine` RPC
+    (replace-children, mirrors `save_recipe`); list + edit views.
+  - **Program/cycle builder** — a program references an ordered list of
+    routines (one routine per day-slot, rest days allowed); `save_program` RPC
+    (replace-children); list + edit views.
+  - **Planner-first `/training` (Hoy / Today)** — `TodayPlan` component
+    computes today's slot on the fly from `anchor_date + day_index` modulo
+    the cycle length (pure `src/core/programs.ts`, no DB materialization);
+    `set_active_program` RPC performs the atomic active-flip that re-anchors
+    from today; one active program per user enforced by a partial unique index.
+  - **Prefill handoff** — tapping today's slot opens the existing workout
+    logger pre-filled with the routine's exercises; `save_workout` gains two
+    nullable provenance stamp args (`p_program_id`, `p_routine_id`); null = ad-hoc.
+  - **B-2 fix** — fix included as part of F-2 scope.
+- **out-of-scope (sequenced for later):** F-3 guided runner, F-4 muscle
+  browse/heatmap, U-8 visual pass, per-set/pyramid prescriptions, prescribed
+  weights.
+- **RLS hardening follow-up:** the pre-existing `workout_sets` and
+  `recipe_ingredients` UPDATE policies have `using` but no `with check` (a
+  user could re-point a child row into another user's parent). F-2's new child
+  tables (`routine_exercises`, `program_days`) close this with both clauses;
+  backfill the two older tables in a follow-up migration.
 
 ### Sketch — mechanics
 - **OFF write API:** `POST https://world.openfoodfacts.org/cgi/product_jqm2.pl`

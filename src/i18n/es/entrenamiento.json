@@ -46,7 +46,8 @@
     "searching": "Buscando…",
     "noResults": "Sin resultados",
     "createNew": "Crear \"{{name}}\"",
-    "change": "Cambiar"
+    "change": "Cambiar",
+    "allMuscles": "Todos los músculos"
   },
   "history": {
     "empty": "Aún no has registrado series para este ejercicio.",
@@ -102,5 +103,75 @@
       "band": "Goma",
       "other": "Otro"
     }
+  },
+  "tabs": {
+    "routines": "Rutinas",
+    "programs": "Programas"
+  },
+  "routine": {
+    "newTitle": "Nueva rutina",
+    "editTitle": "Editar rutina",
+    "back": "Volver",
+    "name": "Nombre",
+    "namePlaceholder": "p. ej. Empuje A",
+    "notes": "Notas",
+    "notesPlaceholder": "Notas opcionales",
+    "save": "Guardar rutina",
+    "saving": "Guardando…",
+    "addExercise": "Añadir ejercicio",
+    "removeExercise": "Quitar ejercicio",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "targetSets": "Series",
+    "repsMin": "Reps mín.",
+    "repsMax": "Reps máx.",
+    "restSeconds": "Descanso (s)",
+    "targetRpe": "RPE objetivo",
+    "listEmpty": "Aún no has creado rutinas.",
+    "create": "Nueva rutina",
+    "deleteConfirm": "Eliminar rutina",
+    "exerciseCount_one": "{{count}} ejercicio",
+    "exerciseCount_other": "{{count}} ejercicios",
+    "pageTitle": "Rutinas y programas",
+    "warmupTitle": "Calentamiento",
+    "warmupPct": "% del peso",
+    "warmupReps": "Reps",
+    "addWarmup": "Añadir calentamiento",
+    "removeWarmup": "Quitar calentamiento"
+  },
+  "program": {
+    "newTitle": "Nuevo programa",
+    "editTitle": "Editar programa",
+    "back": "Volver",
+    "name": "Nombre",
+    "namePlaceholder": "p. ej. PPL",
+    "save": "Guardar programa",
+    "saving": "Guardando…",
+    "addDay": "Añadir día",
+    "removeDay": "Quitar día",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "restDay": "Descanso",
+    "routineDay": "Rutina",
+    "pickRoutine": "Elige una rutina",
+    "cycleLength_one": "Ciclo de {{count}} día",
+    "cycleLength_other": "Ciclo de {{count}} días",
+    "activate": "Activar",
+    "active": "Activo",
+    "anchorDate": "Fecha de inicio",
+    "listEmpty": "Aún no has creado programas.",
+    "create": "Nuevo programa",
+    "deleteConfirm": "Eliminar programa"
+  },
+  "today": {
+    "heading": "Hoy",
+    "rest": "Día de descanso",
+    "start": "Empezar / Registrar",
+    "done": "✓ Hecho",
+    "createProgram": "Crear programa",
+    "restartCycle": "Reiniciar ciclo hoy",
+    "upcoming": "Próximos días",
+    "recentSessions": "Entrenos recientes",
+    "noActiveProgram": "No tienes ningún programa activo"
   }
 }

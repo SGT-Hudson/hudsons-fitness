@@ -6,12 +6,14 @@ import {
   searchExercises,
   type Exercise,
   type ExerciseCreateInput,
+  type ExerciseSearchOptions,
 } from './api';
 
-export function useExerciseSearch(query: string, limit = 20) {
+export function useExerciseSearch(query: string, opts: ExerciseSearchOptions = {}) {
+  const { limit = 20, muscle = null, textMuscles = [] } = opts;
   return useQuery({
-    queryKey: ['exercises', 'search', query, limit] as const,
-    queryFn: () => searchExercises(query, limit),
+    queryKey: ['exercises', 'search', query, limit, muscle, textMuscles] as const,
+    queryFn: () => searchExercises(query, { limit, muscle, textMuscles }),
     placeholderData: (prev) => prev,
   });
 }

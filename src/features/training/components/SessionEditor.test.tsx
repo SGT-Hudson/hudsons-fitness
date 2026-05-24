@@ -90,6 +90,8 @@ describe('SessionEditor (Tier-2)', () => {
       performed_on: '2026-05-22',
       title: 'Push day',
       notes: null,
+      program_id: null,
+      routine_id: null,
       created_at: '2026-05-22T10:00:00Z',
       updated_at: '2026-05-22T10:00:00Z',
       workout_sets: [
@@ -170,5 +172,154 @@ describe('SessionEditor (Tier-2)', () => {
     await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:editor.save') }));
 
     await waitFor(() => expect(onSubmit).not.toHaveBeenCalled());
+  });
+
+  it('adopts resolved exercise when initialExercises is populated after mount (async race regression)', async () => {
+    const exId = '44444444-4444-4444-4444-444444444444';
+    const resolvedExercise: Exercise = {
+      ...mockExercise,
+      id: exId,
+      name_es: 'Curl de bíceps',
+      name_en: 'Bicep curl',
+    };
+    const initial: SessionWithSets = {
+      id: 'session-async',
+      user_id: 'user-1',
+      performed_on: '2026-05-24',
+      title: 'Arm day',
+      notes: null,
+      program_id: null,
+      routine_id: null,
+      created_at: '2026-05-24T10:00:00Z',
+      updated_at: '2026-05-24T10:00:00Z',
+      workout_sets: [
+        {
+          id: 's1',
+          session_id: 'session-async',
+          exercise_id: exId,
+          set_index: 1,
+          reps: 10,
+          weight_kg: 20,
+          rpe: null,
+          is_warmup: false,
+          created_at: '2026-05-24T10:00:01Z',
+        },
+      ],
+    };
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const onSubmit = vi.fn().mockResolvedValue('saved-id');
+    const onSaved = vi.fn();
+
+    // First render: exercises map is empty (not yet resolved).
+    const { rerender } = render(
+      <QueryClientProvider client={qc}>
+        <SessionEditor
+          initial={initial}
+          initialExercises={{}}
+          onSubmit={onSubmit}
+          onSaved={onSaved}
+        />
+      </QueryClientProvider>,
+    );
+
+    // Block has mounted but exercises map was empty — picker must show empty state
+    // (ExerciseBlock renders ExercisePicker only in the "no exercise" branch).
+    expect(screen.getByTestId('picker-empty')).toBeTruthy();
+
+    // Re-render with the resolved exercises map (simulates async query completion).
+    rerender(
+      <QueryClientProvider client={qc}>
+        <SessionEditor
+          initial={initial}
+          initialExercises={{ [exId]: resolvedExercise }}
+          onSubmit={onSubmit}
+          onSaved={onSaved}
+        />
+      </QueryClientProvider>,
+    );
+
+    // After prop update the block must adopt the resolved exercise: the picker
+    // empty state disappears and the exercise name is shown in the block header.
+    await waitFor(() => {
+      expect(screen.queryByTestId('picker-empty')).toBeNull();
+      expect(screen.getByText('Curl de bíceps')).toBeTruthy();
+    });
+  });
+
+  it('prefills a fresh session from a routine and submits both exercises with program/routine stamps', async () => {
+    const user = userEvent.setup();
+    const bench: Exercise = { ...mockExercise, id: '22222222-2222-2222-2222-222222222222' };
+    const squat: Exercise = {
+      ...mockExercise, id: '33333333-3333-3333-3333-333333333333', name_es: 'Sentadilla', name_en: 'Squat',
+    };
+    const prefill = {
+      programId: 'prog-1',
+      routineId: 'rout-1',
+      exercises: [
+        { exerciseId: bench.id, sets: [{ setIndex: 1, isWarmup: false, reps: null, weightKg: null, targetRepsMin: 8, targetRepsMax: 12, restSeconds: 120, targetRpe: null }] },
+        { exerciseId: squat.id, sets: [{ setIndex: 1, isWarmup: false, reps: null, weightKg: null, targetRepsMin: 5, targetRepsMax: 5, restSeconds: 180, targetRpe: null }] },
+      ],
+      exercisesById: { [bench.id]: bench, [squat.id]: squat },
+    };
+
+    // Regression guard: the [initial]-effect must reproduce the prefill on
+    // mount, not wipe it down to one empty block.
+    const { onSubmit } = renderEditor({ prefill });
+
+    await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:editor.save') }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload.programId).toBe('prog-1');
+    expect(payload.routineId).toBe('rout-1');
+    expect(new Set(payload.sets.map((s: { exercise_id: string }) => s.exercise_id)))
+      .toEqual(new Set([bench.id, squat.id]));
+  });
+
+  it('prefills warmup sets with is_warmup:true and working sets with is_warmup:false; set_index contiguous after a remove', async () => {
+    const user = userEvent.setup();
+    const bench: Exercise = { ...mockExercise, id: '22222222-2222-2222-2222-222222222222' };
+
+    // 1 warmup + 2 working = 3 sets total
+    const prefill = {
+      programId: 'prog-warmup',
+      routineId: 'rout-warmup',
+      exercises: [
+        {
+          exerciseId: bench.id,
+          sets: [
+            { setIndex: 1, isWarmup: true,  reps: 5, weightKg: 25,   targetRepsMin: 5, targetRepsMax: 5, restSeconds: 120, targetRpe: null },
+            { setIndex: 2, isWarmup: false, reps: null, weightKg: null, targetRepsMin: 5, targetRepsMax: 5, restSeconds: 120, targetRpe: null },
+            { setIndex: 3, isWarmup: false, reps: null, weightKg: null, targetRepsMin: 5, targetRepsMax: 5, restSeconds: 120, targetRpe: null },
+          ],
+        },
+      ],
+      exercisesById: { [bench.id]: bench },
+    };
+
+    const { onSubmit } = renderEditor({ prefill });
+
+    // The warmup row is pre-filled (reps=5, weight_kg=25) — editor renders
+    await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:editor.save') }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const payload = onSubmit.mock.calls[0][0];
+
+    // All sets belong to bench
+    expect(payload.sets.every((s: { exercise_id: string }) => s.exercise_id === bench.id)).toBe(true);
+
+    // Warmup set is flagged correctly
+    const warmupSets = payload.sets.filter((s: { is_warmup: boolean }) => s.is_warmup);
+    const workingSets = payload.sets.filter((s: { is_warmup: boolean }) => !s.is_warmup);
+    expect(warmupSets).toHaveLength(1);
+    expect(workingSets).toHaveLength(2);
+
+    // Warmup was pre-filled with reps:5 weight_kg:25
+    expect(warmupSets[0]).toMatchObject({ reps: 5, weight_kg: 25, is_warmup: true });
+
+    // set_index is contiguous from 1 after submit flatten
+    const indices = payload.sets.map((s: { set_index: number }) => s.set_index).sort((a: number, b: number) => a - b);
+    expect(indices).toEqual([1, 2, 3]);
   });
 });

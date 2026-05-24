@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,15 +8,24 @@ import { SessionEditor } from '@/features/training/components/SessionEditor';
 import { useSaveWorkout, useSession } from '@/features/training/hooks';
 import { supabase } from '@/lib/supabase';
 import type { Exercise } from '@/features/training/exercises/api';
+import type { PrefillExercise } from '@/core/programs';
 
 export function SessionEditorPage() {
   const { t } = useTranslation('entrenamiento');
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id?: string }>();
   const isEdit = !!id;
   const session = useSession(isEdit ? id : null);
   const save = useSaveWorkout();
   const [exerciseMap, setExerciseMap] = useState<Record<string, Exercise>>({});
+
+  const prefill = (location.state as { prefill?: {
+    programId: string | null;
+    routineId: string | null;
+    exercises: PrefillExercise[];
+    exercisesById: Record<string, Exercise>;
+  } } | null)?.prefill ?? null;
 
   // For edit mode: resolve every distinct exercise_id in the session to a
   // full Exercise row so ExerciseBlock can render the name + use the row
@@ -67,6 +76,7 @@ export function SessionEditorPage() {
       <SessionEditor
         initial={session.data ?? null}
         initialExercises={exerciseMap}
+        prefill={prefill}
         onSubmit={(payload) => save.mutateAsync(payload)}
         onSaved={() => navigate('/training')}
       />

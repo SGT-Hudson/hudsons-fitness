@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FormProvider,
   useFieldArray,
@@ -27,6 +27,14 @@ interface Props {
    * the editor itself doesn't need to know how to fetch them.
    */
   initialExercises?: Record<string, Exercise>;
+  /** Pre-populate a fresh session from a routine (spec §6.2). Ignored when
+   *  `initial` is provided (edit mode wins). */
+  prefill?: {
+    programId: string | null;
+    routineId: string | null;
+    exercises: import('@/core/programs').PrefillExercise[];
+    exercisesById: Record<string, Exercise>;
+  } | null;
   /**
    * Save mutation injected as a prop (mirrors `PhaseDialog.onSave`) — keeps
    * the editor unit-testable without mocking TanStack hooks.
@@ -45,40 +53,63 @@ function newBlock() {
 
 function deriveInitialForm(
   initial: SessionWithSets | null,
+  prefill?: Props['prefill'],
 ): SessionFormValues {
-  if (!initial) {
+  if (initial) {
+    // Edit mode: map existing session data, ignore prefill.
+    const grouped = new Map<string, SessionWithSets['workout_sets']>();
+    for (const s of initial.workout_sets ?? []) {
+      const arr = grouped.get(s.exercise_id) ?? [];
+      arr.push(s);
+      grouped.set(s.exercise_id, arr);
+    }
+    const blocks = Array.from(grouped.entries()).map(([exercise_id, rows]) => ({
+      exercise_id,
+      sets: rows
+        .slice()
+        .sort((a, b) => a.set_index - b.set_index)
+        .map((r) => ({
+          set_index: r.set_index,
+          reps: r.reps,
+          weight_kg: Number(r.weight_kg),
+          rpe: r.rpe === null ? null : Number(r.rpe),
+          is_warmup: r.is_warmup,
+        })),
+    }));
+    return {
+      performed_on: initial.performed_on,
+      title: initial.title,
+      notes: initial.notes,
+      blocks: blocks.length > 0 ? blocks : [newBlock()],
+    };
+  }
+
+  if (prefill && prefill.exercises.length > 0) {
+    // New session pre-populated from a routine.
+    const blocks = prefill.exercises.map((ex) => ({
+      exercise_id: ex.exerciseId,
+      sets: ex.sets.map((s) => ({
+        set_index: s.setIndex,
+        reps: s.reps ?? 0,
+        weight_kg: s.weightKg ?? 0,
+        rpe: s.targetRpe ?? null,
+        is_warmup: s.isWarmup,
+      })),
+    }));
     return {
       performed_on: todayInTZ(),
       title: null,
       notes: null,
-      blocks: [newBlock()],
+      blocks,
     };
   }
-  // Group sets by exercise_id, preserving set_index order.
-  const grouped = new Map<string, SessionWithSets['workout_sets']>();
-  for (const s of initial.workout_sets ?? []) {
-    const arr = grouped.get(s.exercise_id) ?? [];
-    arr.push(s);
-    grouped.set(s.exercise_id, arr);
-  }
-  const blocks = Array.from(grouped.entries()).map(([exercise_id, rows]) => ({
-    exercise_id,
-    sets: rows
-      .slice()
-      .sort((a, b) => a.set_index - b.set_index)
-      .map((r) => ({
-        set_index: r.set_index,
-        reps: r.reps,
-        weight_kg: Number(r.weight_kg),
-        rpe: r.rpe === null ? null : Number(r.rpe),
-        is_warmup: r.is_warmup,
-      })),
-  }));
+
+  // Empty new session.
   return {
-    performed_on: initial.performed_on,
-    title: initial.title,
-    notes: initial.notes,
-    blocks: blocks.length > 0 ? blocks : [newBlock()],
+    performed_on: todayInTZ(),
+    title: null,
+    notes: null,
+    blocks: [newBlock()],
   };
 }
 
@@ -88,7 +119,7 @@ function deriveInitialForm(
  * within each exercise so `set_index` is contiguous from 1) and hands
  * the payload to the injected `onSubmit`.
  */
-export function SessionEditor({ initial, initialExercises = {}, onSubmit, onSaved }: Props) {
+export function SessionEditor({ initial, initialExercises = {}, prefill, onSubmit, onSaved }: Props) {
   const { t } = useTranslation('entrenamiento');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,14 +127,35 @@ export function SessionEditor({ initial, initialExercises = {}, onSubmit, onSave
 
   const methods = useForm<SessionFormValues>({
     resolver: zodResolver(sessionSchema),
-    defaultValues: deriveInitialForm(initial),
+    defaultValues: deriveInitialForm(initial, prefill),
   });
   const { control, handleSubmit, register } = methods;
 
   const blocks = useFieldArray({ control, name: 'blocks' });
 
+  // RHF's useFieldArray regenerates field.id whenever setValue() is called on
+  // a path inside the array (e.g. blocks.0.exercise_id). Using field.id as the
+  // React key therefore causes ExerciseBlock to unmount+remount on every pick,
+  // which discards the local exercise state set by setExercise(). We keep a
+  // parallel ref-array of stable IDs seeded to match the initial block count.
+  const stableBlockKeys = useRef<string[]>(
+    deriveInitialForm(initial, prefill).blocks.map((_, i) => `block-init-${i}`),
+  );
+
+  // Seed exercises map: for edit mode use initialExercises; for prefill mode
+  // fall back to prefill.exercisesById so each block renders its name immediately.
+  const exercisesMap: Record<string, Exercise> =
+    initial != null || Object.keys(initialExercises).length > 0
+      ? initialExercises
+      : (prefill?.exercisesById ?? {});
+
   useEffect(() => {
-    methods.reset(deriveInitialForm(initial));
+    // Must mirror the `defaultValues` derivation (incl. prefill) — this effect
+    // also fires on mount, so dropping prefill here would wipe a prefilled
+    // fresh session down to one empty block.
+    const next = deriveInitialForm(initial, prefill);
+    methods.reset(next);
+    stableBlockKeys.current = next.blocks.map((_, i) => `block-init-${i}`);
     // We intentionally don't depend on methods (stable across renders);
     // reset on initial-row identity change only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -135,6 +187,8 @@ export function SessionEditor({ initial, initialExercises = {}, onSubmit, onSave
         title: values.title ?? null,
         notes: values.notes ?? null,
         sets: flatSets,
+        programId: prefill?.programId ?? null,
+        routineId: prefill?.routineId ?? null,
       });
       onSaved?.(typeof newId === 'string' ? newId : initial?.id ?? null);
     } catch (err) {
@@ -179,11 +233,14 @@ export function SessionEditor({ initial, initialExercises = {}, onSubmit, onSave
         <div className="space-y-3">
           {blocks.fields.map((field, i) => (
             <ExerciseBlock
-              key={field.id}
+              key={stableBlockKeys.current[i] ?? field.id}
               blockIndex={i}
               todayISO={todayISO}
-              initialExercise={initialExercises[field.exercise_id] ?? null}
-              onRemoveBlock={() => blocks.remove(i)}
+              initialExercise={exercisesMap[field.exercise_id] ?? null}
+              onRemoveBlock={() => {
+                blocks.remove(i);
+                stableBlockKeys.current.splice(i, 1);
+              }}
             />
           ))}
         </div>
@@ -191,7 +248,10 @@ export function SessionEditor({ initial, initialExercises = {}, onSubmit, onSave
         <Button
           type="button"
           variant="outline"
-          onClick={() => blocks.append(newBlock())}
+          onClick={() => {
+            blocks.append(newBlock());
+            stableBlockKeys.current.push(`block-append-${Date.now()}`);
+          }}
           className="w-full"
         >
           <Plus className="h-4 w-4 mr-1" />
