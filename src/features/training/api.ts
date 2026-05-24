@@ -9,6 +9,7 @@ export interface SessionListItem {
   id: string;
   performed_on: string;
   title: string | null;
+  routine_id: string | null;
   set_count: number;
 }
 
@@ -31,12 +32,14 @@ export interface SaveWorkoutPayload {
   title: string | null;
   notes: string | null;
   sets: SaveWorkoutSet[];
+  programId?: string | null;
+  routineId?: string | null;
 }
 
 export async function listSessions(userId: string, limit = 50): Promise<SessionListItem[]> {
   const { data, error } = await supabase
     .from('workout_sessions')
-    .select('id, performed_on, title, workout_sets(id)')
+    .select('id, performed_on, title, routine_id, workout_sets(id)')
     .eq('user_id', userId)
     .order('performed_on', { ascending: false })
     .limit(limit);
@@ -45,6 +48,7 @@ export async function listSessions(userId: string, limit = 50): Promise<SessionL
     id: s.id,
     performed_on: s.performed_on,
     title: s.title,
+    routine_id: (s as unknown as { routine_id: string | null }).routine_id ?? null,
     set_count: s.workout_sets?.length ?? 0,
   }));
 }
@@ -121,6 +125,8 @@ export async function saveWorkout(payload: SaveWorkoutPayload): Promise<string> 
     p_title: payload.title,
     p_notes: payload.notes,
     p_sets: payload.sets as unknown as Json,
+    p_program_id: payload.programId ?? null,
+    p_routine_id: payload.routineId ?? null,
   });
   if (error) throw error;
   return data as string;

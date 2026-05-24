@@ -21,6 +21,9 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { EntrenamientoPage } from '@/pages/EntrenamientoPage';
 import { SessionEditorPage } from '@/pages/SessionEditorPage';
 import { ExerciseHistoryPage } from '@/pages/ExerciseHistoryPage';
+import { RoutinePage } from '@/pages/RoutinePage';
+import { RoutineEditorPage } from '@/pages/RoutineEditorPage';
+import { ProgramEditorPage } from '@/pages/ProgramEditorPage';
 
 const ProgresoPage = lazy(() =>
   import('@/pages/ProgresoPage').then((m) => ({ default: m.ProgresoPage })),
@@ -106,7 +109,11 @@ export function AppRoutes() {
           <Route path="/training/new" element={<SessionEditorPage />} />
           <Route path="/training/:id" element={<SessionEditorPage />} />
           <Route path="/training/exercises/:id" element={<ExerciseHistoryPage />} />
-          <Route path="/routine" element={<EnProgresoPage />} />
+          <Route path="/routine" element={<RoutinePage />} />
+          <Route path="/routine/rutinas/nueva" element={<RoutineEditorPage />} />
+          <Route path="/routine/rutinas/:id" element={<RoutineEditorPage />} />
+          <Route path="/routine/programas/nuevo" element={<ProgramEditorPage />} />
+          <Route path="/routine/programas/:id" element={<ProgramEditorPage />} />
           <Route path="/exercises" element={<EnProgresoPage />} />
 
           {/* Shared */}

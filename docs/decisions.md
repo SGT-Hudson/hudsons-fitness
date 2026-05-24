@@ -53,6 +53,7 @@ The `R-xx` items are defined in `roadmap.md`.
 - D-F5 — Cron Vault auth — confirm + cron liveness alerting + ops runbook
 - D-F6 — Theme localStorage/FOUC — confirm + document the D-E1 contrast
 - D-F7 — Ship flow: develop integration branch + reviewed promotion
+- D-F8 — F-2 Training Routines & Cyclic Planner: two-layer model, calendar-anchored scheduling, no materialization, one-active-program index, set_active_program as an RPC
 
 ## D-A1 — Shared crowdsourced `ingredients` library — keep
 
@@ -345,3 +346,19 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **Why:** Under D-F2 `main` was simultaneously the integration target and the Vercel production branch with no required human review, so any green PR auto-deployed to production — the only brake an opt-out label. Decoupling integration from release adds exactly one deliberate gate at the point production risk lives, while preserving the hands-off autonomy for day-to-day feature work (auto-merge simply retargets to `develop`) and yielding a free staging soak surface (the `develop` Vercel preview). Promotion uses an ephemeral `release/*` branch as the PR head because `delete_branch_on_merge=true` would otherwise delete `develop` (it is never a PR head). Supersedes the D-F2 single-branch convention.
 
 **Status:** decided · done (2026-05-19)
+
+## D-F8 — F-2 Training Routines & Cyclic Planner: two-layer model, calendar-anchored scheduling, no materialization, one-active-program index, set_active_program as an RPC
+
+**Ruling:** Five binding decisions govern the F-2 (routines + cyclic planner) design, recorded here for permanence. Refer to the spec (`docs/superpowers/specs/2026-05-24-training-routines-planner-design.md`) for the full rationale.
+
+**(a) Two-layer model.** Separate `routines` (reusable, named, user-owned exercise templates with target sets/reps/RPE/rest) from `programs` (a cycle that references routines in a day-ordered sequence). A routine may appear in many programs; a program day carries a nullable `routine_id` (rest day when null). The two-layer split matches how practitioners organise training: a "Push A" routine is a stable reusable unit; an "Upper/Lower 4-day cycle" is the cycle that references it.
+
+**(b) Calendar-anchored scheduling with restart-from-today re-anchor.** A program cycle is positioned in time by a single `anchor_date` (the calendar date corresponding to `day_index = 0`). Today's slot = `(today − anchor_date) mod cycle_length`. Re-anchoring ("start from today") updates `anchor_date` so that today maps to `day_index = 0`. The alternative — an advancing/queue model that tracks the last-completed day — was rejected: it requires a persistent cursor that drifts on training gaps and needs reconciliation logic on rest days. The anchor-date model is near-stateless (one date field) and the re-anchor button recovers most flexibility: if the user skips days, they re-anchor and the cycle continues cleanly.
+
+**(c) No materialization — today's slot computed on the fly.** The active program's day sequence is never written to a secondary table or cache. The function `getTodaySlot(program, today)` in `src/core/programs.ts` computes the slot purely from `anchor_date` and the `program_days` array. This matches the no-materialization stance of the rest of the app (D-D6 keeps `materialize_plan_for_date` as a DB-level upsert for meal logs, but the training planner has no equivalent need — the computed slot is just a pointer to a routine, not a row to create).
+
+**(d) One active program per user via partial unique index.** `programs_one_active_uidx` is a partial unique index on `(user_id) WHERE is_active`. At most one program can have `is_active = true` per user at the DB level — no application-layer guard is needed. This is cheaper and more reliable than a `profiles.active_program_id` FK column (which would duplicate state and require a two-table update).
+
+**(e) `set_active_program` is kept as an RPC despite mutating a single table.** The D-C5 invariant requires an RPC only for >1-table atomic mutations; technically a client-side `UPDATE programs SET is_active = false WHERE user_id = … AND is_active; UPDATE programs SET is_active = true … ` would work. It is an RPC anyway because the two `UPDATE`s must be atomic with respect to the partial unique index: between the two client-side statements the index would transiently see two active rows, causing a constraint violation. A single RPC deactivates all others then activates the target in one transaction, making the flip always safe.
+
+**Status:** decided · roadmap: R-22
