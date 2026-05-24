@@ -504,6 +504,10 @@ complete history rather than the lone Sprint-9 file.
 20260522120030_training_exercises_rls.sql           # applied 2026-05-21 (R-19, LAST DDL of the set)
 20260523120000_r21_profiles_contribute_to_off.sql   # applied 2026-05-21 (R-21 — later removed)
 20260524120000_r21_drop_contribute_to_off.sql       # STAGED — R-21 REMOVED (drops the column; apply after the removal reaches main)
+20260528120000_f2_routines.sql                      # STAGED — F-2 (R-22): routines + routine_exercises tables + RLS
+20260528120010_f2_programs.sql                      # STAGED — F-2 (R-22): programs + program_days tables + RLS; applies AFTER f2_routines (program_days refs routines)
+20260528120020_f2_workout_session_stamps.sql        # STAGED — F-2 (R-22): adds program_id + routine_id stamp columns to workout_sessions; applies AFTER f2_programs
+20260528120030_f2_rpcs.sql                          # STAGED — F-2 (R-22): save_routine, save_program, set_active_program RPCs; replaces 5-arg save_workout with 7-arg; applies LAST (refs all F-2 tables)
 ```
 
 **R-21 OFF contribute-back — REMOVED (2026-05-21).** The feature was pulled as
@@ -527,6 +531,8 @@ references `workout_sessions` and `workout_sets` (Task 2 first);
 LAST DDL of the set. Post-apply check confirmed 34 system-seed exercises,
 the two workout tables, the `save_workout` RPC, and 12 RLS policies; the
 security advisor flagged nothing new.
+
+**F-2 (R-22) Wave-3 apply procedure (PENDING — staged on `claude/training-routines-planner-spec`).** The four F-2 migrations must be applied **in order** (filename-lexicographic = build order) via `apply_migration` AFTER R-19's four training migrations are already live (confirmed applied 2026-05-21). They are NOT mutually order-free: `f2_programs` references `routines` (must come after `f2_routines`); `f2_workout_session_stamps` adds FK columns referencing both `programs` and `routines` (must come after `f2_programs`); `f2_rpcs` references all four F-2 tables and drops/recreates the 5-arg `save_workout` signature (must be LAST). Merge the F-2 code branch AFTER all four migrations are applied (the 7-arg `save_workout` RPC must exist in prod before the calling code is live).
 
 **R-01 Wave-3 apply procedure (executed 2026-05-20).** The eight R-01
 migrations were applied **in order** (filename-lexicographic = build

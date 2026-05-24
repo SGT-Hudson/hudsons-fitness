@@ -12,11 +12,11 @@
 
 ## Overview
 
-Hudson's Fitness has 15 tables, all RLS-enabled. Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The one deliberate exception is `ingredients`, which is the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
+Hudson's Fitness has 18 tables in prod (the original 15, plus 3 Training MVP tables added by R-19 and applied 2026-05-21: `exercises`, `workout_sessions`, `workout_sets`), all RLS-enabled. Four additional tables are staged for F-2 (`routines`, `routine_exercises`, `programs`, `program_days`) and will bring the total to 22 once applied. Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The one deliberate exception is `ingredients`, which is the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
 
 ## Tables
 
-Schema and column lists below are authoritative from `src/types/database.ts` — hand-written today to mirror the live Supabase database, and slated to become generated from the real DB per D-A8/R-04. The legacy `hudsons-fitness-architecture.md` spec has drifted and is being retired; it must not be trusted for column lists wherever it conflicts with `src/types/database.ts` (it is still used here only for human-readable column purpose and the RLS / RPC / view / extension / flow narrative).
+Schema and column lists below are authoritative from `src/types/database.ts` (generated, R-04). Tables from R-19 and the staged F-2 tables are documented here even though `src/types/database.ts` has not yet been regenerated post-F-2-apply (the staged migrations have not been applied to prod). The legacy `hudsons-fitness-architecture.md` spec has drifted and is being retired; it must not be trusted for column lists wherever it conflicts with `src/types/database.ts` or the migration files in `supabase/migrations/`.
 
 ### `profiles`
 
@@ -305,11 +305,126 @@ Per-user persistent adaptive-filter memory (one row per user; upserted daily by 
 
 Standard per-user RLS (the four `auth.uid() = user_id` policies); the edge function writes via the service role (RLS-bypassing).
 
+### `exercises` (shared pool — R-19, applied 2026-05-21)
+
+Shared pool of exercises following the post-R-01 ingredient-pool shape: `created_by_user_id = null` = immutable system seed; a real user id = user-contributed; creator-hide transfers ownership to the library anon sentinel (same pattern as `ingredients`). Bilingual names with trigram indexes for search.
+
+| Column | Type / constraint |
+|---|---|
+| `id` | `uuid` primary key default `gen_random_uuid()` |
+| `name_es` | `text` not null — primary Spanish name |
+| `name_en` | `text` null — optional English name |
+| `primary_muscle` | `text` null, check in (`'chest'`, `'back'`, `'shoulders'`, `'quads'`, `'hamstrings'`, `'glutes'`, `'calves'`, `'biceps'`, `'triceps'`, `'core'`, `'forearms'`, `'full_body'`) |
+| `equipment` | `text` null, check in (`'barbell'`, `'dumbbell'`, `'kettlebell'`, `'machine'`, `'cable'`, `'bodyweight'`, `'band'`, `'other'`) |
+| `default_increment_kg` | `numeric` null, check `> 0` — used by the double-progression coach rule |
+| `is_verified` | `boolean` not null default false |
+| `created_by_user_id` | `uuid` null, references `auth.users(id)` on delete set null |
+| `source` | `text` not null default `'manual'`, check in (`'manual'`, `'system'`) |
+| `created_at` | `timestamptz` not null default `now()` |
+| `updated_at` | `timestamptz` not null default `now()` |
+
+Trigram indexes `idx_exercises_name_es_trgm` (gin on `name_es`) and `idx_exercises_name_en_trgm` (gin on `name_en` where not null). Ships with 34 system-seed exercises (verified applied 2026-05-21).
+
+### `workout_sessions` (R-19, applied 2026-05-21; extended by F-2 — staged)
+
+One row per logged workout session. Multiple sessions per day are allowed (no unique on `(user_id, performed_on)`). Index `idx_workout_sessions_user_date` on `(user_id, performed_on desc)`.
+
+| Column | Type / constraint |
+|---|---|
+| `id` | `uuid` primary key default `gen_random_uuid()` |
+| `user_id` | `uuid` not null, references `auth.users(id)` on delete cascade |
+| `performed_on` | `date` not null default `current_date` |
+| `title` | `text` null |
+| `notes` | `text` null |
+| `program_id` | `uuid` null, references `programs(id)` on delete set null — F-2 provenance stamp; null = ad-hoc session |
+| `routine_id` | `uuid` null, references `routines(id)` on delete set null — F-2 provenance stamp; null = ad-hoc session |
+| `created_at` | `timestamptz` not null default `now()` |
+| `updated_at` | `timestamptz` not null default `now()` |
+
+The two provenance columns (`program_id`, `routine_id`) are nullable F-2 additions (STAGED — `20260528120020_f2_workout_session_stamps.sql`). `ON DELETE SET NULL` ensures a logged session survives the deletion of the routine or program that spawned it. Index `idx_workout_sessions_program` on `(program_id) where program_id is not null`.
+
+### `workout_sets` (R-19, applied 2026-05-21)
+
+Child rows of `workout_sessions` (one row per set logged). No `user_id` column — RLS routes through the parent session via an `exists` subquery (mirrors the `recipe_ingredients → recipes` policy shape). `exercise_id` is `ON DELETE RESTRICT` so a historical set can never silently lose its exercise reference. `unique (session_id, exercise_id, set_index)` makes the `save_workout` replace-children RPC race-safe. Index `idx_workout_sets_session` on `(session_id)`.
+
+| Column | Type / constraint |
+|---|---|
+| `id` | `uuid` primary key default `gen_random_uuid()` |
+| `session_id` | `uuid` not null, references `workout_sessions(id)` on delete cascade |
+| `exercise_id` | `uuid` not null, references `exercises(id)` on delete restrict |
+| `set_index` | `integer` not null, check `>= 1` — per-session-per-exercise ordinal |
+| `reps` | `integer` not null, check `>= 0` |
+| `weight_kg` | `numeric(8,2)` not null, check `>= 0` |
+| `rpe` | `numeric(3,1)` null, check between 6.0 and 10.0 in 0.5 steps |
+| `is_warmup` | `boolean` not null default false |
+| `created_at` | `timestamptz` not null default `now()` |
+
+### `routines` (F-2 — STAGED)
+
+User-owned, reusable exercise templates. A routine is a named list of exercise slots with target sets/reps/RPE/rest. It can be referenced by many program days. Index `idx_routines_user` on `(user_id, updated_at desc)`.
+
+| Column | Type / constraint |
+|---|---|
+| `id` | `uuid` primary key default `gen_random_uuid()` |
+| `user_id` | `uuid` not null, references `auth.users(id)` on delete cascade |
+| `name` | `text` not null |
+| `notes` | `text` null |
+| `created_at` | `timestamptz` not null default `now()` |
+| `updated_at` | `timestamptz` not null default `now()` |
+
+### `routine_exercises` (F-2 — STAGED)
+
+Child rows of `routines` — one row per exercise slot in the routine. Ordered by `position` (unique per routine). `exercise_id` is `ON DELETE RESTRICT` to preserve routine integrity. RLS routes through the parent routine via an `exists` subquery (same pattern as `workout_sets`). UPDATE policy carries both `using` and `with check` (closes the re-point-to-another-user's-parent gap). Index `idx_routine_exercises_routine` on `(routine_id)`.
+
+| Column | Type / constraint |
+|---|---|
+| `id` | `uuid` primary key default `gen_random_uuid()` |
+| `routine_id` | `uuid` not null, references `routines(id)` on delete cascade |
+| `exercise_id` | `uuid` not null, references `exercises(id)` on delete restrict |
+| `position` | `int` not null, check `>= 1` — display/execution order; `unique (routine_id, position)` |
+| `target_sets` | `int` not null, check `> 0` |
+| `target_reps_min` | `int` not null, check `> 0` |
+| `target_reps_max` | `int` not null, check `>= target_reps_min` |
+| `rest_seconds` | `int` null, check `>= 0` when set |
+| `target_rpe` | `numeric` null, check between 6.0 and 10.0 in 0.5 steps when set |
+
+### `programs` (F-2 — STAGED)
+
+User-owned training programs (cycles). Each program is a named, ordered list of day slots referencing routines. A program that is `is_active = true` must have an `anchor_date` (enforced by a check constraint). Partial unique index `programs_one_active_uidx` on `(user_id) WHERE is_active` — at most one active program per user at the DB level (D-F8). Index `idx_programs_user` on `(user_id, updated_at desc)`.
+
+| Column | Type / constraint |
+|---|---|
+| `id` | `uuid` primary key default `gen_random_uuid()` |
+| `user_id` | `uuid` not null, references `auth.users(id)` on delete cascade |
+| `name` | `text` not null |
+| `is_active` | `boolean` not null default false |
+| `anchor_date` | `date` null — calendar date corresponding to `day_index = 0`; required when `is_active = true` |
+| `created_at` | `timestamptz` not null default `now()` |
+| `updated_at` | `timestamptz` not null default `now()` |
+
+Check constraint: `not is_active or anchor_date is not null`.
+
+### `program_days` (F-2 — STAGED)
+
+Child rows of `programs` — one row per day in the cycle, identified by `day_index` (0-based, unique per program). A rest day has `is_rest = true` and `routine_id = null`; a training day has `is_rest = false` and a non-null `routine_id`. The check constraint enforces the mutual exclusion. `routine_id` is `ON DELETE RESTRICT` so a routine cannot be deleted while a program references it. RLS routes through the parent program via an `exists` subquery. UPDATE policy carries both `using` and `with check`. Index `idx_program_days_program` on `(program_id, day_index)`.
+
+| Column | Type / constraint |
+|---|---|
+| `id` | `uuid` primary key default `gen_random_uuid()` |
+| `program_id` | `uuid` not null, references `programs(id)` on delete cascade |
+| `day_index` | `int` not null, check `>= 0` — 0-based position; `unique (program_id, day_index)` |
+| `is_rest` | `boolean` not null default false |
+| `routine_id` | `uuid` null, references `routines(id)` on delete restrict — null iff `is_rest = true` |
+
+Check constraint: `(is_rest and routine_id is null) or (not is_rest and routine_id is not null)`.
+
 ## Row-Level Security
 
 Every table is RLS-enabled.
 
-**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `recipes`, `recipe_ingredients` (via join to `recipes`), `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`.
+**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `recipes`, `recipe_ingredients` (via join to `recipes`), `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`, `workout_sessions`, `routines`, `programs`.
+
+**RLS-via-parent-join pattern.** Child tables with no `user_id` column inherit authorization by joining to their parent: `workout_sets` (via `workout_sessions`), `routine_exercises` (via `routines`), `program_days` (via `programs`). Each carries SELECT / INSERT / UPDATE / DELETE policies using an `exists` subquery that checks the parent's `user_id = auth.uid()`. The UPDATE policies on `routine_exercises` and `program_days` carry both `using` and `with check` to prevent a user re-pointing a child row to another user's parent (F-2 closes this gap; `workout_sets` and `recipe_ingredients` carry `using`-only UPDATE policies — a follow-up migration is noted in R-22 to backfill them).
 
 **`ingredients` (shared library).** Different shape (see D-A1):
 - SELECT: any authenticated user reads the entire library (`using (true)`).
@@ -323,18 +438,28 @@ The repo is public, so RLS is the sole security boundary — there is no server-
 
 ## RPCs
 
-Five user-facing RPCs, all `SECURITY INVOKER`, each atomic across multiple tables:
+User-facing RPCs, all `SECURITY INVOKER` with `set search_path = public`, each atomic across multiple tables:
+
+**Nutrition / meal planning (live in prod):**
 - `save_recipe`
 - `save_template`
 - `apply_template_to_week`
 - `save_week_as_template`
-- `materialize_plan_for_date`
+- `materialize_plan_for_date` (R-12 / D-D6)
+
+**Training MVP (R-19, live in prod since 2026-05-21):**
+- `save_workout` — create-or-replace a workout session and its sets (5 args); extended to 7 args by F-2 to accept two nullable provenance stamps (`p_program_id`, `p_routine_id` — both `DEFAULT NULL`; null = ad-hoc). The 5-arg overload was dropped and replaced by the 7-arg signature in `20260528120030_f2_rpcs.sql` (STAGED).
+
+**Training Routines & Cyclic Planner (F-2 — STAGED):**
+- `save_routine` — create-or-replace a routine and its exercise slots (replace-children, mirrors `save_recipe`). INVOKER.
+- `save_program` — create-or-replace a program and its day slots (replace-children). Does NOT touch `is_active` or `anchor_date` — those are owned by `set_active_program`. INVOKER.
+- `set_active_program` — atomic active-flip: deactivates all other programs for the user then activates the target with the given `anchor_date`. Kept as an RPC (rather than client-side) because the two `UPDATE`s must be atomic with respect to the `programs_one_active_uidx` partial unique index — a gap between two client-side statements would transiently violate the constraint (D-F8). INVOKER.
 
 One cron-only exception: `apply_template_to_week_admin` is `SECURITY DEFINER` (Sprint 9), used by scheduled jobs that act across users with the service role.
 
 Invariant (D-C5): any operation that mutates more than one table atomically MUST be an RPC. Single-table mutations stay client-side. All user-callable RPCs must be `SECURITY INVOKER` with `set search_path = public`. `SECURITY DEFINER` is forbidden without explicit security review and a non-`public` schema home; the cron-only `apply_template_to_week_admin` is the documented exception.
 
-`materialize_plan_for_date` (R-12 / D-D6) is the fifth: `SECURITY INVOKER`, `set search_path = public`, in-RPC `date <= today` Europe/Madrid guard, backed by the partial unique index `meal_logs_user_plan_slot_uidx` with `INSERT … ON CONFLICT DO NOTHING`. It replaced the hand-mirrored client/edge materialization copies (single source = the RPC). Live in prod since 2026-05-18 (migration applied, then the calling-code PR merged).
+`materialize_plan_for_date` (R-12 / D-D6): `SECURITY INVOKER`, `set search_path = public`, in-RPC `date <= today` Europe/Madrid guard, backed by the partial unique index `meal_logs_user_plan_slot_uidx` with `INSERT … ON CONFLICT DO NOTHING`. It replaced the hand-mirrored client/edge materialization copies (single source = the RPC). Live in prod since 2026-05-18 (migration applied, then the calling-code PR merged).
 
 ## Views
 
