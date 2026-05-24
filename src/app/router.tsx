@@ -18,6 +18,9 @@ import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { SettingsProfilePage } from '@/pages/settings/SettingsProfilePage';
+import { SettingsBiometricsPage } from '@/pages/settings/SettingsBiometricsPage';
+import { SettingsAccountPage } from '@/pages/settings/SettingsAccountPage';
 import { EntrenamientoPage } from '@/pages/EntrenamientoPage';
 import { SessionEditorPage } from '@/pages/SessionEditorPage';
 import { ExerciseHistoryPage } from '@/pages/ExerciseHistoryPage';
@@ -120,6 +123,9 @@ export function AppRoutes() {
           />
           <Route path="/progress/goals" element={<ObjetivosPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/profile" element={<SettingsProfilePage />} />
+          <Route path="/settings/biometrics" element={<SettingsBiometricsPage />} />
+          <Route path="/settings/account" element={<SettingsAccountPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
