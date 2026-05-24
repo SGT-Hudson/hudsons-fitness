@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
 import {
   createManualIngredient,
@@ -6,6 +6,7 @@ import {
   importIngredientFromOFF,
   listIngredients,
   searchLocalIngredients,
+  searchLocalIngredientsPage,
   updateIngredient,
   type Ingredient,
   type ManualIngredientInput,
@@ -114,5 +115,17 @@ export function useHideIngredient() {
       toastDeleted();
     },
     onError: toastError,
+  });
+}
+
+export function useLocalIngredientSearchPage(
+  query: string,
+  page: number,
+  pageSize: number,
+) {
+  return useQuery({
+    queryKey: ['ingredients', 'search-page', query, page, pageSize],
+    queryFn: () => searchLocalIngredientsPage(query, { page, pageSize }),
+    placeholderData: keepPreviousData,
   });
 }
