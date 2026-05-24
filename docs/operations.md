@@ -508,6 +508,7 @@ complete history rather than the lone Sprint-9 file.
 20260528120010_f2_programs.sql                      # applied 2026-05-24 (F-2 / R-22): programs + program_days tables + RLS; AFTER f2_routines (program_days refs routines)
 20260528120020_f2_workout_session_stamps.sql        # applied 2026-05-24 (F-2 / R-22): adds program_id + routine_id stamp columns to workout_sessions; AFTER f2_programs
 20260528120030_f2_rpcs.sql                          # applied 2026-05-24 (F-2 / R-22): save_routine, save_program, set_active_program RPCs; replaced 5-arg save_workout with 7-arg; LAST (refs all F-2 tables)
+20260529120000_f2b_warmup_sets.sql                  # applied 2026-05-24 (F-2b / R-22): routine_exercises.warmup_sets jsonb + array CHECK; recreated save_routine to persist it (additive, backward-compatible)
 ```
 
 **R-21 OFF contribute-back — REMOVED (2026-05-21).** The feature was pulled as
@@ -533,6 +534,8 @@ the two workout tables, the `save_workout` RPC, and 12 RLS policies; the
 security advisor flagged nothing new.
 
 **F-2 (R-22) Wave-3 apply procedure (executed 2026-05-24).** The four F-2 migrations were applied **in order** (filename-lexicographic = build order) via `apply_migration` after R-19's four training migrations (already live since 2026-05-21). They are NOT mutually order-free: `f2_programs` references `routines` (after `f2_routines`); `f2_workout_session_stamps` adds FK columns referencing both `programs` and `routines` (after `f2_programs`); `f2_rpcs` references all four F-2 tables and drops/recreates the 5-arg `save_workout` signature (LAST). Post-apply check confirmed the 4 tables RLS-enabled with policies, the two `workout_sessions` stamp columns (`program_id`/`routine_id`, nullable), and the 4 RPCs (all `SECURITY INVOKER` + `search_path=public`, granted to `authenticated`; `save_workout` now 7-arg with the old 5-arg signature dropped). Security advisor flagged nothing new. (The code branch was already merged via #122 before this apply; the 7-arg `save_workout` RPC now backs the live calling code.)
+
+**F-2b warm-up sets Wave-3 apply (executed 2026-05-24).** Single migration `20260529120000_f2b_warmup_sets.sql` applied via `apply_migration` after the F-2 set: adds `routine_exercises.warmup_sets jsonb` (+ array-type CHECK) and recreates `save_routine` to persist it (body otherwise identical to the F-2 version). Additive/backward-compatible — merged via #128 before apply. Post-apply check confirmed the `jsonb` column, the CHECK constraint, and that `save_routine` references `warmup_sets`; security advisor flagged nothing new.
 
 **R-01 Wave-3 apply procedure (executed 2026-05-20).** The eight R-01
 migrations were applied **in order** (filename-lexicographic = build
