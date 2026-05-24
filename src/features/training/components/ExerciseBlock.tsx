@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
@@ -35,6 +35,13 @@ export function ExerciseBlock({ blockIndex, todayISO, initialExercise, onRemoveB
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const { control, setValue, getValues } = useFormContext<SessionFormValues>();
   const [exercise, setExercise] = useState<Exercise | null>(initialExercise ?? null);
+
+  // Sync exercise display state when the parent resolves initialExercise
+  // asynchronously (edit mode: exercises map arrives after the block mounts).
+  // Guard on truthy so a later async-null never clobbers a user-picked exercise.
+  useEffect(() => {
+    if (initialExercise) setExercise(initialExercise);
+  }, [initialExercise]);
 
   const sets = useFieldArray({
     control,
