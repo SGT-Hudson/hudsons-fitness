@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { addDays, parseISO } from 'date-fns';
 import { SlotCell, type SlotEntry } from './SlotCell';
@@ -5,6 +6,7 @@ import { DaySummary } from './DaySummary';
 import { aggregateDayMacros } from '@/features/planning/daySummary';
 import { ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { formatDate, type Locale } from '@/lib/dates';
+import { cn } from '@/lib/utils';
 import type { PhaseType } from '@/lib/macroStatus';
 import type { WeekSlotWithRecipe } from '@/features/planner/api';
 
@@ -32,10 +34,9 @@ interface Props {
   onCopyMeal?: (date: string, mealIndex: number) => void;
 }
 
-interface Period {
+interface Row {
   mealIndex: number;
   mealTime: string | null;
-  entries: SlotEntry[];
 }
 
 function toEntry(s: WeekSlotWithRecipe): SlotEntry {
@@ -61,101 +62,118 @@ export function WeekGrid({
   const weekStartDate = parseISO(weekStart);
   const days = Array.from({ length: 7 }, (_, i) => {
     const iso = formatDate(addDays(weekStartDate, i), 'yyyy-MM-dd', locale);
-    return { date: iso, isPast: iso < todayIso };
+    return { date: iso, isToday: iso === todayIso, isPast: iso < todayIso };
   });
 
-  const slotsByDay = new Map<string, WeekSlotWithRecipe[]>();
+  // Row model: one row per configured meal time, then orphan rows (slots whose
+  // meal_index is beyond the configured times — divergent weeks), built from the
+  // union of (meal_index, meal_time) across the week so the matrix stays aligned.
+  const rows: Row[] = mealTimes.map((time, i) => ({ mealIndex: i, mealTime: time }));
+  const orphans = new Map<string, Row>();
   for (const s of slots) {
-    const arr = slotsByDay.get(s.date) ?? [];
-    arr.push(s);
-    slotsByDay.set(s.date, arr);
+    if (s.meal_index < mealTimes.length) continue;
+    const key = `${s.meal_index}|${s.meal_time ?? ''}`;
+    if (!orphans.has(key)) orphans.set(key, { mealIndex: s.meal_index, mealTime: s.meal_time });
   }
+  const orphanRows = Array.from(orphans.values()).sort(
+    (a, b) => a.mealIndex - b.mealIndex || (a.mealTime ?? '').localeCompare(b.mealTime ?? ''),
+  );
+  const allRows = [...rows, ...orphanRows];
 
   const dayTotals = aggregateDayMacros(slots.map((s) => ({ key: s.date, macros: s.macros })));
 
-  function periodsFor(date: string): Period[] {
-    const daySlots = slotsByDay.get(date) ?? [];
-    // One period per configured meal time (always shown, even empty).
-    const periods: Period[] = mealTimes.map((time, i) => ({
-      mealIndex: i,
-      mealTime: time,
-      entries: daySlots.filter((s) => s.meal_index === i).map(toEntry),
-    }));
-    // Orphan slots: meal_index beyond the configured meal_times (divergent week) —
-    // grouped + appended so no planned data is hidden.
-    const orphans = new Map<string, Period>();
-    for (const s of daySlots) {
-      if (s.meal_index < mealTimes.length) continue;
-      const key = `${s.meal_index}|${s.meal_time ?? ''}`;
-      const b = orphans.get(key) ?? { mealIndex: s.meal_index, mealTime: s.meal_time, entries: [] };
-      b.entries.push(toEntry(s));
-      orphans.set(key, b);
-    }
-    const orphanList = Array.from(orphans.values()).sort(
-      (a, b) => a.mealIndex - b.mealIndex || (a.mealTime ?? '').localeCompare(b.mealTime ?? ''),
-    );
-    return [...periods, ...orphanList];
+  function entriesFor(date: string, row: Row): SlotEntry[] {
+    return slots
+      .filter(
+        (s) =>
+          s.date === date &&
+          s.meal_index === row.mealIndex &&
+          (s.meal_time ?? '') === (row.mealTime ?? ''),
+      )
+      .sort((a, b) => a.display_order - b.display_order)
+      .map(toEntry);
   }
 
   return (
     <div className="overflow-x-auto -mx-2 px-2">
       <div
         className="grid gap-2 min-w-max"
-        style={{ gridTemplateColumns: `repeat(7, minmax(170px, 1fr))` }}
+        style={{ gridTemplateColumns: `64px repeat(7, minmax(170px, 1fr))` }}
       >
+        {/* Header row */}
+        <div />
         {days.map((day) => {
           const date = parseISO(day.date);
-          const isToday = day.date === todayIso;
-          const periods = periodsFor(day.date);
           return (
             <div
-              key={day.date}
-              className={
-                'rounded-md border bg-card p-2 space-y-2 ' +
-                (isToday ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : '') +
-                (day.isPast ? ' opacity-70' : '')
-              }
-            >
-              <div className="flex items-baseline justify-between gap-2 pb-1 border-b">
-                <span className="text-xs font-semibold uppercase tracking-wide">
-                  {formatDate(date, 'EEE', locale)}
-                </span>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {formatDate(date, 'd MMM', locale)}
-                </span>
-              </div>
-
-              {periods.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-2">{t('week.noSlots')}</p>
-              ) : (
-                periods.map((p) => (
-                  <SlotCell
-                    key={`${day.date}-${p.mealIndex}-${p.mealTime ?? ''}`}
-                    mealLabel={p.mealTime ? p.mealTime.slice(0, 5) : undefined}
-                    entries={p.entries}
-                    busy={busy}
-                    onAdd={(recipeId, recipeName, servings) =>
-                      onAdd(day.date, p.mealIndex, p.mealTime, { id: recipeId, name: recipeName }, servings)
-                    }
-                    onUpdate={(slotId, recipeId, recipeName, servings) =>
-                      onUpdate(slotId, { id: recipeId, name: recipeName }, servings)
-                    }
-                    onRemove={(slotId) => onRemove(slotId)}
-                    onCopy={onCopyMeal ? () => onCopyMeal(day.date, p.mealIndex) : undefined}
-                    copyLabel={t('slot.copy')}
-                  />
-                ))
+              key={`h-${day.date}`}
+              className={cn(
+                'flex items-baseline justify-between gap-2 pb-1 border-b',
+                day.isToday && 'border-b-2 border-primary',
+                day.isPast && 'opacity-60',
               )}
-
-              <DaySummary
-                totals={dayTotals.get(day.date) ?? ZERO_MACROS}
-                targets={targets}
-                phaseType={phaseType}
-                className="pt-2 border-t mt-1"
-              />
+            >
+              <span
+                className={cn(
+                  'text-xs font-semibold uppercase tracking-wide',
+                  day.isToday && 'text-primary',
+                )}
+              >
+                {formatDate(date, 'EEE', locale)}
+              </span>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {formatDate(date, 'd MMM', locale)}
+              </span>
             </div>
           );
         })}
+
+        {/* TOTAL row */}
+        <div className="text-xs text-muted-foreground self-start pt-2 pr-2 text-right font-semibold uppercase tracking-wide">
+          {t('summary.totalRow')}
+        </div>
+        {days.map((day) => (
+          <div
+            key={`t-${day.date}`}
+            className={cn(
+              'rounded-md border bg-card p-2',
+              day.isToday && 'ring-1 ring-primary',
+              day.isPast && 'opacity-60',
+            )}
+          >
+            <DaySummary
+              totals={dayTotals.get(day.date) ?? ZERO_MACROS}
+              targets={targets}
+              phaseType={phaseType}
+            />
+          </div>
+        ))}
+
+        {/* Meal rows */}
+        {allRows.map((row) => (
+          <Fragment key={`row-${row.mealIndex}-${row.mealTime ?? ''}`}>
+            <div className="text-xs text-muted-foreground tabular-nums self-center pr-2 text-right">
+              {row.mealTime ? row.mealTime.slice(0, 5) : ''}
+            </div>
+            {days.map((day) => (
+              <SlotCell
+                key={`${day.date}-${row.mealIndex}-${row.mealTime ?? ''}`}
+                entries={entriesFor(day.date, row)}
+                busy={busy}
+                className={cn(day.isToday && 'ring-1 ring-primary', day.isPast && 'opacity-60')}
+                onAdd={(recipeId, recipeName, servings) =>
+                  onAdd(day.date, row.mealIndex, row.mealTime, { id: recipeId, name: recipeName }, servings)
+                }
+                onUpdate={(slotId, recipeId, recipeName, servings) =>
+                  onUpdate(slotId, { id: recipeId, name: recipeName }, servings)
+                }
+                onRemove={(slotId) => onRemove(slotId)}
+                onCopy={onCopyMeal ? () => onCopyMeal(day.date, row.mealIndex) : undefined}
+                copyLabel={t('slot.copy')}
+              />
+            ))}
+          </Fragment>
+        ))}
       </div>
     </div>
   );
