@@ -90,6 +90,8 @@ describe('SessionEditor (Tier-2)', () => {
       performed_on: '2026-05-22',
       title: 'Push day',
       notes: null,
+      program_id: null,
+      routine_id: null,
       created_at: '2026-05-22T10:00:00Z',
       updated_at: '2026-05-22T10:00:00Z',
       workout_sets: [

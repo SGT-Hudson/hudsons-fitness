@@ -705,6 +705,84 @@ export type Database = {
         }
         Relationships: []
       }
+      // F-2 hand-edit (interim until R-04 regen): routines + cyclic planner — source supabase/migrations/20260528120000…120030.
+      program_days: {
+        Row: {
+          day_index: number
+          id: string
+          is_rest: boolean
+          program_id: string
+          routine_id: string | null
+        }
+        Insert: {
+          day_index: number
+          id?: string
+          is_rest?: boolean
+          program_id: string
+          routine_id?: string | null
+        }
+        Update: {
+          day_index?: number
+          id?: string
+          is_rest?: boolean
+          program_id?: string
+          routine_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_days_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_days_routine_id_fkey"
+            columns: ["routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programs: {
+        Row: {
+          anchor_date: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anchor_date?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          anchor_date?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipe_ingredients: {
         Row: {
           created_at: string
@@ -746,6 +824,92 @@ export type Database = {
             columns: ["recipe_id"]
             isOneToOne: false
             referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routine_exercises: {
+        Row: {
+          exercise_id: string
+          id: string
+          position: number
+          rest_seconds: number | null
+          routine_id: string
+          target_reps_max: number
+          target_reps_min: number
+          target_rpe: number | null
+          target_sets: number
+        }
+        Insert: {
+          exercise_id: string
+          id?: string
+          position: number
+          rest_seconds?: number | null
+          routine_id: string
+          target_reps_max: number
+          target_reps_min: number
+          target_rpe?: number | null
+          target_sets: number
+        }
+        Update: {
+          exercise_id?: string
+          id?: string
+          position?: number
+          rest_seconds?: number | null
+          routine_id?: string
+          target_reps_max?: number
+          target_reps_min?: number
+          target_rpe?: number | null
+          target_sets?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_exercises_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_exercises_routine_id_fkey"
+            columns: ["routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routines: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routines_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -989,12 +1153,16 @@ export type Database = {
       // workout_sessions + workout_sets — see
       // supabase/migrations/20260522120010_training_sessions_sets.sql
       // for the source of truth (RLS-via-join on workout_sets per §0.5).
+      // F-2 hand-edit: + program_id / routine_id provenance stamps
+      // (migration 20260528120020_f2_workout_session_stamps.sql).
       workout_sessions: {
         Row: {
           created_at: string
           id: string
           notes: string | null
           performed_on: string
+          program_id: string | null
+          routine_id: string | null
           title: string | null
           updated_at: string
           user_id: string
@@ -1004,6 +1172,8 @@ export type Database = {
           id?: string
           notes?: string | null
           performed_on?: string
+          program_id?: string | null
+          routine_id?: string | null
           title?: string | null
           updated_at?: string
           user_id: string
@@ -1013,6 +1183,8 @@ export type Database = {
           id?: string
           notes?: string | null
           performed_on?: string
+          program_id?: string | null
+          routine_id?: string | null
           title?: string | null
           updated_at?: string
           user_id?: string
@@ -1176,15 +1348,45 @@ export type Database = {
       // Training MVP hand-edit (interim until R-04 generated-types regen):
       // save_workout — see supabase/migrations/20260522120020_training_save_workout_rpc.sql
       // (INVOKER, replace-children, mirrors save_recipe shape).
+      // F-2 hand-edit: extended with p_program_id + p_routine_id provenance stamps
+      // (migration 20260528120030_f2_rpcs.sql; both defaulted null → optional).
       save_workout: {
         Args: {
           p_notes: string | null
           p_performed_on: string | null
+          p_program_id?: string | null
+          p_routine_id?: string | null
           p_session_id: string | null
           p_sets: Json
           p_title: string | null
         }
         Returns: string
+      }
+      // F-2 hand-edit (interim until R-04 regen): save_routine / save_program /
+      // set_active_program — see supabase/migrations/20260528120030_f2_rpcs.sql.
+      save_routine: {
+        Args: {
+          p_exercises: Json
+          p_name: string
+          p_notes: string | null
+          p_routine_id: string | null
+        }
+        Returns: string
+      }
+      save_program: {
+        Args: {
+          p_days: Json
+          p_name: string
+          p_program_id: string | null
+        }
+        Returns: string
+      }
+      set_active_program: {
+        Args: {
+          p_anchor_date: string | null
+          p_program_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
