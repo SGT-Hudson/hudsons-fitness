@@ -4,6 +4,7 @@ import { routineSchema, routineExerciseSchema } from './routineSchema';
 const validExercise = {
   exercise_id: '11111111-1111-1111-1111-111111111111',
   target_sets: 3, target_reps_min: 8, target_reps_max: 12, rest_seconds: 120, target_rpe: 8,
+  warmup_sets: [],
 };
 
 describe('routineExerciseSchema', () => {

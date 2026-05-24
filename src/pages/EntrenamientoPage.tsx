@@ -7,19 +7,25 @@ import { TodayPlan } from '@/features/training/components/TodayPlan';
 import { useSessions } from '@/features/training/hooks';
 import { useRoutines } from '@/features/training/routines/hooks';
 import { useActiveProgram, useSetActiveProgram } from '@/features/training/programs/hooks';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { todayInTZ } from '@/lib/dates';
 import { scheduledSlotForDate, prefillSetsFromRoutine } from '@/core/programs';
-import type { RoutineWithExercises } from '@/features/training/routines/api';
+import type { RoutineWithExercises, RoutineWarmupSet } from '@/features/training/routines/api';
 import type { ProgramDay } from '@/features/training/programs/api';
 import type { ProgramDaySlot } from '@/core/programs';
 import { supabase } from '@/lib/supabase';
 import type { Exercise } from '@/features/training/exercises/api';
+import { fetchExerciseHistory } from '@/features/training/api';
+import { lastWorkingSetForExercise } from '@/core/training';
 
 function toSlot(d: ProgramDay): ProgramDaySlot {
   return { dayIndex: d.day_index, isRest: d.is_rest, routineId: d.routine_id };
 }
 
-function toPrescription(re: RoutineWithExercises['routine_exercises'][number]) {
+function toPrescription(
+  re: RoutineWithExercises['routine_exercises'][number],
+  lastWorkingWeightKg: number | null,
+) {
   return {
     exerciseId: re.exercise_id,
     position: re.position,
@@ -28,12 +34,15 @@ function toPrescription(re: RoutineWithExercises['routine_exercises'][number]) {
     targetRepsMax: re.target_reps_max,
     restSeconds: re.rest_seconds,
     targetRpe: re.target_rpe,
+    warmupSets: ((re.warmup_sets as RoutineWarmupSet[] | null) ?? []),
+    lastWorkingWeightKg,
   };
 }
 
 export function EntrenamientoPage() {
   const { t } = useTranslation('entrenamiento');
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const activeProgram = useActiveProgram();
   const routinesQuery = useRoutines();
@@ -58,17 +67,38 @@ export function EntrenamientoPage() {
     );
 
   async function startWorkout(routine: RoutineWithExercises) {
-    const exercises = prefillSetsFromRoutine(routine.routine_exercises.map(toPrescription));
-
-    // Resolve full Exercise rows so the editor can render names
     const ids = routine.routine_exercises.map((re) => re.exercise_id);
+
+    // Resolve exercise rows + per-exercise last working weight in parallel
+    const [exercisesResult, historyResults] = await Promise.all([
+      ids.length > 0
+        ? supabase.from('exercises').select('*').in('id', ids)
+        : Promise.resolve({ data: [] as Exercise[] }),
+      user
+        ? Promise.all(
+            routine.routine_exercises.map((re) =>
+              fetchExerciseHistory(user.id, re.exercise_id).then((history) => ({
+                exerciseId: re.exercise_id,
+                lastSet: lastWorkingSetForExercise(history),
+              })),
+            ),
+          )
+        : Promise.resolve(routine.routine_exercises.map((re) => ({ exerciseId: re.exercise_id, lastSet: null }))),
+    ]);
+
     const exercisesById: Record<string, Exercise> = {};
-    if (ids.length > 0) {
-      const { data } = await supabase.from('exercises').select('*').in('id', ids);
-      for (const ex of data ?? []) {
-        exercisesById[ex.id] = ex as Exercise;
-      }
+    for (const ex of (exercisesResult.data ?? []) as Exercise[]) {
+      exercisesById[ex.id] = ex;
     }
+
+    const lastWeightById: Record<string, number | null> = {};
+    for (const { exerciseId, lastSet } of historyResults) {
+      lastWeightById[exerciseId] = lastSet != null ? Number(lastSet.weightKg) : null;
+    }
+
+    const exercises = prefillSetsFromRoutine(
+      routine.routine_exercises.map((re) => toPrescription(re, lastWeightById[re.exercise_id] ?? null)),
+    );
 
     navigate('/training/new', {
       state: {

@@ -55,4 +55,31 @@ describe('RoutineBuilder (Tier-2)', () => {
     // The first row must STILL show the exercise name (not wiped by the append).
     expect(screen.getByText('Press de banca')).toBeTruthy();
   });
+
+  it('adds a warmup set and submits it in the payload', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue('routine-2');
+    render(<RoutineBuilder initial={null} onSubmit={onSubmit} onSaved={vi.fn()} />);
+
+    await user.type(screen.getByLabelText(i18n.t('entrenamiento:routine.name')), 'Pull A');
+    await user.click(screen.getByText('pick-mock'));
+
+    // Add one warmup set.
+    await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:routine.addWarmup') }));
+
+    // Type into the pct and reps inputs (default values are 50 / 5, clear and retype).
+    const pctInput = screen.getByLabelText(i18n.t('entrenamiento:routine.warmupPct'));
+    await user.clear(pctInput);
+    await user.type(pctInput, '60');
+
+    const repsInput = screen.getByLabelText(i18n.t('entrenamiento:routine.warmupReps'));
+    await user.clear(repsInput);
+    await user.type(repsInput, '8');
+
+    await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:routine.save') }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload.exercises[0].warmup_sets).toEqual([{ pct: 60, reps: 8 }]);
+  });
 });

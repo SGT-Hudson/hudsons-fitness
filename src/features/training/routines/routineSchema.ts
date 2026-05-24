@@ -14,6 +14,12 @@ export const routineExerciseSchema = z
       .refine((v) => v * 2 === Math.floor(v * 2), 'RPE must be in 0.5 steps')
       .nullable()
       .optional(),
+    warmup_sets: z.array(
+      z.object({
+        pct: z.number().int().min(1).max(100),
+        reps: z.number().int().min(1).max(100),
+      }),
+    ),
   })
   .refine((e) => e.target_reps_max >= e.target_reps_min, {
     message: 'Max reps must be ≥ min reps',
