@@ -132,7 +132,12 @@
     "deleteConfirm": "Delete routine",
     "exerciseCount_one": "{{count}} exercise",
     "exerciseCount_other": "{{count}} exercises",
-    "pageTitle": "Routines & programs"
+    "pageTitle": "Routines & programs",
+    "warmupTitle": "Warm-up",
+    "warmupPct": "% of weight",
+    "warmupReps": "Reps",
+    "addWarmup": "Add warm-up",
+    "removeWarmup": "Remove warm-up"
   },
   "program": {
     "newTitle": "New program",

@@ -74,8 +74,9 @@ interface RowProps {
 function ExerciseRow({ index, totalCount, initialExercise, onRemove, onMoveUp, onMoveDown }: RowProps) {
   const { t, i18n } = useTranslation('entrenamiento');
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
-  const { register, setValue } = useFormContext<RoutineFormValues>();
+  const { register, setValue, control } = useFormContext<RoutineFormValues>();
   const [exercise, setExercise] = useState<Exercise | null>(initialExercise ?? null);
+  const warmups = useFieldArray({ control, name: `exercises.${index}.warmup_sets` });
 
   // Sync exercise state if initialExercise changes (edit mode reset).
   useEffect(() => {
@@ -241,6 +242,67 @@ function ExerciseRow({ index, totalCount, initialExercise, onRemove, onMoveUp, o
             })}
           />
         </div>
+      </div>
+
+      {/* Warmup sets */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">{t('routine.warmupTitle')}</p>
+        {warmups.fields.map((field, w) => (
+          <div key={field.id} className="flex items-center gap-2">
+            <div className="space-y-1 flex-1">
+              <Label htmlFor={`routine-ex-${index}-warmup-${w}-pct`} className="text-xs sr-only">
+                {t('routine.warmupPct')}
+              </Label>
+              <Input
+                id={`routine-ex-${index}-warmup-${w}-pct`}
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={100}
+                step={1}
+                placeholder={t('routine.warmupPct')}
+                aria-label={t('routine.warmupPct')}
+                {...register(`exercises.${index}.warmup_sets.${w}.pct`, { valueAsNumber: true })}
+              />
+            </div>
+            <div className="space-y-1 flex-1">
+              <Label htmlFor={`routine-ex-${index}-warmup-${w}-reps`} className="text-xs sr-only">
+                {t('routine.warmupReps')}
+              </Label>
+              <Input
+                id={`routine-ex-${index}-warmup-${w}-reps`}
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={100}
+                step={1}
+                placeholder={t('routine.warmupReps')}
+                aria-label={t('routine.warmupReps')}
+                {...register(`exercises.${index}.warmup_sets.${w}.reps`, { valueAsNumber: true })}
+              />
+            </div>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0 text-muted-foreground"
+              aria-label={t('routine.removeWarmup')}
+              onClick={() => warmups.remove(w)}
+            >
+              ✕
+            </Button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full text-xs"
+          onClick={() => warmups.append({ pct: 50, reps: 5 })}
+        >
+          <Plus className="h-3 w-3 mr-1" />
+          {t('routine.addWarmup')}
+        </Button>
       </div>
     </div>
   );
