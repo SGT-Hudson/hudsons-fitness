@@ -173,4 +173,34 @@ describe('SessionEditor (Tier-2)', () => {
 
     await waitFor(() => expect(onSubmit).not.toHaveBeenCalled());
   });
+
+  it('prefills a fresh session from a routine and submits both exercises with program/routine stamps', async () => {
+    const user = userEvent.setup();
+    const bench: Exercise = { ...mockExercise, id: '22222222-2222-2222-2222-222222222222' };
+    const squat: Exercise = {
+      ...mockExercise, id: '33333333-3333-3333-3333-333333333333', name_es: 'Sentadilla', name_en: 'Squat',
+    };
+    const prefill = {
+      programId: 'prog-1',
+      routineId: 'rout-1',
+      exercises: [
+        { exerciseId: bench.id, sets: [{ setIndex: 1, targetRepsMin: 8, targetRepsMax: 12, restSeconds: 120, targetRpe: null }] },
+        { exerciseId: squat.id, sets: [{ setIndex: 1, targetRepsMin: 5, targetRepsMax: 5, restSeconds: 180, targetRpe: null }] },
+      ],
+      exercisesById: { [bench.id]: bench, [squat.id]: squat },
+    };
+
+    // Regression guard: the [initial]-effect must reproduce the prefill on
+    // mount, not wipe it down to one empty block.
+    const { onSubmit } = renderEditor({ prefill });
+
+    await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:editor.save') }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload.programId).toBe('prog-1');
+    expect(payload.routineId).toBe('rout-1');
+    expect(new Set(payload.sets.map((s: { exercise_id: string }) => s.exercise_id)))
+      .toEqual(new Set([bench.id, squat.id]));
+  });
 });

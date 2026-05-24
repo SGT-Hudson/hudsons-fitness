@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FormProvider,
   useFieldArray,
@@ -133,6 +133,15 @@ export function SessionEditor({ initial, initialExercises = {}, prefill, onSubmi
 
   const blocks = useFieldArray({ control, name: 'blocks' });
 
+  // RHF's useFieldArray regenerates field.id whenever setValue() is called on
+  // a path inside the array (e.g. blocks.0.exercise_id). Using field.id as the
+  // React key therefore causes ExerciseBlock to unmount+remount on every pick,
+  // which discards the local exercise state set by setExercise(). We keep a
+  // parallel ref-array of stable IDs seeded to match the initial block count.
+  const stableBlockKeys = useRef<string[]>(
+    deriveInitialForm(initial, prefill).blocks.map((_, i) => `block-init-${i}`),
+  );
+
   // Seed exercises map: for edit mode use initialExercises; for prefill mode
   // fall back to prefill.exercisesById so each block renders its name immediately.
   const exercisesMap: Record<string, Exercise> =
@@ -141,7 +150,12 @@ export function SessionEditor({ initial, initialExercises = {}, prefill, onSubmi
       : (prefill?.exercisesById ?? {});
 
   useEffect(() => {
-    methods.reset(deriveInitialForm(initial));
+    // Must mirror the `defaultValues` derivation (incl. prefill) — this effect
+    // also fires on mount, so dropping prefill here would wipe a prefilled
+    // fresh session down to one empty block.
+    const next = deriveInitialForm(initial, prefill);
+    methods.reset(next);
+    stableBlockKeys.current = next.blocks.map((_, i) => `block-init-${i}`);
     // We intentionally don't depend on methods (stable across renders);
     // reset on initial-row identity change only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -219,11 +233,14 @@ export function SessionEditor({ initial, initialExercises = {}, prefill, onSubmi
         <div className="space-y-3">
           {blocks.fields.map((field, i) => (
             <ExerciseBlock
-              key={field.id}
+              key={stableBlockKeys.current[i] ?? field.id}
               blockIndex={i}
               todayISO={todayISO}
               initialExercise={exercisesMap[field.exercise_id] ?? null}
-              onRemoveBlock={() => blocks.remove(i)}
+              onRemoveBlock={() => {
+                blocks.remove(i);
+                stableBlockKeys.current.splice(i, 1);
+              }}
             />
           ))}
         </div>
@@ -231,7 +248,10 @@ export function SessionEditor({ initial, initialExercises = {}, prefill, onSubmi
         <Button
           type="button"
           variant="outline"
-          onClick={() => blocks.append(newBlock())}
+          onClick={() => {
+            blocks.append(newBlock());
+            stableBlockKeys.current.push(`block-append-${Date.now()}`);
+          }}
           className="w-full"
         >
           <Plus className="h-4 w-4 mr-1" />
