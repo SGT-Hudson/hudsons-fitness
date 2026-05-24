@@ -3,15 +3,20 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MealTimesEditor } from '@/features/planning/components/MealTimesEditor';
+import { CopyMealDialog, type CopyTarget } from '@/features/planning/components/CopyMealDialog';
 import {
   TemplateGrid,
   type TemplateSlotInput,
 } from '@/features/planning/components/TemplateGrid';
+import { templateMealTargets } from '@/features/planning/copyTargets';
+import { copyTemplateMeal } from '@/features/templates/copyMeal';
+import { formatDate, mondayOf, type Locale } from '@/lib/dates';
 import { useSaveTemplate, useTemplate, useRecipeMacros } from '@/features/templates/hooks';
 import { useDailyTarget } from '@/features/planning/useDailyTarget';
 import {
@@ -26,14 +31,19 @@ function newRowId() {
   return `tslot-${Date.now()}-${rowIdCounter}`;
 }
 
+function capitalizeTpl(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 const DEFAULT_TIMES = ['08:00', '13:00', '17:00', '21:00'];
 
 export function PlantillaEditorPage() {
   const { id } = useParams<{ id?: string }>();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
-  const { t } = useTranslation('planning');
+  const { t, i18n } = useTranslation('planning');
   const { t: tCommon } = useTranslation('common');
+  const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
 
   const templateQuery = useTemplate(isNew ? null : id);
   const save = useSaveTemplate();
@@ -54,6 +64,37 @@ export function PlantillaEditorPage() {
   const [slots, setSlots] = useState<TemplateSlotInput[]>([]);
   const recipeMacros = useRecipeMacros(slots.map((s) => s.recipe_id));
   const { targets, phaseType } = useDailyTarget();
+  const [copySource, setCopySource] = useState<{ dayOfWeek: number; mealIndex: number } | null>(null);
+
+  // Reference Monday so day-of-week → full localized weekday label (no date involved).
+  const refMonday = mondayOf(new Date());
+  const dayLabel = (dow: number) =>
+    capitalizeTpl(formatDate(addDays(refMonday, dow), 'EEEE', locale));
+
+  const copyTargets: CopyTarget[] = copySource
+    ? templateMealTargets(slots, copySource.dayOfWeek, copySource.mealIndex).map((tg) => ({
+        key: tg.key,
+        label: dayLabel(Number(tg.key)),
+        willOverwrite: tg.willOverwrite,
+      }))
+    : [];
+
+  const copyEntries = copySource
+    ? slots.filter(
+        (s) => s.day_of_week === copySource.dayOfWeek && s.meal_index === copySource.mealIndex,
+      )
+    : [];
+
+  const copySourceLabel = copySource
+    ? `${mealTimes[copySource.mealIndex] ?? ''} · ${dayLabel(copySource.dayOfWeek)}`.trim()
+    : '';
+
+  function handleCopyMeal(keys: string[]) {
+    if (!copySource) return;
+    setSlots((s) =>
+      copyTemplateMeal(s, copySource.dayOfWeek, copySource.mealIndex, keys.map(Number), newRowId),
+    );
+  }
 
   useEffect(() => {
     if (isNew) return;
@@ -207,9 +248,19 @@ export function PlantillaEditorPage() {
             recipeMacros={recipeMacros.data}
             targets={targets}
             phaseType={phaseType}
+            onCopyMeal={(dayOfWeek, mealIndex) => setCopySource({ dayOfWeek, mealIndex })}
           />
         </CardContent>
       </Card>
+
+      <CopyMealDialog
+        open={!!copySource}
+        onOpenChange={(o) => !o && setCopySource(null)}
+        sourceLabel={copySourceLabel}
+        entryCount={copyEntries.length}
+        targets={copyTargets}
+        onConfirm={handleCopyMeal}
+      />
     </form>
   );
 }
