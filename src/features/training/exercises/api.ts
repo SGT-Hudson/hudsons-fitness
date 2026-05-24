@@ -62,6 +62,12 @@ export interface ExerciseCreateInput {
   default_increment_kg: number | null;
 }
 
+export interface ExerciseSearchOptions {
+  limit?: number;
+  muscle?: PrimaryMuscle | null; // hard AND filter from the dropdown
+  textMuscles?: PrimaryMuscle[]; // muscle codes the typed text matched (OR'd with name)
+}
+
 /**
  * Locale-aware pool search — queries both `name_es` and `name_en` via
  * trigram (single OR clause, no per-locale code path). Display is at
@@ -73,27 +79,42 @@ export interface ExerciseCreateInput {
  * `query` is sanitized of PostgREST OR-grammar metacharacters (`%_,`)
  * before composition — otherwise a user typing `a,b` would split into
  * two filter terms.
+ *
+ * `opts.muscle` adds a hard AND equality filter (dropdown selection).
+ * `opts.textMuscles` adds per-code `primary_muscle.eq.<code>` OR terms
+ * so that typing a muscle name in the text box surfaces matching exercises.
  */
-export async function searchExercises(query: string, limit = 20): Promise<Exercise[]> {
+export async function searchExercises(
+  query: string,
+  opts: ExerciseSearchOptions = {},
+): Promise<Exercise[]> {
+  const { limit = 20, muscle = null, textMuscles = [] } = opts;
   const trimmed = query.trim();
-  if (trimmed === '') {
-    const { data, error } = await supabase
-      .from('exercises')
-      .select('*')
-      .order('is_verified', { ascending: false })
-      .order('name_es')
-      .limit(limit);
-    if (error) throw error;
-    return data ?? [];
-  }
   const safe = trimmed.replace(/[%_,]/g, '');
-  const { data, error } = await supabase
-    .from('exercises')
-    .select('*')
-    .or(`name_es.ilike.%${safe}%,name_en.ilike.%${safe}%`)
+
+  let builder = supabase.from('exercises').select('*');
+
+  if (muscle) {
+    builder = builder.eq('primary_muscle', muscle);
+  }
+
+  const terms: string[] = [];
+  if (safe !== '') {
+    terms.push(`name_es.ilike.%${safe}%`, `name_en.ilike.%${safe}%`);
+  }
+  for (const code of textMuscles) {
+    terms.push(`primary_muscle.eq.${code}`);
+  }
+
+  if (terms.length > 0) {
+    builder = builder.or(terms.join(','));
+  }
+
+  const { data, error } = await builder
     .order('is_verified', { ascending: false })
     .order('name_es')
     .limit(limit);
+
   if (error) throw error;
   return data ?? [];
 }
