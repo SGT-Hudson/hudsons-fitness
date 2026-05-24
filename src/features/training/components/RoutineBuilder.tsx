@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FormProvider,
   useFieldArray,
@@ -259,8 +259,20 @@ export function RoutineBuilder({ initial, initialExercises = {}, onSubmit, onSav
 
   const exercises = useFieldArray({ control, name: 'exercises' });
 
+  // Stable keys for ExerciseRow — mirrors SessionEditor's stableBlockKeys.
+  // RHF regenerates field.id when setValue touches a path inside the array
+  // (e.g. exercises.0.exercise_id on pick) and on append, which unmounts+
+  // remounts every ExerciseRow. Stable keys keep each row's React identity
+  // (and its local exercise state) alive across those operations.
+  const rowKeyCounter = useRef(0);
+  const stableRowKeys = useRef<string[]>(
+    deriveInitialForm(initial).exercises.map((_, i) => `row-init-${i}`),
+  );
+
   useEffect(() => {
-    methods.reset(deriveInitialForm(initial));
+    const next = deriveInitialForm(initial);
+    methods.reset(next);
+    stableRowKeys.current = next.exercises.map((_, i) => `row-init-${i}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial]);
 
@@ -316,13 +328,26 @@ export function RoutineBuilder({ initial, initialExercises = {}, onSubmit, onSav
         <div className="space-y-3">
           {exercises.fields.map((field, i) => (
             <ExerciseRow
-              key={field.id}
+              key={stableRowKeys.current[i] ?? field.id}
               index={i}
               totalCount={exercises.fields.length}
               initialExercise={initialExercises[field.exercise_id] ?? null}
-              onRemove={() => exercises.remove(i)}
-              onMoveUp={() => exercises.swap(i, i - 1)}
-              onMoveDown={() => exercises.swap(i, i + 1)}
+              onRemove={() => {
+                exercises.remove(i);
+                stableRowKeys.current.splice(i, 1);
+              }}
+              onMoveUp={() => {
+                exercises.swap(i, i - 1);
+                const tmp = stableRowKeys.current[i];
+                stableRowKeys.current[i] = stableRowKeys.current[i - 1];
+                stableRowKeys.current[i - 1] = tmp;
+              }}
+              onMoveDown={() => {
+                exercises.swap(i, i + 1);
+                const tmp = stableRowKeys.current[i];
+                stableRowKeys.current[i] = stableRowKeys.current[i + 1];
+                stableRowKeys.current[i + 1] = tmp;
+              }}
             />
           ))}
         </div>
@@ -330,7 +355,10 @@ export function RoutineBuilder({ initial, initialExercises = {}, onSubmit, onSav
         <Button
           type="button"
           variant="outline"
-          onClick={() => exercises.append(newExerciseRow())}
+          onClick={() => {
+            exercises.append(newExerciseRow());
+            stableRowKeys.current.push(`row-append-${++rowKeyCounter.current}`);
+          }}
           className="w-full"
         >
           <Plus className="h-4 w-4 mr-1" />

@@ -39,4 +39,20 @@ describe('RoutineBuilder (Tier-2)', () => {
     expect(payload.name).toBe('Push A');
     expect(payload.exercises[0]).toMatchObject({ exercise_id: EX.id, position: 1 });
   });
+
+  it('preserves picked exercise name after a new row is added (stable keys regression)', async () => {
+    const user = userEvent.setup();
+    render(<RoutineBuilder initial={null} onSubmit={vi.fn()} onSaved={vi.fn()} />);
+
+    // Pick an exercise into row 0.
+    await user.click(screen.getByText('pick-mock'));
+    // The name should be visible immediately after picking.
+    expect(screen.getByText('Press de banca')).toBeTruthy();
+
+    // Add a second exercise row — this triggers append on the field array.
+    await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:routine.addExercise') }));
+
+    // The first row must STILL show the exercise name (not wiped by the append).
+    expect(screen.getByText('Press de banca')).toBeTruthy();
+  });
 });

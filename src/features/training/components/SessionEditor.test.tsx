@@ -174,6 +174,79 @@ describe('SessionEditor (Tier-2)', () => {
     await waitFor(() => expect(onSubmit).not.toHaveBeenCalled());
   });
 
+  it('adopts resolved exercise when initialExercises is populated after mount (async race regression)', async () => {
+    const exId = '44444444-4444-4444-4444-444444444444';
+    const resolvedExercise: Exercise = {
+      ...mockExercise,
+      id: exId,
+      name_es: 'Curl de bíceps',
+      name_en: 'Bicep curl',
+    };
+    const initial: SessionWithSets = {
+      id: 'session-async',
+      user_id: 'user-1',
+      performed_on: '2026-05-24',
+      title: 'Arm day',
+      notes: null,
+      program_id: null,
+      routine_id: null,
+      created_at: '2026-05-24T10:00:00Z',
+      updated_at: '2026-05-24T10:00:00Z',
+      workout_sets: [
+        {
+          id: 's1',
+          session_id: 'session-async',
+          exercise_id: exId,
+          set_index: 1,
+          reps: 10,
+          weight_kg: 20,
+          rpe: null,
+          is_warmup: false,
+          created_at: '2026-05-24T10:00:01Z',
+        },
+      ],
+    };
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const onSubmit = vi.fn().mockResolvedValue('saved-id');
+    const onSaved = vi.fn();
+
+    // First render: exercises map is empty (not yet resolved).
+    const { rerender } = render(
+      <QueryClientProvider client={qc}>
+        <SessionEditor
+          initial={initial}
+          initialExercises={{}}
+          onSubmit={onSubmit}
+          onSaved={onSaved}
+        />
+      </QueryClientProvider>,
+    );
+
+    // Block has mounted but exercises map was empty — picker must show empty state
+    // (ExerciseBlock renders ExercisePicker only in the "no exercise" branch).
+    expect(screen.getByTestId('picker-empty')).toBeTruthy();
+
+    // Re-render with the resolved exercises map (simulates async query completion).
+    rerender(
+      <QueryClientProvider client={qc}>
+        <SessionEditor
+          initial={initial}
+          initialExercises={{ [exId]: resolvedExercise }}
+          onSubmit={onSubmit}
+          onSaved={onSaved}
+        />
+      </QueryClientProvider>,
+    );
+
+    // After prop update the block must adopt the resolved exercise: the picker
+    // empty state disappears and the exercise name is shown in the block header.
+    await waitFor(() => {
+      expect(screen.queryByTestId('picker-empty')).toBeNull();
+      expect(screen.getByText('Curl de bíceps')).toBeTruthy();
+    });
+  });
+
   it('prefills a fresh session from a routine and submits both exercises with program/routine stamps', async () => {
     const user = userEvent.setup();
     const bench: Exercise = { ...mockExercise, id: '22222222-2222-2222-2222-222222222222' };
