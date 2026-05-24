@@ -1,19 +1,23 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { addDays, parseISO } from 'date-fns';
 import { ArrowLeftRight, FileBox, Save, ShoppingCart, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ApplyTemplateDialog } from '@/features/planning/components/ApplyTemplateDialog';
+import { CopyMealDialog, type CopyTarget } from '@/features/planning/components/CopyMealDialog';
 import { SaveAsTemplateDialog } from '@/features/planning/components/SaveAsTemplateDialog';
 import { ShoppingListDialog } from '@/features/planning/components/ShoppingListDialog';
 import { WeekGrid } from '@/features/planning/components/WeekGrid';
+import { weekMealTargets } from '@/features/planning/copyTargets';
 import {
   useActiveWeek,
   useAddWeekSlot,
   useApplyTemplateToWeek,
+  useCopyWeekMeal,
   useDeleteWeekSlot,
   useSaveWeekAsTemplate,
   useUpdateWeekSlot,
@@ -21,6 +25,10 @@ import {
 import { useTemplates } from '@/features/templates/hooks';
 import { useDailyTarget } from '@/features/planning/useDailyTarget';
 import { formatDate, isoDate, mondayOf, type Locale } from '@/lib/dates';
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 export function PlanificadorPage() {
   const { t, i18n } = useTranslation('planning');
@@ -42,6 +50,34 @@ export function PlanificadorPage() {
   const [applyOpen, setApplyOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [shoppingOpen, setShoppingOpen] = useState(false);
+
+  const copyMeal = useCopyWeekMeal();
+  const [copySource, setCopySource] = useState<{ date: string; mealIndex: number } | null>(null);
+
+  const weekDates = Array.from({ length: 7 }, (_, i) =>
+    formatDate(addDays(parseISO(weekStart), i), 'yyyy-MM-dd', locale),
+  );
+
+  const copyTargets: CopyTarget[] = copySource
+    ? weekMealTargets(week.data?.slots ?? [], weekDates, copySource.date, copySource.mealIndex).map(
+        (tg) => ({
+          key: tg.key,
+          label: capitalize(formatDate(parseISO(tg.key), 'EEEE', locale)),
+          sublabel: formatDate(parseISO(tg.key), 'd MMM', locale),
+          willOverwrite: tg.willOverwrite,
+        }),
+      )
+    : [];
+
+  const copyEntries = copySource
+    ? (week.data?.slots ?? []).filter(
+        (s) => s.date === copySource.date && s.meal_index === copySource.mealIndex,
+      )
+    : [];
+
+  const copySourceLabel = copySource
+    ? `${copyEntries[0]?.meal_time?.slice(0, 5) ?? ''} · ${capitalize(formatDate(parseISO(copySource.date), 'EEEE', locale))}`.trim()
+    : '';
 
   async function handleApply(templateId: string) {
     await apply.mutateAsync({ templateId, targetDate: today });
@@ -188,6 +224,7 @@ export function PlanificadorPage() {
             onRemove={async (slotId) => {
               await deleteSlot.mutateAsync(slotId);
             }}
+            onCopyMeal={(date, mealIndex) => setCopySource({ date, mealIndex })}
           />
         )
       )}
@@ -210,6 +247,23 @@ export function PlanificadorPage() {
         open={shoppingOpen}
         onOpenChange={setShoppingOpen}
         weekStart={weekStart}
+      />
+      <CopyMealDialog
+        open={!!copySource}
+        onOpenChange={(o) => !o && setCopySource(null)}
+        sourceLabel={copySourceLabel}
+        entryCount={copyEntries.length}
+        targets={copyTargets}
+        busy={copyMeal.isPending}
+        onConfirm={async (keys) => {
+          if (!copySource || !week.data) return;
+          await copyMeal.mutateAsync({
+            plan_week_id: week.data.id,
+            source_date: copySource.date,
+            meal_index: copySource.mealIndex,
+            target_dates: keys,
+          });
+        }}
       />
     </div>
   );

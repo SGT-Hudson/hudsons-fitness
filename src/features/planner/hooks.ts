@@ -9,6 +9,7 @@ import {
 import {
   addWeekSlot,
   applyTemplateToWeek,
+  copyWeekMeal,
   deleteWeekSlot,
   fetchActiveWeek,
   fetchWeekShopping,
@@ -90,6 +91,18 @@ export function useDeleteWeekSlot() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['planner'] });
       toastDeleted();
+    },
+    onError: toastError,
+  });
+}
+
+export function useCopyWeekMeal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: copyWeekMeal,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['planner'] });
+      toastSaved();
     },
     onError: toastError,
   });

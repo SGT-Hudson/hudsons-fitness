@@ -29,6 +29,7 @@ interface Props {
   busy?: boolean;
   targets?: Macros;
   phaseType?: PhaseType;
+  onCopyMeal?: (date: string, mealIndex: number) => void;
 }
 
 interface Period {
@@ -52,6 +53,7 @@ export function WeekGrid({
   busy,
   targets,
   phaseType,
+  onCopyMeal,
 }: Props) {
   const { t, i18n } = useTranslation('planning');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
@@ -139,6 +141,8 @@ export function WeekGrid({
                       onUpdate(slotId, { id: recipeId, name: recipeName }, servings)
                     }
                     onRemove={(slotId) => onRemove(slotId)}
+                    onCopy={onCopyMeal ? () => onCopyMeal(day.date, p.mealIndex) : undefined}
+                    copyLabel={t('slot.copy')}
                   />
                 ))
               )}

@@ -1146,6 +1146,18 @@ export type Database = {
         }
         Returns: string
       }
+      // U-6 hand-edit (interim until generated-types regen, plan Task 9):
+      // copy_week_meal — see supabase/migrations/20260527120000_u6_copy_week_meal.sql
+      // (INVOKER, atomic delete-then-insert across target days).
+      copy_week_meal: {
+        Args: {
+          p_meal_index: number
+          p_plan_week_id: string
+          p_source_date: string
+          p_target_dates: string[]
+        }
+        Returns: undefined
+      }
       save_template: {
         Args: {
           p_day_times?: Json

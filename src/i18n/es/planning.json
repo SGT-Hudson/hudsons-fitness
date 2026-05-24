@@ -10,7 +10,16 @@
   },
   "slot": {
     "add": "Añadir receta",
-    "remove": "Quitar"
+    "remove": "Quitar",
+    "copy": "Copiar comida a otros días"
+  },
+  "copyMeal": {
+    "title": "Copiar comida a otros días",
+    "entryCount": "{{count}} recetas",
+    "selectAll": "Seleccionar todos",
+    "willOverwrite": "se sobrescribirá",
+    "selectedCount": "{{count}} días seleccionados",
+    "confirm": "Copiar"
   },
   "picker": {
     "addTitle": "Añadir receta",

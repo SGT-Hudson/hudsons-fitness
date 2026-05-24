@@ -10,7 +10,16 @@
   },
   "slot": {
     "add": "Add recipe",
-    "remove": "Remove"
+    "remove": "Remove",
+    "copy": "Copy meal to other days"
+  },
+  "copyMeal": {
+    "title": "Copy meal to other days",
+    "entryCount": "{{count}} recipes",
+    "selectAll": "Select all",
+    "willOverwrite": "will be overwritten",
+    "selectedCount": "{{count}} days selected",
+    "confirm": "Copy"
   },
   "picker": {
     "addTitle": "Add recipe",
