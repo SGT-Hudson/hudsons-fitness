@@ -257,8 +257,8 @@ describe('SessionEditor (Tier-2)', () => {
       programId: 'prog-1',
       routineId: 'rout-1',
       exercises: [
-        { exerciseId: bench.id, sets: [{ setIndex: 1, targetRepsMin: 8, targetRepsMax: 12, restSeconds: 120, targetRpe: null }] },
-        { exerciseId: squat.id, sets: [{ setIndex: 1, targetRepsMin: 5, targetRepsMax: 5, restSeconds: 180, targetRpe: null }] },
+        { exerciseId: bench.id, sets: [{ setIndex: 1, isWarmup: false, reps: null, weightKg: null, targetRepsMin: 8, targetRepsMax: 12, restSeconds: 120, targetRpe: null }] },
+        { exerciseId: squat.id, sets: [{ setIndex: 1, isWarmup: false, reps: null, weightKg: null, targetRepsMin: 5, targetRepsMax: 5, restSeconds: 180, targetRpe: null }] },
       ],
       exercisesById: { [bench.id]: bench, [squat.id]: squat },
     };
@@ -275,5 +275,51 @@ describe('SessionEditor (Tier-2)', () => {
     expect(payload.routineId).toBe('rout-1');
     expect(new Set(payload.sets.map((s: { exercise_id: string }) => s.exercise_id)))
       .toEqual(new Set([bench.id, squat.id]));
+  });
+
+  it('prefills warmup sets with is_warmup:true and working sets with is_warmup:false; set_index contiguous after a remove', async () => {
+    const user = userEvent.setup();
+    const bench: Exercise = { ...mockExercise, id: '22222222-2222-2222-2222-222222222222' };
+
+    // 1 warmup + 2 working = 3 sets total
+    const prefill = {
+      programId: 'prog-warmup',
+      routineId: 'rout-warmup',
+      exercises: [
+        {
+          exerciseId: bench.id,
+          sets: [
+            { setIndex: 1, isWarmup: true,  reps: 5, weightKg: 25,   targetRepsMin: 5, targetRepsMax: 5, restSeconds: 120, targetRpe: null },
+            { setIndex: 2, isWarmup: false, reps: null, weightKg: null, targetRepsMin: 5, targetRepsMax: 5, restSeconds: 120, targetRpe: null },
+            { setIndex: 3, isWarmup: false, reps: null, weightKg: null, targetRepsMin: 5, targetRepsMax: 5, restSeconds: 120, targetRpe: null },
+          ],
+        },
+      ],
+      exercisesById: { [bench.id]: bench },
+    };
+
+    const { onSubmit } = renderEditor({ prefill });
+
+    // The warmup row is pre-filled (reps=5, weight_kg=25) — editor renders
+    await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:editor.save') }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const payload = onSubmit.mock.calls[0][0];
+
+    // All sets belong to bench
+    expect(payload.sets.every((s: { exercise_id: string }) => s.exercise_id === bench.id)).toBe(true);
+
+    // Warmup set is flagged correctly
+    const warmupSets = payload.sets.filter((s: { is_warmup: boolean }) => s.is_warmup);
+    const workingSets = payload.sets.filter((s: { is_warmup: boolean }) => !s.is_warmup);
+    expect(warmupSets).toHaveLength(1);
+    expect(workingSets).toHaveLength(2);
+
+    // Warmup was pre-filled with reps:5 weight_kg:25
+    expect(warmupSets[0]).toMatchObject({ reps: 5, weight_kg: 25, is_warmup: true });
+
+    // set_index is contiguous from 1 after submit flatten
+    const indices = payload.sets.map((s: { set_index: number }) => s.set_index).sort((a: number, b: number) => a - b);
+    expect(indices).toEqual([1, 2, 3]);
   });
 });

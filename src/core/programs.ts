@@ -18,6 +18,8 @@ export interface RoutineExercisePrescription {
   targetRepsMax: number;
   restSeconds: number | null;
   targetRpe: number | null;
+  warmupSets: { pct: number; reps: number }[];
+  lastWorkingWeightKg: number | null;
 }
 
 /** Whole-day number for an ISO calendar date (UTC midnight epoch days). */
@@ -75,10 +77,21 @@ export function projectCycle(
 
 export interface PrefillSet {
   setIndex: number;
+  isWarmup: boolean;
+  reps: number | null;       // concrete reps (warm-ups); null for working sets
+  weightKg: number | null;   // concrete computed weight (warm-ups); null for working sets
   targetRepsMin: number;
   targetRepsMax: number;
   restSeconds: number | null;
   targetRpe: number | null;
+}
+
+/** Warm-up load = working weight × pct, rounded to the nearest `roundKg`
+ *  (default 2.5 kg — barbell-friendly). Returns 0 for non-positive / invalid
+ *  inputs (caller renders a blank weight to fill in). */
+export function warmupWeightKg(workingWeightKg: number, pct: number, roundKg = 2.5): number {
+  if (!Number.isFinite(workingWeightKg) || workingWeightKg <= 0 || !Number.isFinite(pct) || pct <= 0) return 0;
+  return Math.round((workingWeightKg * (pct / 100)) / roundKg) * roundKg;
 }
 
 export interface PrefillExercise {
@@ -86,22 +99,50 @@ export interface PrefillExercise {
   sets: PrefillSet[];
 }
 
-/** Expand a routine's prescriptions into empty set rows for the editor:
- *  targetSets rows per exercise (ordered by position), targets carried,
- *  weight left to runtime. Spec §5. */
+/** Expand a routine's prescriptions into set rows for the editor:
+ *  warmup rows first (isWarmup:true with computed weight), then targetSets
+ *  working rows (isWarmup:false, weight null), all with a continuous
+ *  setIndex starting at 1 per exercise (ordered by position). Spec §5. */
 export function prefillSetsFromRoutine(
   exercises: RoutineExercisePrescription[],
 ): PrefillExercise[] {
   return [...exercises]
     .sort((a, b) => a.position - b.position)
-    .map((ex) => ({
-      exerciseId: ex.exerciseId,
-      sets: Array.from({ length: ex.targetSets }, (_, i) => ({
-        setIndex: i + 1,
-        targetRepsMin: ex.targetRepsMin,
-        targetRepsMax: ex.targetRepsMax,
-        restSeconds: ex.restSeconds,
-        targetRpe: ex.targetRpe,
-      })),
-    }));
+    .map((ex) => {
+      const sets: PrefillSet[] = [];
+      let idx = 1;
+
+      // Warmup sets
+      for (const w of ex.warmupSets) {
+        sets.push({
+          setIndex: idx++,
+          isWarmup: true,
+          reps: w.reps,
+          weightKg:
+            ex.lastWorkingWeightKg != null
+              ? warmupWeightKg(ex.lastWorkingWeightKg, w.pct)
+              : null,
+          targetRepsMin: ex.targetRepsMin,
+          targetRepsMax: ex.targetRepsMax,
+          restSeconds: ex.restSeconds,
+          targetRpe: ex.targetRpe,
+        });
+      }
+
+      // Working sets
+      for (let i = 0; i < ex.targetSets; i++) {
+        sets.push({
+          setIndex: idx++,
+          isWarmup: false,
+          reps: null,
+          weightKg: null,
+          targetRepsMin: ex.targetRepsMin,
+          targetRepsMax: ex.targetRepsMax,
+          restSeconds: ex.restSeconds,
+          targetRpe: ex.targetRpe,
+        });
+      }
+
+      return { exerciseId: ex.exerciseId, sets };
+    });
 }

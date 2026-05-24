@@ -90,10 +90,10 @@ function deriveInitialForm(
       exercise_id: ex.exerciseId,
       sets: ex.sets.map((s) => ({
         set_index: s.setIndex,
-        reps: 0,
-        weight_kg: 0,
+        reps: s.reps ?? 0,
+        weight_kg: s.weightKg ?? 0,
         rpe: s.targetRpe ?? null,
-        is_warmup: false,
+        is_warmup: s.isWarmup,
       })),
     }));
     return {
