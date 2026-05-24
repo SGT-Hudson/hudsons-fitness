@@ -27,4 +27,16 @@ describe('AppSidebar', () => {
     expect(screen.getByRole('link', { name: 'Diario' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Hoy' })).toBeInTheDocument();
   });
+
+  it('pins the sidebar to the viewport (sticky, full dvh) so its footer stays visible on long pages', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/home']}>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+    const aside = container.querySelector('aside');
+    expect(aside?.className).toContain('sticky');
+    expect(aside?.className).toContain('top-0');
+    expect(aside?.className).toContain('h-dvh');
+  });
 });
