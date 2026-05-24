@@ -33,6 +33,7 @@ function newExerciseRow(): RoutineFormValues['exercises'][number] {
     target_reps_max: 12,
     rest_seconds: null,
     target_rpe: null,
+    warmup_sets: [],
   };
 }
 
@@ -54,6 +55,7 @@ function deriveInitialForm(initial: RoutineWithExercises | null): RoutineFormVal
       target_reps_max: re.target_reps_max,
       rest_seconds: re.rest_seconds ?? null,
       target_rpe: re.target_rpe ?? null,
+      warmup_sets: Array.isArray(re.warmup_sets) ? (re.warmup_sets as Array<{ pct: number; reps: number }>) : [],
     })),
   };
 }
@@ -292,6 +294,7 @@ export function RoutineBuilder({ initial, initialExercises = {}, onSubmit, onSav
           target_reps_max: ex.target_reps_max,
           rest_seconds: ex.rest_seconds ?? null,
           target_rpe: ex.target_rpe ?? null,
+          warmup_sets: ex.warmup_sets ?? [],
         })),
       };
       const result = await onSubmit(payload);

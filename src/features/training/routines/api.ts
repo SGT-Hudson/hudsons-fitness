@@ -4,6 +4,12 @@ import type { Tables, Json } from '@/types/database';
 export type Routine = Tables<'routines'>;
 export type RoutineExercise = Tables<'routine_exercises'>;
 
+/** Typed shape of a single warmup-set entry stored in routine_exercises.warmup_sets. */
+export interface RoutineWarmupSet {
+  pct: number;
+  reps: number;
+}
+
 export interface RoutineWithExercises extends Routine {
   routine_exercises: RoutineExercise[];
 }
@@ -20,6 +26,7 @@ export interface SaveRoutinePayload {
     target_reps_max: number;
     rest_seconds: number | null;
     target_rpe: number | null;
+    warmup_sets: Array<{ pct: number; reps: number }>;
   }>;
 }
 

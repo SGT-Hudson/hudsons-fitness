@@ -828,6 +828,8 @@ export type Database = {
           },
         ]
       }
+      // F-2b hand-edit (interim until R-04 regen): + warmup_sets jsonb
+      // (migration 20260529120000_f2b_warmup_sets.sql).
       routine_exercises: {
         Row: {
           exercise_id: string
@@ -839,6 +841,7 @@ export type Database = {
           target_reps_min: number
           target_rpe: number | null
           target_sets: number
+          warmup_sets: Json
         }
         Insert: {
           exercise_id: string
@@ -850,6 +853,7 @@ export type Database = {
           target_reps_min: number
           target_rpe?: number | null
           target_sets: number
+          warmup_sets?: Json
         }
         Update: {
           exercise_id?: string
@@ -861,6 +865,7 @@ export type Database = {
           target_reps_min?: number
           target_rpe?: number | null
           target_sets?: number
+          warmup_sets?: Json
         }
         Relationships: [
           {
