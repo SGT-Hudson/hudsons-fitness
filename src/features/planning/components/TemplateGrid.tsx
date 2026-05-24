@@ -1,5 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { SlotCell, type SlotEntry } from './SlotCell';
+import { DaySummary } from './DaySummary';
+import { aggregateDayMacros } from '@/features/planning/daySummary';
+import { scale, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
+import type { PhaseType } from '@/lib/macroStatus';
 
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
@@ -25,10 +29,20 @@ interface Props {
   ) => void;
   onUpdate: (rowId: string, recipeId: string, recipeName: string, servings: number) => void;
   onRemove: (rowId: string) => void;
+  recipeMacros?: Map<string, Macros>; // per-serving macros by recipe id
+  targets?: Macros;
+  phaseType?: PhaseType;
 }
 
-export function TemplateGrid({ mealTimes, slots, onAdd, onUpdate, onRemove }: Props) {
+export function TemplateGrid({ mealTimes, slots, onAdd, onUpdate, onRemove, recipeMacros, targets, phaseType }: Props) {
   const { t } = useTranslation('planning');
+
+  const dayTotals = aggregateDayMacros(
+    slots.map((s) => ({
+      key: String(s.day_of_week),
+      macros: scale(recipeMacros?.get(s.recipe_id) ?? ZERO_MACROS, s.servings),
+    })),
+  );
 
   function entriesFor(day: number, meal: number): SlotEntry[] {
     return slots
@@ -52,6 +66,18 @@ export function TemplateGrid({ mealTimes, slots, onAdd, onUpdate, onRemove }: Pr
         {DAY_KEYS.map((dk) => (
           <div key={dk} className="text-sm font-semibold text-center pb-1">
             {t(`days.${dk}`)}
+          </div>
+        ))}
+        <div className="text-xs text-muted-foreground self-start pt-2 pr-2 text-right font-semibold uppercase tracking-wide">
+          {t('summary.totalRow')}
+        </div>
+        {DAY_KEYS.map((_, dayIdx) => (
+          <div key={`total-${dayIdx}`} className="rounded-md border bg-card p-2">
+            <DaySummary
+              totals={dayTotals.get(String(dayIdx)) ?? ZERO_MACROS}
+              targets={targets}
+              phaseType={phaseType}
+            />
           </div>
         ))}
         {mealTimes.map((time, mealIdx) => (

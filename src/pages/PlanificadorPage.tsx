@@ -19,6 +19,7 @@ import {
   useUpdateWeekSlot,
 } from '@/features/planner/hooks';
 import { useTemplates } from '@/features/templates/hooks';
+import { useDailyTarget } from '@/features/planning/useDailyTarget';
 import { formatDate, isoDate, mondayOf, type Locale } from '@/lib/dates';
 
 export function PlanificadorPage() {
@@ -27,6 +28,8 @@ export function PlanificadorPage() {
 
   const today = isoDate();
   const weekStart = formatDate(mondayOf(new Date()), 'yyyy-MM-dd', locale);
+
+  const { targets, phaseType } = useDailyTarget();
 
   const week = useActiveWeek(weekStart);
   const templates = useTemplates();
@@ -153,8 +156,11 @@ export function PlanificadorPage() {
           <WeekGrid
             weekStart={week.data.week_start}
             slots={week.data.slots}
+            mealTimes={week.data.meal_times}
             todayIso={today}
             busy={busy}
+            targets={targets}
+            phaseType={phaseType}
             onAdd={async (date, mealIndex, mealTime, recipe, servings) => {
               if (!week.data) return;
               const sameSlot = week.data.slots.filter(
