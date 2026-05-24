@@ -730,8 +730,10 @@ reference shard carries it (never edit the decision entry).
 - **decision:** (none yet — decisions recorded as D-F8 at impl time)
 - **blocked-by:** R-19 prod apply (already applied 2026-05-21 — `exercises`,
   `workout_sessions`, `workout_sets`, `save_workout` live in prod)
-- **status:** in-progress (staged on `claude/training-routines-planner-spec`;
-  pending Wave-3 prod apply of the four F-2 migrations)
+- **status:** done (2026-05-24) — merged (#122); the four F-2 migrations
+  applied to prod & verified (4 tables RLS-enabled with policies,
+  `workout_sessions` program_id/routine_id stamps, 4 INVOKER RPCs incl. the
+  7-arg `save_workout`). Security advisor clean for the new objects.
 - **spec:** `docs/superpowers/specs/2026-05-24-training-routines-planner-design.md`
 - **plan:** `docs/superpowers/plans/2026-05-24-training-routines-planner.md`
 - **scope:**
