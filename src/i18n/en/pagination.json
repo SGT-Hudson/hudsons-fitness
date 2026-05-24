@@ -1,0 +1,6 @@
+{
+  "summary": "{{from}}–{{to}} of {{total}}",
+  "prev": "Previous",
+  "next": "Next",
+  "perPage": "Per page"
+}

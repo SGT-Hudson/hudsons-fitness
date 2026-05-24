@@ -19,6 +19,8 @@ import { useHideRecipe, useRecipes } from '@/features/recipes/hooks';
 import { partitionFavorites, toggleFavorite } from '@/features/recipes/favorites';
 import { formatDate, type Locale } from '@/lib/dates';
 import { cn } from '@/lib/utils';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationBar } from '@/components/ui/PaginationBar';
 
 type View = 'grid' | 'list';
 const STORAGE_KEY = 'hudsons-fitness-recetas-view';
@@ -129,6 +131,15 @@ export function RecetasPage() {
     [filtered, favorites],
   );
 
+  const { page, pageSize, pageCount, setPage, setPageSize } = usePagination({
+    total: ordered.length,
+    resetKey: `${query}|${selectedMealTypes.join(',')}|${selectedGoals.join(',')}`,
+  });
+  const paged = useMemo(
+    () => ordered.slice((page - 1) * pageSize, page * pageSize),
+    [ordered, page, pageSize],
+  );
+
   // R-01: "Remove" replaces soft-delete. Owner clicks → creator-hide
   // (anon-transfer); non-owner clicks → ref drop only.
   function handleRemove(id: string, name: string) {
@@ -224,7 +235,7 @@ export function RecetasPage() {
         </Card>
       ) : view === 'grid' ? (
         <ul className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {ordered.map((r) => (
+          {paged.map((r) => (
             <li key={r.id}>
               <Card className="h-full hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
@@ -295,7 +306,7 @@ export function RecetasPage() {
       ) : (
         <Card>
           <ul className="divide-y">
-            {ordered.map((r) => (
+            {paged.map((r) => (
               <li
                 key={r.id}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-accent/40 transition-colors"
@@ -363,6 +374,14 @@ export function RecetasPage() {
           </ul>
         </Card>
       )}
+      <PaginationBar
+        page={page}
+        pageSize={pageSize}
+        total={ordered.length}
+        pageCount={pageCount}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
     </div>
   );
 }

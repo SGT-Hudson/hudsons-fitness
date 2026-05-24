@@ -199,3 +199,39 @@ export async function hideOwnedIngredient(ingredientId: string): Promise<void> {
   });
   if (error) throw error;
 }
+
+export interface PagedIngredients {
+  rows: Ingredient[];
+  total: number;
+}
+
+/**
+ * Server-side paged pool search (R-01: over the WHOLE pool). Returns the page's
+ * rows plus the exact total for the pagination control. Order is deterministic
+ * (`is_verified desc, name asc, id asc`) so offset paging never skips/dupes —
+ * `name` is not unique, hence the `id` tiebreaker.
+ */
+export async function searchLocalIngredientsPage(
+  query: string,
+  { page, pageSize }: { page: number; pageSize: number },
+): Promise<PagedIngredients> {
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const trimmed = query.trim();
+
+  let q = supabase
+    .from('ingredients')
+    .select('*', { count: 'exact' })
+    .order('is_verified', { ascending: false })
+    .order('name')
+    .order('id');
+
+  if (trimmed !== '') {
+    const safe = trimmed.replace(/[%_,]/g, '');
+    q = q.or(`name.ilike.%${safe}%,brand.ilike.%${safe}%`);
+  }
+
+  const { data, error, count } = await q.range(from, to);
+  if (error) throw error;
+  return { rows: data ?? [], total: count ?? 0 };
+}
