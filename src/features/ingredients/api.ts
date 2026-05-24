@@ -40,7 +40,7 @@ export async function searchLocalIngredients(query: string, limit = 15): Promise
   const { data, error } = await supabase
     .from('ingredients')
     .select('*')
-    .or(`name.ilike.%${safe}%,brand.ilike.%${safe}%`)
+    .or(`name.ilike.%${safe}%,name_en.ilike.%${safe}%,brand.ilike.%${safe}%`)
     .order('is_verified', { ascending: false })
     .order('name')
     .limit(limit);
@@ -200,6 +200,17 @@ export async function hideOwnedIngredient(ingredientId: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * Display-name picker for the bilingual library. Falls back to the ES-primary
+ * `name` when the preferred locale column is null — mirrors `exerciseDisplayName`
+ * (R-19). EN-only callers therefore never see an empty label for OFF/manual rows
+ * (which leave `name_en` null).
+ */
+export function ingredientDisplayName(ing: Ingredient, lang: 'es' | 'en'): string {
+  if (lang === 'en') return ing.name_en ?? ing.name;
+  return ing.name;
+}
+
 export interface PagedIngredients {
   rows: Ingredient[];
   total: number;
@@ -209,7 +220,8 @@ export interface PagedIngredients {
  * Server-side paged pool search (R-01: over the WHOLE pool). Returns the page's
  * rows plus the exact total for the pagination control. Order is deterministic
  * (`is_verified desc, name asc, id asc`) so offset paging never skips/dupes —
- * `name` is not unique, hence the `id` tiebreaker.
+ * `name` is not unique, hence the `id` tiebreaker. Searches `name_en` too so the
+ * paginated list is bilingual (F-1), matching the autocomplete/list search.
  */
 export async function searchLocalIngredientsPage(
   query: string,
@@ -228,7 +240,7 @@ export async function searchLocalIngredientsPage(
 
   if (trimmed !== '') {
     const safe = trimmed.replace(/[%_,]/g, '');
-    q = q.or(`name.ilike.%${safe}%,brand.ilike.%${safe}%`);
+    q = q.or(`name.ilike.%${safe}%,name_en.ilike.%${safe}%,brand.ilike.%${safe}%`);
   }
 
   const { data, error, count } = await q.range(from, to);

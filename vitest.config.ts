@@ -23,6 +23,7 @@ export default defineConfig({
       'src/**/*.test.ts',
       'src/**/*.test.tsx',
       'supabase/functions/**/*.test.ts',
+      'scripts/**/*.test.ts',
     ],
   },
 });

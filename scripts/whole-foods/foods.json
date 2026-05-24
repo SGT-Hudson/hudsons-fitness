@@ -1,0 +1,1722 @@
+[
+  {
+    "query": "apples raw with skin",
+    "name_es": "Manzana",
+    "name_en": "Apple",
+    "category": "fruit",
+    "fdc_id": 171689,
+    "fdc_description": "Apples, raw, without skin"
+  },
+  {
+    "query": "bananas raw",
+    "name_es": "Plátano",
+    "name_en": "Banana",
+    "category": "fruit",
+    "fdc_id": 173944,
+    "fdc_description": "Bananas, raw"
+  },
+  {
+    "query": "oranges raw all commercial varieties",
+    "name_es": "Naranja",
+    "name_en": "Orange",
+    "category": "fruit",
+    "fdc_id": 169097,
+    "fdc_description": "Oranges, raw, all commercial varieties"
+  },
+  {
+    "query": "strawberries raw",
+    "name_es": "Fresa",
+    "name_en": "Strawberry",
+    "category": "fruit",
+    "fdc_id": 167762,
+    "fdc_description": "Strawberries, raw"
+  },
+  {
+    "query": "grapes red or green raw",
+    "name_es": "Uva",
+    "name_en": "Grapes",
+    "category": "fruit",
+    "fdc_id": 174683,
+    "fdc_description": "Grapes, red or green (European type, such as Thompson seedless), raw"
+  },
+  {
+    "query": "melons cantaloupe raw",
+    "name_es": "Melón",
+    "name_en": "Cantaloupe melon",
+    "category": "fruit",
+    "fdc_id": 169092,
+    "fdc_description": "Melons, cantaloupe, raw"
+  },
+  {
+    "query": "watermelon raw",
+    "name_es": "Sandía",
+    "name_en": "Watermelon",
+    "category": "fruit",
+    "fdc_id": 167765,
+    "fdc_description": "Watermelon, raw"
+  },
+  {
+    "query": "pineapple raw all varieties",
+    "name_es": "Piña",
+    "name_en": "Pineapple",
+    "category": "fruit",
+    "fdc_id": 169124,
+    "fdc_description": "Pineapple, raw, all varieties"
+  },
+  {
+    "query": "mangos raw",
+    "name_es": "Mango",
+    "name_en": "Mango",
+    "category": "fruit",
+    "fdc_id": 169910,
+    "fdc_description": "Mangos, raw"
+  },
+  {
+    "query": "pears raw",
+    "name_es": "Pera",
+    "name_en": "Pear",
+    "category": "fruit",
+    "fdc_id": 169118,
+    "fdc_description": "Pears, raw"
+  },
+  {
+    "query": "peaches raw",
+    "name_es": "Melocotón",
+    "name_en": "Peach",
+    "category": "fruit",
+    "fdc_id": 169928,
+    "fdc_description": "Peaches, yellow, raw"
+  },
+  {
+    "query": "plums raw",
+    "name_es": "Ciruela",
+    "name_en": "Plum",
+    "category": "fruit",
+    "fdc_id": 169949,
+    "fdc_description": "Plums, raw"
+  },
+  {
+    "query": "cherries sweet raw",
+    "name_es": "Cereza",
+    "name_en": "Cherry",
+    "category": "fruit",
+    "fdc_id": 171719,
+    "fdc_description": "Cherries, sweet, raw"
+  },
+  {
+    "query": "kiwifruit green raw",
+    "name_es": "Kiwi",
+    "name_en": "Kiwi",
+    "category": "fruit",
+    "fdc_id": 168153,
+    "fdc_description": "Kiwifruit, green, raw"
+  },
+  {
+    "query": "blueberries raw",
+    "name_es": "Arándano",
+    "name_en": "Blueberry",
+    "category": "fruit",
+    "fdc_id": 171711,
+    "fdc_description": "Blueberries, raw"
+  },
+  {
+    "query": "raspberries raw",
+    "name_es": "Frambuesa",
+    "name_en": "Raspberry",
+    "category": "fruit",
+    "fdc_id": 167755,
+    "fdc_description": "Raspberries, raw"
+  },
+  {
+    "query": "lemons raw without peel",
+    "name_es": "Limón",
+    "name_en": "Lemon",
+    "category": "fruit",
+    "fdc_id": 167746,
+    "fdc_description": "Lemons, raw, without peel"
+  },
+  {
+    "query": "limes raw",
+    "name_es": "Lima",
+    "name_en": "Lime",
+    "category": "fruit",
+    "fdc_id": 168155,
+    "fdc_description": "Limes, raw"
+  },
+  {
+    "query": "grapefruit raw pink red",
+    "name_es": "Pomelo",
+    "name_en": "Grapefruit",
+    "category": "fruit",
+    "fdc_id": 174675,
+    "fdc_description": "Grapefruit, raw, pink and red, Florida"
+  },
+  {
+    "query": "apricots raw",
+    "name_es": "Albaricoque",
+    "name_en": "Apricot",
+    "category": "fruit",
+    "fdc_id": 171697,
+    "fdc_description": "Apricots, raw"
+  },
+  {
+    "query": "figs raw",
+    "name_es": "Higo",
+    "name_en": "Fig",
+    "category": "fruit",
+    "fdc_id": 173021,
+    "fdc_description": "Figs, raw"
+  },
+  {
+    "query": "pomegranate raw",
+    "name_es": "Granada",
+    "name_en": "Pomegranate",
+    "category": "fruit",
+    "fdc_id": 169134,
+    "fdc_description": "Pomegranates, raw"
+  },
+  {
+    "query": "papayas raw",
+    "name_es": "Papaya",
+    "name_en": "Papaya",
+    "category": "fruit",
+    "fdc_id": 169926,
+    "fdc_description": "Papayas, raw"
+  },
+  {
+    "query": "tangerines mandarin oranges raw",
+    "name_es": "Mandarina",
+    "name_en": "Mandarin",
+    "category": "fruit",
+    "fdc_id": 169105,
+    "fdc_description": "Tangerines, (mandarin oranges), raw"
+  },
+  {
+    "query": "avocados raw all commercial varieties",
+    "name_es": "Aguacate",
+    "name_en": "Avocado",
+    "category": "fruit",
+    "fdc_id": 171705,
+    "fdc_description": "Avocados, raw, all commercial varieties"
+  },
+  {
+    "query": "dates medjool",
+    "name_es": "Dátil",
+    "name_en": "Dates",
+    "category": "fruit",
+    "fdc_id": 168191,
+    "fdc_description": "Dates, medjool"
+  },
+  {
+    "query": "raisins seedless",
+    "name_es": "Pasas",
+    "name_en": "Raisins",
+    "category": "fruit",
+    "fdc_id": 168164,
+    "fdc_description": "Raisins, golden, seedless"
+  },
+  {
+    "query": "nectarines raw",
+    "name_es": "Nectarina",
+    "name_en": "Nectarine",
+    "category": "fruit",
+    "fdc_id": 169914,
+    "fdc_description": "Nectarines, raw"
+  },
+  {
+    "query": "blackberries raw",
+    "name_es": "Mora",
+    "name_en": "Blackberry",
+    "category": "fruit",
+    "fdc_id": 173946,
+    "fdc_description": "Blackberries, raw"
+  },
+  {
+    "query": "clementines raw",
+    "name_es": "Clementina",
+    "name_en": "Clementine",
+    "category": "fruit",
+    "fdc_id": 168195,
+    "fdc_description": "Clementines, raw"
+  },
+  {
+    "query": "coconut meat raw",
+    "name_es": "Coco",
+    "name_en": "Coconut",
+    "category": "fruit",
+    "fdc_id": 170169,
+    "fdc_description": "Nuts, coconut meat, raw"
+  },
+  {
+    "query": "persimmons japanese raw",
+    "name_es": "Caqui",
+    "name_en": "Persimmon",
+    "category": "fruit",
+    "fdc_id": 169941,
+    "fdc_description": "Persimmons, japanese, raw"
+  },
+  {
+    "query": "guavas common raw",
+    "name_es": "Guayaba",
+    "name_en": "Guava",
+    "category": "fruit",
+    "fdc_id": 173044,
+    "fdc_description": "Guavas, common, raw"
+  },
+  {
+    "query": "cranberries raw",
+    "name_es": "Arándano rojo",
+    "name_en": "Cranberry",
+    "category": "fruit",
+    "fdc_id": 171722,
+    "fdc_description": "Cranberries, raw"
+  },
+  {
+    "query": "tomatoes red ripe raw",
+    "name_es": "Tomate",
+    "name_en": "Tomato",
+    "category": "vegetables",
+    "fdc_id": 170457,
+    "fdc_description": "Tomatoes, red, ripe, raw, year round average"
+  },
+  {
+    "query": "onions raw",
+    "name_es": "Cebolla",
+    "name_en": "Onion",
+    "category": "vegetables",
+    "fdc_id": 170000,
+    "fdc_description": "Onions, raw"
+  },
+  {
+    "query": "carrots raw",
+    "name_es": "Zanahoria",
+    "name_en": "Carrot",
+    "category": "vegetables",
+    "fdc_id": 170393,
+    "fdc_description": "Carrots, raw"
+  },
+  {
+    "query": "spinach raw",
+    "name_es": "Espinaca",
+    "name_en": "Spinach",
+    "category": "vegetables",
+    "fdc_id": 168462,
+    "fdc_description": "Spinach, raw"
+  },
+  {
+    "query": "broccoli raw",
+    "name_es": "Brócoli",
+    "name_en": "Broccoli",
+    "category": "vegetables",
+    "fdc_id": 170379,
+    "fdc_description": "Broccoli, raw"
+  },
+  {
+    "query": "peppers sweet red raw",
+    "name_es": "Pimiento rojo",
+    "name_en": "Red bell pepper",
+    "category": "vegetables",
+    "fdc_id": 170108,
+    "fdc_description": "Peppers, sweet, red, raw"
+  },
+  {
+    "query": "peppers sweet green raw",
+    "name_es": "Pimiento verde",
+    "name_en": "Green bell pepper",
+    "category": "vegetables",
+    "fdc_id": 170427,
+    "fdc_description": "Peppers, sweet, green, raw"
+  },
+  {
+    "query": "squash summer zucchini includes skin raw",
+    "name_es": "Calabacín",
+    "name_en": "Zucchini",
+    "category": "vegetables",
+    "fdc_id": 169291,
+    "fdc_description": "Squash, summer, zucchini, includes skin, raw"
+  },
+  {
+    "query": "cucumber with peel raw",
+    "name_es": "Pepino",
+    "name_en": "Cucumber",
+    "category": "vegetables",
+    "fdc_id": 169225,
+    "fdc_description": "Cucumber, peeled, raw"
+  },
+  {
+    "query": "lettuce romaine raw",
+    "name_es": "Lechuga",
+    "name_en": "Lettuce",
+    "category": "vegetables",
+    "fdc_id": 169247,
+    "fdc_description": "Lettuce, cos or romaine, raw"
+  },
+  {
+    "query": "cauliflower raw",
+    "name_es": "Coliflor",
+    "name_en": "Cauliflower",
+    "category": "vegetables",
+    "fdc_id": 169986,
+    "fdc_description": "Cauliflower, raw"
+  },
+  {
+    "query": "beans snap green raw",
+    "name_es": "Judías verdes",
+    "name_en": "Green beans",
+    "category": "vegetables",
+    "fdc_id": 169961,
+    "fdc_description": "Beans, snap, green, raw"
+  },
+  {
+    "query": "peas green raw",
+    "name_es": "Guisantes",
+    "name_en": "Green peas",
+    "category": "vegetables",
+    "fdc_id": 170419,
+    "fdc_description": "Peas, green, raw"
+  },
+  {
+    "query": "eggplant raw",
+    "name_es": "Berenjena",
+    "name_en": "Eggplant",
+    "category": "vegetables",
+    "fdc_id": 169228,
+    "fdc_description": "Eggplant, raw"
+  },
+  {
+    "query": "mushrooms white raw",
+    "name_es": "Champiñón",
+    "name_en": "Mushroom",
+    "category": "vegetables",
+    "fdc_id": 169251,
+    "fdc_description": "Mushrooms, white, raw"
+  },
+  {
+    "query": "potatoes flesh and skin raw",
+    "name_es": "Patata",
+    "name_en": "Potato",
+    "category": "vegetables",
+    "fdc_id": 170026,
+    "fdc_description": "Potatoes, flesh and skin, raw"
+  },
+  {
+    "query": "sweet potato raw unprepared",
+    "name_es": "Boniato",
+    "name_en": "Sweet potato",
+    "category": "vegetables",
+    "fdc_id": 168482,
+    "fdc_description": "Sweet potato, raw, unprepared"
+  },
+  {
+    "query": "celery raw",
+    "name_es": "Apio",
+    "name_en": "Celery",
+    "category": "vegetables",
+    "fdc_id": 169988,
+    "fdc_description": "Celery, raw"
+  },
+  {
+    "query": "asparagus raw",
+    "name_es": "Espárrago",
+    "name_en": "Asparagus",
+    "category": "vegetables",
+    "fdc_id": 168389,
+    "fdc_description": "Asparagus, raw"
+  },
+  {
+    "query": "cabbage raw",
+    "name_es": "Repollo",
+    "name_en": "Cabbage",
+    "category": "vegetables",
+    "fdc_id": 169975,
+    "fdc_description": "Cabbage, raw"
+  },
+  {
+    "query": "kale raw",
+    "name_es": "Col rizada",
+    "name_en": "Kale",
+    "category": "vegetables",
+    "fdc_id": 168421,
+    "fdc_description": "Kale, raw"
+  },
+  {
+    "query": "corn sweet yellow raw",
+    "name_es": "Maíz",
+    "name_en": "Sweet corn",
+    "category": "vegetables",
+    "fdc_id": 169998,
+    "fdc_description": "Corn, sweet, yellow, raw"
+  },
+  {
+    "query": "beets raw",
+    "name_es": "Remolacha",
+    "name_en": "Beetroot",
+    "category": "vegetables",
+    "fdc_id": 169145,
+    "fdc_description": "Beets, raw"
+  },
+  {
+    "query": "radishes raw",
+    "name_es": "Rábano",
+    "name_en": "Radish",
+    "category": "vegetables",
+    "fdc_id": 169276,
+    "fdc_description": "Radishes, raw"
+  },
+  {
+    "query": "leeks bulb and lower leaf raw",
+    "name_es": "Puerro",
+    "name_en": "Leek",
+    "category": "vegetables",
+    "fdc_id": 169246,
+    "fdc_description": "Leeks, (bulb and lower leaf-portion), raw"
+  },
+  {
+    "query": "artichokes globe french raw",
+    "name_es": "Alcachofa",
+    "name_en": "Artichoke",
+    "category": "vegetables",
+    "fdc_id": 169205,
+    "fdc_description": "Artichokes, (globe or french), raw"
+  },
+  {
+    "query": "brussels sprouts raw",
+    "name_es": "Coles de Bruselas",
+    "name_en": "Brussels sprouts",
+    "category": "vegetables",
+    "fdc_id": 170383,
+    "fdc_description": "Brussels sprouts, raw"
+  },
+  {
+    "query": "chard swiss raw",
+    "name_es": "Acelga",
+    "name_en": "Swiss chard",
+    "category": "vegetables",
+    "fdc_id": 169991,
+    "fdc_description": "Chard, swiss, raw"
+  },
+  {
+    "query": "onions spring or scallions raw",
+    "name_es": "Cebolleta",
+    "name_en": "Scallion",
+    "category": "vegetables",
+    "fdc_id": 170005,
+    "fdc_description": "Onions, spring or scallions (includes tops and bulb), raw"
+  },
+  {
+    "query": "turnips raw",
+    "name_es": "Nabo",
+    "name_en": "Turnip",
+    "category": "vegetables",
+    "fdc_id": 170465,
+    "fdc_description": "Turnips, raw"
+  },
+  {
+    "query": "squash winter butternut raw",
+    "name_es": "Calabaza",
+    "name_en": "Butternut squash",
+    "category": "vegetables",
+    "fdc_id": 169295,
+    "fdc_description": "Squash, winter, butternut, raw"
+  },
+  {
+    "query": "okra raw",
+    "name_es": "Okra",
+    "name_en": "Okra",
+    "category": "vegetables",
+    "fdc_id": 169260,
+    "fdc_description": "Okra, raw"
+  },
+  {
+    "query": "fennel bulb raw",
+    "name_es": "Hinojo",
+    "name_en": "Fennel",
+    "category": "vegetables",
+    "fdc_id": 169385,
+    "fdc_description": "Fennel, bulb, raw"
+  },
+  {
+    "query": "arugula raw",
+    "name_es": "Rúcula",
+    "name_en": "Arugula",
+    "category": "vegetables",
+    "fdc_id": 169387,
+    "fdc_description": "Arugula, raw"
+  },
+  {
+    "query": "watercress raw",
+    "name_es": "Berro",
+    "name_en": "Watercress",
+    "category": "vegetables",
+    "fdc_id": 170068,
+    "fdc_description": "Watercress, raw"
+  },
+  {
+    "query": "peppers jalapeno raw",
+    "name_es": "Jalapeño",
+    "name_en": "Jalapeño",
+    "category": "vegetables",
+    "fdc_id": 168576,
+    "fdc_description": "Peppers, jalapeno, raw"
+  },
+  {
+    "query": "peas edible-podded raw",
+    "name_es": "Tirabeques",
+    "name_en": "Snow peas",
+    "category": "vegetables",
+    "fdc_id": 170010,
+    "fdc_description": "Peas, edible-podded, raw"
+  },
+  {
+    "query": "parsnips raw",
+    "name_es": "Chirivía",
+    "name_en": "Parsnip",
+    "category": "vegetables",
+    "fdc_id": 170417,
+    "fdc_description": "Parsnips, raw"
+  },
+  {
+    "query": "collards raw",
+    "name_es": "Berza",
+    "name_en": "Collard greens",
+    "category": "vegetables",
+    "fdc_id": 170406,
+    "fdc_description": "Collards, raw"
+  },
+  {
+    "query": "cabbage chinese pak-choi raw",
+    "name_es": "Pak choi",
+    "name_en": "Bok choy",
+    "category": "vegetables",
+    "fdc_id": 170390,
+    "fdc_description": "Cabbage, chinese (pak-choi), raw"
+  },
+  {
+    "query": "peppers sweet yellow raw",
+    "name_es": "Pimiento amarillo",
+    "name_en": "Yellow bell pepper",
+    "category": "vegetables",
+    "fdc_id": 169383,
+    "fdc_description": "Peppers, sweet, yellow, raw"
+  },
+  {
+    "query": "pumpkin raw",
+    "name_es": "Calabaza común",
+    "name_en": "Pumpkin",
+    "category": "vegetables",
+    "fdc_id": 168448,
+    "fdc_description": "Pumpkin, raw"
+  },
+  {
+    "query": "garlic raw",
+    "name_es": "Ajo",
+    "name_en": "Garlic",
+    "category": "herbs_aromatics",
+    "fdc_id": 169230,
+    "fdc_description": "Garlic, raw"
+  },
+  {
+    "query": "ginger root raw",
+    "name_es": "Jengibre",
+    "name_en": "Ginger",
+    "category": "herbs_aromatics",
+    "fdc_id": 169231,
+    "fdc_description": "Ginger root, raw"
+  },
+  {
+    "query": "parsley fresh",
+    "name_es": "Perejil",
+    "name_en": "Parsley",
+    "category": "herbs_aromatics",
+    "fdc_id": 170416,
+    "fdc_description": "Parsley, fresh"
+  },
+  {
+    "query": "coriander cilantro leaves raw",
+    "name_es": "Cilantro",
+    "name_en": "Cilantro",
+    "category": "herbs_aromatics",
+    "fdc_id": 169997,
+    "fdc_description": "Coriander (cilantro) leaves, raw"
+  },
+  {
+    "query": "basil fresh",
+    "name_es": "Albahaca",
+    "name_en": "Basil",
+    "category": "herbs_aromatics",
+    "fdc_id": 172232,
+    "fdc_description": "Basil, fresh"
+  },
+  {
+    "query": "peppermint fresh",
+    "name_es": "Menta",
+    "name_en": "Mint",
+    "category": "herbs_aromatics",
+    "fdc_id": 173474,
+    "fdc_description": "Peppermint, fresh"
+  },
+  {
+    "query": "rosemary fresh",
+    "name_es": "Romero",
+    "name_en": "Rosemary",
+    "category": "herbs_aromatics",
+    "fdc_id": 173473,
+    "fdc_description": "Rosemary, fresh"
+  },
+  {
+    "query": "thyme fresh",
+    "name_es": "Tomillo",
+    "name_en": "Thyme",
+    "category": "herbs_aromatics",
+    "fdc_id": 173470,
+    "fdc_description": "Thyme, fresh"
+  },
+  {
+    "query": "spices oregano dried",
+    "name_es": "Orégano",
+    "name_en": "Oregano",
+    "category": "herbs_aromatics",
+    "fdc_id": 171328,
+    "fdc_description": "Spices, oregano, dried"
+  },
+  {
+    "query": "dill weed fresh",
+    "name_es": "Eneldo",
+    "name_en": "Dill",
+    "category": "herbs_aromatics",
+    "fdc_id": 172233,
+    "fdc_description": "Dill weed, fresh"
+  },
+  {
+    "query": "chives raw",
+    "name_es": "Cebollino",
+    "name_en": "Chives",
+    "category": "herbs_aromatics",
+    "fdc_id": 169994,
+    "fdc_description": "Chives, raw"
+  },
+  {
+    "query": "spices bay leaf",
+    "name_es": "Laurel",
+    "name_en": "Bay leaf",
+    "category": "herbs_aromatics",
+    "fdc_id": 170917,
+    "fdc_description": "Spices, bay leaf"
+  },
+  {
+    "query": "chicken broiler breast skinless boneless meat only raw",
+    "name_es": "Pechuga de pollo",
+    "name_en": "Chicken breast",
+    "category": "meat",
+    "fdc_id": 171077,
+    "fdc_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+  },
+  {
+    "query": "chicken broiler thigh meat only raw",
+    "name_es": "Muslo de pollo",
+    "name_en": "Chicken thigh",
+    "category": "meat",
+    "fdc_id": 173627,
+    "fdc_description": "Chicken, broilers or fryers, dark meat, thigh, meat only, raw"
+  },
+  {
+    "query": "chicken broiler drumstick meat only raw",
+    "name_es": "Jamoncito de pollo",
+    "name_en": "Chicken drumstick",
+    "category": "meat",
+    "fdc_id": 173614,
+    "fdc_description": "Chicken, broilers or fryers, dark meat, drumstick, meat only, raw"
+  },
+  {
+    "query": "chicken broiler wing meat and skin raw",
+    "name_es": "Alitas de pollo",
+    "name_en": "Chicken wing",
+    "category": "meat",
+    "fdc_id": 172390,
+    "fdc_description": "Chicken, broilers or fryers, wing, meat and skin, raw"
+  },
+  {
+    "query": "chicken ground raw",
+    "name_es": "Pollo picado",
+    "name_en": "Ground chicken",
+    "category": "meat",
+    "fdc_id": 171116,
+    "fdc_description": "Chicken, ground, raw"
+  },
+  {
+    "query": "turkey breast meat only raw",
+    "name_es": "Pechuga de pavo",
+    "name_en": "Turkey breast",
+    "category": "meat",
+    "fdc_id": 171098,
+    "fdc_description": "Turkey, whole, breast, meat only, raw"
+  },
+  {
+    "query": "turkey ground raw",
+    "name_es": "Pavo picado",
+    "name_en": "Ground turkey",
+    "category": "meat",
+    "fdc_id": 171505,
+    "fdc_description": "Turkey, Ground, raw"
+  },
+  {
+    "query": "beef ground 80% lean 20% fat raw",
+    "name_es": "Carne picada de ternera",
+    "name_en": "Ground beef",
+    "category": "meat",
+    "fdc_id": 174036,
+    "fdc_description": "Beef, ground, 80% lean meat / 20% fat, raw"
+  },
+  {
+    "query": "beef top sirloin steak boneless trimmed raw",
+    "name_es": "Solomillo de ternera",
+    "name_en": "Beef sirloin",
+    "category": "meat",
+    "fdc_id": 174707,
+    "fdc_description": "Beef, loin, top sirloin cap steak, boneless, separable lean and fat, trimmed to 1/8\" fat, choice, raw"
+  },
+  {
+    "query": "beef rib eye steak boneless raw",
+    "name_es": "Entrecot",
+    "name_en": "Beef ribeye",
+    "category": "meat",
+    "fdc_id": 173403,
+    "fdc_description": "Beef, rib eye steak, boneless, lip off, separable lean and fat, trimmed to 0\" fat, choice, raw"
+  },
+  {
+    "query": "beef tenderloin steak boneless trimmed raw",
+    "name_es": "Filete de ternera",
+    "name_en": "Beef tenderloin",
+    "category": "meat",
+    "fdc_id": 173989,
+    "fdc_description": "Beef, loin, tenderloin steak, boneless, separable lean and fat, trimmed to 0\" fat, choice, raw"
+  },
+  {
+    "query": "beef chuck pot roast raw",
+    "name_es": "Aguja de ternera",
+    "name_en": "Beef chuck",
+    "category": "meat",
+    "fdc_id": 168668,
+    "fdc_description": "Beef, chuck, arm pot roast, separable lean and fat, trimmed to 1/8\" fat, choice, raw"
+  },
+  {
+    "query": "beef flank steak raw",
+    "name_es": "Falda de ternera",
+    "name_en": "Beef flank",
+    "category": "meat",
+    "fdc_id": 169433,
+    "fdc_description": "Beef, flank, steak, separable lean and fat, trimmed to 0\" fat, choice, raw"
+  },
+  {
+    "query": "pork loin tenderloin lean raw",
+    "name_es": "Solomillo de cerdo",
+    "name_en": "Pork tenderloin",
+    "category": "meat",
+    "fdc_id": 168312,
+    "fdc_description": "Pork, fresh, loin, tenderloin, separable lean and fat, raw"
+  },
+  {
+    "query": "pork loin chops boneless raw",
+    "name_es": "Chuleta de cerdo",
+    "name_en": "Pork chop",
+    "category": "meat",
+    "fdc_id": 167839,
+    "fdc_description": "Pork, fresh, loin, top loin (chops), boneless, separable lean and fat, raw"
+  },
+  {
+    "query": "pork ground raw",
+    "name_es": "Carne picada de cerdo",
+    "name_en": "Ground pork",
+    "category": "meat",
+    "fdc_id": 167902,
+    "fdc_description": "Pork, fresh, ground, raw"
+  },
+  {
+    "query": "pork shoulder raw",
+    "name_es": "Paleta de cerdo",
+    "name_en": "Pork shoulder",
+    "category": "meat",
+    "fdc_id": 169187,
+    "fdc_description": "Pork, Shoulder breast, boneless, separable lean and fat, raw"
+  },
+  {
+    "query": "lamb leg whole raw",
+    "name_es": "Pierna de cordero",
+    "name_en": "Lamb leg",
+    "category": "meat",
+    "fdc_id": 174372,
+    "fdc_description": "Lamb, leg, whole (shank and sirloin), separable lean and fat, trimmed to 1/8\" fat, choice, raw"
+  },
+  {
+    "query": "lamb loin chop raw",
+    "name_es": "Chuleta de cordero",
+    "name_en": "Lamb chop",
+    "category": "meat",
+    "fdc_id": 172517,
+    "fdc_description": "Lamb, New Zealand, imported, loin chop, separable lean and fat, raw"
+  },
+  {
+    "query": "lamb ground raw",
+    "name_es": "Cordero picado",
+    "name_en": "Ground lamb",
+    "category": "meat",
+    "fdc_id": 174370,
+    "fdc_description": "Lamb, ground, raw"
+  },
+  {
+    "query": "veal leg top round raw",
+    "name_es": "Ternera lechal",
+    "name_en": "Veal",
+    "category": "meat",
+    "fdc_id": 175268,
+    "fdc_description": "Veal, leg (top round), separable lean and fat, raw"
+  },
+  {
+    "query": "duck breast meat only raw",
+    "name_es": "Pechuga de pato",
+    "name_en": "Duck breast",
+    "category": "meat",
+    "fdc_id": 174469,
+    "fdc_description": "Duck, wild, breast, meat only, raw"
+  },
+  {
+    "query": "rabbit domesticated meat raw",
+    "name_es": "Conejo",
+    "name_en": "Rabbit",
+    "category": "meat",
+    "fdc_id": 172521,
+    "fdc_description": "Game meat, rabbit, domesticated, composite of cuts, raw"
+  },
+  {
+    "query": "beef liver raw",
+    "name_es": "Hígado de ternera",
+    "name_en": "Beef liver",
+    "category": "meat",
+    "fdc_id": 169451,
+    "fdc_description": "Beef, variety meats and by-products, liver, raw"
+  },
+  {
+    "query": "chicken liver raw",
+    "name_es": "Hígado de pollo",
+    "name_en": "Chicken liver",
+    "category": "meat",
+    "fdc_id": 171060,
+    "fdc_description": "Chicken, liver, all classes, raw"
+  },
+  {
+    "query": "fish salmon atlantic wild raw",
+    "name_es": "Salmón",
+    "name_en": "Salmon",
+    "category": "fish",
+    "fdc_id": 173686,
+    "fdc_description": "Fish, salmon, Atlantic, wild, raw"
+  },
+  {
+    "query": "fish tuna fresh bluefin raw",
+    "name_es": "Atún",
+    "name_en": "Tuna",
+    "category": "fish",
+    "fdc_id": 173706,
+    "fdc_description": "Fish, tuna, fresh, bluefin, raw"
+  },
+  {
+    "query": "fish cod atlantic raw",
+    "name_es": "Bacalao",
+    "name_en": "Cod",
+    "category": "fish",
+    "fdc_id": 171955,
+    "fdc_description": "Fish, cod, Atlantic, raw"
+  },
+  {
+    "query": "fish haddock raw",
+    "name_es": "Eglefino",
+    "name_en": "Haddock",
+    "category": "fish",
+    "fdc_id": 171964,
+    "fdc_description": "Fish, haddock, raw"
+  },
+  {
+    "query": "fish tilapia raw",
+    "name_es": "Tilapia",
+    "name_en": "Tilapia",
+    "category": "fish",
+    "fdc_id": 175176,
+    "fdc_description": "Fish, tilapia, raw"
+  },
+  {
+    "query": "fish trout rainbow farmed raw",
+    "name_es": "Trucha",
+    "name_en": "Trout",
+    "category": "fish",
+    "fdc_id": 173717,
+    "fdc_description": "Fish, trout, rainbow, farmed, raw"
+  },
+  {
+    "query": "fish mackerel atlantic raw",
+    "name_es": "Caballa",
+    "name_en": "Mackerel",
+    "category": "fish",
+    "fdc_id": 175119,
+    "fdc_description": "Fish, mackerel, Atlantic, raw"
+  },
+  {
+    "query": "fish anchovy european raw",
+    "name_es": "Boquerón",
+    "name_en": "Anchovy",
+    "category": "fish",
+    "fdc_id": 174182,
+    "fdc_description": "Fish, anchovy, european, raw"
+  },
+  {
+    "query": "fish sea bass mixed species raw",
+    "name_es": "Lubina",
+    "name_en": "Sea bass",
+    "category": "fish",
+    "fdc_id": 175142,
+    "fdc_description": "Fish, sea bass, mixed species, raw"
+  },
+  {
+    "query": "fish halibut atlantic and pacific raw",
+    "name_es": "Halibut",
+    "name_en": "Halibut",
+    "category": "fish",
+    "fdc_id": 174200,
+    "fdc_description": "Fish, halibut, Atlantic and Pacific, raw"
+  },
+  {
+    "query": "fish swordfish raw",
+    "name_es": "Pez espada",
+    "name_en": "Swordfish",
+    "category": "fish",
+    "fdc_id": 173703,
+    "fdc_description": "Fish, swordfish, raw"
+  },
+  {
+    "query": "crustaceans shrimp raw",
+    "name_es": "Gambas",
+    "name_en": "Shrimp",
+    "category": "fish",
+    "fdc_id": 175179,
+    "fdc_description": "Crustaceans, shrimp, raw"
+  },
+  {
+    "query": "mollusks mussel blue raw",
+    "name_es": "Mejillón",
+    "name_en": "Mussels",
+    "category": "fish",
+    "fdc_id": 174216,
+    "fdc_description": "Mollusks, mussel, blue, raw"
+  },
+  {
+    "query": "mollusks clam mixed species raw",
+    "name_es": "Almeja",
+    "name_en": "Clams",
+    "category": "fish",
+    "fdc_id": 174214,
+    "fdc_description": "Mollusks, clam, mixed species, raw"
+  },
+  {
+    "query": "mollusks oyster eastern wild raw",
+    "name_es": "Ostra",
+    "name_en": "Oysters",
+    "category": "fish",
+    "fdc_id": 171978,
+    "fdc_description": "Mollusks, oyster, eastern, wild, raw"
+  },
+  {
+    "query": "mollusks squid mixed species raw",
+    "name_es": "Calamar",
+    "name_en": "Squid",
+    "category": "fish",
+    "fdc_id": 174223,
+    "fdc_description": "Mollusks, squid, mixed species, raw"
+  },
+  {
+    "query": "mollusks octopus common raw",
+    "name_es": "Pulpo",
+    "name_en": "Octopus",
+    "category": "fish",
+    "fdc_id": 174218,
+    "fdc_description": "Mollusks, octopus, common, raw"
+  },
+  {
+    "query": "mollusks scallop mixed species raw",
+    "name_es": "Vieira",
+    "name_en": "Scallops",
+    "category": "fish",
+    "fdc_id": 174220,
+    "fdc_description": "Mollusks, scallop, mixed species, raw"
+  },
+  {
+    "query": "crustaceans crab blue raw",
+    "name_es": "Cangrejo",
+    "name_en": "Crab",
+    "category": "fish",
+    "fdc_id": 174204,
+    "fdc_description": "Crustaceans, crab, blue, raw"
+  },
+  {
+    "query": "crustaceans lobster northern raw",
+    "name_es": "Langosta",
+    "name_en": "Lobster",
+    "category": "fish",
+    "fdc_id": 174208,
+    "fdc_description": "Crustaceans, lobster, northern, raw"
+  },
+  {
+    "query": "fish herring atlantic raw",
+    "name_es": "Arenque",
+    "name_en": "Herring",
+    "category": "fish",
+    "fdc_id": 175116,
+    "fdc_description": "Fish, herring, Atlantic, raw"
+  },
+  {
+    "query": "fish flatfish sole and flounder raw",
+    "name_es": "Lenguado",
+    "name_en": "Sole",
+    "category": "fish",
+    "fdc_id": 174196,
+    "fdc_description": "Fish, flatfish (flounder and sole species), raw"
+  },
+  {
+    "query": "fish pollock atlantic raw",
+    "name_es": "Abadejo",
+    "name_en": "Pollock",
+    "category": "fish",
+    "fdc_id": 175129,
+    "fdc_description": "Fish, pollock, Atlantic, raw"
+  },
+  {
+    "query": "egg whole raw fresh",
+    "name_es": "Huevo",
+    "name_en": "Egg",
+    "category": "dairy_eggs",
+    "fdc_id": 171287,
+    "fdc_description": "Egg, whole, raw, fresh"
+  },
+  {
+    "query": "egg white raw fresh",
+    "name_es": "Clara de huevo",
+    "name_en": "Egg white",
+    "category": "dairy_eggs",
+    "fdc_id": 172183,
+    "fdc_description": "Egg, white, raw, fresh"
+  },
+  {
+    "query": "milk whole 3.25% milkfat",
+    "name_es": "Leche entera",
+    "name_en": "Whole milk",
+    "category": "dairy_eggs",
+    "fdc_id": 171265,
+    "fdc_description": "Milk, whole, 3.25% milkfat, with added vitamin D"
+  },
+  {
+    "query": "milk nonfat fluid skim",
+    "name_es": "Leche desnatada",
+    "name_en": "Skim milk",
+    "category": "dairy_eggs",
+    "fdc_id": 169868,
+    "fdc_description": "Milk, fluid, nonfat, calcium fortified (fat free or skim)"
+  },
+  {
+    "query": "milk reduced fat fluid 2%",
+    "name_es": "Leche semidesnatada",
+    "name_en": "Semi-skimmed milk",
+    "category": "dairy_eggs",
+    "fdc_id": 171267,
+    "fdc_description": "Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D"
+  },
+  {
+    "query": "yogurt plain whole milk",
+    "name_es": "Yogur natural",
+    "name_en": "Plain yogurt",
+    "category": "dairy_eggs",
+    "fdc_id": 171284,
+    "fdc_description": "Yogurt, plain, whole milk"
+  },
+  {
+    "query": "yogurt greek plain whole milk",
+    "name_es": "Yogur griego",
+    "name_en": "Greek yogurt",
+    "category": "dairy_eggs",
+    "fdc_id": 171304,
+    "fdc_description": "Yogurt, Greek, plain, whole milk"
+  },
+  {
+    "query": "butter without salt",
+    "name_es": "Mantequilla",
+    "name_en": "Butter",
+    "category": "dairy_eggs",
+    "fdc_id": 173430,
+    "fdc_description": "Butter, without salt"
+  },
+  {
+    "query": "cheese cheddar",
+    "name_es": "Queso cheddar",
+    "name_en": "Cheddar cheese",
+    "category": "dairy_eggs",
+    "fdc_id": 170899,
+    "fdc_description": "Cheese, cheddar, sharp, sliced"
+  },
+  {
+    "query": "cheese mozzarella whole milk",
+    "name_es": "Queso mozzarella",
+    "name_en": "Mozzarella",
+    "category": "dairy_eggs",
+    "fdc_id": 170845,
+    "fdc_description": "Cheese, mozzarella, whole milk"
+  },
+  {
+    "query": "cheese parmesan grated",
+    "name_es": "Queso parmesano",
+    "name_en": "Parmesan",
+    "category": "dairy_eggs",
+    "fdc_id": 171247,
+    "fdc_description": "Cheese, parmesan, grated"
+  },
+  {
+    "query": "cheese cottage creamed large or small curd",
+    "name_es": "Requesón",
+    "name_en": "Cottage cheese",
+    "category": "dairy_eggs",
+    "fdc_id": 172179,
+    "fdc_description": "Cheese, cottage, creamed, large or small curd"
+  },
+  {
+    "query": "cheese feta",
+    "name_es": "Queso feta",
+    "name_en": "Feta cheese",
+    "category": "dairy_eggs",
+    "fdc_id": 173420,
+    "fdc_description": "Cheese, feta"
+  },
+  {
+    "query": "cream heavy whipping",
+    "name_es": "Nata para montar",
+    "name_en": "Heavy cream",
+    "category": "dairy_eggs",
+    "fdc_id": 170859,
+    "fdc_description": "Cream, fluid, heavy whipping"
+  },
+  {
+    "query": "cheese goat soft",
+    "name_es": "Queso de cabra",
+    "name_en": "Goat cheese",
+    "category": "dairy_eggs",
+    "fdc_id": 173435,
+    "fdc_description": "Cheese, goat, soft type"
+  },
+  {
+    "query": "rice white long-grain regular raw unenriched",
+    "name_es": "Arroz blanco",
+    "name_en": "White rice",
+    "category": "grains",
+    "fdc_id": 169756,
+    "fdc_description": "Rice, white, long-grain, regular, raw, unenriched"
+  },
+  {
+    "query": "rice brown long-grain raw",
+    "name_es": "Arroz integral",
+    "name_en": "Brown rice",
+    "category": "grains",
+    "fdc_id": 169703,
+    "fdc_description": "Rice, brown, long-grain, raw"
+  },
+  {
+    "query": "pasta dry unenriched",
+    "name_es": "Pasta",
+    "name_en": "Pasta, dry",
+    "category": "grains",
+    "fdc_id": 168927,
+    "fdc_description": "Pasta, dry, unenriched"
+  },
+  {
+    "query": "pasta whole wheat dry",
+    "name_es": "Pasta integral",
+    "name_en": "Whole wheat pasta",
+    "category": "grains",
+    "fdc_id": 168915,
+    "fdc_description": "Pasta, whole grain, 51% whole wheat, remaining unenriched semolina, dry"
+  },
+  {
+    "query": "oats",
+    "name_es": "Avena",
+    "name_en": "Oats",
+    "category": "grains",
+    "fdc_id": 173904,
+    "fdc_description": "Cereals, oats, regular and quick, not fortified, dry"
+  },
+  {
+    "query": "wheat flour white all-purpose unenriched",
+    "name_es": "Harina de trigo",
+    "name_en": "Wheat flour",
+    "category": "grains",
+    "fdc_id": 169761,
+    "fdc_description": "Wheat flour, white, all-purpose, unenriched"
+  },
+  {
+    "query": "wheat flour whole-grain",
+    "name_es": "Harina integral",
+    "name_en": "Whole wheat flour",
+    "category": "grains",
+    "fdc_id": 168944,
+    "fdc_description": "Wheat flour, whole-grain, soft wheat"
+  },
+  {
+    "query": "bread white commercially prepared",
+    "name_es": "Pan blanco",
+    "name_en": "White bread",
+    "category": "grains",
+    "fdc_id": 174924,
+    "fdc_description": "Bread, white, commercially prepared"
+  },
+  {
+    "query": "bread whole-wheat commercially prepared",
+    "name_es": "Pan integral",
+    "name_en": "Whole wheat bread",
+    "category": "grains",
+    "fdc_id": 172688,
+    "fdc_description": "Bread, whole-wheat, commercially prepared"
+  },
+  {
+    "query": "couscous dry",
+    "name_es": "Cuscús",
+    "name_en": "Couscous, dry",
+    "category": "grains",
+    "fdc_id": 169699,
+    "fdc_description": "Couscous, dry"
+  },
+  {
+    "query": "quinoa uncooked",
+    "name_es": "Quinoa",
+    "name_en": "Quinoa",
+    "category": "grains",
+    "fdc_id": 168874,
+    "fdc_description": "Quinoa, uncooked"
+  },
+  {
+    "query": "bulgur dry",
+    "name_es": "Bulgur",
+    "name_en": "Bulgur",
+    "category": "grains",
+    "fdc_id": 170688,
+    "fdc_description": "Bulgur, dry"
+  },
+  {
+    "query": "barley pearled raw",
+    "name_es": "Cebada",
+    "name_en": "Barley",
+    "category": "grains",
+    "fdc_id": 170284,
+    "fdc_description": "Barley, pearled, raw"
+  },
+  {
+    "query": "cornmeal whole-grain yellow",
+    "name_es": "Harina de maíz",
+    "name_en": "Cornmeal",
+    "category": "grains",
+    "fdc_id": 169697,
+    "fdc_description": "Cornmeal, whole-grain, yellow"
+  },
+  {
+    "query": "buckwheat",
+    "name_es": "Trigo sarraceno",
+    "name_en": "Buckwheat",
+    "category": "grains",
+    "fdc_id": 170286,
+    "fdc_description": "Buckwheat"
+  },
+  {
+    "query": "millet raw",
+    "name_es": "Mijo",
+    "name_en": "Millet",
+    "category": "grains",
+    "fdc_id": 169702,
+    "fdc_description": "Millet, raw"
+  },
+  {
+    "query": "semolina unenriched",
+    "name_es": "Sémola",
+    "name_en": "Semolina",
+    "category": "grains",
+    "fdc_id": 168933,
+    "fdc_description": "Semolina, unenriched"
+  },
+  {
+    "query": "rye flour medium",
+    "name_es": "Harina de centeno",
+    "name_en": "Rye flour",
+    "category": "grains",
+    "fdc_id": 168886,
+    "fdc_description": "Rye flour, medium"
+  },
+  {
+    "query": "cornstarch",
+    "name_es": "Maicena",
+    "name_en": "Cornstarch",
+    "category": "grains",
+    "fdc_id": 169698,
+    "fdc_description": "Cornstarch"
+  },
+  {
+    "query": "tortillas ready-to-bake or -fry corn",
+    "name_es": "Tortilla de maíz",
+    "name_en": "Corn tortilla",
+    "category": "grains",
+    "fdc_id": 175036,
+    "fdc_description": "Tortillas, ready-to-bake or -fry, corn"
+  },
+  {
+    "query": "rice noodles dry",
+    "name_es": "Fideos de arroz",
+    "name_en": "Rice noodles",
+    "category": "grains",
+    "fdc_id": 169742,
+    "fdc_description": "Rice noodles, dry"
+  },
+  {
+    "query": "lentils raw",
+    "name_es": "Lentejas",
+    "name_en": "Lentils",
+    "category": "legumes",
+    "fdc_id": 172420,
+    "fdc_description": "Lentils, raw"
+  },
+  {
+    "query": "chickpeas garbanzo beans mature seeds raw",
+    "name_es": "Garbanzos",
+    "name_en": "Chickpeas",
+    "category": "legumes",
+    "fdc_id": 173756,
+    "fdc_description": "Chickpeas (garbanzo beans, bengal gram), mature seeds, raw"
+  },
+  {
+    "query": "beans black mature seeds raw",
+    "name_es": "Frijoles negros",
+    "name_en": "Black beans",
+    "category": "legumes",
+    "fdc_id": 173734,
+    "fdc_description": "Beans, black, mature seeds, raw"
+  },
+  {
+    "query": "beans kidney red mature seeds raw",
+    "name_es": "Alubias rojas",
+    "name_en": "Kidney beans",
+    "category": "legumes",
+    "fdc_id": 173744,
+    "fdc_description": "Beans, kidney, red, mature seeds, raw"
+  },
+  {
+    "query": "beans navy mature seeds raw",
+    "name_es": "Alubias blancas",
+    "name_en": "Navy beans",
+    "category": "legumes",
+    "fdc_id": 173745,
+    "fdc_description": "Beans, navy, mature seeds, raw"
+  },
+  {
+    "query": "soybeans mature seeds raw",
+    "name_es": "Soja",
+    "name_en": "Soybeans",
+    "category": "legumes",
+    "fdc_id": 174270,
+    "fdc_description": "Soybeans, mature seeds, raw"
+  },
+  {
+    "query": "edamame frozen unprepared",
+    "name_es": "Edamame",
+    "name_en": "Edamame",
+    "category": "legumes",
+    "fdc_id": 168410,
+    "fdc_description": "Edamame, frozen, unprepared"
+  },
+  {
+    "query": "peas split mature seeds raw",
+    "name_es": "Guisantes secos",
+    "name_en": "Split peas",
+    "category": "legumes",
+    "fdc_id": 172428,
+    "fdc_description": "Peas, green, split, mature seeds, raw"
+  },
+  {
+    "query": "broadbeans fava beans mature seeds raw",
+    "name_es": "Habas",
+    "name_en": "Fava beans",
+    "category": "legumes",
+    "fdc_id": 175205,
+    "fdc_description": "Broadbeans (fava beans), mature seeds, raw"
+  },
+  {
+    "query": "mung beans mature seeds raw",
+    "name_es": "Judías mungo",
+    "name_en": "Mung beans",
+    "category": "legumes",
+    "fdc_id": 174256,
+    "fdc_description": "Mung beans, mature seeds, raw"
+  },
+  {
+    "query": "cowpeas black-eyed peas mature seeds raw",
+    "name_es": "Frijoles carilla",
+    "name_en": "Black-eyed peas",
+    "category": "legumes",
+    "fdc_id": 173758,
+    "fdc_description": "Cowpeas, common (blackeyes, crowder, southern), mature seeds, raw"
+  },
+  {
+    "query": "lima beans large mature seeds raw",
+    "name_es": "Judías de Lima",
+    "name_en": "Lima beans",
+    "category": "legumes",
+    "fdc_id": 174252,
+    "fdc_description": "Lima beans, large, mature seeds, raw"
+  },
+  {
+    "query": "beans white mature seeds raw",
+    "name_es": "Alubias cannellini",
+    "name_en": "White beans",
+    "category": "legumes",
+    "fdc_id": 175202,
+    "fdc_description": "Beans, white, mature seeds, raw"
+  },
+  {
+    "query": "tofu raw firm prepared with calcium sulfate",
+    "name_es": "Tofu",
+    "name_en": "Tofu",
+    "category": "legumes",
+    "fdc_id": 172475,
+    "fdc_description": "Tofu, raw, firm, prepared with calcium sulfate"
+  },
+  {
+    "query": "nuts almonds",
+    "name_es": "Almendras",
+    "name_en": "Almonds",
+    "category": "nuts_seeds",
+    "fdc_id": 170567,
+    "fdc_description": "Nuts, almonds"
+  },
+  {
+    "query": "nuts walnuts english",
+    "name_es": "Nueces",
+    "name_en": "Walnuts",
+    "category": "nuts_seeds",
+    "fdc_id": 170187,
+    "fdc_description": "Nuts, walnuts, english"
+  },
+  {
+    "query": "peanuts all types raw",
+    "name_es": "Cacahuetes",
+    "name_en": "Peanuts",
+    "category": "nuts_seeds",
+    "fdc_id": 172430,
+    "fdc_description": "Peanuts, all types, raw"
+  },
+  {
+    "query": "nuts cashew nuts raw",
+    "name_es": "Anacardos",
+    "name_en": "Cashews",
+    "category": "nuts_seeds",
+    "fdc_id": 170162,
+    "fdc_description": "Nuts, cashew nuts, raw"
+  },
+  {
+    "query": "nuts pistachio nuts raw",
+    "name_es": "Pistachos",
+    "name_en": "Pistachios",
+    "category": "nuts_seeds",
+    "fdc_id": 170184,
+    "fdc_description": "Nuts, pistachio nuts, raw"
+  },
+  {
+    "query": "nuts hazelnuts filberts",
+    "name_es": "Avellanas",
+    "name_en": "Hazelnuts",
+    "category": "nuts_seeds",
+    "fdc_id": 170581,
+    "fdc_description": "Nuts, hazelnuts or filberts"
+  },
+  {
+    "query": "nuts pecans",
+    "name_es": "Nueces pecanas",
+    "name_en": "Pecans",
+    "category": "nuts_seeds",
+    "fdc_id": 170182,
+    "fdc_description": "Nuts, pecans"
+  },
+  {
+    "query": "nuts brazilnuts dried",
+    "name_es": "Nueces de Brasil",
+    "name_en": "Brazil nuts",
+    "category": "nuts_seeds",
+    "fdc_id": 170569,
+    "fdc_description": "Nuts, brazilnuts, dried, unblanched"
+  },
+  {
+    "query": "nuts macadamia nuts raw",
+    "name_es": "Nueces de macadamia",
+    "name_en": "Macadamia nuts",
+    "category": "nuts_seeds",
+    "fdc_id": 170178,
+    "fdc_description": "Nuts, macadamia nuts, raw"
+  },
+  {
+    "query": "seeds sunflower seed kernels dried",
+    "name_es": "Pipas de girasol",
+    "name_en": "Sunflower seeds",
+    "category": "nuts_seeds",
+    "fdc_id": 170562,
+    "fdc_description": "Seeds, sunflower seed kernels, dried"
+  },
+  {
+    "query": "seeds pumpkin and squash seed kernels dried",
+    "name_es": "Pipas de calabaza",
+    "name_en": "Pumpkin seeds",
+    "category": "nuts_seeds",
+    "fdc_id": 170556,
+    "fdc_description": "Seeds, pumpkin and squash seed kernels, dried"
+  },
+  {
+    "query": "seeds chia seeds dried",
+    "name_es": "Semillas de chía",
+    "name_en": "Chia seeds",
+    "category": "nuts_seeds",
+    "fdc_id": 170554,
+    "fdc_description": "Seeds, chia seeds, dried"
+  },
+  {
+    "query": "seeds flaxseed",
+    "name_es": "Semillas de lino",
+    "name_en": "Flax seeds",
+    "category": "nuts_seeds",
+    "fdc_id": 169414,
+    "fdc_description": "Seeds, flaxseed"
+  },
+  {
+    "query": "seeds sesame seeds whole dried",
+    "name_es": "Semillas de sésamo",
+    "name_en": "Sesame seeds",
+    "category": "nuts_seeds",
+    "fdc_id": 170150,
+    "fdc_description": "Seeds, sesame seeds, whole, dried"
+  },
+  {
+    "query": "nuts pine nuts dried",
+    "name_es": "Piñones",
+    "name_en": "Pine nuts",
+    "category": "nuts_seeds",
+    "fdc_id": 170591,
+    "fdc_description": "Nuts, pine nuts, dried"
+  },
+  {
+    "query": "oil olive salad or cooking",
+    "name_es": "Aceite de oliva",
+    "name_en": "Olive oil",
+    "category": "fats_pantry",
+    "fdc_id": 171413,
+    "fdc_description": "Oil, olive, salad or cooking"
+  },
+  {
+    "query": "oil sunflower linoleic",
+    "name_es": "Aceite de girasol",
+    "name_en": "Sunflower oil",
+    "category": "fats_pantry",
+    "fdc_id": 171025,
+    "fdc_description": "Oil, sunflower, linoleic, (approx. 65%)"
+  },
+  {
+    "query": "oil canola",
+    "name_es": "Aceite de colza",
+    "name_en": "Canola oil",
+    "category": "fats_pantry",
+    "fdc_id": 172336,
+    "fdc_description": "Oil, canola"
+  },
+  {
+    "query": "oil coconut",
+    "name_es": "Aceite de coco",
+    "name_en": "Coconut oil",
+    "category": "fats_pantry",
+    "fdc_id": 171412,
+    "fdc_description": "Oil, coconut"
+  },
+  {
+    "query": "oil vegetable soybean",
+    "name_es": "Aceite vegetal",
+    "name_en": "Vegetable oil",
+    "category": "fats_pantry",
+    "fdc_id": 172370,
+    "fdc_description": "Oil, vegetable, soybean, refined"
+  },
+  {
+    "query": "sugars granulated",
+    "name_es": "Azúcar",
+    "name_en": "Sugar",
+    "category": "fats_pantry",
+    "fdc_id": 169655,
+    "fdc_description": "Sugars, granulated"
+  },
+  {
+    "query": "sugars brown",
+    "name_es": "Azúcar moreno",
+    "name_en": "Brown sugar",
+    "category": "fats_pantry",
+    "fdc_id": 168833,
+    "fdc_description": "Sugars, brown"
+  },
+  {
+    "query": "honey",
+    "name_es": "Miel",
+    "name_en": "Honey",
+    "category": "fats_pantry",
+    "fdc_id": 169640,
+    "fdc_description": "Honey"
+  },
+  {
+    "query": "syrups maple",
+    "name_es": "Sirope de arce",
+    "name_en": "Maple syrup",
+    "category": "fats_pantry",
+    "fdc_id": 169661,
+    "fdc_description": "Syrups, maple"
+  },
+  {
+    "query": "salt table",
+    "name_es": "Sal",
+    "name_en": "Salt",
+    "category": "fats_pantry",
+    "fdc_id": 173468,
+    "fdc_description": "Salt, table"
+  },
+  {
+    "query": "spices pepper black",
+    "name_es": "Pimienta negra",
+    "name_en": "Black pepper",
+    "category": "fats_pantry",
+    "fdc_id": 170931,
+    "fdc_description": "Spices, pepper, black"
+  },
+  {
+    "query": "vinegar distilled",
+    "name_es": "Vinagre",
+    "name_en": "Vinegar",
+    "category": "fats_pantry",
+    "fdc_id": 172237,
+    "fdc_description": "Vinegar, distilled"
+  },
+  {
+    "query": "vinegar balsamic",
+    "name_es": "Vinagre balsámico",
+    "name_en": "Balsamic vinegar",
+    "category": "fats_pantry",
+    "fdc_id": 172241,
+    "fdc_description": "Vinegar, balsamic"
+  },
+  {
+    "query": "cocoa dry powder unsweetened",
+    "name_es": "Cacao en polvo",
+    "name_en": "Cocoa powder",
+    "category": "fats_pantry",
+    "fdc_id": 169593,
+    "fdc_description": "Cocoa, dry powder, unsweetened"
+  }
+]
