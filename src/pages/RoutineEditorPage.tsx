@@ -1,39 +1,29 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SessionEditor } from '@/features/training/components/SessionEditor';
-import { useSaveWorkout, useSession } from '@/features/training/hooks';
+import { RoutineBuilder } from '@/features/training/components/RoutineBuilder';
+import { useRoutine, useSaveRoutine } from '@/features/training/routines/hooks';
 import { supabase } from '@/lib/supabase';
 import type { Exercise } from '@/features/training/exercises/api';
-import type { PrefillExercise } from '@/core/programs';
 
-export function SessionEditorPage() {
+export function RoutineEditorPage() {
   const { t } = useTranslation('entrenamiento');
   const navigate = useNavigate();
-  const location = useLocation();
   const { id } = useParams<{ id?: string }>();
   const isEdit = !!id;
-  const session = useSession(isEdit ? id : null);
-  const save = useSaveWorkout();
+  const routine = useRoutine(isEdit ? id : null);
+  const save = useSaveRoutine();
   const [exerciseMap, setExerciseMap] = useState<Record<string, Exercise>>({});
 
-  const prefill = (location.state as { prefill?: {
-    programId: string | null;
-    routineId: string | null;
-    exercises: PrefillExercise[];
-    exercisesById: Record<string, Exercise>;
-  } } | null)?.prefill ?? null;
-
-  // For edit mode: resolve every distinct exercise_id in the session to a
-  // full Exercise row so ExerciseBlock can render the name + use the row
-  // in the coach context. One query per page load.
+  // Resolve each routine_exercise.exercise_id to a full Exercise row so
+  // RoutineBuilder can display exercise names in edit mode.
   useEffect(() => {
-    const sets = session.data?.workout_sets;
-    if (!sets || sets.length === 0) return;
-    const ids = Array.from(new Set(sets.map((s) => s.exercise_id)));
+    const exercises = routine.data?.routine_exercises;
+    if (!exercises || exercises.length === 0) return;
+    const ids = Array.from(new Set(exercises.map((re) => re.exercise_id)));
     if (ids.length === 0) return;
     let cancelled = false;
     void supabase
@@ -49,9 +39,9 @@ export function SessionEditorPage() {
     return () => {
       cancelled = true;
     };
-  }, [session.data]);
+  }, [routine.data]);
 
-  if (isEdit && session.isLoading) {
+  if (isEdit && routine.isLoading) {
     return (
       <div className="space-y-3">
         <Skeleton className="h-8 w-1/3" />
@@ -63,22 +53,21 @@ export function SessionEditorPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Button asChild size="icon" variant="ghost" aria-label={t('editor.back')}>
-          <Link to="/training">
+        <Button asChild size="icon" variant="ghost" aria-label={t('routine.back')}>
+          <Link to="/routine">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <h1 className="text-2xl font-semibold tracking-tight">
-          {isEdit ? t('editor.editTitle') : t('editor.newTitle')}
+          {isEdit ? t('routine.editTitle') : t('routine.newTitle')}
         </h1>
       </div>
 
-      <SessionEditor
-        initial={session.data ?? null}
+      <RoutineBuilder
+        initial={routine.data ?? null}
         initialExercises={exerciseMap}
-        prefill={prefill}
         onSubmit={(payload) => save.mutateAsync(payload)}
-        onSaved={() => navigate('/training')}
+        onSaved={() => navigate('/routine')}
       />
     </div>
   );

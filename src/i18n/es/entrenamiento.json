@@ -130,7 +130,8 @@
     "create": "Nueva rutina",
     "deleteConfirm": "Eliminar rutina",
     "exerciseCount_one": "{{count}} ejercicio",
-    "exerciseCount_other": "{{count}} ejercicios"
+    "exerciseCount_other": "{{count}} ejercicios",
+    "pageTitle": "Rutinas y programas"
   },
   "program": {
     "newTitle": "Nuevo programa",
