@@ -1,5 +1,14 @@
 {
   "title": "Ajustes",
+  "back": "Ajustes",
+  "groups": {
+    "preferences": "Preferencias",
+    "you": "Tú",
+    "account": "Cuenta"
+  },
+  "rows": {
+    "accountAndSession": "Cuenta y sesión"
+  },
   "profile": {
     "title": "Perfil",
     "description": "Datos básicos de tu cuenta.",
