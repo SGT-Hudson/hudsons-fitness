@@ -78,7 +78,12 @@ Reference images live in the gitignored `.brainstorm/` folder (local only).
 - **read:** Research item. OFF exposes Nutri-Score (`nutriscore_grade`), NOVA group
   (`nova_group`), Eco-Score, allergens, ingredient list. Decide which add user value
   vs. clutter. Likely display-only.
-- **status:** triage
+- **status:** **dropped (2026-05-23)** — low value for a body-comp app: the macros
+  (incl. U-1 sugar/sat-fat) already carry the dietary signal, so Nutri-Score/NOVA would
+  be decorative not actionable; and OFF coverage of those fields is sparse for ES
+  entries (the same gap that makes the barcode path lenient), so badges would be blank
+  most of the time. Eco-Score/allergens/additives are off-mission clutter. No migration,
+  no work.
 
 ### U-5 — Planner shows daily totals vs. target while planning
 - **raw:** "en el planing de nutricion, hay que tener en cuenta el objetivo del
