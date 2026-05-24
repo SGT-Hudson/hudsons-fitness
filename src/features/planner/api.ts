@@ -292,3 +292,18 @@ export async function deleteWeekSlot(id: string): Promise<void> {
   const { error } = await supabase.from('meal_plan_week_slots').delete().eq('id', id);
   if (error) throw error;
 }
+
+export async function copyWeekMeal(input: {
+  plan_week_id: string;
+  source_date: string;
+  meal_index: number;
+  target_dates: string[];
+}): Promise<void> {
+  const { error } = await supabase.rpc('copy_week_meal', {
+    p_plan_week_id: input.plan_week_id,
+    p_source_date: input.source_date,
+    p_meal_index: input.meal_index,
+    p_target_dates: input.target_dates,
+  });
+  if (error) throw error;
+}
