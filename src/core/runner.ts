@@ -6,6 +6,7 @@
  */
 
 import { warmupWeightKg } from './programs';
+import type { SaveWorkoutSet } from '@/features/training/api';
 
 export interface TimerView {
   isCountUp: boolean;
@@ -205,12 +206,99 @@ function actionNow(action: RunnerAction, fallback: number): number {
   return 'nowMs' in action ? action.nowMs : fallback;
 }
 
+export function nextPendingIndex(state: RunnerState): number {
+  return state.exercises.findIndex((e) => e.status === 'pending');
+}
+
+export function skippedUndoneIndices(state: RunnerState): number[] {
+  return state.exercises
+    .map((e, i) => (e.status === 'skipped' ? i : -1))
+    .filter((i) => i >= 0);
+}
+
+function activate(state: RunnerState, index: number): RunnerState {
+  const exercises = state.exercises.map((e, i) =>
+    i === index ? { ...e, status: 'active' as ExerciseStatus } : e,
+  );
+  const firstUnrecorded = Math.max(0, exercises[index].sets.findIndex((s) => !s.recorded));
+  return {
+    ...state,
+    exercises,
+    currentExerciseIndex: index,
+    currentSetIndex: firstUnrecorded,
+    phase: 'ready',
+    restStartedAtMs: null,
+    restTargetSeconds: null,
+  };
+}
+
+function advanceOrFinish(state: RunnerState): RunnerState {
+  const idx = nextPendingIndex(state);
+  if (idx >= 0) return activate(state, idx);
+  return { ...state, phase: 'finishing' };
+}
+
 function navigationReducer(
   state: RunnerState,
-  _action: RunnerAction,
-  _touch: (s: RunnerState) => RunnerState,
+  action: RunnerAction,
+  touch: (s: RunnerState) => RunnerState,
 ): RunnerState {
-  return state; // navigation actions implemented in Task 5
+  const ci = state.currentExerciseIndex;
+  switch (action.type) {
+    case 'ADD_SET': {
+      const ex = state.exercises[ci];
+      const lastWorking = [...ex.sets].reverse().find((s) => !s.isWarmup);
+      const newSet: RunnerSet = {
+        setIndex: ex.sets.length + 1,
+        isWarmup: false,
+        pct: null,
+        reps: lastWorking?.reps ?? ex.targetRepsMin,
+        weightKg: lastWorking?.weightKg ?? ex.workingWeightKg,
+        rpe: ex.targetRpe,
+        recorded: false,
+      };
+      const exercises = replaceExercise(state, ci, (e) => ({
+        ...e,
+        status: 'active',
+        sets: [...e.sets, newSet],
+      }));
+      return touch({ ...state, exercises, currentSetIndex: ex.sets.length, phase: 'ready' });
+    }
+    case 'CONTINUE':
+      return touch(advanceOrFinish(state));
+    case 'JUMP_TO':
+      return touch(activate(state, action.exerciseIndex));
+    case 'SKIP_CURRENT': {
+      const exercises = replaceExercise(state, ci, (e) => ({ ...e, status: 'skipped' }));
+      return touch(advanceOrFinish({ ...state, exercises }));
+    }
+    case 'FINISH_EARLY':
+      return touch({ ...state, phase: 'finishing' });
+    default:
+      return state;
+  }
+}
+
+/** Recorded sets of non-skipped exercises, re-indexed contiguously per
+ *  exercise. Skipped exercises are excluded entirely (spec §0.9). */
+export function toSaveWorkoutSets(state: RunnerState): SaveWorkoutSet[] {
+  const rows: SaveWorkoutSet[] = [];
+  for (const ex of state.exercises) {
+    if (ex.status === 'skipped') continue;
+    let idx = 1;
+    for (const s of ex.sets) {
+      if (!s.recorded) continue;
+      rows.push({
+        exercise_id: ex.exerciseId,
+        set_index: idx++,
+        reps: s.reps,
+        weight_kg: s.weightKg,
+        rpe: s.isWarmup ? null : s.rpe,
+        is_warmup: s.isWarmup,
+      });
+    }
+  }
+  return rows;
 }
 
 export function runnerReducer(state: RunnerState, action: RunnerAction): RunnerState {
