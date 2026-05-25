@@ -182,7 +182,8 @@ export type RunnerAction =
   | { type: 'CONTINUE'; nowMs: number }
   | { type: 'JUMP_TO'; exerciseIndex: number; nowMs: number }
   | { type: 'SKIP_CURRENT'; nowMs: number }
-  | { type: 'FINISH_EARLY'; nowMs: number };
+  | { type: 'FINISH_EARLY'; nowMs: number }
+  | { type: 'ADJUST_REST'; deltaSeconds: number };
 
 function replaceExercise(
   state: RunnerState,
@@ -276,6 +277,11 @@ function navigationReducer(
     }
     case 'FINISH_EARLY':
       return touch({ ...state, phase: 'finishing' });
+    case 'ADJUST_REST': {
+      if (state.restTargetSeconds == null) return state;
+      const next = Math.max(0, state.restTargetSeconds + action.deltaSeconds);
+      return { ...state, restTargetSeconds: next };
+    }
     default:
       return state;
   }

@@ -328,6 +328,26 @@ describe('toSaveWorkoutSets — zero-recorded-sets exercise', () => {
   });
 });
 
+describe('runnerReducer — ADJUST_REST', () => {
+  it('ADJUST_REST changes only the current rest target, floored at 0 (warm-up = count-up, unaffected)', () => {
+    let s = buildRunnerState(baseInput);
+    s = runnerReducer(s, { type: 'START_REST', nowMs: 1 }); // warm-up → count-up (null target)
+    s = runnerReducer(s, { type: 'ADJUST_REST', deltaSeconds: -15 });
+    expect(s.restTargetSeconds).toBeNull(); // warm-up = count-up, unaffected
+  });
+
+  it('ADJUST_REST on a working set adjusts the target and floors at 0', () => {
+    let s = buildRunnerState(baseInput);
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 1 }); // record warm-up, advance to working set
+    s = runnerReducer(s, { type: 'START_REST', nowMs: 2 }); // working rest target = 90
+    expect(s.restTargetSeconds).toBe(90);
+    s = runnerReducer(s, { type: 'ADJUST_REST', deltaSeconds: -15 });
+    expect(s.restTargetSeconds).toBe(75);
+    s = runnerReducer(s, { type: 'ADJUST_REST', deltaSeconds: -100 });
+    expect(s.restTargetSeconds).toBe(0); // floored at 0
+  });
+});
+
 describe('computeTimerView — exact boundary', () => {
   it('elapsed === target → done=true, remainingSeconds=0, overSeconds=0', () => {
     const start = 1_000_000;
