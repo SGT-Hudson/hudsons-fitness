@@ -204,6 +204,7 @@ export function Runner({
         onSkipRest={() => dispatch({ type: 'RECORD_SET', nowMs: Date.now() })}
         onAdjustRest={(delta) => dispatch({ type: 'ADJUST_REST', deltaSeconds: delta })}
         onClearRest={() => dispatch({ type: 'CLEAR_REST' })}
+        onEndExercise={() => dispatch({ type: 'END_EXERCISE', nowMs: Date.now() })}
       />
     </div>
   );

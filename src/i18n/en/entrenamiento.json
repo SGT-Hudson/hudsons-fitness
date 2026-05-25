@@ -186,6 +186,7 @@
     "startWarmup": "Start warm-up",
     "recordSet": "Record set",
     "recordWarmup": "Record warm-up",
+    "endExercise": "End exercise",
     "setN": "Set {{n}} of {{total}}",
     "warmupN": "Warm-up {{n}} of {{total}}",
     "warmup": "Warm-up",

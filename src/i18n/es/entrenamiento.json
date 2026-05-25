@@ -186,6 +186,7 @@
     "startWarmup": "Empezar calentamiento",
     "recordSet": "Registrar serie",
     "recordWarmup": "Registrar calentamiento",
+    "endExercise": "Terminar ejercicio",
     "setN": "Serie {{n}} de {{total}}",
     "warmupN": "Calentamiento {{n}} de {{total}}",
     "warmup": "Calentamiento",

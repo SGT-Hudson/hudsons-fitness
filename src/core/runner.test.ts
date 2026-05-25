@@ -437,3 +437,26 @@ describe('focusIndex + SKIP_CURRENT target the exercise to do, not a finished on
     expect(s.exercises[0].status).toBe('skipped');
   });
 });
+
+describe('END_EXERCISE — finish early keeping recorded sets', () => {
+  it('marks the exercise done, lands on the completion card, and keeps only recorded sets', () => {
+    // baseInput: warm-up + 2 working sets (3 total). Do warm-up + working 1, then end.
+    let s = buildRunnerState(baseInput);
+    s = runnerReducer(s, { type: 'EDIT_CURRENT_SET', patch: { reps: 8, weightKg: 40 } });
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 1 }); // warm-up
+    s = runnerReducer(s, { type: 'EDIT_CURRENT_SET', patch: { reps: 8, weightKg: 80, rpe: 8 } });
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 2 }); // working set 1 → now READY for working set 2
+    s = runnerReducer(s, { type: 'END_EXERCISE', nowMs: 3 });
+
+    expect(s.exercises[0].status).toBe('done');
+    expect(s.phase).toBe('exercise-complete');
+    expect(s.restStartedAtMs).toBeNull();
+
+    const rows = toSaveWorkoutSets(s);
+    // warm-up + working set 1 saved; the never-started working set 2 is dropped.
+    expect(rows).toEqual([
+      { exercise_id: 'bench', set_index: 1, reps: 8, weight_kg: 40, rpe: null, is_warmup: true },
+      { exercise_id: 'bench', set_index: 2, reps: 8, weight_kg: 80, rpe: 8, is_warmup: false },
+    ]);
+  });
+});
