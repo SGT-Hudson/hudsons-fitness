@@ -28,8 +28,9 @@ export function ExerciseOverview({
       {exercises.map((ex, i) => {
         const done = ex.status === 'done';
         const skipped = ex.status === 'skipped';
+        const partial = ex.status === 'partial';
         const isCurrent = i === currentIndex;
-        const canJump = !isCurrent && (ex.status === 'pending' || skipped);
+        const canJump = !isCurrent && (ex.status === 'pending' || skipped || partial);
         return (
           <button
             key={ex.exerciseId}
@@ -40,13 +41,22 @@ export function ExerciseOverview({
               'flex items-center justify-between rounded-md px-3 py-2 text-sm text-left',
               done && 'bg-muted/40 text-muted-foreground',
               skipped && 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+              partial && 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
               isCurrent && 'border border-primary/50 bg-primary/10',
-              !done && !skipped && !isCurrent && 'bg-muted/30',
+              !done && !skipped && !partial && !isCurrent && 'bg-muted/30',
             )}
           >
             <span>{ex.position} · {names[ex.exerciseId] ?? ex.exerciseId}</span>
             <span>
-              {done ? '✓' : isCurrent ? t('runner.now') : skipped ? t('runner.skippedDoIt') : t('runner.jump')}
+              {done
+                ? '✓'
+                : isCurrent
+                  ? t('runner.now')
+                  : skipped
+                    ? t('runner.skippedDoIt')
+                    : partial
+                      ? t('runner.partialDoIt')
+                      : t('runner.jump')}
             </span>
           </button>
         );
