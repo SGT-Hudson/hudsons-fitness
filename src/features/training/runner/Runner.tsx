@@ -202,6 +202,7 @@ export function Runner({
         onEdit={(patch) => dispatch({ type: 'EDIT_CURRENT_SET', patch })}
         onSkipRest={() => dispatch({ type: 'RECORD_SET', nowMs: Date.now() })}
         onAdjustRest={(delta) => dispatch({ type: 'ADJUST_REST', deltaSeconds: delta })}
+        onClearRest={() => dispatch({ type: 'CLEAR_REST' })}
       />
     </div>
   );

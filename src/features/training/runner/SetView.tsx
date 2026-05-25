@@ -19,6 +19,7 @@ interface Props {
   onEdit: (patch: Partial<Pick<RunnerSet, 'reps' | 'weightKg' | 'rpe'>>) => void;
   onSkipRest: () => void;
   onAdjustRest: (delta: number) => void;
+  onClearRest: () => void;
 }
 
 /** One set, two states. READY: white read-only values + "Start rest".
@@ -37,6 +38,9 @@ export function SetView(props: Props) {
     <div className="flex flex-col gap-3">
       {editing && (
         <RestTimerBand timer={timer} onSkip={props.onSkipRest} onAdjust={props.onAdjustRest} />
+      )}
+      {!editing && timer.running && (
+        <RestTimerBand timer={timer} compact onSkip={props.onClearRest} />
       )}
 
       <div className="text-center text-lg font-bold">{title}</div>

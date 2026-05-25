@@ -183,6 +183,22 @@ describe('runnerReducer — navigation + selectors', () => {
     expect(s.phase).toBe('ready');
   });
 
+  it('ADD_SET with last working weight=0 falls back to ex.workingWeightKg', () => {
+    let s = buildRunnerState(baseInput);
+    // Edit the current set (set 0, warmup) weight to 0 then record it
+    s = runnerReducer(s, { type: 'EDIT_CURRENT_SET', patch: { weightKg: 0 } });
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 1 }); // advance to working set 1
+    // Edit working set weight to 0 then record
+    s = runnerReducer(s, { type: 'EDIT_CURRENT_SET', patch: { weightKg: 0 } });
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 2 }); // advance to set 2
+    s = runnerReducer(s, { type: 'EDIT_CURRENT_SET', patch: { weightKg: 0 } });
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 3 }); // exercise-complete
+    s = runnerReducer(s, { type: 'ADD_SET', nowMs: 4 });
+    const newSet = s.exercises[0].sets[3];
+    // last working set has weightKg=0, so fallback to ex.workingWeightKg (80)
+    expect(newSet.weightKg).toBe(80);
+  });
+
   it('CONTINUE with no pending but skipped-undone goes to finishing', () => {
     let s = buildRunnerState(twoEx);
     s = runnerReducer(s, { type: 'SKIP_CURRENT', nowMs: 1 }); // skip ex0 → ex1 active
@@ -325,6 +341,19 @@ describe('toSaveWorkoutSets — zero-recorded-sets exercise', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].exercise_id).toBe('incline');
     expect(rows[0].set_index).toBe(1);
+  });
+});
+
+describe('runnerReducer — CLEAR_REST', () => {
+  it('CLEAR_REST after START_REST nulls both restStartedAtMs and restTargetSeconds', () => {
+    let s = buildRunnerState(baseInput);
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 1 }); // advance to working set
+    s = runnerReducer(s, { type: 'START_REST', nowMs: 2_000_000 });
+    expect(s.restStartedAtMs).toBe(2_000_000);
+    expect(s.restTargetSeconds).toBe(90);
+    s = runnerReducer(s, { type: 'CLEAR_REST' });
+    expect(s.restStartedAtMs).toBeNull();
+    expect(s.restTargetSeconds).toBeNull();
   });
 });
 

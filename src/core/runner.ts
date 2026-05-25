@@ -183,7 +183,8 @@ export type RunnerAction =
   | { type: 'JUMP_TO'; exerciseIndex: number; nowMs: number }
   | { type: 'SKIP_CURRENT'; nowMs: number }
   | { type: 'FINISH_EARLY'; nowMs: number }
-  | { type: 'ADJUST_REST'; deltaSeconds: number };
+  | { type: 'ADJUST_REST'; deltaSeconds: number }
+  | { type: 'CLEAR_REST' };
 
 function replaceExercise(
   state: RunnerState,
@@ -256,7 +257,7 @@ function navigationReducer(
         isWarmup: false,
         pct: null,
         reps: lastWorking?.reps ?? ex.targetRepsMin,
-        weightKg: lastWorking?.weightKg ?? ex.workingWeightKg,
+        weightKg: lastWorking && lastWorking.weightKg > 0 ? lastWorking.weightKg : ex.workingWeightKg,
         rpe: ex.targetRpe,
         recorded: false,
       };
@@ -282,6 +283,8 @@ function navigationReducer(
       const next = Math.max(0, state.restTargetSeconds + action.deltaSeconds);
       return { ...state, restTargetSeconds: next };
     }
+    case 'CLEAR_REST':
+      return { ...state, restStartedAtMs: null, restTargetSeconds: null };
     default:
       return state;
   }

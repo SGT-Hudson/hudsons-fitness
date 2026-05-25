@@ -32,8 +32,8 @@ export function RunnerPage() {
     return <Navigate to="/training" replace />;
   }
 
-  // Resume gate: a saved draft (and we haven't chosen yet).
-  if (draft && !resumed && !discarded) {
+  // Resume gate: a saved draft that matches the requested routine (and we haven't chosen yet).
+  if (draft && !resumed && !discarded && (!route || draft.routineId === route.routineId)) {
     return (
       <ResumePrompt
         draft={draft}
