@@ -159,6 +159,7 @@ export type Database = {
           name_en: string | null
           name_es: string
           primary_muscle: string | null
+          secondary_muscles: string[]
           source: string
           updated_at: string
         }
@@ -172,6 +173,7 @@ export type Database = {
           name_en?: string | null
           name_es: string
           primary_muscle?: string | null
+          secondary_muscles?: string[]
           source?: string
           updated_at?: string
         }
@@ -185,6 +187,7 @@ export type Database = {
           name_en?: string | null
           name_es?: string
           primary_muscle?: string | null
+          secondary_muscles?: string[]
           source?: string
           updated_at?: string
         }

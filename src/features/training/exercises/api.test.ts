@@ -51,6 +51,7 @@ describe('exerciseDisplayName', () => {
     name_en: 'Bench press',
     name_es: 'Press de banca',
     primary_muscle: 'chest',
+    secondary_muscles: [],
     source: 'system',
     updated_at: '2026-01-01T00:00:00Z',
   };
