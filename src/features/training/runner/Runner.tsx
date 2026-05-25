@@ -1,6 +1,6 @@
 import { useEffect, useState, useReducer } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Replace } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { CoachContext } from '@/core/training';
 import {
@@ -85,15 +85,33 @@ export function Runner({
     }
   }
 
+  // The change-exercise button is available throughout the workout (so a
+  // mis-tapped jump is always recoverable) but hidden on the final review/skip
+  // screens, where the user has already decided to finish.
+  const showChange = state.phase !== 'finishing' && !showOverview;
   const header = (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-2">
       <Button type="button" size="icon" variant="ghost" aria-label={t('runner.exit')} onClick={onExit}>
         <ArrowLeft className="h-4 w-4" />
       </Button>
-      <span className="text-sm text-muted-foreground">{state.routineName}</span>
-      <Button type="button" size="sm" variant="ghost" onClick={() => setShowOverview(true)}>
-        {t('runner.exercisesShort', { current: state.currentExerciseIndex + 1, total: state.exercises.length })}
-      </Button>
+      <div className="min-w-0 flex-1 truncate text-center text-sm text-muted-foreground">
+        {state.routineName} · {t('runner.exercisesShort', { current: state.currentExerciseIndex + 1, total: state.exercises.length })}
+      </div>
+      {showChange ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="shrink-0"
+          aria-label={t('runner.jumpToExercise')}
+          onClick={() => setShowOverview(true)}
+        >
+          <Replace className="mr-1 h-4 w-4" />
+          {t('runner.switchExercise')}
+        </Button>
+      ) : (
+        <div className="w-9 shrink-0" />
+      )}
     </div>
   );
 
@@ -157,7 +175,6 @@ export function Runner({
           nextExerciseName={next ? names[next.exerciseId] ?? next.exerciseId : null}
           nextExercisePlan={next ? planLabel(next) : null}
           onAddSet={() => dispatch({ type: 'ADD_SET', nowMs: Date.now() })}
-          onOpenOverview={() => setShowOverview(true)}
           onContinue={() => dispatch({ type: 'CONTINUE', nowMs: Date.now() })}
         />
       </div>
