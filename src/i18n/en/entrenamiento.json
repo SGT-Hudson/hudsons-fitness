@@ -78,6 +78,8 @@
       "primaryMuscle": "Primary muscle",
       "primaryMusclePlaceholder": "Optional",
       "primaryMuscleNone": "— None",
+      "secondaryMuscles": "Secondary muscles",
+      "secondaryMusclesHelp": "Other muscles this exercise works. They count half a set each in the muscle map.",
       "equipment": "Equipment",
       "equipmentPlaceholder": "Optional",
       "equipmentNone": "— None",

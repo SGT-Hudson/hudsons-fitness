@@ -37,7 +37,7 @@ describe('MuscleActivityView', () => {
   it('renders two bodies, ranked list and the full-body footnote', () => {
     render(<MuscleActivityView />);
     expect(screen.getAllByTestId('body')).toHaveLength(2);
-    expect(screen.getByText('primaryMuscle.chest')).toBeInTheDocument();
+    expect(screen.getByText('exerciseDialog.primaryMuscle.chest')).toBeInTheDocument();
     expect(screen.getByText('muscleMap.fullBodyFootnote:2')).toBeInTheDocument();
   });
 });

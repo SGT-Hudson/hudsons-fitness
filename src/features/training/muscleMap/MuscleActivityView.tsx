@@ -93,7 +93,7 @@ export function MuscleActivityView() {
                     className="inline-block h-3 w-3 rounded-sm"
                     style={{ background: muscleColor(v, max) }}
                   />
-                  <span className="flex-1">{t(`primaryMuscle.${m}`)}</span>
+                  <span className="flex-1">{t(`exerciseDialog.primaryMuscle.${m}`)}</span>
                   <strong>{Number.isInteger(v) ? v : v.toFixed(1)}</strong>
                   <span className="text-muted-foreground">{t('muscleMap.setsUnit')}</span>
                 </li>

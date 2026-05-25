@@ -78,6 +78,8 @@
       "primaryMuscle": "Músculo principal",
       "primaryMusclePlaceholder": "Opcional",
       "primaryMuscleNone": "— Sin elegir",
+      "secondaryMuscles": "Músculos secundarios",
+      "secondaryMusclesHelp": "Otros músculos que trabaja este ejercicio. Cuentan media serie cada uno en el mapa muscular.",
       "equipment": "Equipamiento",
       "equipmentPlaceholder": "Opcional",
       "equipmentNone": "— Sin elegir",
