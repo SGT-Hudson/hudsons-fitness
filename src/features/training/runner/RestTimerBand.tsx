@@ -12,7 +12,9 @@ function fmt(total: number): string {
 interface Props {
   timer: RestTimerView;
   compact?: boolean;
-  onSkip: () => void;
+  /** When omitted, no skip control is rendered (e.g. the display-only compact
+   *  band in READY, where the primary button handles ending the rest). */
+  onSkip?: () => void;
   onAdjust?: (deltaSeconds: number) => void;
 }
 
@@ -39,15 +41,19 @@ export function RestTimerBand({ timer, compact, onSkip, onAdjust }: Props) {
         {timer.isCountUp ? t('runner.restNoTarget') : t('runner.rest')}
       </div>
       <div className={cn('font-bold tabular-nums', compact ? 'text-base' : 'text-3xl text-primary')}>{label}</div>
-      <div className={cn('flex justify-center gap-2', compact ? '' : 'mt-2')}>
-        {onAdjust && !timer.isCountUp && (
-          <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={() => onAdjust(-15)}>−15</Button>
-        )}
-        <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={onSkip}>{t('runner.skipRest')}</Button>
-        {onAdjust && !timer.isCountUp && (
-          <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={() => onAdjust(15)}>+15</Button>
-        )}
-      </div>
+      {(onSkip || (onAdjust && !timer.isCountUp)) && (
+        <div className={cn('flex justify-center gap-2', compact ? '' : 'mt-2')}>
+          {onAdjust && !timer.isCountUp && (
+            <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={() => onAdjust(-15)}>−15</Button>
+          )}
+          {onSkip && (
+            <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={onSkip}>{t('runner.skipRest')}</Button>
+          )}
+          {onAdjust && !timer.isCountUp && (
+            <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={() => onAdjust(15)}>+15</Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

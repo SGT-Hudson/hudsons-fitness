@@ -182,6 +182,8 @@
     "repsShort": "reps",
     "weight": "Peso",
     "startRest": "Iniciar descanso",
+    "startSet": "Empezar serie",
+    "startWarmup": "Empezar calentamiento",
     "recordSet": "Registrar serie",
     "recordWarmup": "Registrar calentamiento",
     "setN": "Serie {{n}} de {{total}}",

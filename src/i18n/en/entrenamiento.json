@@ -182,6 +182,8 @@
     "repsShort": "reps",
     "weight": "Weight",
     "startRest": "Start rest",
+    "startSet": "Start set",
+    "startWarmup": "Start warm-up",
     "recordSet": "Record set",
     "recordWarmup": "Record warm-up",
     "setN": "Set {{n}} of {{total}}",
