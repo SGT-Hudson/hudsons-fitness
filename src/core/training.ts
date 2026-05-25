@@ -275,7 +275,7 @@ export function prefillSetsForExercise(
   const working = (history ?? []).filter((s) => !s.isWarmup);
 
   // Identify the most recent session (latest performedOn, tie-broken by
-  // sessionId) and gather its working sets ordered by setIndex.
+  // sessionId for total determinism) and gather its working sets ordered by setIndex.
   let recentKey: { performedOn: string; sessionId: string } | null = null;
   for (const s of working) {
     if (
@@ -298,10 +298,11 @@ export function prefillSetsForExercise(
   const out: WorkingSetPrefill[] = [];
   for (let i = 0; i < targetSets; i += 1) {
     const match = recentSets[i];
-    if (match) {
-      out.push({ reps: match.reps, weightKg: Number(match.weightKg) });
+    const matchWeight = match ? num(match.weightKg) : NaN;
+    if (match && Number.isFinite(matchWeight) && matchWeight > 0) {
+      out.push({ reps: num(match.reps), weightKg: matchWeight });
     } else if (last) {
-      out.push({ reps: last.reps, weightKg: Number(last.weightKg) });
+      out.push({ reps: num(last.reps), weightKg: num(last.weightKg) });
     } else {
       out.push({ reps: targetRepsMin, weightKg: null });
     }
