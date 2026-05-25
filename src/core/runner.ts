@@ -5,6 +5,8 @@
  * shows correct time on return.
  */
 
+import { warmupWeightKg } from './programs';
+
 export interface TimerView {
   isCountUp: boolean;
   elapsedSeconds: number;
@@ -33,9 +35,6 @@ export function computeTimerView(
     done: elapsedSeconds >= targetSeconds,
   };
 }
-
-import { warmupWeightKg } from './programs';
-import type { SaveWorkoutSet } from '@/features/training/api';
 
 export type ExerciseStatus = 'pending' | 'active' | 'done' | 'skipped';
 export type RunnerPhase = 'ready' | 'resting' | 'exercise-complete' | 'finishing';
@@ -168,7 +167,3 @@ export function buildRunnerState(input: RunnerInput): RunnerState {
   };
 }
 
-// SaveWorkoutSet is imported for use by later tasks (toSaveWorkoutSets selector).
-// Referencing it here avoids an "imported but never used" error when the type
-// import is retained across incremental task commits.
-export type { SaveWorkoutSet };
