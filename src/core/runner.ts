@@ -103,7 +103,7 @@ export interface RunnerInput {
   exercises: RunnerInputExercise[];
 }
 
-function buildSets(ex: RunnerInputExercise, workingWeightKg: number): RunnerSet[] {
+function buildSets(ex: RunnerInputExercise, workingWeightKg: number, incrementKg: number): RunnerSet[] {
   const sets: RunnerSet[] = [];
   let idx = 1;
   for (const w of ex.warmupSets) {
@@ -112,7 +112,7 @@ function buildSets(ex: RunnerInputExercise, workingWeightKg: number): RunnerSet[
       isWarmup: true,
       pct: w.pct,
       reps: w.reps,
-      weightKg: workingWeightKg > 0 ? warmupWeightKg(workingWeightKg, w.pct) : 0,
+      weightKg: workingWeightKg > 0 ? warmupWeightKg(workingWeightKg, w.pct, incrementKg) : 0,
       rpe: null,
       recorded: false,
     });
@@ -136,6 +136,7 @@ export function buildRunnerState(input: RunnerInput): RunnerState {
     .sort((a, b) => a.position - b.position)
     .map((ex, i) => {
       const workingWeightKg = ex.lastWorkingWeightKg ?? 0;
+      const defaultIncrementKg = ex.defaultIncrementKg > 0 ? ex.defaultIncrementKg : 2.5;
       return {
         exerciseId: ex.exerciseId,
         position: ex.position,
@@ -144,10 +145,10 @@ export function buildRunnerState(input: RunnerInput): RunnerState {
         targetRepsMax: ex.targetRepsMax,
         restSeconds: ex.restSeconds,
         targetRpe: ex.targetRpe,
-        defaultIncrementKg: ex.defaultIncrementKg > 0 ? ex.defaultIncrementKg : 2.5,
+        defaultIncrementKg,
         workingWeightKg,
         warmupPrescriptions: ex.warmupSets,
-        sets: buildSets(ex, workingWeightKg),
+        sets: buildSets(ex, workingWeightKg, defaultIncrementKg),
         status: i === 0 ? 'active' : 'pending',
       } satisfies RunnerExercise;
     });
@@ -196,7 +197,7 @@ function recomputeWarmups(ex: RunnerExercise): RunnerExercise {
     ...ex,
     sets: ex.sets.map((s) =>
       s.isWarmup && s.pct != null && !s.recorded
-        ? { ...s, weightKg: ex.workingWeightKg > 0 ? warmupWeightKg(ex.workingWeightKg, s.pct) : 0 }
+        ? { ...s, weightKg: ex.workingWeightKg > 0 ? warmupWeightKg(ex.workingWeightKg, s.pct, ex.defaultIncrementKg) : 0 }
         : s,
     ),
   };
@@ -217,6 +218,7 @@ export function skippedUndoneIndices(state: RunnerState): number[] {
 }
 
 function activate(state: RunnerState, index: number): RunnerState {
+  if (index < 0 || index >= state.exercises.length) return state;
   const exercises = state.exercises.map((e, i) =>
     i === index ? { ...e, status: 'active' as ExerciseStatus } : e,
   );

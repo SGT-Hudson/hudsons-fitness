@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeTimerView, buildRunnerState, runnerReducer, nextPendingIndex, skippedUndoneIndices, toSaveWorkoutSets, type RunnerInput } from './runner';
+import { warmupWeightKg } from './programs';
 
 describe('computeTimerView', () => {
   const start = 1_000_000;
@@ -217,5 +218,137 @@ describe('runnerReducer — navigation + selectors', () => {
       { exercise_id: 'bench', set_index: 1, reps: 8, weight_kg: 40, rpe: null, is_warmup: true },
       { exercise_id: 'bench', set_index: 2, reps: 8, weight_kg: 80, rpe: 8, is_warmup: false },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// New tests — Fix 1 / Fix 2 / edge cases
+// ---------------------------------------------------------------------------
+
+const increment5Input: RunnerInput = {
+  ...baseInput,
+  exercises: [
+    {
+      ...baseInput.exercises[0],
+      defaultIncrementKg: 5,
+      warmupSets: [{ pct: 50, reps: 5 }],
+      lastWorkingWeightKg: 84,
+      workingSetPrefill: [{ reps: 5, weightKg: 84 }],
+    },
+  ],
+};
+
+describe('warm-up weight rounds to exercise increment', () => {
+  it('non-2.5 increment: 50% of 84 kg on a 5 kg grid snaps to warmupWeightKg(84,50,5)', () => {
+    const expected = warmupWeightKg(84, 50, 5); // Math.round(42/5)*5 = 40
+    expect(expected).toBe(40);
+    const s = buildRunnerState(increment5Input);
+    expect(s.exercises[0].sets[0].weightKg).toBe(expected);
+  });
+
+  it('SET_WORKING_WEIGHT recomputes warm-up on a 5 kg grid after weight change', () => {
+    const s = buildRunnerState(increment5Input);
+    const updated = runnerReducer(s, { type: 'SET_WORKING_WEIGHT', weightKg: 90 });
+    const expected = warmupWeightKg(90, 50, 5); // Math.round(45/5)*5 = 45
+    expect(expected).toBe(45);
+    expect(updated.exercises[0].sets[0].weightKg).toBe(expected);
+  });
+
+  it('recorded warm-up weight is frozen on SET_WORKING_WEIGHT; unrecorded warm-up recomputes', () => {
+    // Start with two warm-ups: one to record, one to leave unrecorded
+    const twoWarmupInput: RunnerInput = {
+      ...baseInput,
+      exercises: [
+        {
+          ...baseInput.exercises[0],
+          defaultIncrementKg: 2.5,
+          warmupSets: [
+            { pct: 40, reps: 10 },
+            { pct: 60, reps: 5 },
+          ],
+          lastWorkingWeightKg: 80,
+          workingSetPrefill: [{ reps: 8, weightKg: 80 }],
+        },
+      ],
+    };
+    let s = buildRunnerState(twoWarmupInput);
+    const originalWarmup0Weight = s.exercises[0].sets[0].weightKg; // 40% of 80 = 32
+    expect(originalWarmup0Weight).toBe(warmupWeightKg(80, 40, 2.5));
+
+    // Record the first warm-up
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 1 });
+    // Now change working weight
+    s = runnerReducer(s, { type: 'SET_WORKING_WEIGHT', weightKg: 100 });
+
+    // Recorded warm-up (index 0) must stay at original weight
+    expect(s.exercises[0].sets[0].weightKg).toBe(originalWarmup0Weight);
+    // Unrecorded warm-up (index 1) must recompute to 60% of 100
+    expect(s.exercises[0].sets[1].weightKg).toBe(warmupWeightKg(100, 60, 2.5));
+  });
+});
+
+describe('activate edge cases', () => {
+  it('JUMP_TO an already-done exercise reactivates it at set 0 (override done status)', () => {
+    let s = buildRunnerState(twoEx);
+    // Complete all sets of ex0 to mark it done
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 1 }); // warm-up
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 2 }); // working 1
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 3 }); // working 2 → ex0 done
+    expect(s.exercises[0].status).toBe('done');
+    // JUMP_TO ex0 (done exercise)
+    s = runnerReducer(s, { type: 'JUMP_TO', exerciseIndex: 0, nowMs: 10 });
+    expect(s.exercises[0].status).toBe('active');
+    expect(s.currentExerciseIndex).toBe(0);
+    expect(s.currentSetIndex).toBe(0);
+  });
+
+  it('JUMP_TO out-of-range index is a no-op (returns unchanged state)', () => {
+    const s = buildRunnerState(twoEx);
+    const after = runnerReducer(s, { type: 'JUMP_TO', exerciseIndex: -1, nowMs: 99 });
+    // currentExerciseIndex unchanged; phase unchanged
+    expect(after.currentExerciseIndex).toBe(s.currentExerciseIndex);
+    expect(after.phase).toBe(s.phase);
+  });
+});
+
+describe('toSaveWorkoutSets — zero-recorded-sets exercise', () => {
+  it('excludes exercises with zero recorded sets; surviving exercise set_index starts at 1', () => {
+    // twoEx: ex0=bench (has warmup+working), ex1=incline (no warmup, 1 working)
+    // Record nothing for ex0, record the one set for ex1
+    let s = buildRunnerState(twoEx);
+    // Jump to ex1 (position 2) and record its single working set
+    s = runnerReducer(s, { type: 'JUMP_TO', exerciseIndex: 1, nowMs: 5 });
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 6 }); // ex1 working set recorded
+    const rows = toSaveWorkoutSets(s);
+    // ex0 has no recorded sets and is not skipped — but toSaveWorkoutSets only emits recorded sets
+    expect(rows.every((r) => r.exercise_id !== 'bench')).toBe(true);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].exercise_id).toBe('incline');
+    expect(rows[0].set_index).toBe(1);
+  });
+});
+
+describe('computeTimerView — exact boundary', () => {
+  it('elapsed === target → done=true, remainingSeconds=0, overSeconds=0', () => {
+    const start = 1_000_000;
+    const target = 90;
+    const result = computeTimerView(start, target, start + target * 1000);
+    expect(result).toEqual({
+      isCountUp: false,
+      elapsedSeconds: 90,
+      remainingSeconds: 0,
+      overSeconds: 0,
+      done: true,
+    });
+  });
+});
+
+describe('savedAtMs', () => {
+  it('bumps savedAtMs to the action nowMs on any dispatched action', () => {
+    const s = buildRunnerState(baseInput);
+    expect(s.savedAtMs).toBe(1_000_000);
+    const nowMs = 9_999_999;
+    const after = runnerReducer(s, { type: 'START_REST', nowMs });
+    expect(after.savedAtMs).toBe(nowMs);
   });
 });
