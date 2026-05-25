@@ -25,6 +25,7 @@ import { EntrenamientoPage } from '@/pages/EntrenamientoPage';
 import { SessionEditorPage } from '@/pages/SessionEditorPage';
 import { ExerciseHistoryPage } from '@/pages/ExerciseHistoryPage';
 import { RoutinePage } from '@/pages/RoutinePage';
+import { RunnerPage } from '@/pages/RunnerPage';
 import { RoutineEditorPage } from '@/pages/RoutineEditorPage';
 import { ProgramEditorPage } from '@/pages/ProgramEditorPage';
 
@@ -110,6 +111,7 @@ export function AppRoutes() {
           {/* Entreno */}
           <Route path="/training" element={<EntrenamientoPage />} />
           <Route path="/training/new" element={<SessionEditorPage />} />
+          <Route path="/training/run" element={<RunnerPage />} />
           <Route path="/training/:id" element={<SessionEditorPage />} />
           <Route path="/training/exercises/:id" element={<ExerciseHistoryPage />} />
           <Route path="/routine" element={<RoutinePage />} />
