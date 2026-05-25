@@ -16,12 +16,12 @@ export function RpeInput({ value, targetRpe, onChange }: Props) {
   const { t } = useTranslation('entrenamiento');
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
         <span>{t('rpe.label')}</span>
         {targetRpe != null && <span>· {t('rpe.target', { value: targetRpe })}</span>}
         <RpeExplainer />
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap justify-center gap-1.5">
         {VALUES.map((v) => (
           <button
             key={v}
@@ -37,7 +37,7 @@ export function RpeInput({ value, targetRpe, onChange }: Props) {
         ))}
       </div>
       {value != null && (
-        <p className="text-xs text-muted-foreground">{t(`rpe.anchorInline.${value}`, { defaultValue: '' })}</p>
+        <p className="text-center text-xs text-muted-foreground">{t(`rpe.anchorInline.${value}`, { defaultValue: '' })}</p>
       )}
     </div>
   );

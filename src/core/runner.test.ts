@@ -60,9 +60,9 @@ describe('buildRunnerState', () => {
     const ex = s.exercises[0];
     expect(ex.workingWeightKg).toBe(80);
     expect(ex.sets).toEqual([
-      { setIndex: 1, isWarmup: true, pct: 50, reps: 8, weightKg: 40, rpe: null, recorded: false },
-      { setIndex: 2, isWarmup: false, pct: null, reps: 8, weightKg: 80, rpe: 8, recorded: false },
-      { setIndex: 3, isWarmup: false, pct: null, reps: 7, weightKg: 80, rpe: 8, recorded: false },
+      { setIndex: 1, isWarmup: true, pct: 50, reps: 8, weightKg: 40, rpe: null, recorded: false, baselineReps: null, baselineWeightKg: null },
+      { setIndex: 2, isWarmup: false, pct: null, reps: 8, weightKg: 80, rpe: 8, recorded: false, baselineReps: 8, baselineWeightKg: 80 },
+      { setIndex: 3, isWarmup: false, pct: null, reps: 7, weightKg: 80, rpe: 8, recorded: false, baselineReps: 7, baselineWeightKg: 80 },
     ]);
   });
 

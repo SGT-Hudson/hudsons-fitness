@@ -10,15 +10,14 @@ interface Props {
   nextExerciseName: string | null;
   nextExercisePlan: string | null;     // e.g. "3 × 10"
   onAddSet: () => void;
-  onOpenOverview: () => void;
   onContinue: () => void;
 }
 
 /** Exercise-complete beat (spec §0.24): ✓ + volume, +Add set (above), up-next,
- *  Jump-to-overview, Continue (primary, bottom). */
+ *  Continue (primary, bottom). Switching exercises lives in the header. */
 export function CompletionCard({
   exercise, exerciseName, nextExerciseName, nextExercisePlan,
-  onAddSet, onOpenOverview, onContinue,
+  onAddSet, onContinue,
 }: Props) {
   const { t } = useTranslation('entrenamiento');
   const recorded = exercise.sets.filter((s) => s.recorded);
@@ -47,10 +46,7 @@ export function CompletionCard({
         </div>
       )}
 
-      <div className="mt-auto flex flex-col gap-2">
-        <Button type="button" variant="outline" className="w-full" onClick={onOpenOverview}>
-          {t('runner.jumpToExercise')}
-        </Button>
+      <div className="mt-auto">
         <Button type="button" className="w-full" onClick={onContinue}>{t('runner.continue')}</Button>
       </div>
     </div>

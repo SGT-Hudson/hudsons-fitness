@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import type { RunnerExercise, RunnerSet } from '@/core/runner';
 import type { RestTimerView } from './useRestTimer';
 import { RestTimerBand } from './RestTimerBand';
@@ -53,13 +54,14 @@ export function SetView(props: Props) {
             value={set.reps}
             onChange={(v) => props.onEdit({ reps: Math.max(0, v) })}
             step={1}
+            valueClass={perfClass(set.reps, set.baselineReps)}
           />
           <Stepper
             label={t('runner.weight')}
             value={set.weightKg}
             onChange={(v) => props.onEdit({ weightKg: Math.max(0, v) })}
             step={inc}
-            accent
+            valueClass={perfClass(set.weightKg, set.baselineWeightKg)}
           />
           {!set.isWarmup && (
             <RpeInput value={set.rpe} targetRpe={exercise.targetRpe} onChange={(rpe) => props.onEdit({ rpe })} />
@@ -117,8 +119,8 @@ function ReadOnly({ value }: { value: string }) {
 }
 
 function Stepper({
-  label, value, onChange, step, accent,
-}: { label: string; value: number; onChange: (v: number) => void; step: number; accent?: boolean }) {
+  label, value, onChange, step, valueClass,
+}: { label: string; value: number; onChange: (v: number) => void; step: number; valueClass?: string }) {
   return (
     <div className="flex items-center gap-2 rounded-lg border bg-muted/20 px-2 py-1.5">
       <Button type="button" size="icon" variant="outline" className="h-8 w-8" aria-label={`${label} -`} onClick={() => onChange(round(value - step))}>
@@ -130,7 +132,7 @@ function Stepper({
         aria-label={label}
         value={Number.isFinite(value) ? value : ''}
         onChange={(e) => onChange(Number(e.target.value))}
-        className={accent ? 'h-9 text-center font-semibold text-[hsl(var(--primary))]' : 'h-9 text-center font-semibold'}
+        className={cn('h-9 text-center font-semibold', valueClass)}
       />
       <Button type="button" size="icon" variant="outline" className="h-8 w-8" aria-label={`${label} +`} onClick={() => onChange(round(value + step))}>
         <Plus className="h-4 w-4" />
@@ -141,4 +143,13 @@ function Stepper({
 
 function round(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/** Colour a logged value vs. the set's expected baseline (last time / suggestion):
+ *  more → green (beat it), less → amber (fell short), equal/unknown → neutral. */
+function perfClass(current: number, baseline: number | null): string {
+  if (baseline == null) return '';
+  if (current > baseline) return 'text-[hsl(var(--primary))]';
+  if (current < baseline) return 'text-amber-400';
+  return '';
 }
