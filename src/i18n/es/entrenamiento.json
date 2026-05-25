@@ -189,6 +189,7 @@
     "warmup": "Calentamiento",
     "workingWeight": "Peso de trabajo de hoy",
     "setsN": "{{count}} series",
+    "seriesShort": "series",
     "begin": "Empezar",
     "exerciseDone": "{{name}} completado",
     "completeSummary": "{{sets}} series · {{volume}} kg de volumen",

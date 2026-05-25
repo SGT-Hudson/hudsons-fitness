@@ -189,6 +189,7 @@
     "warmup": "Warm-up",
     "workingWeight": "Today's working weight",
     "setsN": "{{count}} sets",
+    "seriesShort": "sets",
     "begin": "Begin",
     "exerciseDone": "{{name}} done",
     "completeSummary": "{{sets}} sets · {{volume}} kg volume",
