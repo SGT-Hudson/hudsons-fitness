@@ -36,6 +36,13 @@
 | 0.16 | Schema / RPC | **No changes.** `save_workout` already accepts per-set `rpe` + `is_warmup` and the `p_program_id`/`p_routine_id` stamps. | settled |
 | 0.17 | Visual polish | Functional, on-pattern UI only; pixel-level styling lands with U-8. | settled |
 | 0.18 | Units | Metric only (kg) — invariant #1. The `log-sets` mockup's lb is just the source app. | settled |
+| 0.19 | Core screen layout | **"Timer on top"** (single scrolling screen): rest timer pinned at top while resting, set inputs below, one primary button. Chosen over a bottom-sheet or focused-card layout. | settled |
+| 0.20 | Per-set states | **Two-state loop per set: READY → RESTING.** READY shows the planned reps/weight as **white, read-only** values (no steppers), button **"Start rest"**. RESTING starts the timer and makes inputs editable (reps stepper + **weight stepper**, weight stepping by `default_increment_kg`, value also typable), button **"Record set"**. Warm-ups use the same two-state loop. | settled |
+| 0.21 | Record vs rest | **"Record set" logs the set and advances to the next set's READY, but does NOT end the rest** — the timer keeps running (compact band) into the next READY; the 0:00 alarm is the cue to lift. Recording = "log what I did", not "end rest". | settled |
+| 0.22 | "What's next" model | **Position pointer over the fixed routine order.** App tracks only done / skipped / remaining. "Continue" proposes the next exercise that is neither done nor skipped. Jumping just lets you do a *remaining* one early; no reorder state. | settled |
+| 0.23 | Skip = soft | Skipping advances the pointer but **parks** the exercise as "skipped" — still listed in the overview ("do it ›"), jump-back-able until finish. At finish, undone skipped exercises are **surfaced** ("do it now / save without it"); if still undone → not saved (per 0.9). | settled |
+| 0.24 | Exercise-complete beat | After the last set, a **completion card**: ✓ + volume, **"+ Add another set"** (above), the **up-next** exercise (name large, reps×weight emphasised), **"Jump to another exercise"** (→ overview), and **"Continue"** (primary, bottom). Action buttons bottom-aligned across runner screens. | settled |
+| 0.25 | Drag-reorder | **Out of scope.** The overview lets you *jump/skip* (choose which remaining exercise is next), not drag-rearrange the saved routine. True reorder is a separate future feature. | settled |
 
 ---
 
@@ -68,34 +75,48 @@
 
 ## 2. The runner loop (UX)
 
-Linear walk down the routine's exercises with escape hatches.
+Single-screen **"timer on top"** layout (0.19), linear walk down the routine's
+exercises with escape hatches. The screen sequence (validated via storyboard):
 
-**Per exercise:**
+1. **Pre-workout** — tap today's slot → routine overview (exercises + est. time)
+   → **"Start workout"**.
+2. **Exercise start** — large exercise name, the editable **working-weight
+   anchor** (prefilled from `lastWorkingSetForExercise`; editing recomputes warm-up
+   weights live), a quiet **coach line** (§5.2), and the plan (warm-ups then sets)
+   → **"Begin"**.
+3. **Set flow (warm-ups first, then working sets)** — each set is a two-state loop:
+   - **READY:** planned reps/weight shown as **white, read-only** values (no
+     steppers). You physically do the set, then tap **"Start rest"**.
+   - **RESTING:** the timer starts (§3); inputs become editable — a **reps
+     stepper** and a **weight stepper** (steps by `default_increment_kg`, value
+     also typable) — plus optional **RPE** on working sets. Tap **"Record set"**.
+   - **Recorded:** the set checks off (✓ on its row) and you advance to the next
+     set's READY — **the rest timer keeps running** in a compact band; the 0:00
+     alarm is the cue to lift (0.21).
+   - Warm-ups use the same loop with the silent count-up stopwatch (0.6) and a
+     "Record warm-up" button; warm-up weight = `round(pct% × workingWeight,
+     default_increment_kg)`.
+4. **Exercise complete** — a completion card: ✓ + set count/volume,
+   **"+ Add another set"**, the **up-next** exercise (name prominent), **"Jump to
+   another exercise"** (→ overview), **"Continue"** (0.24).
+5. **Finish → review → save** (§0.15, §4.3). If skipped exercises remain undone, a
+   **skip-recovery** step first (0.23).
 
-1. **Working-weight anchor** — a single editable "today's working weight",
-   prefilled from `lastWorkingSetForExercise`. Editing it recomputes warm-up
-   weights live. A quiet coach line sits here (§5).
-2. **Warm-ups first**, in prescription order. Each warm-up's weight =
-   `round(pct% × workingWeight, default_increment_kg)`; reps from the prescription.
-3. **Working sets**, `target_sets` of them, prefilled per-set (§4).
+**"What's next" — position-pointer model (0.22):** the routine order is fixed; the
+app tracks only **done / skipped / remaining**. "Continue" advances to the next
+exercise that is neither done nor skipped. Jumping lets you do a *remaining*
+exercise early; it never reshuffles the canonical order.
 
-**Per set:**
+**Escape hatches** (the exercise overview + per-card affordances):
 
-1. User performs the set, taps **"Start rest"**.
-2. Rest timer starts (§3 timer rules).
-3. During the rest, the user confirms/dials **reps + weight** (+ optional **RPE**
-   on working sets). The set is **recorded** into client state.
-4. Advance to the next set (or next exercise after the last set).
-
-**Escape hatches** (over the same set list):
-
-- **Jump** to any exercise via an overview (machine taken, supersets).
-- **Skip** an exercise (→ not saved, §0.9).
-- **End exercise early** (logged sets kept, remaining dropped).
+- **Jump** to any remaining/skipped exercise via the overview (machine taken, supersets).
+- **Skip** — *soft and recoverable* (0.23): parks the exercise as "skipped", still
+  jump-back-able; surfaced at finish; never saved if left undone.
 - **Add a set** beyond `target_sets` (appends another working set, prefilled from
   the last working set).
+- **Finish workout early** from the overview.
 
-No on-the-fly reorder (YAGNI — jumping covers the need).
+No on-the-fly **drag-reorder** (0.25 — jumping covers the need).
 
 ---
 
@@ -212,9 +233,13 @@ later sprint.
 - A **`localStorage` draft hook** (load / mirror / clear, one draft key).
 - **`useRestTimer`** — timestamp-based remaining/over-time + count-up mode.
 - **`useWakeLock`** — acquire/re-acquire/release.
-- Runner **page** + step components: exercise header (working-weight anchor + coach
-  line), rest screen (timer + set inputs + RPE), exercise overview (jump/skip),
-  review screen.
+- Runner **page** + step components: pre-workout overview, exercise-start header
+  (working-weight anchor + coach line + plan), the **set component** (READY ↔
+  RESTING states, reps + weight steppers, RPE), the **completion card**
+  (add-set / up-next / jump / continue), the **exercise overview** (jump / skip /
+  finish-early), the **skip-recovery** prompt, and the **review** screen.
+- A small **"what's next" selector** over the position-pointer state (done /
+  skipped / remaining) — pure, in or beside the reducer, unit-testable.
 - Small **RPE explainer** component (shared with the routine builder).
 
 **Wiring:**
@@ -241,7 +266,13 @@ add set, end early, finish), resume prompt, coach line wrapper, review screen.
 env-less-CI trap):**
 
 - Runner loop happy path: warm-up → working sets → finish.
-- Escape hatches: jump, skip (→ not saved), end-early, add-set.
+- READY ↔ RESTING transitions: Record set checks the row off, advances, and leaves
+  the rest timer running (0.21).
+- "What's next" position pointer: jump out of order, return, Continue proposes the
+  next done/skipped-excluded exercise (0.22).
+- Skip is recoverable: skipped exercise stays jump-back-able; the skip-recovery
+  step surfaces it at finish; left undone → not saved (0.23).
+- Escape hatches: jump, add-set, finish-early.
 - Resume prompt: restore rehydrates; discard clears the draft.
 - Save payload shape: `is_warmup` / `rpe` / `set_index` / stamps correct.
 
