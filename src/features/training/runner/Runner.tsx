@@ -179,6 +179,10 @@ export function Runner({
     );
   }
 
+  // Defensive: the state machine guarantees ex/set are defined in ready/resting,
+  // but guard against any out-of-range cursor from a hydrated draft.
+  if (!ex || !set) return null;
+
   // ordinal within warm-ups or working sets
   const sameKind = ex.sets.filter((s) => s.isWarmup === set.isWarmup);
   const ordinal = sameKind.findIndex((s) => s.setIndex === set.setIndex) + 1;
