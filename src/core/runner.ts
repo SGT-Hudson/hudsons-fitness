@@ -33,3 +33,142 @@ export function computeTimerView(
     done: elapsedSeconds >= targetSeconds,
   };
 }
+
+import { warmupWeightKg } from './programs';
+import type { SaveWorkoutSet } from '@/features/training/api';
+
+export type ExerciseStatus = 'pending' | 'active' | 'done' | 'skipped';
+export type RunnerPhase = 'ready' | 'resting' | 'exercise-complete' | 'finishing';
+
+export interface RunnerSet {
+  setIndex: number;            // 1-based, contiguous per exercise (warm-ups first)
+  isWarmup: boolean;
+  pct: number | null;          // warm-up: % of working weight; null for working sets
+  reps: number;
+  weightKg: number;            // 0 when unknown/blank
+  rpe: number | null;          // working sets only
+  recorded: boolean;
+}
+
+export interface RunnerExercise {
+  exerciseId: string;
+  position: number;            // 1-based fixed routine order
+  targetSets: number;
+  targetRepsMin: number;
+  targetRepsMax: number;
+  restSeconds: number | null;
+  targetRpe: number | null;
+  defaultIncrementKg: number;  // weight stepper increment
+  workingWeightKg: number;     // editable anchor (0 = unknown)
+  warmupPrescriptions: { pct: number; reps: number }[];
+  sets: RunnerSet[];
+  status: ExerciseStatus;
+}
+
+export interface RunnerState {
+  programId: string | null;
+  routineId: string | null;
+  routineName: string;
+  performedOn: string;         // ISO date
+  startedAtMs: number;
+  savedAtMs: number;           // last activity (for "X min ago")
+  exercises: RunnerExercise[];
+  currentExerciseIndex: number;
+  currentSetIndex: number;
+  phase: RunnerPhase;
+  restStartedAtMs: number | null;
+  restTargetSeconds: number | null; // null ⇒ count-up
+}
+
+export interface RunnerInputExercise {
+  exerciseId: string;
+  position: number;
+  targetSets: number;
+  targetRepsMin: number;
+  targetRepsMax: number;
+  restSeconds: number | null;
+  targetRpe: number | null;
+  defaultIncrementKg: number;
+  warmupSets: { pct: number; reps: number }[];
+  lastWorkingWeightKg: number | null;
+  workingSetPrefill: { reps: number; weightKg: number | null }[];
+}
+
+export interface RunnerInput {
+  programId: string | null;
+  routineId: string | null;
+  routineName: string;
+  performedOn: string;
+  nowMs: number;
+  exercises: RunnerInputExercise[];
+}
+
+function buildSets(ex: RunnerInputExercise, workingWeightKg: number): RunnerSet[] {
+  const sets: RunnerSet[] = [];
+  let idx = 1;
+  for (const w of ex.warmupSets) {
+    sets.push({
+      setIndex: idx++,
+      isWarmup: true,
+      pct: w.pct,
+      reps: w.reps,
+      weightKg: workingWeightKg > 0 ? warmupWeightKg(workingWeightKg, w.pct) : 0,
+      rpe: null,
+      recorded: false,
+    });
+  }
+  ex.workingSetPrefill.forEach((p) => {
+    sets.push({
+      setIndex: idx++,
+      isWarmup: false,
+      pct: null,
+      reps: p.reps,
+      weightKg: p.weightKg ?? 0,
+      rpe: ex.targetRpe,
+      recorded: false,
+    });
+  });
+  return sets;
+}
+
+export function buildRunnerState(input: RunnerInput): RunnerState {
+  const exercises: RunnerExercise[] = [...input.exercises]
+    .sort((a, b) => a.position - b.position)
+    .map((ex, i) => {
+      const workingWeightKg = ex.lastWorkingWeightKg ?? 0;
+      return {
+        exerciseId: ex.exerciseId,
+        position: ex.position,
+        targetSets: ex.targetSets,
+        targetRepsMin: ex.targetRepsMin,
+        targetRepsMax: ex.targetRepsMax,
+        restSeconds: ex.restSeconds,
+        targetRpe: ex.targetRpe,
+        defaultIncrementKg: ex.defaultIncrementKg > 0 ? ex.defaultIncrementKg : 2.5,
+        workingWeightKg,
+        warmupPrescriptions: ex.warmupSets,
+        sets: buildSets(ex, workingWeightKg),
+        status: i === 0 ? 'active' : 'pending',
+      } satisfies RunnerExercise;
+    });
+
+  return {
+    programId: input.programId,
+    routineId: input.routineId,
+    routineName: input.routineName,
+    performedOn: input.performedOn,
+    startedAtMs: input.nowMs,
+    savedAtMs: input.nowMs,
+    exercises,
+    currentExerciseIndex: 0,
+    currentSetIndex: 0,
+    phase: 'ready',
+    restStartedAtMs: null,
+    restTargetSeconds: null,
+  };
+}
+
+// SaveWorkoutSet is imported for use by later tasks (toSaveWorkoutSets selector).
+// Referencing it here avoids an "imported but never used" error when the type
+// import is retained across incremental task commits.
+export type { SaveWorkoutSet };
