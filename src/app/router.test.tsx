@@ -25,6 +25,7 @@ vi.mock('@/pages/RecetaEditorPage', () => ({ RecetaEditorPage: () => <div>Receta
 vi.mock('@/pages/IngredientesPage', () => ({ IngredientesPage: () => <div>IngredientesPage</div> }));
 vi.mock('@/pages/EntrenamientoPage', () => ({ EntrenamientoPage: () => <div>EntrenamientoPage</div> }));
 vi.mock('@/pages/SessionEditorPage', () => ({ SessionEditorPage: () => <div>SessionEditorPage</div> }));
+vi.mock('@/pages/RunnerPage', () => ({ RunnerPage: () => <div>RunnerPage</div> }));
 vi.mock('@/pages/ExerciseHistoryPage', () => ({ ExerciseHistoryPage: () => <div>ExerciseHistoryPage</div> }));
 vi.mock('@/pages/RoutinePage', () => ({ RoutinePage: () => <div>RoutinePage</div> }));
 vi.mock('@/pages/RoutineEditorPage', () => ({ RoutineEditorPage: () => <div>RoutineEditorPage</div> }));
