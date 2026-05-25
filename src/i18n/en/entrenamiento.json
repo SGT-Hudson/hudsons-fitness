@@ -3,6 +3,14 @@
     "title": "Training",
     "newSession": "Log workout"
   },
+  "muscleMap": {
+    "title": "Muscle activity",
+    "window": { "label": "Time window", "7d": "7d", "30d": "30d", "6mo": "6 mo", "all": "All time" },
+    "gender": { "label": "Body model", "male": "Male", "female": "Female" },
+    "setsUnit": "sets",
+    "fullBodyFootnote": "+ {{count}} full-body sets not shown on the map",
+    "empty": "No sets logged in this window."
+  },
   "list": {
     "emptyTitle": "No workouts logged yet.",
     "cta": "Log workout",
