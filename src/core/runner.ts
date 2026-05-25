@@ -48,6 +48,12 @@ export interface RunnerSet {
   weightKg: number;            // 0 when unknown/blank
   rpe: number | null;          // working sets only
   recorded: boolean;
+  /** The "expected" reps/weight shown when the set loaded (the prefill = last
+   *  time / suggestion). Used to colour the logged value: more → up, equal →
+   *  neutral, less → down. null when there's nothing to compare against
+   *  (warm-ups, or no history). */
+  baselineReps: number | null;
+  baselineWeightKg: number | null;
 }
 
 export interface RunnerExercise {
@@ -115,6 +121,8 @@ function buildSets(ex: RunnerInputExercise, workingWeightKg: number, incrementKg
       weightKg: workingWeightKg > 0 ? warmupWeightKg(workingWeightKg, w.pct, incrementKg) : 0,
       rpe: null,
       recorded: false,
+      baselineReps: null,      // warm-ups aren't graded for progression
+      baselineWeightKg: null,
     });
   }
   ex.workingSetPrefill.forEach((p) => {
@@ -126,6 +134,8 @@ function buildSets(ex: RunnerInputExercise, workingWeightKg: number, incrementKg
       weightKg: p.weightKg ?? 0,
       rpe: ex.targetRpe,
       recorded: false,
+      baselineReps: p.reps,
+      baselineWeightKg: p.weightKg,  // null when no history → no weight colouring
     });
   });
   return sets;
@@ -264,14 +274,18 @@ function navigationReducer(
     case 'ADD_SET': {
       const ex = state.exercises[ci];
       const lastWorking = [...ex.sets].reverse().find((s) => !s.isWarmup);
+      const newReps = lastWorking?.reps ?? ex.targetRepsMin;
+      const newWeight = lastWorking && lastWorking.weightKg > 0 ? lastWorking.weightKg : ex.workingWeightKg;
       const newSet: RunnerSet = {
         setIndex: ex.sets.length + 1,
         isWarmup: false,
         pct: null,
-        reps: lastWorking?.reps ?? ex.targetRepsMin,
-        weightKg: lastWorking && lastWorking.weightKg > 0 ? lastWorking.weightKg : ex.workingWeightKg,
+        reps: newReps,
+        weightKg: newWeight,
         rpe: ex.targetRpe,
         recorded: false,
+        baselineReps: newReps,
+        baselineWeightKg: newWeight > 0 ? newWeight : null,
       };
       const exercises = replaceExercise(state, ci, (e) => ({
         ...e,
