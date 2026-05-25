@@ -35,7 +35,7 @@ export function SetView(props: Props) {
     : t('runner.setN', { n: setOrdinal.current, total: setOrdinal.total });
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-1 flex-col gap-3">
       {editing && (
         <RestTimerBand timer={timer} onSkip={props.onSkipRest} onAdjust={props.onAdjustRest} />
       )}
@@ -72,7 +72,7 @@ export function SetView(props: Props) {
         </>
       )}
 
-      <div className="mt-1">
+      <div className="mt-auto pt-2">
         {editing ? (
           <Button type="button" className="w-full" onClick={props.onRecord}>
             {set.isWarmup ? t('runner.recordWarmup') : t('runner.recordSet')}

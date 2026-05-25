@@ -16,7 +16,7 @@ interface Props {
 export function ReviewScreen({ exercises, names, routineName, saving, onSave }: Props) {
   const { t } = useTranslation('entrenamiento');
   return (
-    <div className="flex min-h-[60vh] flex-col gap-2">
+    <div className="flex flex-1 flex-col gap-2">
       <h2 className="text-center text-base font-bold">{routineName}</h2>
       {exercises.map((ex) => {
         const recorded = ex.sets.filter((s) => s.recorded).length;

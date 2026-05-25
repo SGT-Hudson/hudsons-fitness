@@ -28,7 +28,7 @@ export function CompletionCard({
   );
 
   return (
-    <div className="flex min-h-[60vh] flex-col gap-3">
+    <div className="flex flex-1 flex-col gap-3">
       <div className="text-center text-3xl text-primary"><Check className="mx-auto h-8 w-8" /></div>
       <div className="text-center text-base font-bold">{t('runner.exerciseDone', { name: exerciseName })}</div>
       <p className="text-center text-xs text-muted-foreground">

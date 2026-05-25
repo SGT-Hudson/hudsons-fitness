@@ -33,7 +33,7 @@ export function ExerciseStart({ exercise, exerciseName, coachContext, onSetWorki
       : `${exercise.targetRepsMin}–${exercise.targetRepsMax}`;
 
   return (
-    <div className="flex min-h-[70vh] flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-4">
       <h2 className="text-center text-xl font-extrabold">{exerciseName}</h2>
 
       {/* Working weight — borderless stepper. Tap the number to type, ±/+ step by increment. */}
