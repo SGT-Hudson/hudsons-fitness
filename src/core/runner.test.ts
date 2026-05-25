@@ -438,6 +438,39 @@ describe('focusIndex + SKIP_CURRENT target the exercise to do, not a finished on
   });
 });
 
+describe('JUMP_TO demotes the exercise being left (stays reachable)', () => {
+  it('leaving an in-progress exercise with a logged work-set marks it partial, not stuck active', () => {
+    let s = buildRunnerState(twoEx);
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 1 }); // warm-up of ex0
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 2 }); // working set 1 of ex0 → still active (set 2 pending)
+    s = runnerReducer(s, { type: 'JUMP_TO', exerciseIndex: 1, nowMs: 3 });
+    expect(s.exercises[0].status).toBe('partial');  // not 'active' limbo
+    expect(s.exercises[1].status).toBe('active');
+    // recorded work is preserved in the save payload
+    expect(toSaveWorkoutSets(s).some((r) => r.exercise_id === 'bench')).toBe(true);
+  });
+
+  it('leaving an exercise with no logged work-set returns it to pending (Bug B)', () => {
+    // On a just-activated exercise (nothing logged), switching away must leave it
+    // 'pending' (clickable again), not stuck 'active'.
+    let s = buildRunnerState(twoEx);
+    s = runnerReducer(s, { type: 'JUMP_TO', exerciseIndex: 1, nowMs: 1 });
+    expect(s.exercises[0].status).toBe('pending');
+    expect(s.exercises[1].status).toBe('active');
+  });
+
+  it('a demoted partial is jumpable back and resumes at its first unrecorded set', () => {
+    let s = buildRunnerState(twoEx);
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 1 }); // warm-up
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 2 }); // working set 1 (index 1)
+    s = runnerReducer(s, { type: 'JUMP_TO', exerciseIndex: 1, nowMs: 3 }); // leave ex0 partial
+    s = runnerReducer(s, { type: 'JUMP_TO', exerciseIndex: 0, nowMs: 4 }); // come back
+    expect(s.exercises[0].status).toBe('active');
+    expect(s.currentExerciseIndex).toBe(0);
+    expect(s.currentSetIndex).toBe(2); // first unrecorded (working set 2)
+  });
+});
+
 describe('END_EXERCISE — finish early keeping recorded sets', () => {
   it('marks the exercise done, lands on the completion card, and keeps only recorded sets', () => {
     // baseInput: warm-up + 2 working sets (3 total). Do warm-up + working 1, then end.

@@ -37,7 +37,7 @@ export function computeTimerView(
   };
 }
 
-export type ExerciseStatus = 'pending' | 'active' | 'done' | 'skipped';
+export type ExerciseStatus = 'pending' | 'active' | 'partial' | 'done' | 'skipped';
 export type RunnerPhase = 'ready' | 'resting' | 'exercise-complete' | 'finishing';
 
 export interface RunnerSet {
@@ -243,9 +243,18 @@ export function focusIndex(state: RunnerState): number {
 
 function activate(state: RunnerState, index: number): RunnerState {
   if (index < 0 || index >= state.exercises.length) return state;
-  const exercises = state.exercises.map((e, i) =>
-    i === index ? { ...e, status: 'active' as ExerciseStatus } : e,
-  );
+  const leavingIdx = state.currentExerciseIndex;
+  const exercises = state.exercises.map((e, i) => {
+    if (i === index) return { ...e, status: 'active' as ExerciseStatus };
+    // Demote the exercise we're leaving so it stays reachable (was a bug: it
+    // stayed 'active' → showed "jump" but wasn't clickable). If real work was
+    // logged it's 'partial' (resume later); otherwise back to 'pending'.
+    if (i === leavingIdx && e.status === 'active') {
+      const startedRealWork = e.sets.some((s) => s.recorded && !s.isWarmup);
+      return { ...e, status: (startedRealWork ? 'partial' : 'pending') as ExerciseStatus };
+    }
+    return e;
+  });
   const firstUnrecorded = Math.max(0, exercises[index].sets.findIndex((s) => !s.recorded));
   return {
     ...state,

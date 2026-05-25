@@ -2,6 +2,9 @@ import { useEffect, useState, useReducer } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Replace } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import type { CoachContext } from '@/core/training';
 import {
   runnerReducer,
@@ -47,6 +50,7 @@ export function Runner({
   const [begun, setBegun] = useState(false); // exercise-start gate (per active exercise)
   const [skipAck, setSkipAck] = useState(false); // user chose to save without remaining skipped
   const [showOverview, setShowOverview] = useState(false);
+  const [pendingJump, setPendingJump] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,6 +87,22 @@ export function Runner({
     } finally {
       setSaving(false);
     }
+  }
+
+  function doJump(i: number) {
+    dispatch({ type: 'JUMP_TO', exerciseIndex: i, nowMs: Date.now() });
+    setShowOverview(false);
+    setPendingJump(null);
+  }
+
+  // Jumping away from an in-progress exercise with logged work-sets warns first
+  // (the sets are kept and it's resumable, but it's worth a heads-up). Otherwise
+  // jump straight away.
+  function requestJump(i: number) {
+    const leaving = state.exercises[state.currentExerciseIndex];
+    const partial = leaving?.status === 'active' && leaving.sets.some((s) => s.recorded && !s.isWarmup);
+    if (partial) setPendingJump(i);
+    else doJump(i);
   }
 
   // The change-exercise button is available throughout the workout (so a
@@ -123,11 +143,29 @@ export function Runner({
           exercises={state.exercises}
           currentIndex={focusIndex(state) >= 0 ? focusIndex(state) : state.currentExerciseIndex}
           names={names}
-          onJump={(i) => { dispatch({ type: 'JUMP_TO', exerciseIndex: i, nowMs: Date.now() }); setShowOverview(false); }}
+          onJump={requestJump}
           onSkipCurrent={() => { dispatch({ type: 'SKIP_CURRENT', nowMs: Date.now() }); setShowOverview(false); }}
           onFinishEarly={() => { dispatch({ type: 'FINISH_EARLY', nowMs: Date.now() }); setShowOverview(false); }}
           onClose={() => setShowOverview(false)}
         />
+        <Dialog open={pendingJump !== null} onOpenChange={(o) => { if (!o) setPendingJump(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('runner.leavePartialTitle')}</DialogTitle>
+              <DialogDescription>
+                {t('runner.leavePartialBody', { name: names[ex.exerciseId] ?? ex.exerciseId })}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setPendingJump(null)}>
+                {t('runner.cancel')}
+              </Button>
+              <Button type="button" onClick={() => { if (pendingJump !== null) doJump(pendingJump); }}>
+                {t('runner.switchExercise')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
