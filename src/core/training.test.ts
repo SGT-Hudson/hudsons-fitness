@@ -569,3 +569,60 @@ describe('evaluateCoach engine', () => {
     expect(out).toEqual([]);
   });
 });
+
+import { prefillSetsForExercise } from './training';
+
+function makeSessionSet(p: Partial<CoreSessionSet>): CoreSessionSet {
+  return {
+    reps: 8, weightKg: 80, rpe: null, isWarmup: false,
+    setIndex: 1, sessionId: 's1', exerciseId: 'e1', performedOn: '2026-05-01',
+    ...p,
+  };
+}
+
+describe('prefillSetsForExercise', () => {
+  it('prefills each working set from the matching set of the most recent session', () => {
+    const history: CoreSessionSet[] = [
+      makeSessionSet({ sessionId: 's1', performedOn: '2026-05-10', setIndex: 1, reps: 8, weightKg: 80 }),
+      makeSessionSet({ sessionId: 's1', performedOn: '2026-05-10', setIndex: 2, reps: 7, weightKg: 80 }),
+      makeSessionSet({ sessionId: 's0', performedOn: '2026-05-03', setIndex: 1, reps: 5, weightKg: 70 }),
+    ];
+    expect(prefillSetsForExercise(history, 2, 5)).toEqual([
+      { reps: 8, weightKg: 80 },
+      { reps: 7, weightKg: 80 },
+    ]);
+  });
+
+  it('ignores warm-up rows when choosing the matching set', () => {
+    const history: CoreSessionSet[] = [
+      makeSessionSet({ performedOn: '2026-05-10', setIndex: 1, isWarmup: true, reps: 10, weightKg: 40 }),
+      makeSessionSet({ performedOn: '2026-05-10', setIndex: 2, reps: 8, weightKg: 82.5 }),
+    ];
+    expect(prefillSetsForExercise(history, 1, 5)).toEqual([{ reps: 8, weightKg: 82.5 }]);
+  });
+
+  it('falls back to the last working set when last session had fewer sets', () => {
+    const history: CoreSessionSet[] = [
+      makeSessionSet({ performedOn: '2026-05-10', setIndex: 1, reps: 8, weightKg: 80 }),
+    ];
+    expect(prefillSetsForExercise(history, 3, 5)).toEqual([
+      { reps: 8, weightKg: 80 },
+      { reps: 8, weightKg: 80 },
+      { reps: 8, weightKg: 80 },
+    ]);
+  });
+
+  it('falls back to target-rep floor with blank weight when there is no history', () => {
+    expect(prefillSetsForExercise([], 2, 6)).toEqual([
+      { reps: 6, weightKg: null },
+      { reps: 6, weightKg: null },
+    ]);
+  });
+
+  it('coerces string weights to numbers', () => {
+    const history: CoreSessionSet[] = [
+      makeSessionSet({ performedOn: '2026-05-10', setIndex: 1, reps: 8, weightKg: '77.5' }),
+    ];
+    expect(prefillSetsForExercise(history, 1, 5)).toEqual([{ reps: 8, weightKg: 77.5 }]);
+  });
+});

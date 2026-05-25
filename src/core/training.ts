@@ -255,6 +255,60 @@ export function lastWorkingSetForExercise(
   return best;
 }
 
+export interface WorkingSetPrefill {
+  reps: number;
+  weightKg: number | null;
+}
+
+/**
+ * Per-set prefill for a routine's working sets (spec §4.2). For each working
+ * set index, prefill from the matching working set of the user's MOST RECENT
+ * session of this exercise. Fallbacks: fewer sets last time → the last working
+ * set; no history → target-rep floor with a blank weight. Warm-up rows are
+ * ignored. Pure; the caller supplies the exercise's history.
+ */
+export function prefillSetsForExercise(
+  history: CoreSessionSet[],
+  targetSets: number,
+  targetRepsMin: number,
+): WorkingSetPrefill[] {
+  const working = (history ?? []).filter((s) => !s.isWarmup);
+
+  // Identify the most recent session (latest performedOn, tie-broken by
+  // sessionId) and gather its working sets ordered by setIndex.
+  let recentKey: { performedOn: string; sessionId: string } | null = null;
+  for (const s of working) {
+    if (
+      recentKey === null ||
+      s.performedOn > recentKey.performedOn ||
+      (s.performedOn === recentKey.performedOn && s.sessionId > recentKey.sessionId)
+    ) {
+      recentKey = { performedOn: s.performedOn, sessionId: s.sessionId };
+    }
+  }
+  const recentSets = recentKey
+    ? working
+        .filter((s) => s.sessionId === recentKey!.sessionId)
+        .slice()
+        .sort((a, b) => a.setIndex - b.setIndex)
+    : [];
+
+  const last = lastWorkingSetForExercise(history);
+
+  const out: WorkingSetPrefill[] = [];
+  for (let i = 0; i < targetSets; i += 1) {
+    const match = recentSets[i];
+    if (match) {
+      out.push({ reps: match.reps, weightKg: Number(match.weightKg) });
+    } else if (last) {
+      out.push({ reps: last.reps, weightKg: Number(last.weightKg) });
+    } else {
+      out.push({ reps: targetRepsMin, weightKg: null });
+    }
+  }
+  return out;
+}
+
 // ── Rule-based coach (spec §7) ──────────────────────────────────────────────
 //
 // Every rule is a pure function over a `CoachContext` that the caller pre-
