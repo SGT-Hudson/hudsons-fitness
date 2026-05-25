@@ -17,6 +17,11 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    // Cap worker fan-out so one run can't grab all cores — keeps two parallel
+    // dev sessions (~6 workers total on an 8-core box) from saturating the
+    // machine. CI runs on its own isolated runners, so this only affects local.
+    minWorkers: 1,
+    maxWorkers: 3,
     environmentMatchGlobs: [['src/**/*.test.tsx', 'jsdom']],
     setupFiles: ['./src/test/setup.ts'],
     include: [
