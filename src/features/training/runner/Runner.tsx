@@ -6,6 +6,7 @@ import type { CoachContext } from '@/core/training';
 import {
   runnerReducer,
   nextPendingIndex,
+  focusIndex,
   skippedUndoneIndices,
   toSaveWorkoutSets,
   type RunnerState,
@@ -102,7 +103,7 @@ export function Runner({
         {header}
         <ExerciseOverview
           exercises={state.exercises}
-          currentIndex={state.currentExerciseIndex}
+          currentIndex={focusIndex(state) >= 0 ? focusIndex(state) : state.currentExerciseIndex}
           names={names}
           onJump={(i) => { dispatch({ type: 'JUMP_TO', exerciseIndex: i, nowMs: Date.now() }); setShowOverview(false); }}
           onSkipCurrent={() => { dispatch({ type: 'SKIP_CURRENT', nowMs: Date.now() }); setShowOverview(false); }}

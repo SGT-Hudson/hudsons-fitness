@@ -219,6 +219,17 @@ export function skippedUndoneIndices(state: RunnerState): number[] {
     .filter((i) => i >= 0);
 }
 
+/** The exercise the user is about to perform: the active one when a set is in
+ *  progress, otherwise the next pending exercise (e.g. on the completion card,
+ *  the current exercise is already done — focus is the up-next). -1 when none
+ *  remain. "Skip current" and the overview highlight both follow this so they
+ *  never target a finished exercise. */
+export function focusIndex(state: RunnerState): number {
+  const cur = state.exercises[state.currentExerciseIndex];
+  if (cur && cur.status === 'active') return state.currentExerciseIndex;
+  return nextPendingIndex(state);
+}
+
 function activate(state: RunnerState, index: number): RunnerState {
   if (index < 0 || index >= state.exercises.length) return state;
   const exercises = state.exercises.map((e, i) =>
@@ -273,7 +284,12 @@ function navigationReducer(
     case 'JUMP_TO':
       return touch(activate(state, action.exerciseIndex));
     case 'SKIP_CURRENT': {
-      const exercises = replaceExercise(state, ci, (e) => ({ ...e, status: 'skipped' }));
+      // Skip the exercise the user is about to do — never a finished one. On the
+      // completion card the "current" exercise is already done, so this targets
+      // the up-next exercise instead (fixes skipping the just-completed one).
+      const ti = focusIndex(state);
+      if (ti < 0) return touch({ ...state, phase: 'finishing' });
+      const exercises = replaceExercise(state, ti, (e) => ({ ...e, status: 'skipped' }));
       return touch(advanceOrFinish({ ...state, exercises }));
     }
     case 'FINISH_EARLY':
