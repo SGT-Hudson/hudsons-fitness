@@ -6,6 +6,7 @@
  */
 
 import { warmupWeightKg } from './programs';
+import type { SaveWorkoutSet } from '@/features/training/api';
 
 export interface TimerView {
   isCountUp: boolean;
@@ -165,5 +166,120 @@ export function buildRunnerState(input: RunnerInput): RunnerState {
     restStartedAtMs: null,
     restTargetSeconds: null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Reducer — Task 4 (edit/weight/rest/record) + Task 5 stubs
+// ---------------------------------------------------------------------------
+
+export type RunnerAction =
+  | { type: 'SET_WORKING_WEIGHT'; weightKg: number }
+  | { type: 'EDIT_CURRENT_SET'; patch: Partial<Pick<RunnerSet, 'reps' | 'weightKg' | 'rpe'>> }
+  | { type: 'START_REST'; nowMs: number }
+  | { type: 'RECORD_SET'; nowMs: number }
+  | { type: 'ADD_SET'; nowMs: number }
+  | { type: 'CONTINUE'; nowMs: number }
+  | { type: 'JUMP_TO'; exerciseIndex: number; nowMs: number }
+  | { type: 'SKIP_CURRENT'; nowMs: number }
+  | { type: 'FINISH_EARLY'; nowMs: number };
+
+function replaceExercise(
+  state: RunnerState,
+  index: number,
+  fn: (ex: RunnerExercise) => RunnerExercise,
+): RunnerExercise[] {
+  return state.exercises.map((ex, i) => (i === index ? fn(ex) : ex));
+}
+
+function recomputeWarmups(ex: RunnerExercise): RunnerExercise {
+  return {
+    ...ex,
+    sets: ex.sets.map((s) =>
+      s.isWarmup && s.pct != null && !s.recorded
+        ? { ...s, weightKg: ex.workingWeightKg > 0 ? warmupWeightKg(ex.workingWeightKg, s.pct) : 0 }
+        : s,
+    ),
+  };
+}
+
+function actionNow(action: RunnerAction, fallback: number): number {
+  return 'nowMs' in action ? action.nowMs : fallback;
+}
+
+function navigationReducer(
+  state: RunnerState,
+  _action: RunnerAction,
+  _touch: (s: RunnerState) => RunnerState,
+): RunnerState {
+  return state; // navigation actions implemented in Task 5
+}
+
+export function runnerReducer(state: RunnerState, action: RunnerAction): RunnerState {
+  const ci = state.currentExerciseIndex;
+  const si = state.currentSetIndex;
+  const touch = (next: RunnerState): RunnerState => ({ ...next, savedAtMs: actionNow(action, next.savedAtMs) });
+
+  switch (action.type) {
+    case 'SET_WORKING_WEIGHT': {
+      const exercises = replaceExercise(state, ci, (ex) =>
+        recomputeWarmups({ ...ex, workingWeightKg: Math.max(0, action.weightKg) }),
+      );
+      return touch({ ...state, exercises });
+    }
+    case 'EDIT_CURRENT_SET': {
+      const exercises = replaceExercise(state, ci, (ex) => ({
+        ...ex,
+        sets: ex.sets.map((s, i) => (i === si ? { ...s, ...action.patch } : s)),
+      }));
+      return touch({ ...state, exercises });
+    }
+    case 'START_REST': {
+      const cur = state.exercises[ci].sets[si];
+      const target = cur.isWarmup ? null : state.exercises[ci].restSeconds;
+      return touch({ ...state, phase: 'resting', restStartedAtMs: action.nowMs, restTargetSeconds: target });
+    }
+    case 'RECORD_SET': {
+      const ex = state.exercises[ci];
+      const exercises = replaceExercise(state, ci, (e) => ({
+        ...e,
+        sets: e.sets.map((s, i) => (i === si ? { ...s, recorded: true } : s)),
+      }));
+      const isLast = si >= ex.sets.length - 1;
+      if (isLast) {
+        const done = replaceExercise({ ...state, exercises }, ci, (e) => ({ ...e, status: 'done' }));
+        return touch({ ...state, exercises: done, phase: 'exercise-complete' });
+        // rest timer intentionally left running (spec 0.21)
+      }
+      return touch({ ...state, exercises, currentSetIndex: si + 1, phase: 'ready' });
+    }
+    default:
+      return navigationReducer(state, action, touch);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Selectors (stubs; full implementation in Task 5)
+// ---------------------------------------------------------------------------
+
+/** Recorded sets of non-skipped exercises, re-indexed contiguously per
+ *  exercise. Skipped exercises are excluded entirely (spec §0.9). */
+export function toSaveWorkoutSets(state: RunnerState): SaveWorkoutSet[] {
+  const rows: SaveWorkoutSet[] = [];
+  for (const ex of state.exercises) {
+    if (ex.status === 'skipped') continue;
+    let idx = 1;
+    for (const s of ex.sets) {
+      if (!s.recorded) continue;
+      rows.push({
+        exercise_id: ex.exerciseId,
+        set_index: idx++,
+        reps: s.reps,
+        weight_kg: s.weightKg,
+        rpe: s.isWarmup ? null : s.rpe,
+        is_warmup: s.isWarmup,
+      });
+    }
+  }
+  return rows;
 }
 
