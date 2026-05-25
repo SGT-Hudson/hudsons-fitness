@@ -9,9 +9,9 @@ export const routineExerciseSchema = z
     rest_seconds: z.number().int().min(0).max(3600).nullable().optional(),
     target_rpe: z
       .number()
+      .int('RPE must be a whole number')
       .min(6)
       .max(10)
-      .refine((v) => v * 2 === Math.floor(v * 2), 'RPE must be in 0.5 steps')
       .nullable()
       .optional(),
     warmup_sets: z.array(

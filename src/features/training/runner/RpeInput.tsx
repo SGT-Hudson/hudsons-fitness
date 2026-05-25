@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { RpeExplainer } from './RpeExplainer';
 
-const VALUES = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10] as const;
+const VALUES = [6, 7, 8, 9, 10] as const;
 
 interface Props {
   value: number | null;
@@ -18,7 +18,7 @@ export function RpeInput({ value, targetRpe, onChange }: Props) {
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <span>{t('rpe.label')}</span>
-        {targetRpe != null && <span>· {t('rpe.target', { value: targetRpe.toFixed(1) })}</span>}
+        {targetRpe != null && <span>· {t('rpe.target', { value: targetRpe })}</span>}
         <RpeExplainer />
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -32,7 +32,7 @@ export function RpeInput({ value, targetRpe, onChange }: Props) {
               value === v ? 'border-primary bg-primary/10 font-medium' : 'border-input',
             )}
           >
-            {v.toFixed(1)}
+            {v}
           </button>
         ))}
       </div>

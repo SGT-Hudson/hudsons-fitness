@@ -33,7 +33,7 @@ export function RpeExplainer() {
         <ul className="mt-2 space-y-1">
           {anchors.map((v) => (
             <li key={v} className="flex justify-between">
-              <span className="font-mono">{v.toFixed(1)}</span>
+              <span className="font-mono">{v}</span>
               <span className="text-muted-foreground">{t(`rpe.anchor.${v}`)}</span>
             </li>
           ))}

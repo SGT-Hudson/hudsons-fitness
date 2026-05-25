@@ -232,7 +232,7 @@ function ExerciseRow({ index, totalCount, initialExercise, onRemove, onMoveUp, o
             inputMode="decimal"
             min={6}
             max={10}
-            step={0.5}
+            step={1}
             {...register(`exercises.${index}.target_rpe`, {
               setValueAs: (v) => {
                 if (v === '' || v === null || v === undefined) return null;
