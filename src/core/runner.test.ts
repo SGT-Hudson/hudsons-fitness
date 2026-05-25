@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeTimerView, buildRunnerState, runnerReducer, type RunnerInput, type RunnerAction } from './runner';
+import { computeTimerView, buildRunnerState, runnerReducer, type RunnerInput } from './runner';
 
 describe('computeTimerView', () => {
   const start = 1_000_000;

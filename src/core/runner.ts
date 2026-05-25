@@ -6,7 +6,6 @@
  */
 
 import { warmupWeightKg } from './programs';
-import type { SaveWorkoutSet } from '@/features/training/api';
 
 export interface TimerView {
   isCountUp: boolean;
@@ -257,29 +256,4 @@ export function runnerReducer(state: RunnerState, action: RunnerAction): RunnerS
   }
 }
 
-// ---------------------------------------------------------------------------
-// Selectors (stubs; full implementation in Task 5)
-// ---------------------------------------------------------------------------
-
-/** Recorded sets of non-skipped exercises, re-indexed contiguously per
- *  exercise. Skipped exercises are excluded entirely (spec §0.9). */
-export function toSaveWorkoutSets(state: RunnerState): SaveWorkoutSet[] {
-  const rows: SaveWorkoutSet[] = [];
-  for (const ex of state.exercises) {
-    if (ex.status === 'skipped') continue;
-    let idx = 1;
-    for (const s of ex.sets) {
-      if (!s.recorded) continue;
-      rows.push({
-        exercise_id: ex.exerciseId,
-        set_index: idx++,
-        reps: s.reps,
-        weight_kg: s.weightKg,
-        rpe: s.isWarmup ? null : s.rpe,
-        is_warmup: s.isWarmup,
-      });
-    }
-  }
-  return rows;
-}
 
