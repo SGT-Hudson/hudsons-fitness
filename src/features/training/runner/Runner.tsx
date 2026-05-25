@@ -6,6 +6,7 @@ import type { CoachContext } from '@/core/training';
 import {
   runnerReducer,
   nextPendingIndex,
+  focusIndex,
   skippedUndoneIndices,
   toSaveWorkoutSets,
   type RunnerState,
@@ -98,11 +99,11 @@ export function Runner({
 
   if (showOverview) {
     return (
-      <div className="space-y-3">
+      <div className="flex min-h-[calc(100dvh-12rem)] flex-col gap-3">
         {header}
         <ExerciseOverview
           exercises={state.exercises}
-          currentIndex={state.currentExerciseIndex}
+          currentIndex={focusIndex(state) >= 0 ? focusIndex(state) : state.currentExerciseIndex}
           names={names}
           onJump={(i) => { dispatch({ type: 'JUMP_TO', exerciseIndex: i, nowMs: Date.now() }); setShowOverview(false); }}
           onSkipCurrent={() => { dispatch({ type: 'SKIP_CURRENT', nowMs: Date.now() }); setShowOverview(false); }}
@@ -117,7 +118,7 @@ export function Runner({
     const skipped = skippedUndoneIndices(state).map((i) => state.exercises[i]);
     if (skipped.length > 0 && !skipAck) {
       return (
-        <div className="space-y-3">
+        <div className="flex min-h-[calc(100dvh-12rem)] flex-col gap-3">
           {header}
           <SkipRecovery
             skipped={skipped}
@@ -130,7 +131,7 @@ export function Runner({
       );
     }
     return (
-      <div className="space-y-3">
+      <div className="flex min-h-[calc(100dvh-12rem)] flex-col gap-3">
         {header}
         <ReviewScreen
           exercises={state.exercises}
@@ -148,7 +149,7 @@ export function Runner({
     const nextIdx = nextPendingIndex(state);
     const next = nextIdx >= 0 ? state.exercises[nextIdx] : null;
     return (
-      <div className="space-y-3">
+      <div className="flex min-h-[calc(100dvh-12rem)] flex-col gap-3">
         {header}
         <CompletionCard
           exercise={ex}
@@ -166,7 +167,7 @@ export function Runner({
   // ready / resting on a set
   if (!begun) {
     return (
-      <div className="space-y-3">
+      <div className="flex min-h-[calc(100dvh-12rem)] flex-col gap-3">
         {header}
         <ExerciseStart
           exercise={ex}
@@ -188,7 +189,7 @@ export function Runner({
   const ordinal = sameKind.findIndex((s) => s.setIndex === set.setIndex) + 1;
 
   return (
-    <div className="space-y-3">
+    <div className="flex min-h-[calc(100dvh-12rem)] flex-col gap-3">
       {header}
       <SetView
         exercise={ex}
@@ -203,6 +204,7 @@ export function Runner({
         onSkipRest={() => dispatch({ type: 'RECORD_SET', nowMs: Date.now() })}
         onAdjustRest={(delta) => dispatch({ type: 'ADJUST_REST', deltaSeconds: delta })}
         onClearRest={() => dispatch({ type: 'CLEAR_REST' })}
+        onEndExercise={() => dispatch({ type: 'END_EXERCISE', nowMs: Date.now() })}
       />
     </div>
   );

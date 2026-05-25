@@ -20,6 +20,7 @@ interface Props {
   onSkipRest: () => void;
   onAdjustRest: (delta: number) => void;
   onClearRest: () => void;
+  onEndExercise: () => void;
 }
 
 /** One set, two states. READY: white read-only values + "Start rest".
@@ -30,18 +31,17 @@ export function SetView(props: Props) {
   const { t } = useTranslation('entrenamiento');
   const editing = phase === 'resting';
   const inc = exercise.defaultIncrementKg;
+  const hasRecordedWorkingSet = exercise.sets.some((s) => s.recorded && !s.isWarmup);
   const title = set.isWarmup
     ? t('runner.warmupN', { n: setOrdinal.current, total: setOrdinal.total })
     : t('runner.setN', { n: setOrdinal.current, total: setOrdinal.total });
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-1 flex-col gap-3">
       {editing && (
         <RestTimerBand timer={timer} onSkip={props.onSkipRest} onAdjust={props.onAdjustRest} />
       )}
-      {!editing && timer.running && (
-        <RestTimerBand timer={timer} compact onSkip={props.onClearRest} />
-      )}
+      {!editing && timer.running && <RestTimerBand timer={timer} compact />}
 
       <div className="text-center text-lg font-bold">{title}</div>
       {lastTimeLabel && <p className="text-center text-xs text-muted-foreground">{lastTimeLabel}</p>}
@@ -72,11 +72,32 @@ export function SetView(props: Props) {
         </>
       )}
 
-      <div className="mt-1">
+      <div className="mt-auto space-y-2 pt-2">
         {editing ? (
           <Button type="button" className="w-full" onClick={props.onRecord}>
             {set.isWarmup ? t('runner.recordWarmup') : t('runner.recordSet')}
           </Button>
+        ) : timer.running ? (
+          // A rest carried over from the previous set is still running: the
+          // action here is "I'm done resting, starting this set" — which stops
+          // the timer. Only after that does it become "start rest" (post-set).
+          <>
+            <Button type="button" className="w-full" onClick={props.onClearRest}>
+              {set.isWarmup ? t('runner.startWarmup') : t('runner.startSet')}
+            </Button>
+            {/* End the exercise here instead of doing the next set — keeps the
+                sets already logged, drops the rest (spec §0.8). */}
+            {hasRecordedWorkingSet && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full text-muted-foreground"
+                onClick={props.onEndExercise}
+              >
+                {t('runner.endExercise')}
+              </Button>
+            )}
+          </>
         ) : (
           <Button type="button" className="w-full" onClick={props.onStartRest}>
             {t('runner.startRest')}

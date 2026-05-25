@@ -20,7 +20,7 @@ export function ExerciseOverview({
 }: Props) {
   const { t } = useTranslation('entrenamiento');
   return (
-    <div className="flex min-h-[60vh] flex-col gap-2">
+    <div className="flex flex-1 flex-col gap-2">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold">{t('runner.jumpToExercise')}</h2>
         <Button type="button" size="sm" variant="ghost" onClick={onClose}>{t('runner.close')}</Button>

@@ -182,6 +182,7 @@ export type RunnerAction =
   | { type: 'CONTINUE'; nowMs: number }
   | { type: 'JUMP_TO'; exerciseIndex: number; nowMs: number }
   | { type: 'SKIP_CURRENT'; nowMs: number }
+  | { type: 'END_EXERCISE'; nowMs: number }
   | { type: 'FINISH_EARLY'; nowMs: number }
   | { type: 'ADJUST_REST'; deltaSeconds: number }
   | { type: 'CLEAR_REST' };
@@ -217,6 +218,17 @@ export function skippedUndoneIndices(state: RunnerState): number[] {
   return state.exercises
     .map((e, i) => (e.status === 'skipped' ? i : -1))
     .filter((i) => i >= 0);
+}
+
+/** The exercise the user is about to perform: the active one when a set is in
+ *  progress, otherwise the next pending exercise (e.g. on the completion card,
+ *  the current exercise is already done — focus is the up-next). -1 when none
+ *  remain. "Skip current" and the overview highlight both follow this so they
+ *  never target a finished exercise. */
+export function focusIndex(state: RunnerState): number {
+  const cur = state.exercises[state.currentExerciseIndex];
+  if (cur && cur.status === 'active') return state.currentExerciseIndex;
+  return nextPendingIndex(state);
 }
 
 function activate(state: RunnerState, index: number): RunnerState {
@@ -273,8 +285,20 @@ function navigationReducer(
     case 'JUMP_TO':
       return touch(activate(state, action.exerciseIndex));
     case 'SKIP_CURRENT': {
-      const exercises = replaceExercise(state, ci, (e) => ({ ...e, status: 'skipped' }));
+      // Skip the exercise the user is about to do — never a finished one. On the
+      // completion card the "current" exercise is already done, so this targets
+      // the up-next exercise instead (fixes skipping the just-completed one).
+      const ti = focusIndex(state);
+      if (ti < 0) return touch({ ...state, phase: 'finishing' });
+      const exercises = replaceExercise(state, ti, (e) => ({ ...e, status: 'skipped' }));
       return touch(advanceOrFinish({ ...state, exercises }));
+    }
+    case 'END_EXERCISE': {
+      // Finish the current exercise early, keeping the sets already recorded
+      // (unrecorded remaining sets are simply never saved). Lands on the
+      // completion card. Used when the user decides not to do the next set.
+      const exercises = replaceExercise(state, ci, (e) => ({ ...e, status: 'done' }));
+      return touch({ ...state, exercises, phase: 'exercise-complete', restStartedAtMs: null, restTargetSeconds: null });
     }
     case 'FINISH_EARLY':
       return touch({ ...state, phase: 'finishing' });

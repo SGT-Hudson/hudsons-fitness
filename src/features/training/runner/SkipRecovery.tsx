@@ -14,7 +14,7 @@ interface Props {
 export function SkipRecovery({ skipped, names, onDoExercise, indexOf, onProceed }: Props) {
   const { t } = useTranslation('entrenamiento');
   return (
-    <div className="flex min-h-[60vh] flex-col gap-3">
+    <div className="flex flex-1 flex-col gap-3">
       <h2 className="text-center text-lg font-bold">{t('runner.finishQuestion')}</h2>
       <p className="text-center text-xs text-muted-foreground">{t('runner.skippedCount', { count: skipped.length })}</p>
       <div className="space-y-1">

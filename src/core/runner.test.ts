@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeTimerView, buildRunnerState, runnerReducer, nextPendingIndex, skippedUndoneIndices, toSaveWorkoutSets, type RunnerInput } from './runner';
+import { computeTimerView, buildRunnerState, runnerReducer, nextPendingIndex, focusIndex, skippedUndoneIndices, toSaveWorkoutSets, type RunnerInput } from './runner';
 import { warmupWeightKg } from './programs';
 
 describe('computeTimerView', () => {
@@ -399,5 +399,64 @@ describe('savedAtMs', () => {
     const nowMs = 9_999_999;
     const after = runnerReducer(s, { type: 'START_REST', nowMs });
     expect(after.savedAtMs).toBe(nowMs);
+  });
+});
+
+describe('focusIndex + SKIP_CURRENT target the exercise to do, not a finished one', () => {
+  function completeFirstExercise() {
+    let s = buildRunnerState(twoEx);
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 1 }); // warm-up
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 2 }); // working 1
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 3 }); // working 2 (last) → ex0 done, exercise-complete
+    return s;
+  }
+
+  it('focusIndex is the active exercise mid-set', () => {
+    expect(focusIndex(buildRunnerState(twoEx))).toBe(0);
+  });
+
+  it('focusIndex is the up-next when the current exercise is done (completion card)', () => {
+    const s = completeFirstExercise();
+    expect(s.phase).toBe('exercise-complete');
+    expect(s.exercises[0].status).toBe('done');
+    expect(focusIndex(s)).toBe(1);
+  });
+
+  it('SKIP_CURRENT on the completion card skips the up-next, preserving the finished exercise', () => {
+    let s = completeFirstExercise();
+    s = runnerReducer(s, { type: 'SKIP_CURRENT', nowMs: 4 });
+    expect(s.exercises[0].status).toBe('done');     // NOT skipped — recorded sets preserved
+    expect(s.exercises[1].status).toBe('skipped');  // the up-next is the one skipped
+    // and the finished exercise's sets still make it into the save payload
+    expect(toSaveWorkoutSets(s).some((r) => r.exercise_id === 'bench')).toBe(true);
+  });
+
+  it('SKIP_CURRENT mid-set still skips the active exercise', () => {
+    let s = buildRunnerState(twoEx);
+    s = runnerReducer(s, { type: 'SKIP_CURRENT', nowMs: 1 });
+    expect(s.exercises[0].status).toBe('skipped');
+  });
+});
+
+describe('END_EXERCISE — finish early keeping recorded sets', () => {
+  it('marks the exercise done, lands on the completion card, and keeps only recorded sets', () => {
+    // baseInput: warm-up + 2 working sets (3 total). Do warm-up + working 1, then end.
+    let s = buildRunnerState(baseInput);
+    s = runnerReducer(s, { type: 'EDIT_CURRENT_SET', patch: { reps: 8, weightKg: 40 } });
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 1 }); // warm-up
+    s = runnerReducer(s, { type: 'EDIT_CURRENT_SET', patch: { reps: 8, weightKg: 80, rpe: 8 } });
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 2 }); // working set 1 → now READY for working set 2
+    s = runnerReducer(s, { type: 'END_EXERCISE', nowMs: 3 });
+
+    expect(s.exercises[0].status).toBe('done');
+    expect(s.phase).toBe('exercise-complete');
+    expect(s.restStartedAtMs).toBeNull();
+
+    const rows = toSaveWorkoutSets(s);
+    // warm-up + working set 1 saved; the never-started working set 2 is dropped.
+    expect(rows).toEqual([
+      { exercise_id: 'bench', set_index: 1, reps: 8, weight_kg: 40, rpe: null, is_warmup: true },
+      { exercise_id: 'bench', set_index: 2, reps: 8, weight_kg: 80, rpe: 8, is_warmup: false },
+    ]);
   });
 });
