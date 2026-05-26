@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SessionList } from '@/features/training/components/SessionList';
 import { TodayPlan } from '@/features/training/components/TodayPlan';
+import { MuscleActivityView } from '@/features/training/muscleMap/MuscleActivityView';
 import { useSessions } from '@/features/training/hooks';
 import { useRoutines } from '@/features/training/routines/hooks';
 import { useActiveProgram, useSetActiveProgram } from '@/features/training/programs/hooks';
@@ -135,17 +136,12 @@ export function EntrenamientoPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">{t('page.title')}</h1>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <Link to="/training/muscles">{t('muscleMap.title')}</Link>
-          </Button>
-          <Button asChild>
-            <Link to="/training/new">
-              <Plus className="h-4 w-4 mr-1" />
-              {t('page.newSession')}
-            </Link>
-          </Button>
-        </div>
+        <Button asChild>
+          <Link to="/training/new">
+            <Plus className="h-4 w-4 mr-1" />
+            {t('page.newSession')}
+          </Link>
+        </Button>
       </div>
 
       <TodayPlan
@@ -157,6 +153,11 @@ export function EntrenamientoPage() {
         onRestartCycle={restart}
         onBuildProgram={() => navigate('/routine')}
       />
+
+      <div className="space-y-2">
+        <h2 className="text-base font-medium">{t('muscleMap.title')}</h2>
+        <MuscleActivityView />
+      </div>
 
       <div className="space-y-2">
         <h2 className="text-base font-medium">{t('today.recentSessions')}</h2>

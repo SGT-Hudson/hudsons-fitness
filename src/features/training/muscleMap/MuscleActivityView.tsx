@@ -19,7 +19,9 @@ export function MuscleActivityView() {
   const { t } = useTranslation('entrenamiento');
   const { data: profile } = useProfile();
   const [win, setWin] = useState<MuscleWindow>('30d');
-  const [gender, setGender] = useState<Gender>(profile?.sex === 'female' ? 'female' : 'male');
+  // Default follows the profile's sex once it loads; a manual toggle overrides it.
+  const [genderOverride, setGenderOverride] = useState<Gender | null>(null);
+  const gender: Gender = genderOverride ?? (profile?.sex === 'female' ? 'female' : 'male');
   const vol = useMuscleVolume(win);
 
   const byMuscle = vol.data?.byMuscle ?? emptyByMuscle();
@@ -68,7 +70,7 @@ export function MuscleActivityView() {
               type="button"
               role="radio"
               aria-checked={gender === g}
-              onClick={() => setGender(g)}
+              onClick={() => setGenderOverride(g)}
               className={pill(gender === g)}
             >
               {t(`muscleMap.gender.${g}`)}
