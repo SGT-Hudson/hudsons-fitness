@@ -55,6 +55,37 @@ The state-management boundary is fixed by **D-C1**:
 
 See D-C1 for the full ruling and rationale.
 
+### Runner state model (F-3)
+
+The guided active-workout runner (`/training/run`) is the app's one non-trivial
+client state machine, and it deliberately stays within the D-C1 boundary — it is
+**local UI state via `useReducer`**, not a new store, and touches **no server
+state during the workout**.
+
+- **Pure core.** `src/core/runner.ts` holds the entire model as a clock-free,
+  I/O-free reducer: `buildRunnerState(input)` seeds it from the routine + per-set
+  prefill, `runnerReducer(state, action)` advances it (actions: `SET_WORKING_WEIGHT`,
+  `EDIT_CURRENT_SET`, `START_REST` / `RECORD_SET` / `ADJUST_REST` / `CLEAR_REST`,
+  `ADD_SET`, `END_EXERCISE`, `JUMP_TO`, `SKIP_CURRENT`, `CONTINUE`, `FINISH_EARLY`),
+  and selectors derive views (`nextPendingIndex`, `focusIndex`,
+  `skippedUndoneIndices`, `toSaveWorkoutSets`) plus `computeTimerView`. Actions
+  carry `nowMs` so the reducer never reads a clock. Fully Tier-1 tested.
+- **Exercise lifecycle.** `pending → active → done`, with `skipped` (dropped,
+  surfaced for recovery at finish) and `partial` (left mid-way with logged work —
+  kept and resumable). Leaving an `active` exercise demotes it to `partial`/`pending`
+  so it's never stranded (D-F9e).
+- **Thin hooks bridge to the browser** (`src/features/training/runner/`):
+  `useRunnerDraft` mirrors state to `localStorage` (`hf:runner:draft:v1`) on every
+  change and restores it via a resume prompt; `useRestTimer` derives remaining time
+  from a stored target timestamp (survives backgrounding — wall-clock math, not a
+  decrementing counter); `useWakeLock` holds a Screen Wake Lock while active;
+  `fireRestAlarm` is the capability-guarded sound+vibration. The orchestrator
+  `Runner.tsx` owns the `useReducer` + a little view-local state (begin gate,
+  overview, save) and renders one screen per phase.
+- **Persistence boundary.** No DB writes mid-workout and no cross-device resume
+  (D-F9a); the only server interaction is the single atomic `save_workout` at
+  finish (the F-2 RPC, unchanged). On success the draft is cleared.
+
 ## Client↔edge boundary
 
 The client (browser SPA) and the edge (Supabase Edge Functions, Deno) are two runtimes that sometimes need the same logic. The rule (from **D-C5**, **D-D6**, **D-F3**) is:

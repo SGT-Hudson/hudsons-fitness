@@ -355,7 +355,7 @@ Child rows of `workout_sessions` (one row per set logged). No `user_id` column �
 | `set_index` | `integer` not null, check `>= 1` — per-session-per-exercise ordinal |
 | `reps` | `integer` not null, check `>= 0` |
 | `weight_kg` | `numeric(8,2)` not null, check `>= 0` |
-| `rpe` | `numeric(3,1)` null, check between 6.0 and 10.0 in 0.5 steps |
+| `rpe` | `numeric(3,1)` null, check between 6.0 and 10.0 in 0.5 steps (the DB still permits halves; **the app enforces whole numbers only** since F-3 — integers are a subset, so no migration — see D-F9d) |
 | `is_warmup` | `boolean` not null default false |
 | `created_at` | `timestamptz` not null default `now()` |
 
@@ -386,7 +386,7 @@ Child rows of `routines` — one row per exercise slot in the routine. Ordered b
 | `target_reps_min` | `int` not null, check `> 0` |
 | `target_reps_max` | `int` not null, check `>= target_reps_min` |
 | `rest_seconds` | `int` null, check `>= 0` when set |
-| `target_rpe` | `numeric` null, check between 6.0 and 10.0 in 0.5 steps when set |
+| `target_rpe` | `numeric` null, check between 6.0 and 10.0 in 0.5 steps when set (DB permits halves; **routine builder + zod enforce whole numbers** since F-3 — see D-F9d) |
 
 ### `programs` (F-2 — STAGED)
 
