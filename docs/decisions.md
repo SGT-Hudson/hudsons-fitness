@@ -54,6 +54,7 @@ The `R-xx` items are defined in `roadmap.md`.
 - D-F6 — Theme localStorage/FOUC — confirm + document the D-E1 contrast
 - D-F7 — Ship flow: develop integration branch + reviewed promotion
 - D-F8 — F-2 Training Routines & Cyclic Planner: two-layer model, calendar-anchored scheduling, no materialization, one-active-program index, set_active_program as an RPC
+- D-F9 — F-3 guided runner: client-only localStorage persistence (no DB resume / no cross-device), pure reducer state core, PWA wake-lock + in-app alarm, RPE whole-numbers-only, partial-on-leave
 
 ## D-A1 — Shared crowdsourced `ingredients` library — keep
 
@@ -362,3 +363,19 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **(e) `set_active_program` is kept as an RPC despite mutating a single table.** The D-C5 invariant requires an RPC only for >1-table atomic mutations; technically a client-side `UPDATE programs SET is_active = false WHERE user_id = … AND is_active; UPDATE programs SET is_active = true … ` would work. It is an RPC anyway because the two `UPDATE`s must be atomic with respect to the partial unique index: between the two client-side statements the index would transiently see two active rows, causing a constraint violation. A single RPC deactivates all others then activates the target in one transaction, making the flip always safe.
 
 **Status:** decided · roadmap: R-22
+
+## D-F9 — F-3 guided active-workout runner: client-only persistence, pure reducer, PWA wake-lock, integer RPE, partial-on-leave
+
+**Ruling:** Five binding decisions govern the F-3 guided runner. Full rationale in the spec (`docs/superpowers/specs/2026-05-25-training-guided-runner-design.md`, decisions 0.1–0.25).
+
+**(a) Client-only persistence — no DB writes mid-workout, no cross-device resume.** The live workout is a reducer state mirrored to `localStorage` (`hf:runner:draft:v1`) on every change; on reopen a resume prompt restores it. Nothing is written to the DB until the single atomic `save_workout` at finish. The alternative — DB-backed in-progress sessions (a `status` column + per-set inserts + resume/cleanup) — was rejected: it buys cross-device mid-workout resume, which does not match how anyone trains, at the cost of a session-lifecycle state machine. localStorage covers the real failure mode (phone locks / OS evicts the tab / refresh). Cross-device resume is explicitly **not wanted**, now or later.
+
+**(b) Pure reducer state core, no schema/RPC change.** All runner logic is a clock-free, I/O-free reducer in `src/core/runner.ts` (`buildRunnerState` / `runnerReducer` / selectors / `computeTimerView`); React hooks bridge to the browser. The runner reuses the existing F-2 `save_workout` RPC unchanged (it already accepts `rpe`, `is_warmup`, `p_program_id`, `p_routine_id`), so F-3 added **no migration**. Keeps the boundary the rest of the app holds (pure core ← thin hooks/UI).
+
+**(c) PWA Screen Wake Lock + in-app alarm; native background notifications deferred.** While the runner is active a Screen Wake Lock keeps the screen on so the JS timer keeps running and the rest-over sound/vibration fire. A PWA cannot reliably fire a scheduled alert while the screen is manually locked (no dependable web primitive — Push needs a server, Notification Triggers is abandoned); that is accepted. True background timer notifications would require a native (Capacitor) wrapper — logged as deferred, not built.
+
+**(d) RPE is whole-numbers-only at the app layer.** The runner picker, the target display, and the routine-builder field all use integers 6–10, and `routineExerciseSchema.target_rpe` is `z.number().int()`. The DB CHECK still permits 0.5 steps (integers are a subset), so no migration was needed; the half-step granularity was dropped as needless precision for a perceived-exertion scale.
+
+**(e) Leaving an in-progress exercise demotes it (partial / pending), never stranded.** `activate()` demotes the exercise being left: `partial` if a working set was logged (kept in the save payload, resumable at its first unrecorded set) or back to `pending` if nothing was logged — both remain jump-back-able in the overview. This fixed a bug where the left exercise stayed `active` (limbo: shown as "jump" but un-clickable). "Skip current" likewise targets the exercise about to be performed (`focusIndex`), never a finished one; "End exercise" finishes early keeping recorded sets (so users never fake a 0/0 set to stop).
+
+**Status:** decided · roadmap: R-23

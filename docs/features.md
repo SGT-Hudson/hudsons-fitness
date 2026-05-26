@@ -316,6 +316,44 @@ Live in prod since 2026-05-18: the `tdee_state` table +
 `tdee_estimates.confidence`/`is_warmup` migration is applied and the
 rewritten `recalculate-tdee` edge function is deployed.
 
+## Entrenamiento (training)
+
+The training area (`/training` "Hoy", `/routine` builders, `/exercises`) lets the
+user define routines, schedule them as a cycle, and run a workout guided.
+
+- **Exercise pool & sessions (R-19 MVP).** A shared, bilingual `exercises` library
+  (per-exercise `default_increment_kg`, `primary_muscle`, equipment) backs ad-hoc
+  session logging (`workout_sessions` / `workout_sets`, saved via the `save_workout`
+  RPC). A rule-based **coach** (`MVP_COACH_RULES` in `src/core/training.ts`:
+  double-/rep-progression, flat-e1rm-deload, rpe-climbing-fatigue, muscle-recency)
+  turns history into suggestions; e1RM / volume / PR derivations are pure.
+
+- **Routines & cyclic planner (F-2 / R-22).** Two layers: **routines** (reusable
+  named exercise templates — target sets, rep-range, rest, optional RPE, warm-up
+  sets as % of working weight) and **programs** (a day-ordered cycle referencing
+  routines, rest days allowed). `/training` shows **today's slot**, computed on the
+  fly from `anchor_date + day_index mod cycle_length` (no materialization); "start
+  from today" re-anchors. One active program per user. See R-22 / D-F8.
+
+- **Guided active-workout runner (F-3 / R-23).** Tapping today's slot launches the
+  runner (`/training/run`): it walks the routine one exercise at a time — warm-ups
+  then working sets — with a **rest timer**, **per-set prefill from last time**, and
+  inline logging, then one atomic save at the end. Per exercise you set today's
+  **working weight** (warm-up loads derive from it); per set you log reps/weight
+  (coloured green/white/amber vs. the expected value) and optional **RPE** (whole
+  numbers, with a reps-in-reserve explainer). Rest carries between sets; the READY
+  button reads "Empezar serie" while a rest runs (stops it) then "Iniciar descanso".
+  Escape hatches: **jump** to any exercise, **skip** (drops it, recoverable at
+  finish), **end exercise early** (keeps the sets you did — no fake 0/0), **add a
+  set**. Leaving an exercise mid-way keeps it **partial** and resumable. The whole
+  workout is held in a pure reducer mirrored to `localStorage` (resume prompt on
+  reopen; Screen Wake Lock keeps the alarm alive), with **no DB writes until
+  finish** and no cross-device resume. See R-23 / D-F9 and
+  `architecture.md#runner-state-model`. *(The runner needs no schema change — it
+  reuses `save_workout`.)*
+
+<!-- F-4 (muscle-activity heatmap) is documented separately — add its subsection here. -->
+
 ## Product ideas (uncommitted)
 
 Future-feature suggestions distilled from the original spreadsheet's §5 and
