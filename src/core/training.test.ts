@@ -6,6 +6,7 @@ import {
   e1rmTrendForExercise,
   detectPRsForExercise,
   lastWorkingSetForExercise,
+  prefillSetsForExercise,
   evaluateCoach,
   MVP_COACH_RULES,
   DOUBLE_PROGRESSION_DEFAULTS,
@@ -567,5 +568,82 @@ describe('evaluateCoach engine', () => {
   it('accepts a custom rule list (extensibility test)', () => {
     const out = evaluateCoach(ctx({ history: [] }), []);
     expect(out).toEqual([]);
+  });
+});
+
+function makeSessionSet(p: Partial<CoreSessionSet>): CoreSessionSet {
+  return {
+    reps: 8, weightKg: 80, rpe: null, isWarmup: false,
+    setIndex: 1, sessionId: 's1', exerciseId: 'e1', performedOn: '2026-05-01',
+    ...p,
+  };
+}
+
+describe('prefillSetsForExercise', () => {
+  it('prefills each working set from the matching set of the most recent session', () => {
+    const history: CoreSessionSet[] = [
+      makeSessionSet({ sessionId: 's1', performedOn: '2026-05-10', setIndex: 1, reps: 8, weightKg: 80 }),
+      makeSessionSet({ sessionId: 's1', performedOn: '2026-05-10', setIndex: 2, reps: 7, weightKg: 80 }),
+      makeSessionSet({ sessionId: 's0', performedOn: '2026-05-03', setIndex: 1, reps: 5, weightKg: 70 }),
+    ];
+    expect(prefillSetsForExercise(history, 2, 5)).toEqual([
+      { reps: 8, weightKg: 80 },
+      { reps: 7, weightKg: 80 },
+    ]);
+  });
+
+  it('ignores warm-up rows when choosing the matching set', () => {
+    const history: CoreSessionSet[] = [
+      makeSessionSet({ performedOn: '2026-05-10', setIndex: 1, isWarmup: true, reps: 10, weightKg: 40 }),
+      makeSessionSet({ performedOn: '2026-05-10', setIndex: 2, reps: 8, weightKg: 82.5 }),
+    ];
+    expect(prefillSetsForExercise(history, 1, 5)).toEqual([{ reps: 8, weightKg: 82.5 }]);
+  });
+
+  it('falls back to the last working set when last session had fewer sets', () => {
+    const history: CoreSessionSet[] = [
+      makeSessionSet({ performedOn: '2026-05-10', setIndex: 1, reps: 8, weightKg: 80 }),
+    ];
+    expect(prefillSetsForExercise(history, 3, 5)).toEqual([
+      { reps: 8, weightKg: 80 },
+      { reps: 8, weightKg: 80 },
+      { reps: 8, weightKg: 80 },
+    ]);
+  });
+
+  it('falls back to target-rep floor with blank weight when there is no history', () => {
+    expect(prefillSetsForExercise([], 2, 6)).toEqual([
+      { reps: 6, weightKg: null },
+      { reps: 6, weightKg: null },
+    ]);
+  });
+
+  it('coerces string weights to numbers', () => {
+    const history: CoreSessionSet[] = [
+      makeSessionSet({ performedOn: '2026-05-10', setIndex: 1, reps: 8, weightKg: '77.5' }),
+    ];
+    expect(prefillSetsForExercise(history, 1, 5)).toEqual([{ reps: 8, weightKg: 77.5 }]);
+  });
+
+  it('matched set with weightKg 0 falls through to the last loaded working set (not a zero weight)', () => {
+    // Most recent session has weightKg: 0 — not a usable loaded set.
+    // An older session has a real weight. The function must fall through to that
+    // older session's data via lastWorkingSetForExercise, not emit weight 0.
+    const history: CoreSessionSet[] = [
+      makeSessionSet({ sessionId: 's1', performedOn: '2026-05-03', setIndex: 1, reps: 6, weightKg: 60 }),
+      makeSessionSet({ sessionId: 's2', performedOn: '2026-05-10', setIndex: 1, reps: 8, weightKg: 0 }),
+    ];
+    expect(prefillSetsForExercise(history, 1, 5)).toEqual([{ reps: 6, weightKg: 60 }]);
+  });
+
+  it('all-warmup history is treated the same as no usable history → target-rep floor, null weight', () => {
+    const history: CoreSessionSet[] = [
+      makeSessionSet({ setIndex: 1, isWarmup: true, reps: 12, weightKg: 40 }),
+      makeSessionSet({ setIndex: 2, isWarmup: true, reps: 10, weightKg: 50 }),
+    ];
+    expect(prefillSetsForExercise(history, 2, 6)).toEqual([
+      { reps: 6, weightKg: null },
+      { reps: 6, weightKg: null },
+    ]);
   });
 });
