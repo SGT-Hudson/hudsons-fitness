@@ -54,10 +54,18 @@ export const PRIMARY_MUSCLE_VALUES: PrimaryMuscle[] = [
   'full_body',
 ];
 
+/** Secondary movers — the coarse-11 (full_body is not a valid secondary). */
+export type SecondaryMuscle = Exclude<PrimaryMuscle, 'full_body'>;
+
+export const SECONDARY_MUSCLE_VALUES: SecondaryMuscle[] = PRIMARY_MUSCLE_VALUES.filter(
+  (m): m is SecondaryMuscle => m !== 'full_body',
+);
+
 export interface ExerciseCreateInput {
   name_es: string;
   name_en: string | null;
   primary_muscle: PrimaryMuscle | null;
+  secondary_muscles: SecondaryMuscle[];
   equipment: Equipment | null;
   default_increment_kg: number | null;
 }
@@ -142,6 +150,7 @@ export async function createExercise(
     name_es: input.name_es,
     name_en: input.name_en,
     primary_muscle: input.primary_muscle,
+    secondary_muscles: input.secondary_muscles,
     equipment: input.equipment,
     default_increment_kg: input.default_increment_kg,
   };

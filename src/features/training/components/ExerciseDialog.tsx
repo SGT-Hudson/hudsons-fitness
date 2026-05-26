@@ -24,12 +24,15 @@ import {
 import {
   EQUIPMENT_VALUES,
   PRIMARY_MUSCLE_VALUES,
+  SECONDARY_MUSCLE_VALUES,
   suggestIncrementForEquipment,
   type Equipment,
   type Exercise,
   type PrimaryMuscle,
+  type SecondaryMuscle,
 } from '../exercises/api';
 import { useCreateExercise } from '../exercises/hooks';
+import { cn } from '@/lib/utils';
 
 const SENTINEL_NONE = '__none__';
 
@@ -37,6 +40,10 @@ const formSchema = z.object({
   name_es: z.string().trim().min(1),
   name_en: z.string().trim().optional().transform((v) => (v && v.length > 0 ? v : null)),
   primary_muscle: z.string().optional().transform((v) => (v && v !== SENTINEL_NONE ? v : null)),
+  secondary_muscles: z
+    .array(z.string())
+    .optional()
+    .transform((v) => v ?? []),
   equipment: z.string().optional().transform((v) => (v && v !== SENTINEL_NONE ? v : null)),
   default_increment_kg: z
     .string()
@@ -85,6 +92,7 @@ export function ExerciseDialog({ open, onOpenChange, defaultName, onCreated }: P
       name_es: '',
       name_en: '',
       primary_muscle: SENTINEL_NONE,
+      secondary_muscles: [],
       equipment: SENTINEL_NONE,
       default_increment_kg: '',
     },
@@ -101,6 +109,7 @@ export function ExerciseDialog({ open, onOpenChange, defaultName, onCreated }: P
       name_es: defaultName?.trim() ?? '',
       name_en: '',
       primary_muscle: SENTINEL_NONE,
+      secondary_muscles: [],
       equipment: SENTINEL_NONE,
       default_increment_kg: '',
     });
@@ -127,6 +136,7 @@ export function ExerciseDialog({ open, onOpenChange, defaultName, onCreated }: P
         name_es: values.name_es,
         name_en: values.name_en,
         primary_muscle: values.primary_muscle as PrimaryMuscle | null,
+        secondary_muscles: values.secondary_muscles as SecondaryMuscle[],
         equipment: values.equipment as Equipment | null,
         default_increment_kg: values.default_increment_kg,
       });
@@ -216,6 +226,41 @@ export function ExerciseDialog({ open, onOpenChange, defaultName, onCreated }: P
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t('exerciseDialog.fields.secondaryMuscles')}</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {SECONDARY_MUSCLE_VALUES.map((m) => {
+                const current = (watch('secondary_muscles') ?? []) as string[];
+                const selected = current.includes(m);
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() =>
+                      setValue(
+                        'secondary_muscles',
+                        selected ? current.filter((x) => x !== m) : [...current, m],
+                        { shouldDirty: true },
+                      )
+                    }
+                    className={cn(
+                      'rounded-full border px-2.5 py-1 text-xs transition-colors',
+                      selected
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {t(`exerciseDialog.primaryMuscle.${m}`)}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('exerciseDialog.fields.secondaryMusclesHelp')}
+            </p>
           </div>
 
           <div className="space-y-1.5">

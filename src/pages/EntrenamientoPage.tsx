@@ -135,12 +135,17 @@ export function EntrenamientoPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">{t('page.title')}</h1>
-        <Button asChild>
-          <Link to="/training/new">
-            <Plus className="h-4 w-4 mr-1" />
-            {t('page.newSession')}
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link to="/training/muscles">{t('muscleMap.title')}</Link>
+          </Button>
+          <Button asChild>
+            <Link to="/training/new">
+              <Plus className="h-4 w-4 mr-1" />
+              {t('page.newSession')}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <TodayPlan

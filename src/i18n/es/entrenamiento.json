@@ -3,6 +3,14 @@
     "title": "Entrenamiento",
     "newSession": "Registrar entreno"
   },
+  "muscleMap": {
+    "title": "Actividad muscular",
+    "window": { "label": "Periodo", "7d": "7d", "30d": "30d", "6mo": "6 m", "all": "Todo" },
+    "gender": { "label": "Modelo", "male": "Hombre", "female": "Mujer" },
+    "setsUnit": "series",
+    "fullBodyFootnote": "+ {{count}} series de cuerpo completo no mostradas en el mapa",
+    "empty": "No hay series registradas en este periodo."
+  },
   "list": {
     "emptyTitle": "Aún no has registrado entrenos.",
     "cta": "Registrar entreno",
@@ -70,6 +78,8 @@
       "primaryMuscle": "Músculo principal",
       "primaryMusclePlaceholder": "Opcional",
       "primaryMuscleNone": "— Sin elegir",
+      "secondaryMuscles": "Músculos secundarios",
+      "secondaryMusclesHelp": "Otros músculos que trabaja este ejercicio. Cuentan media serie cada uno en el mapa muscular.",
       "equipment": "Equipamiento",
       "equipmentPlaceholder": "Opcional",
       "equipmentNone": "— Sin elegir",
