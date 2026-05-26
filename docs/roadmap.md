@@ -758,14 +758,47 @@ reference shard carries it (never edit the decision entry).
     logger pre-filled with the routine's exercises; `save_workout` gains two
     nullable provenance stamp args (`p_program_id`, `p_routine_id`); null = ad-hoc.
   - **B-2 fix** — fix included as part of F-2 scope.
-- **out-of-scope (sequenced for later):** F-3 guided runner, F-4 muscle
-  browse/heatmap, U-8 visual pass, per-set/pyramid prescriptions, prescribed
-  weights.
+- **out-of-scope (sequenced after F-2):** F-3 guided runner (**shipped — see
+  R-23**), F-4 muscle browse/heatmap (**shipped — #136**), U-8 visual pass (still
+  pending), per-set/pyramid prescriptions, prescribed weights.
 - **RLS hardening follow-up:** the pre-existing `workout_sets` and
   `recipe_ingredients` UPDATE policies have `using` but no `with check` (a
   user could re-point a child row into another user's parent). F-2's new child
   tables (`routine_exercises`, `program_days`) close this with both clauses;
   backfill the two older tables in a follow-up migration.
+
+## R-23 — Guided active-workout runner (F-3)
+- **decision:** D-F9
+- **blocked-by:** R-22 (F-2 routines/planner — shipped)
+- **status:** done (2026-05-26) — merged (#132 runner, #133/#134/#135 review
+  fixes); released to `main` in release `2026-05-26` (#137). **No schema/RPC
+  change** — reuses the F-2 `save_workout` (already accepts `rpe`, `is_warmup`,
+  `p_program_id`, `p_routine_id`).
+- **spec:** `docs/superpowers/specs/2026-05-25-training-guided-runner-design.md`
+- **plan:** `docs/superpowers/plans/2026-05-25-training-guided-runner.md`
+- **scope:**
+  - **Runner** launched from today's slot (`/training/run`, `RunnerPage`): walks
+    warm-ups → working sets with a rest timer, per-set prefill-from-last, inline
+    logging, single atomic save at finish.
+  - **Pure state core** `src/core/runner.ts` (`buildRunnerState`, `runnerReducer`,
+    selectors, `computeTimerView`) + per-set `prefillSetsForExercise` in
+    `src/core/training.ts`. UI in `src/features/training/runner/` (orchestrator
+    `Runner.tsx` + screens) with hooks `useRestTimer` / `useRunnerDraft` /
+    `useWakeLock` and `fireRestAlarm`. See `architecture.md#runner-state-model`.
+  - **Persistence:** ephemeral reducer mirrored to localStorage
+    (`hf:runner:draft:v1`) + resume prompt; no mid-workout DB writes; cross-device
+    resume deliberately excluded (D-F9).
+  - **Escape hatches:** jump / skip (→ up-next) / end-exercise-early (keeps
+    recorded sets) / add-set; leaving an in-progress exercise demotes it to
+    `partial` (resumable) or `pending`, never stranded.
+  - **Review-fix follow-ups (shipped):** bottom-pinned actions; borderless
+    working-weight stepper; **RPE whole-numbers-only** (UI + zod `.int()`; DB
+    CHECK still permits 0.5 — integers are a subset, no migration); rest-aware
+    READY button; performance colours on logged reps/weight; header
+    `routine · Ej x/N` + persistent "Cambiar" switch button.
+- **deferred (not built):** native (Capacitor) background-timer notifications;
+  DB-backed in-progress sessions / cross-device resume; richer in-runner coaching;
+  per-set/pyramid/drop-set prescriptions; prescribed weights.
 
 ### Sketch — mechanics
 - **OFF write API:** `POST https://world.openfoodfacts.org/cgi/product_jqm2.pl`

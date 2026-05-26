@@ -70,6 +70,38 @@ decision rationale in `decisions.md`.
 
 - When a user creates a barcoded product OFF lacked, or completes an incomplete one, the app pushes the objective data back to Open Food Facts under a single app account (new `off-contribute` edge fn; server-side fill-missing-only for completions), gated by a default-on `profiles.contribute_to_off` toggle in Settings. Eligibility gate (name + kcal + Atwater ±20% + gram-only) lives in the pure `core/offContribute.ts` (Tier-1). Fire-and-forget — never blocks the user. The scanned barcode now persists as `external_id` on manual create (with dedupe), and a 404 auto-switches to the manual tab with a "not in OFF yet — add it" banner. STAGED migration (`profiles.contribute_to_off`); OFF account + edge secrets are the pending Wave-3 step.
 
+### 2026-05-26 — R-23 F-3 guided active-workout runner + review fixes
+
+- **Guided runner (#132).** A "start workout" runner launched from today's slot
+  (`/training/run`, `RunnerPage`) that walks the user through the active routine —
+  warm-ups then working sets — with a rest timer, per-set prefill-from-last,
+  inline logging, and a single atomic save at the end. The whole state model is a
+  **pure reducer** in `src/core/runner.ts` (`buildRunnerState` / `runnerReducer` /
+  selectors `nextPendingIndex` / `focusIndex` / `skippedUndoneIndices` /
+  `toSaveWorkoutSets`, plus `computeTimerView`); the UI lives in
+  `src/features/training/runner/` (orchestrator `Runner.tsx` + screen components)
+  with three browser hooks — `useRestTimer` (timestamp-based, survives
+  backgrounding), `useRunnerDraft` (localStorage mirror + resume), `useWakeLock` —
+  and a capability-guarded `fireRestAlarm`. Per-set prefill via the new
+  `prefillSetsForExercise` in `src/core/training.ts`. **No schema/RPC change** —
+  reuses `save_workout` (already takes `rpe`/`is_warmup`/`p_program_id`/`p_routine_id`).
+- **Review fixes (#133, #134).** Bottom-pinned actions on every runner screen;
+  borderless working-weight stepper; **RPE is whole-numbers-only** (picker/target/
+  routine-builder + zod `.int()`); rest-aware READY button ("Empezar serie" stops a
+  carried-over rest, then "Iniciar descanso"); "skip current" targets the up-next,
+  never the just-finished exercise; **End exercise** early-finish keeping recorded
+  sets (no fake 0/0); performance colours on logged reps/weight (green > / white = /
+  amber < the expected value); header shows `routine · Ej x/N` with a persistent
+  "Cambiar" exercise-switch button (hidden on the review screens).
+- **Switch-exercise fix (#135).** Leaving an exercise mid-workout no longer strands
+  it (it was stuck `active` → shown as "jump" but un-clickable). The left exercise is
+  demoted to **`partial`** (work logged → kept + resumable) or **`pending`** (nothing
+  logged), both jumpable again; a confirmation warns before leaving a partial one.
+- Persistence is client-only (localStorage `hf:runner:draft:v1`) with a resume
+  prompt; **no DB writes mid-workout** and **no cross-device resume** (deliberate).
+  Spec `docs/superpowers/specs/2026-05-25-training-guided-runner-design.md`, plan
+  `docs/superpowers/plans/2026-05-25-training-guided-runner.md`.
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |
@@ -97,4 +129,8 @@ decision rationale in `decisions.md`.
 | 21  | Sprint 16 — GDPR delete-account      | Edge function `delete-account` verifies caller JWT then `auth.admin.deleteUser`; CASCADE cleans user data. Two-step email-confirm dialog in Settings |
 | 22  | Sprint 17 — Review fixes             | TDEE wired to frontend (`features/tdee`) so `tdee_delta` phases show targets; lean-mass protein behavior documented in PhaseDialog + architecture; 7 sites switched from UTC slice to `isoDate()`; ingredient delete maps Postgres FK 23503 to friendly "in use" toast |
 | PR #17 (2026-05-17) | Reconcile main with Sprints 11–17 + add CI | Reconciled `main` with Sprints 11–17, added CI workflow + branch protection + auto-merge; merged 2026-05-17 |
+| 132 | R-23 — F-3 guided runner | `core/runner.ts` reducer + `features/training/runner/` (rest timer / draft / wake-lock hooks) + `RunnerPage` at `/training/run`; per-set `prefillSetsForExercise`; no schema change |
+| 133 | R-23 — runner review fixes | Bottom-pinned actions, borderless working-weight stepper, integer RPE, rest-aware READY button, skip→up-next, end-exercise-early |
+| 134 | R-23 — runner review batch 2 | Performance colours on logged reps/weight, centered RPE, header `Ej x/N` + "Cambiar" switch button, completion-card cleanup |
+| 135 | R-23 — switch-exercise fix | Leaving an exercise demotes it to partial/pending (resumable, not stranded) + leave-partial confirmation |
 
