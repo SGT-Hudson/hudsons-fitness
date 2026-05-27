@@ -315,6 +315,7 @@ Shared pool of exercises following the post-R-01 ingredient-pool shape: `created
 | `name_es` | `text` not null — primary Spanish name |
 | `name_en` | `text` null — optional English name |
 | `primary_muscle` | `text` null, check in (`'chest'`, `'back'`, `'shoulders'`, `'quads'`, `'hamstrings'`, `'glutes'`, `'calves'`, `'biceps'`, `'triceps'`, `'core'`, `'forearms'`, `'full_body'`) |
+| `secondary_muscles` | `text[]` not null default `'{}'`, check `secondary_muscles <@ array[…]` — F-4 (R-24), subset of the **11 specific** `primary_muscle` codes (`full_body` is **not** a valid secondary) |
 | `equipment` | `text` null, check in (`'barbell'`, `'dumbbell'`, `'kettlebell'`, `'machine'`, `'cable'`, `'bodyweight'`, `'band'`, `'other'`) |
 | `default_increment_kg` | `numeric` null, check `> 0` — used by the double-progression coach rule |
 | `is_verified` | `boolean` not null default false |
@@ -324,6 +325,8 @@ Shared pool of exercises following the post-R-01 ingredient-pool shape: `created
 | `updated_at` | `timestamptz` not null default `now()` |
 
 Trigram indexes `idx_exercises_name_es_trgm` (gin on `name_es`) and `idx_exercises_name_en_trgm` (gin on `name_en` where not null). Ships with 34 system-seed exercises (verified applied 2026-05-21).
+
+`secondary_muscles` was added by F-4 (R-24, migration `20260530120000_f4_secondary_muscles`, applied 2026-05-26) to power the muscle-activity heatmap: the primary mover earns a full set and each secondary mover counts 0.5 (`src/core/muscleVolume.ts`). The `primary_muscle` + `secondary_muscles` codes form the **coarse-12** muscle taxonomy (11 specific muscles + `full_body`); the same codes are reused by the heatmap and its body-art skins. Because the app has no production users yet, the migration re-tagged the system seed in place (27 of 34 rows given secondaries, 7 isolation lifts left empty) with no backfill.
 
 ### `workout_sessions` (R-19, applied 2026-05-21; extended by F-2 — staged)
 
