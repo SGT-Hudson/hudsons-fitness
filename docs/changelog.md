@@ -102,6 +102,36 @@ decision rationale in `decisions.md`.
   Spec `docs/superpowers/specs/2026-05-25-training-guided-runner-design.md`, plan
   `docs/superpowers/plans/2026-05-25-training-guided-runner.md`.
 
+### 2026-05-26 — R-24 F-4 muscle activity heatmap
+
+- **Heatmap (#136).** A muscle-activity heatmap on `/training`: a front+back body
+  shaded grey→amber→red by how much each muscle has been trained, with a
+  `Muscle · N sets` ranked list and a 7d/30d/6mo/all window (default 30d). Volume is
+  a **pure core** — `computeMuscleVolume` in `src/core/muscleVolume.ts` (Tier-1
+  tested): per working set the primary mover earns 1.0 and each secondary mover 0.5
+  (`SECONDARY_SET_WEIGHT`), warm-ups excluded, `full_body` sets footnoted not
+  shaded. The fetch (`features/training/muscleMap/api.ts`) uses two PostgREST
+  `!inner` embeds + an embedded `session.performed_on=gte` window filter; UI in
+  `features/training/muscleMap/` (`MuscleActivityView` / `MuscleBody` / `muscleColor`
+  / `hooks`).
+- **Schema (#136).** One additive migration `20260530120000_f4_secondary_muscles` —
+  `exercises.secondary_muscles text[] not null default '{}'` + a subset CHECK (the 11
+  specific codes; `full_body` excluded). No production users yet, so it re-tags the
+  34 system-seed exercises in place (27 given secondaries, 7 isolation lifts left
+  empty) with no backfill. A secondary-muscle multi-select was added to
+  `ExerciseDialog`.
+- **Pluggable body-art skin (#136).** A `BodyArtSkin` interface
+  (`features/training/muscleMap/skins/`) decouples the artwork from the volume
+  logic; v1 = vendored **MIT** art (react-native-body-highlighter lineage, LICENSE
+  in-repo) whose ~23 region slugs aggregate up to the coarse-12 taxonomy.
+  Proprietary art (MuscleWiki) was rejected (public repo).
+- **Inline placement + gender follows profile (#139).** The map is embedded inline on
+  `/training` (between today's plan and recent sessions — the standalone
+  `MuscleActivityPage`/route was removed); male/female art auto-selects from
+  `profiles.sex` reactively (manual toggle still overrides).
+- Spec `docs/superpowers/specs/2026-05-26-muscle-heatmap-design.md`, plan
+  `docs/superpowers/plans/2026-05-26-muscle-heatmap.md`. See R-24 / D-F10.
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |
@@ -133,4 +163,6 @@ decision rationale in `decisions.md`.
 | 133 | R-23 — runner review fixes | Bottom-pinned actions, borderless working-weight stepper, integer RPE, rest-aware READY button, skip→up-next, end-exercise-early |
 | 134 | R-23 — runner review batch 2 | Performance colours on logged reps/weight, centered RPE, header `Ej x/N` + "Cambiar" switch button, completion-card cleanup |
 | 135 | R-23 — switch-exercise fix | Leaving an exercise demotes it to partial/pending (resumable, not stranded) + leave-partial confirmation |
+| 136 | R-24 — F-4 muscle heatmap | `core/muscleVolume.ts` (primary 1 / secondary 0.5, warm-ups excluded, full-body footnoted) + `features/training/muscleMap/` body heatmap + pluggable body-art skin (vendored MIT art); `exercises.secondary_muscles` migration + ExerciseDialog picker |
+| 139 | R-24 — heatmap inline on `/training` | Embed muscle map inline on `/training` (drop the standalone page/route); gender auto-follows `profiles.sex` reactively |
 

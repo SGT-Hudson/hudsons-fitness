@@ -31,6 +31,8 @@ reference shard carries it (never edit the decision entry).
 - R-20 — Barcode scanning for ingredient import (camera + manual EAN → OFF lookup)
 - R-21 — OFF contribute-back: push products to Open Food Facts (REMOVED 2026-05-21)
 - R-22 — Training Routines & Cyclic Planner (F-2)
+- R-23 — Guided active-workout runner (F-3)
+- R-24 — Muscle activity heatmap (F-4)
 
 ## R-00 — Baseline current schema into migrations
 - **decision:** D-A8, D-A6, D-E3, D-D6, D-F1
@@ -759,8 +761,8 @@ reference shard carries it (never edit the decision entry).
     nullable provenance stamp args (`p_program_id`, `p_routine_id`); null = ad-hoc.
   - **B-2 fix** — fix included as part of F-2 scope.
 - **out-of-scope (sequenced after F-2):** F-3 guided runner (**shipped — see
-  R-23**), F-4 muscle browse/heatmap (**shipped — #136**), U-8 visual pass (still
-  pending), per-set/pyramid prescriptions, prescribed weights.
+  R-23**), F-4 muscle browse/heatmap (**shipped — see R-24**), U-8 visual pass
+  (still pending), per-set/pyramid prescriptions, prescribed weights.
 - **RLS hardening follow-up:** the pre-existing `workout_sets` and
   `recipe_ingredients` UPDATE policies have `using` but no `with check` (a
   user could re-point a child row into another user's parent). F-2's new child
@@ -799,6 +801,44 @@ reference shard carries it (never edit the decision entry).
 - **deferred (not built):** native (Capacitor) background-timer notifications;
   DB-backed in-progress sessions / cross-device resume; richer in-runner coaching;
   per-set/pyramid/drop-set prescriptions; prescribed weights.
+
+## R-24 — Muscle activity heatmap (F-4)
+- **decision:** D-F10
+- **blocked-by:** R-19 (the `exercises` pool + `workout_sets` it aggregates —
+  shipped) and R-22/R-23 (the `/training` page it embeds into — shipped)
+- **status:** done (2026-05-26) — merged (#136 heatmap, #139 inline-on-`/training`
+  + gender-follows-profile follow-up); released to `main` in release `2026-05-26`.
+  The one schema change — `exercises.secondary_muscles` + its CHECK
+  (`20260530120000_f4_secondary_muscles`) — was applied to prod 2026-05-26 (34
+  system exercises present, 27 re-tagged, 7 isolation lifts left empty). Because
+  the app has no production users yet, the migration re-tags the system seed
+  in-place with **no backfill**.
+- **spec:** `docs/superpowers/specs/2026-05-26-muscle-heatmap-design.md`
+- **plan:** `docs/superpowers/plans/2026-05-26-muscle-heatmap.md`
+- **scope:**
+  - **Volume aggregation** — a pure `src/core/muscleVolume.ts`
+    (`computeMuscleVolume`) over the user's working sets: the primary mover earns
+    1 set, each secondary mover earns `SECONDARY_SET_WEIGHT` (0.5), warm-ups are
+    excluded, and `full_body` sets are counted into a separate footnote (they do
+    not shade the map). Windowed (7d / 30d / 6mo / all, default 30d), filtered
+    server-side by `session.performed_on`.
+  - **Body heatmap** — front+back SVG body shaded grey→amber→red by per-muscle
+    volume, embedded **inline on `/training`** (between today's plan and the
+    recent-sessions list — no separate route), with a `Muscle · N sets` ranked
+    list and the full-body footnote. Male/female art auto-selects from
+    `profiles.sex` (reactive — follows the profile once it loads) with a manual
+    toggle override.
+  - **Pluggable body-art skin** (`features/training/muscleMap/skins/`) so the
+    artwork is swappable behind a `BodyArtSkin` interface; v1 = vendored MIT art
+    (react-native-body-highlighter lineage, LICENSE in-repo) whose ~23 region
+    slugs aggregate up to the coarse-12 taxonomy.
+  - **Secondary-muscle tagging** — `exercises.secondary_muscles text[]` (CHECK:
+    subset of the 11 specific codes; `full_body` is not a valid secondary), edited
+    via a multi-select in `ExerciseDialog`. Muscle labels reuse the existing
+    `entrenamiento:exerciseDialog.primaryMuscle.<code>` keys.
+- **deferred (not built):** finer muscle taxonomy beyond coarse-12; a per-exercise
+  muscle-detail / browse view; recommendations driven off the volume data
+  (the broader catalog-expansion goal that would power them is separate).
 
 ### Sketch — mechanics
 - **OFF write API:** `POST https://world.openfoodfacts.org/cgi/product_jqm2.pl`

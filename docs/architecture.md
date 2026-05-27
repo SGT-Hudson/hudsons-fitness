@@ -114,6 +114,14 @@ This is a behavioral overview of the nutrition math as it runs today. Column/DDL
 
 - **Target weight** — `computeTargetWeightKg` in `src/lib/macros.ts` derives the goal weight from current lean mass and a target body-fat %: `leanMass = currentWeightKg × (1 − currentBodyFatPct/100)`, then `targetWeight = leanMass / (1 − targetBodyFatPct/100)`.
 
+- **Muscle volume (F-4)** — `computeMuscleVolume` in `src/core/muscleVolume.ts` aggregates the user's working sets into per-muscle volume over the coarse-12 taxonomy: the exercise's primary mover earns 1.0 per set and each secondary mover earns `SECONDARY_SET_WEIGHT` (0.5); warm-ups are excluded and `full_body` sets are tallied into a separate footnote count, not spread across the map. It is pure (no clock, no I/O — `windowStart` is passed in) and Tier-1 tested. The fetch (`muscleMap/api.ts`) pulls the rows with two PostgREST `!inner` embeds (`workout_sessions` for `performed_on`, `exercises` for `primary_muscle`/`secondary_muscles`) and an embedded `session.performed_on=gte` window filter; RLS scopes the sessions to the current user. See R-24 / D-F10.
+
+## Body-art skin abstraction (F-4)
+
+The muscle heatmap's artwork is decoupled from its data so the body drawing is swappable without touching the volume logic. A `BodyArtSkin` (`src/features/training/muscleMap/skins/types.ts`) exposes `viewBox(gender, side)`, `parts(gender, side)` (the SVG paths), and a `slugToMuscle` map from the skin's own region slugs to the coarse-12 `MuscleCode`s. `MuscleBody.tsx` shades each part by looking up its slug's muscle volume and mapping it through `muscleColor` (grey→amber→red); unmapped slugs render neutral.
+
+v1 is `mitSkin` — vendored MIT-licensed art (react-native-body-highlighter lineage; the `LICENSE` is kept in-repo at `skins/mitSkin/`), whose ~23 region slugs aggregate up to the 12 codes. Proprietary art (MuscleWiki) was rejected because the repo is public (D-F10c). The view (`MuscleActivityView`) is rendered **inline on `/training`** — no separate route — with the window pills, the gender toggle (default from `profiles.sex`, reactive once the profile loads), the ranked `Muscle · N sets` list, and the full-body footnote.
+
 ## i18n model
 
 The app is bilingual ES/EN with **11 i18n namespaces** (`common`, `auth`, `nav`, `onboarding`, `metricas`, `ingredientes`, `recetas`, `diario`, `planning`, `objetivos`, `settings`), registered in `src/i18n/index.ts` (default namespace `common`).
