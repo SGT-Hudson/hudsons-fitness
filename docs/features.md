@@ -163,7 +163,10 @@ recipe editor's sticky "+ Crear nuevo" autocomplete item) has three tabs: a
 debounced OpenFoodFacts search, a manual-entry form, and a **barcode** tab
 (camera scan via the native `BarcodeDetector` with a lazy `@zxing/browser`
 fallback, plus a manual EAN/UPC field) that looks the product up in
-OpenFoodFacts by barcode and prefills the manual form (R-20). On save it returns
+OpenFoodFacts by barcode and prefills the manual form (R-20). The camera-scan
+button is gated behind a `(pointer: coarse)` media query — only touch-primary
+devices (phone/tablet) see it; on desktop the typed-code path is the only
+affordance, since a webcam is awkward for product barcodes. On save it returns
 the new `ingredient_id` to whatever opened it. Ingredient duplicates are tolerated in
 Phase 1; the ★ model's Phase-2 reaper (R-01) is the structural resolution
 (gated on the deferred ratings/voting signal), not a dedicated dedup feature.
