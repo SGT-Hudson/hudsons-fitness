@@ -33,6 +33,7 @@ import { isValidEan, type OFFProductLookup, type OFFSearchResult } from '@/lib/o
 import { useBarcodeLookup } from '../hooks';
 import { BarcodeScanner } from './BarcodeScanner';
 import { Label } from '@/components/ui/label';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 type Mode = 'create' | 'edit';
 
@@ -390,6 +391,10 @@ export function BarcodeTab({ onResolved, onNotFound }: BarcodeTabProps) {
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState('');
   const lookup = useBarcodeLookup();
+  // Camera scan only makes sense on touch-primary devices (phone/tablet).
+  // On desktop a webcam is awkward for product barcodes, so hide the
+  // affordance entirely and leave only the typed-code path.
+  const isTouchDevice = useMediaQuery('(pointer: coarse)');
 
   async function resolve(code: string) {
     setScanning(false);
@@ -406,13 +411,19 @@ export function BarcodeTab({ onResolved, onNotFound }: BarcodeTabProps) {
 
   return (
     <div className="space-y-3">
-      {scanning ? (
-        <BarcodeScanner onDetected={(code) => void resolve(code)} />
-      ) : (
-        <Button type="button" variant="outline" className="w-full" onClick={() => setScanning(true)}>
-          {t('barcode.startScan')}
-        </Button>
-      )}
+      {isTouchDevice &&
+        (scanning ? (
+          <BarcodeScanner onDetected={(code) => void resolve(code)} />
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => setScanning(true)}
+          >
+            {t('barcode.startScan')}
+          </Button>
+        ))}
 
       <div className="flex items-end gap-2">
         <div className="flex-1 space-y-1">
