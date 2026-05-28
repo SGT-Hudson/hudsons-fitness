@@ -55,6 +55,7 @@ The `R-xx` items are defined in `roadmap.md`.
 - D-F7 — Ship flow: develop integration branch + reviewed promotion
 - D-F8 — F-2 Training Routines & Cyclic Planner: two-layer model, calendar-anchored scheduling, no materialization, one-active-program index, set_active_program as an RPC
 - D-F9 — F-3 guided runner: client-only localStorage persistence (no DB resume / no cross-device), pure reducer state core, PWA wake-lock + in-app alarm, RPE whole-numbers-only, partial-on-leave
+- D-F10 — F-4 muscle heatmap: secondary-mover weight 0.5, coarse-12 taxonomy, pluggable body-art skin (vendored MIT art; MuscleWiki rejected), inline on `/training` (no route), pure `core/muscleVolume.ts`
 
 ## D-A1 — Shared crowdsourced `ingredients` library — keep
 
@@ -379,3 +380,19 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **(e) Leaving an in-progress exercise demotes it (partial / pending), never stranded.** `activate()` demotes the exercise being left: `partial` if a working set was logged (kept in the save payload, resumable at its first unrecorded set) or back to `pending` if nothing was logged — both remain jump-back-able in the overview. This fixed a bug where the left exercise stayed `active` (limbo: shown as "jump" but un-clickable). "Skip current" likewise targets the exercise about to be performed (`focusIndex`), never a finished one; "End exercise" finishes early keeping recorded sets (so users never fake a 0/0 set to stop).
 
 **Status:** decided · roadmap: R-23
+
+## D-F10 — F-4 muscle activity heatmap: secondary-mover weight, coarse-12 taxonomy, pluggable body-art skin, inline placement, pure volume core
+
+**Ruling:** Five binding decisions govern the F-4 muscle-activity heatmap. Full rationale in the spec (`docs/superpowers/specs/2026-05-26-muscle-heatmap-design.md`).
+
+**(a) Secondary movers count 0.5 of a set; warm-ups excluded; `full_body` footnoted, not shaded.** Per working set the primary mover earns 1.0 and each secondary mover earns a flat `SECONDARY_SET_WEIGHT = 0.5` toward that muscle's volume. The weight is a single global constant, not per-exercise — finer per-exercise contribution factors are needless precision for a coarse activity map. Warm-up sets are excluded entirely (they are load-ramp, not training volume). `full_body` sets (e.g. kettlebell swing) are counted into a separate footnote count rather than shading every region, because spreading them across all muscles would wash out the map.
+
+**(b) Coarse-12 muscle taxonomy, extensible.** Volume aggregates into 11 specific muscle codes (`chest`, `back`, `shoulders`, `quads`, `hamstrings`, `glutes`, `calves`, `biceps`, `triceps`, `core`, `forearms`) plus `full_body` — the same set already used by `exercises.primary_muscle`. `secondary_muscles` is constrained to the 11 specific codes only (`full_body` is not a meaningful *secondary* mover). The taxonomy is deliberately coarse for an at-a-glance heatmap; it can be subdivided later without a model change (the skin's slug→code map already aggregates a finer region set down to it).
+
+**(c) Pluggable body-art skin; vendored MIT art, MuscleWiki rejected.** The body artwork sits behind a `BodyArtSkin` interface (`features/training/muscleMap/skins/`) so it is swappable without touching the volume logic. v1 is vendored MIT-licensed art (react-native-body-highlighter lineage, LICENSE kept in-repo); its ~23 region slugs aggregate up to the coarse-12 codes via the skin's `slugToMuscle` map. MuscleWiki's art was rejected — it is proprietary and the repo is public, so vendoring it would be a licensing violation.
+
+**(d) Heatmap is inline on `/training`, no separate route.** The map renders inside the existing `/training` ("Hoy") page between today's plan and the recent-sessions list — there is no dedicated `/training/muscles` route (an earlier `MuscleActivityPage` was removed). It belongs with the day's training context, not behind navigation. Window options are 7d / 30d / 6mo / all (default 30d); male/female art auto-selects from `profiles.sex` (reactive — follows the profile once loaded) with a manual toggle override.
+
+**(e) Pure volume core, one additive schema change.** All aggregation is a pure, I/O-free `computeMuscleVolume` in `src/core/muscleVolume.ts` (Tier-1 tested), keeping the boundary the rest of the app holds (pure core ← thin hooks/UI). The only schema change is the additive `exercises.secondary_muscles text[] not null default '{}'` column + its subset CHECK; everything else reuses the existing `workout_sets` / `exercises` shape. Because the app has no production users yet, the migration re-tags the 34 system-seed exercises in-place with no backfill.
+
+**Status:** decided · roadmap: R-24

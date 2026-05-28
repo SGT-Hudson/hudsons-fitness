@@ -163,7 +163,10 @@ recipe editor's sticky "+ Crear nuevo" autocomplete item) has three tabs: a
 debounced OpenFoodFacts search, a manual-entry form, and a **barcode** tab
 (camera scan via the native `BarcodeDetector` with a lazy `@zxing/browser`
 fallback, plus a manual EAN/UPC field) that looks the product up in
-OpenFoodFacts by barcode and prefills the manual form (R-20). On save it returns
+OpenFoodFacts by barcode and prefills the manual form (R-20). The camera-scan
+button is gated behind a `(pointer: coarse)` media query — only touch-primary
+devices (phone/tablet) see it; on desktop the typed-code path is the only
+affordance, since a webcam is awkward for product barcodes. On save it returns
 the new `ingredient_id` to whatever opened it. Ingredient duplicates are tolerated in
 Phase 1; the ★ model's Phase-2 reaper (R-01) is the structural resolution
 (gated on the deferred ratings/voting signal), not a dedicated dedup feature.
@@ -352,7 +355,21 @@ user define routines, schedule them as a cycle, and run a workout guided.
   `architecture.md#runner-state-model`. *(The runner needs no schema change — it
   reuses `save_workout`.)*
 
-<!-- F-4 (muscle-activity heatmap) is documented separately — add its subsection here. -->
+- **Muscle activity heatmap (F-4 / R-24).** Embedded inline on `/training` (between
+  today's plan and the recent-sessions list — no separate route): a front+back body
+  shaded **grey→amber→red** by how much each muscle has been trained, alongside a
+  `Muscle · N sets` ranked list. Volume is computed by the pure
+  `computeMuscleVolume` (`src/core/muscleVolume.ts`) over your working sets — the
+  exercise's **primary mover earns 1 set, each secondary mover 0.5**, warm-ups are
+  excluded, and whole-body lifts are counted into a separate full-body footnote
+  rather than shading everything. A window selector (7d / 30d / 6mo / all, default
+  30d) bounds it. The body art is male/female, auto-picked from `profiles.sex`
+  (follows the profile once it loads) with a manual toggle. Each exercise carries
+  optional **secondary muscles** (`exercises.secondary_muscles`, edited in
+  `ExerciseDialog`) over the coarse-12 muscle taxonomy; the artwork is a swappable
+  **body-art skin** (v1 = vendored MIT art). See R-24 / D-F10. *(One additive schema
+  change — `exercises.secondary_muscles` — applied 2026-05-26; no backfill, the
+  system seed was re-tagged in place.)*
 
 ## Product ideas (uncommitted)
 
