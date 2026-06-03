@@ -29,16 +29,12 @@ select is(
   (select count(*)::int from body_measurements
     where user_id = '11111111-1111-1111-1111-111111111111'),
   0, 'B cannot SELECT A body_measurement');
-select is(
-  (with u as (update body_measurements set measured_on = measured_on
-               where user_id = '11111111-1111-1111-1111-111111111111' returning 1)
-   select count(*)::int from u),
-  0, 'B UPDATE of A body_measurement affects 0 rows');
-select is(
-  (with d as (delete from body_measurements
-               where user_id = '11111111-1111-1111-1111-111111111111' returning 1)
-   select count(*)::int from d),
-  0, 'B DELETE of A body_measurement affects 0 rows');
+with u as (update body_measurements set measured_on = measured_on
+            where user_id = '11111111-1111-1111-1111-111111111111' returning 1)
+select is(count(*)::int, 0, 'B UPDATE of A body_measurement affects 0 rows') from u;
+with d as (delete from body_measurements
+            where user_id = '11111111-1111-1111-1111-111111111111' returning 1)
+select is(count(*)::int, 0, 'B DELETE of A body_measurement affects 0 rows') from d;
 select throws_ok(
   $q$ insert into body_measurements (user_id, measured_on)
       values ('11111111-1111-1111-1111-111111111111', '2026-03-03') $q$,
@@ -47,11 +43,9 @@ select throws_ok(
 -- A can mutate its own row.
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
 set local role authenticated;
-select is(
-  (with u as (update body_measurements set measured_on = measured_on
-               where user_id = '11111111-1111-1111-1111-111111111111' returning 1)
-   select count(*)::int from u),
-  1, 'A can UPDATE its own body_measurement');
+with u as (update body_measurements set measured_on = measured_on
+            where user_id = '11111111-1111-1111-1111-111111111111' returning 1)
+select is(count(*)::int, 1, 'A can UPDATE its own body_measurement') from u;
 
 -- ── profiles — SELECT isolation ──────────────────────────────────────────────
 select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
