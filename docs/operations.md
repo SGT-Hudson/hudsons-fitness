@@ -41,8 +41,11 @@ CI-enforced and blocks auto-merge — see [CI & merge workflow](#ci--merge-workf
 Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D-F7).
 
 - **Workflow:** `.github/workflows/ci.yml` runs on pnpm 10 / Node 20 on PRs
-  and pushes to `main` and `develop`, executing `pnpm lint` + `pnpm build` +
-  `pnpm test` (real Vitest Tier-1 step — R-16).
+  and pushes to `main` and `develop`. Jobs: `lint-build` (`pnpm lint` +
+  `pnpm build` + `pnpm test` — Vitest Tier-1 + Tier-2), `edge-check` (Deno lint
+  + shared-core type-check), and `db-test` (Tier-3 pgTAP — `supabase start`
+  applies the migration history from zero into the real Supabase Postgres
+  image, then `supabase test db` runs `supabase/tests/*.test.sql`). R-16.
 - **`develop` = integration + staging.** Short-lived `claude/*` branch → PR
   into `develop` → `lint-build` green → `.github/workflows/auto-merge.yml`
   arms GitHub-native squash auto-merge → merged hands-off; branch
@@ -55,8 +58,9 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
 - **Hotfix:** `claude/hotfix-*` → PR into `main` (human-merged) → then an
   auto-opened back-merge PR `main`→`develop` so the fix survives the next
   promotion.
-- **Branch protection on `develop`:** required status check `lint-build`;
-  `strict` false; force-push/deletion blocked; 0 required reviews.
+- **Branch protection on `develop`:** required status checks `lint-build` and
+  `db-test` (Tier-3 pgTAP — R-16); `strict` false; force-push/deletion blocked;
+  0 required reviews.
 - **Branch protection on `main`:** required status check `lint-build`;
   `strict` false; a PR is required before merging (0 required reviews —
   solo); force-push/deletion blocked; `enforce_admins` false (the solo
@@ -615,8 +619,35 @@ id means "create new"). The marker comment above the `Functions` block in the
 file documents this; see `conventions.md` (generated-types caveats). Verify
 with `pnpm typecheck && pnpm lint && pnpm build` before committing.
 
-Tier-3 DB/RLS/RPC tests (R-16) can stand up a local DB from this history via
-`supabase start` + pgTAP; the generated-types switch (R-04) and the
-`bone_kg` (R-03), `profiles.units` (R-14), dead-`tdee_estimates`-cols (R-08),
-and `materialize_plan_for_date` (R-12) migrations are applied in prod and sit
-on a reproducible baseline.
+### Tier-3 DB/RLS/RPC tests (R-16, pgTAP)
+
+The `db-test` CI job stands up the real Supabase Postgres image from the full
+migration history and runs the pgTAP suite:
+
+```bash
+supabase start -x studio,imgproxy,edge-runtime,logflare,vector  # applies all migrations from zero
+supabase test db                                                # runs supabase/tests/*.test.sql
+supabase stop --no-backup
+```
+
+Local runs need Docker + the Supabase CLI; CI uses `supabase/setup-cli`. The
+suite (`supabase/tests/00_schema`..`04_rpc.test.sql`) creates test users by
+inserting into `auth.users` (the `handle_new_user` trigger makes the profile)
+and switches actor with `set local role authenticated` + a
+`request.jwt.claims` GUC, so `auth.uid()` evaluates RLS exactly as in prod.
+Known gaps are kept as pgTAP `todo` (visible, non-failing): the R-22 UPDATE
+WITH-CHECK gap and the R-25 hide-RPC bug.
+
+Because the schema sat on a reproducible baseline (R-00), `supabase start`
+applying from zero also validates migration ordering/idempotency — it is what
+caught the `ingredients.sugar_g_per_unit` ordering bug
+(`20260523120050_f1_ingredients_submacro_cols`).
+
+**Promoting / required check:** `db-test` is a required status check on
+`develop`. To re-derive or change it:
+`gh api repos/SGT-Hudson/hudsons-fitness/branches/develop/protection/required_status_checks`.
+
+**R-00 reproducibility check** (manual): `.github/workflows/db-tests.yml`
+(`workflow_dispatch`) links to prod and diffs a from-zero `db reset` against the
+live schema via `scripts/db-reproducibility-check.sh`. It needs the
+`SUPABASE_ACCESS_TOKEN` secret, so it is opt-in rather than a gate.

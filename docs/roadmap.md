@@ -33,6 +33,7 @@ reference shard carries it (never edit the decision entry).
 - R-22 — Training Routines & Cyclic Planner (F-2)
 - R-23 — Guided active-workout runner (F-3)
 - R-24 — Muscle activity heatmap (F-4)
+- R-25 — Fix hide_owned_* blocked by pool UPDATE WITH CHECK (Tier-3 finding)
 
 ## R-00 — Baseline current schema into migrations
 - **decision:** D-A8, D-A6, D-E3, D-D6, D-F1
@@ -547,7 +548,28 @@ reference shard carries it (never edit the decision entry).
 ## R-16 — Vitest Tier-1 (spec-first) + Tier-2 (with R-09) + Tier-3 (after R-00)
 - **decision:** D-F1
 - **blocked-by:** R-00 (Tier-3 only)
-- **status:** in-progress — Tier-1 (Vitest + CI `pnpm test` in the `lint-build` job) landed; Tier-2 **landed** (rode R-09, 2026-05-18): `*.test.tsx` run under jsdom via `environmentMatchGlobs` while Tier-1 `*.test.ts` stay Node, all in the same `pnpm test` / unchanged `lint-build` job; PhaseDialog + MeasurementDialog component tests added (`@testing-library/react` + `jsdom`). Only Tier-3 (DB/RLS/RPC via local `supabase start` + pgTAP) remains, gated behind R-00.
+- **status:** done (2026-06-03) — all three tiers landed. Tier-1 (Vitest
+  pure-logic) + Tier-2 (jsdom component, rode R-09) run in the `lint-build` CI
+  job. **Tier-3 (DB/RLS/RPC via pgTAP) now runs as the `db-test` CI job**:
+  `supabase start` applies the full migration history from zero into the real
+  Supabase Postgres image, then `supabase test db` runs
+  `supabase/tests/*.test.sql`. Suite: `00_schema` (RLS enabled on every table,
+  the SECURITY-DEFINER-set invariant, search_path pinning, admin/infra grant
+  isolation, key view/index existence), `01_rls_user_owned`, `02_rls_child`,
+  `03_rls_pool`, `04_rpc` (replace-children, materialize guard + idempotency,
+  one-active-program, hide/reconcile). Config in `supabase/config.toml`; design
+  spec `docs/superpowers/specs/2026-06-03-tier3-pgtap-ci-design.md` (+ the
+  earlier `2026-05-18-test-strategy.md`). Promoted to a **required check on
+  `develop`**. The R-00 reproducibility check is a manual workflow
+  (`.github/workflows/db-tests.yml`, needs `SUPABASE_ACCESS_TOKEN`). Standing
+  Tier-3 up caught two real defects: (a) a migration-ordering bug — the F-1
+  whole-foods seed (`0523`) inserted `ingredients.sugar_g_per_unit` /
+  `saturated_fat_g_per_unit` before `u1_sub_macros` (`0525`) added them (they
+  were added to prod out of band), so a from-zero reset failed — fixed by
+  `20260523120050_f1_ingredients_submacro_cols`; (b) the INVOKER hide RPCs are
+  blocked by the pool UPDATE WITH CHECK (now **R-25**). The R-22 UPDATE
+  WITH-CHECK gap and the R-25 hide bug are both captured as pgTAP `todo` tests
+  (visible, non-failing) so they flip green when fixed.
 - **scope:** Spec-first; Tier 1 is its own sprint, Tier 2 rides with R-09,
   Tier 3 is gated behind R-00.
   1. Spec: `docs/superpowers/specs/` test-strategy doc — tier boundaries,
@@ -850,6 +872,32 @@ reference shard carries it (never edit the decision entry).
 - **deferred (not built):** finer muscle taxonomy beyond coarse-12; a per-exercise
   muscle-detail / browse view; recommendations driven off the volume data
   (the broader catalog-expansion goal that would power them is separate).
+
+## R-25 — Fix hide_owned_* blocked by pool UPDATE WITH CHECK (Tier-3 finding)
+- **decision:** (none yet)
+- **blocked-by:** —
+- **status:** open — found by R-16 Tier-3 (2026-06-03). `hide_owned_recipe` and
+  `hide_owned_ingredient` are `SECURITY INVOKER` and transfer pool ownership to
+  the anon sentinel by `update … set created_by_user_id = anon`. But the pool
+  UPDATE policy (`recipes`/`ingredients`) has
+  `with check (auth.uid() = created_by_user_id and created_by_user_id <> anon)`,
+  so the new row is rejected (SQLSTATE 42501) — **hiding a pooled recipe /
+  ingredient is broken under RLS**. The DEFINER `reconcile_account_delete` does
+  the same transfer and works only because it bypasses RLS. Never surfaced
+  because there are no production users yet (no one has hidden a contributed
+  item). Asserted under `todo` in `supabase/tests/04_rpc.test.sql`.
+- **scope:** Pick a fix and record the decision:
+  1. Make `hide_owned_recipe` / `hide_owned_ingredient` `SECURITY DEFINER`
+     (mirrors `reconcile_account_delete`) — but this **adds two DEFINER
+     functions**, which violates hard-invariant #3's two-exception cap and the
+     `00_schema` SECURITY-DEFINER-set invariant; both would need updating and
+     the exception documented. Or
+  2. Widen the pool UPDATE `with check` to permit an owner→anon transition
+     (e.g. `with check (auth.uid() = created_by_user_id or created_by_user_id =
+     anon)`), keeping `using` as the ownership gate — a smaller blast radius and
+     no new DEFINER. Likely preferred; confirm it does not let a user orphan
+     someone else's row (it does not — `using` still requires prior ownership).
+  When fixed, flip the `04_rpc` hide asserts from `todo` to hard assertions.
 
 ### Sketch — mechanics
 - **OFF write API:** `POST https://world.openfoodfacts.org/cgi/product_jqm2.pl`

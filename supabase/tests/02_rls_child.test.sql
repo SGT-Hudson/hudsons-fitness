@@ -40,8 +40,9 @@ insert into recipe_ingredients (recipe_id, ingredient_id, quantity) values
   ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000d1', 100);
 insert into routine_exercises (routine_id, exercise_id, position, target_sets, target_reps_min, target_reps_max) values
   ('00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000e1', 1, 3, 5, 8);
-insert into program_days (program_id, day_index) values
-  ('00000000-0000-0000-0000-0000000000b3', 0);
+-- rest days (is_rest true, routine_id null) satisfy program_days_check
+insert into program_days (program_id, day_index, is_rest) values
+  ('00000000-0000-0000-0000-0000000000b3', 0, true);
 
 -- act as user B for all behavioural assertions
 select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
@@ -103,12 +104,12 @@ select throws_ok(
 
 -- ── program_days (parent programs) — F-2 closed the gap ──────────────────────
 select lives_ok(
-  $q$ insert into program_days (program_id, day_index)
-      values ('00000000-0000-0000-0000-0000000000b3',1) $q$,
+  $q$ insert into program_days (program_id, day_index, is_rest)
+      values ('00000000-0000-0000-0000-0000000000b3',1,true) $q$,
   'B can INSERT a day into its own program');
 select throws_ok(
-  $q$ insert into program_days (program_id, day_index)
-      values ('00000000-0000-0000-0000-0000000000a3',5) $q$,
+  $q$ insert into program_days (program_id, day_index, is_rest)
+      values ('00000000-0000-0000-0000-0000000000a3',5,true) $q$,
   '42501', NULL, 'B cannot INSERT a day into A''s program');
 select throws_ok(
   $q$ update program_days set program_id = '00000000-0000-0000-0000-0000000000a3'

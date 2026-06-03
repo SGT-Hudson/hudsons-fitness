@@ -40,15 +40,12 @@ select throws_ok(
   '42501', NULL, 'A cannot INSERT an ingredient tagged as B');
 
 -- system seed + anon-owned rows are immutable to A
-select is((with u as (update ingredients set name = 'x' where id = '00000000-0000-0000-0000-0000000000d0' returning 1)
-           select count(*)::int from u),
-          0, 'A cannot UPDATE a system-seed ingredient');
-select is((with u as (update ingredients set name = 'x' where id = '00000000-0000-0000-0000-0000000000da' returning 1)
-           select count(*)::int from u),
-          0, 'A cannot UPDATE an anon-owned ingredient');
-select is((with d as (delete from ingredients where id = '00000000-0000-0000-0000-0000000000d0' returning 1)
-           select count(*)::int from d),
-          0, 'A cannot DELETE a system-seed ingredient');
+with u as (update ingredients set name = 'x' where id = '00000000-0000-0000-0000-0000000000d0' returning 1)
+select is(count(*)::int, 0, 'A cannot UPDATE a system-seed ingredient') from u;
+with u as (update ingredients set name = 'x' where id = '00000000-0000-0000-0000-0000000000da' returning 1)
+select is(count(*)::int, 0, 'A cannot UPDATE an anon-owned ingredient') from u;
+with d as (delete from ingredients where id = '00000000-0000-0000-0000-0000000000d0' returning 1)
+select is(count(*)::int, 0, 'A cannot DELETE a system-seed ingredient') from d;
 
 -- A keeps a private reference row
 insert into user_ingredient_refs (user_id, ingredient_id)
@@ -59,12 +56,10 @@ select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-2222222
 set local role authenticated;
 
 -- B cannot mutate A's pool item
-select is((with u as (update ingredients set name = 'x' where id = '00000000-0000-0000-0000-0000000000a1' returning 1)
-           select count(*)::int from u),
-          0, 'B cannot UPDATE an ingredient owned by A');
-select is((with d as (delete from ingredients where id = '00000000-0000-0000-0000-0000000000a1' returning 1)
-           select count(*)::int from d),
-          0, 'B cannot DELETE an ingredient owned by A');
+with u as (update ingredients set name = 'x' where id = '00000000-0000-0000-0000-0000000000a1' returning 1)
+select is(count(*)::int, 0, 'B cannot UPDATE an ingredient owned by A') from u;
+with d as (delete from ingredients where id = '00000000-0000-0000-0000-0000000000a1' returning 1)
+select is(count(*)::int, 0, 'B cannot DELETE an ingredient owned by A') from d;
 -- B cannot see A's private reference rows
 select is((select count(*)::int from user_ingredient_refs
             where user_id = '11111111-1111-1111-1111-111111111111'),
@@ -73,9 +68,8 @@ select is((select count(*)::int from user_ingredient_refs
 -- ── owner can still mutate (act as A) ────────────────────────────────────────
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
 set local role authenticated;
-select is((with u as (update ingredients set name = 'Mio2' where id = '00000000-0000-0000-0000-0000000000a1' returning 1)
-           select count(*)::int from u),
-          1, 'A can UPDATE its own ingredient');
+with u as (update ingredients set name = 'Mio2' where id = '00000000-0000-0000-0000-0000000000a1' returning 1)
+select is(count(*)::int, 1, 'A can UPDATE its own ingredient') from u;
 
 select * from finish();
 rollback;
