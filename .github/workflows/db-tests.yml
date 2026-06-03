@@ -1,32 +1,25 @@
-name: DB tests (Tier-3, manual)
+name: DB reproducibility (R-00, manual)
 
-# Manual on purpose. This job has never had a green run (the authoring env
-# had no Docker/CLI). Wiring it into branch protection now would block
-# auto-merge on an unproven job.
-#
-# PROMOTION (after the first green dispatch run):
-#   1. add `pull_request: { branches: [main] }` below
-#   2. add `db-tests` to the required status checks on `main`
+# The Tier-3 pgTAP suite now runs as the blocking `db-test` job in ci.yml.
+# This manual workflow keeps the R-00 reproducibility check, which diffs a
+# from-zero `supabase db reset` against the linked production schema and needs
+# the SUPABASE_ACCESS_TOKEN secret — so it stays opt-in (dispatch only) rather
+# than gating every PR. Run it after schema changes to confirm the migration
+# history still reproduces prod.
 on:
   workflow_dispatch:
 
 jobs:
-  db-tests:
+  reproducibility:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.101.0
 
-      - name: Start local Supabase stack
-        run: supabase start
-
-      - name: Tier-3 pgTAP (supabase/tests/database/*.sql)
-        run: supabase test db
-
-      - name: R-00 reproducibility check
+      - name: R-00 reproducibility check (db reset vs linked prod)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |

@@ -1,7 +1,8 @@
 -- Tier-3 / R-16 — schema + security-model invariants.
 -- Asserts the structural guarantees that hard-invariant #3 depends on:
--- RLS is enabled everywhere, and exactly the sanctioned set of functions is
--- SECURITY DEFINER while every other public function pins its search_path.
+-- RLS is enabled everywhere, exactly the sanctioned set of functions is
+-- SECURITY DEFINER, every other public function pins its search_path, and the
+-- admin/infra functions are unreachable from anon/authenticated.
 -- See docs/superpowers/specs/2026-06-03-tier3-pgtap-ci-design.md.
 
 begin;
@@ -75,6 +76,42 @@ select is(
   0,
   'Every public function pins its search_path'
 );
+
+-- ── admin / infra functions are unreachable from anon/authenticated ──────────
+select is_empty(
+  $$ select 1 from information_schema.role_routine_grants
+      where routine_schema = 'public' and routine_name = 'apply_template_to_week_admin'
+        and grantee in ('anon', 'authenticated', 'PUBLIC') $$,
+  'apply_template_to_week_admin is not executable by anon/authenticated/public');
+select isnt_empty(
+  $$ select 1 from information_schema.role_routine_grants
+      where routine_schema = 'public' and routine_name = 'apply_template_to_week_admin'
+        and grantee = 'service_role' and privilege_type = 'EXECUTE' $$,
+  'apply_template_to_week_admin is executable by service_role');
+select is_empty(
+  $$ select 1 from information_schema.role_routine_grants
+      where routine_schema = 'public' and routine_name = 'reconcile_account_delete'
+        and grantee in ('anon', 'authenticated', 'PUBLIC') $$,
+  'reconcile_account_delete is not executable by anon/authenticated/public');
+select is_empty(
+  $$ select 1 from information_schema.role_routine_grants
+      where routine_schema = 'private' and routine_name = 'invoke_edge_function'
+        and grantee in ('anon', 'authenticated', 'PUBLIC') $$,
+  'private.invoke_edge_function is not executable by anon/authenticated/public');
+
+-- ── key structural objects survive apply-from-zero ───────────────────────────
+select has_view('public', 'body_measurements_smoothed',
+  'body_measurements_smoothed view exists (RLS via the underlying table)');
+select col_is_unique('public', 'tdee_estimates', array['user_id', 'computed_on'],
+  'tdee_estimates has UNIQUE (user_id, computed_on) (sprint9 idempotency key)');
+select isnt_empty(
+  $$ select 1 from pg_indexes where schemaname = 'public' and tablename = 'meal_logs'
+       and indexname = 'meal_logs_user_plan_slot_uidx' $$,
+  'meal_logs partial unique index exists (R-12)');
+select isnt_empty(
+  $$ select 1 from pg_indexes where schemaname = 'public' and tablename = 'programs'
+       and indexname = 'programs_one_active_uidx' $$,
+  'programs one-active partial unique index exists (F-2)');
 
 select * from finish();
 rollback;
