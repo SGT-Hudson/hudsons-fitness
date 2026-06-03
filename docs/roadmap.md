@@ -76,8 +76,19 @@ reference shard carries it (never edit the decision entry).
   via Supabase MCP `apply_migration`; reworked `delete-account` edge fn
   redeployed (version 2). Tier-3 pgTAP for RLS / RPC / backfill remains
   gated behind R-16-Tier-3 / `supabase start` infra (not yet set up —
-  documented gap). Phase 2 (auto-reaper) still blocked on the deferred
-  ratings/voting signal.
+  documented gap). **Phase 2 (auto-reaper) deferred indefinitely — not a real
+  problem yet (2026-06-03).** Reapable garbage is structurally impossible with
+  no community: it requires users creating pool items, hiding them, and no one
+  else referencing them — the user base is currently one. Any stray duplicate
+  or dead row is a 10-second manual SQL fix (the DB can still be reshaped
+  destructively — no prod users). The trigger to revisit: the app opens to real
+  users **and** anon-owned, zero-reference pool rows start actually
+  accumulating. Two reframes recorded for that revisit (see D-A4): (a) the
+  "negative community signal" predicate presupposes a community that does not
+  exist — a zero-references-of-any-kind check (no `user_*_refs`, no
+  `recipe_ingredients`, no `meal_logs`/plan slots) likely suffices on its own,
+  so the voting feature may never be needed; (b) duplicates are better prevented
+  at insert time (trigram similarity warning) than reaped after the fact.
 - **spec:** `docs/superpowers/specs/2026-05-18-library-model-phase1-design.md`
 - **plan:** `docs/superpowers/plans/2026-05-18-library-model-phase1-plan.md`
 - **scope:** Build the unified ★ Library Contribution & Lifecycle Model
