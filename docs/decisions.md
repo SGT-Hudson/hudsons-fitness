@@ -87,7 +87,9 @@ The `R-xx` items are defined in `roadmap.md`.
 
 **Why:** No dedup exists in the MVP and that is accepted while the app is solo-user — the cost of duplicates is low and the fix is non-trivial. `pg_trgm` is already enabled, so a future one-RPC fix can dedup by trigram similarity at insert time. More importantly, the ★ Library Contribution model's Phase-2 auto-reaper is the structural resolution: duplicate/bad pooled items get down-voted and reaped once the ratings/voting signal exists, so this never needs a dedicated dedup feature.
 
-**Status:** decided · roadmap: R-01
+**Update (2026-06-03) — Phase-2 reaper deferred indefinitely.** Revisiting R-01 Phase 2 confirmed it solves a problem the app cannot have yet: reapable garbage requires a community (users creating, hiding, and not referencing pool items), and the user base is currently one. Building the voting/ratings signal the original 3-predicate reaper depends on is YAGNI today — a whole feature so a handful of people can vote on ingredients. Two reframes recorded for whenever it is genuinely revisited (app opens to real users and anon-owned zero-reference pool rows start accumulating): (a) the "negative community signal" predicate may be droppable entirely — an anon-owned item with **zero references of any kind** (no `user_*_refs`, no `recipe_ingredients`, no `meal_logs`/plan slots) is invisible and unused, so reaping it is safe without any vote; (b) duplicates are better prevented at insert time (trigram-similarity warning, `pg_trgm` already enabled) than reaped after the fact — the reaper never touches a *referenced* duplicate anyway. Until then, stray dupes/dead rows are a manual SQL fix (no prod users — DB is reshapeable).
+
+**Status:** decided · roadmap: R-01 (Phase-2 reaper deferred indefinitely)
 
 ## D-A5 — Past phases — 7-day grace-window + notes-editable-forever
 
