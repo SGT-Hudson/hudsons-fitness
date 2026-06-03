@@ -61,3 +61,29 @@ jobs:
           deno lint --config supabase/functions/deno.json supabase/functions
           deno check --config supabase/functions/deno.json \
             $(git ls-files 'supabase/functions/_shared/*.ts' | grep -v '\.test\.ts$')
+
+  # Tier-3 (R-16 / D-F1): DB/RLS/RPC tests via pgTAP against a real Postgres.
+  # `supabase start` stands up the local stack (Postgres image with pgTAP +
+  # the auth schema + pg_cron/pg_net/vault) and applies the full migration
+  # history from zero — so this also guards that migrations apply cleanly and
+  # idempotently. `supabase test db` runs supabase/tests/*.test.sql.
+  db-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.101.0
+
+      - name: Start local stack (applies all migrations)
+        # Exclude the heavy/flaky services not needed for pgTAP. gotrue (auth)
+        # stays — it creates the auth schema + auth.uid() the RLS tests rely on.
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector
+
+      - name: Run pgTAP suite
+        run: supabase test db
+
+      - name: Stop stack
+        if: always()
+        run: supabase stop --no-backup

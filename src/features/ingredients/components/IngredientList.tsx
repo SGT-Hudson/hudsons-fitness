@@ -86,10 +86,10 @@ export function IngredientList({ ingredients, loading, onEdit }: Props) {
             </div>
             <div className="shrink-0 flex items-center gap-1">
               {/* Edit affordance is owner-only (only the creator can edit
-                  pool data). Hide/remove is available for every row in
-                  *my library* — non-owners get a ref drop, owners get the
-                  unified "creator-hide" (ref drop + ownership transfers
-                  to anon). Per R-01 spec §6/§7. */}
+                  pool data). Hide/remove drops your reference row for any
+                  row in *my library* — owner or not — and leaves the pooled
+                  item and its ownership untouched (R-25; the creator keeps
+                  ownership and can re-add it later). */}
               {owned && (
                 <Button
                   variant="ghost"

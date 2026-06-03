@@ -33,6 +33,7 @@ reference shard carries it (never edit the decision entry).
 - R-22 — Training Routines & Cyclic Planner (F-2)
 - R-23 — Guided active-workout runner (F-3)
 - R-24 — Muscle activity heatmap (F-4)
+- R-25 — Fix hide_owned_* blocked by pool UPDATE WITH CHECK (Tier-3 finding)
 
 ## R-00 — Baseline current schema into migrations
 - **decision:** D-A8, D-A6, D-E3, D-D6, D-F1
@@ -76,16 +77,29 @@ reference shard carries it (never edit the decision entry).
   via Supabase MCP `apply_migration`; reworked `delete-account` edge fn
   redeployed (version 2). Tier-3 pgTAP for RLS / RPC / backfill remains
   gated behind R-16-Tier-3 / `supabase start` infra (not yet set up —
-  documented gap). Phase 2 (auto-reaper) still blocked on the deferred
-  ratings/voting signal.
+  documented gap). **Phase 2 (auto-reaper) cancelled (2026-06-03) — will not be
+  built.** Reapable garbage is structurally impossible with
+  no community: it requires users creating pool items, hiding them, and no one
+  else referencing them — the user base is currently one. Any stray duplicate
+  or dead row is a 10-second manual SQL fix (the DB can still be reshaped
+  destructively — no prod users). The trigger to revisit: the app opens to real
+  users **and** anon-owned, zero-reference pool rows start actually
+  accumulating. Two reframes recorded for that revisit (see D-A4): (a) the
+  "negative community signal" predicate presupposes a community that does not
+  exist — a zero-references-of-any-kind check (no `user_*_refs`, no
+  `recipe_ingredients`, no `meal_logs`/plan slots) likely suffices on its own,
+  so the voting feature may never be needed; (b) duplicates are better prevented
+  at insert time (trigram similarity warning) than reaped after the fact.
 - **spec:** `docs/superpowers/specs/2026-05-18-library-model-phase1-design.md`
 - **plan:** `docs/superpowers/plans/2026-05-18-library-model-phase1-plan.md`
 - **scope:** Build the unified ★ Library Contribution & Lifecycle Model
   covering ingredients and recipes. Phase 1 migration: replace per-user
   hard-delete and the recipe `deleted_at` soft-delete + partial unique index
   with the shared pool/reference structure — "delete" = hide = drop your
-  reference row; a creator-hide transfers pool-item ownership to a reserved
-  anon user id. Retain `recipe_ingredients ON DELETE RESTRICT` as the DB-level
+  reference row. (The creator keeps pool ownership; the anon transfer originally
+  planned for hide was removed in **R-25** — hiding is just "remove from my
+  library". The anon sentinel is now reached only via account deletion.)
+  Retain `recipe_ingredients ON DELETE RESTRICT` as the DB-level
   backstop so the reaper's zero-references predicate stays true at the DB even
   if the reaper logic has a bug (`CASCADE`/`SET NULL` remain rejected — silent
   macro corruption / orphaned recipe lines). The old "reword IngredientInUseError
@@ -536,7 +550,28 @@ reference shard carries it (never edit the decision entry).
 ## R-16 — Vitest Tier-1 (spec-first) + Tier-2 (with R-09) + Tier-3 (after R-00)
 - **decision:** D-F1
 - **blocked-by:** R-00 (Tier-3 only)
-- **status:** in-progress — Tier-1 (Vitest + CI `pnpm test` in the `lint-build` job) landed; Tier-2 **landed** (rode R-09, 2026-05-18): `*.test.tsx` run under jsdom via `environmentMatchGlobs` while Tier-1 `*.test.ts` stay Node, all in the same `pnpm test` / unchanged `lint-build` job; PhaseDialog + MeasurementDialog component tests added (`@testing-library/react` + `jsdom`). Only Tier-3 (DB/RLS/RPC via local `supabase start` + pgTAP) remains, gated behind R-00.
+- **status:** done (2026-06-03) — all three tiers landed. Tier-1 (Vitest
+  pure-logic) + Tier-2 (jsdom component, rode R-09) run in the `lint-build` CI
+  job. **Tier-3 (DB/RLS/RPC via pgTAP) now runs as the `db-test` CI job**:
+  `supabase start` applies the full migration history from zero into the real
+  Supabase Postgres image, then `supabase test db` runs
+  `supabase/tests/*.test.sql`. Suite: `00_schema` (RLS enabled on every table,
+  the SECURITY-DEFINER-set invariant, search_path pinning, admin/infra grant
+  isolation, key view/index existence), `01_rls_user_owned`, `02_rls_child`,
+  `03_rls_pool`, `04_rpc` (replace-children, materialize guard + idempotency,
+  one-active-program, hide/reconcile). Config in `supabase/config.toml`; design
+  spec `docs/superpowers/specs/2026-06-03-tier3-pgtap-ci-design.md` (+ the
+  earlier `2026-05-18-test-strategy.md`). Promoted to a **required check on
+  `develop`**. The R-00 reproducibility check is a manual workflow
+  (`.github/workflows/db-tests.yml`, needs `SUPABASE_ACCESS_TOKEN`). Standing
+  Tier-3 up caught two real defects: (a) a migration-ordering bug — the F-1
+  whole-foods seed (`0523`) inserted `ingredients.sugar_g_per_unit` /
+  `saturated_fat_g_per_unit` before `u1_sub_macros` (`0525`) added them (they
+  were added to prod out of band), so a from-zero reset failed — fixed by
+  `20260523120050_f1_ingredients_submacro_cols`; (b) the INVOKER hide RPCs are
+  blocked by the pool UPDATE WITH CHECK (now **R-25**). The R-22 UPDATE
+  WITH-CHECK gap and the R-25 hide bug are both captured as pgTAP `todo` tests
+  (visible, non-failing) so they flip green when fixed.
 - **scope:** Spec-first; Tier 1 is its own sprint, Tier 2 rides with R-09,
   Tier 3 is gated behind R-00.
   1. Spec: `docs/superpowers/specs/` test-strategy doc — tier boundaries,
@@ -839,6 +874,28 @@ reference shard carries it (never edit the decision entry).
 - **deferred (not built):** finer muscle taxonomy beyond coarse-12; a per-exercise
   muscle-detail / browse view; recommendations driven off the volume data
   (the broader catalog-expansion goal that would power them is separate).
+
+## R-25 — hide_owned_* drops the reference only (keep owner) — Tier-3 finding
+- **decision:** (folds into D-A4)
+- **blocked-by:** —
+- **status:** done (2026-06-03) — found by R-16 Tier-3, fixed in
+  `20260603120000_r25_hide_drops_ref_only`. `hide_owned_recipe` /
+  `hide_owned_ingredient` were `SECURITY INVOKER` yet transferred pool
+  ownership to the anon sentinel (`update … set created_by_user_id = anon`),
+  which the pool UPDATE policy's `with check (auth.uid() = created_by_user_id
+  and created_by_user_id <> anon)` rejected (SQLSTATE 42501) — **hiding was
+  broken under RLS** (never surfaced: no prod users). The anon-transfer-on-hide
+  existed only to feed the R-01 Phase-2 reaper, which is now **cancelled**, so
+  it was dead complexity. **Fix: hide now just drops the caller's reference
+  row** — a single-table delete, still INVOKER. The creator keeps ownership +
+  edit rights and can re-add the item later; "hide" means "remove from my
+  library", not "disown". The anon sentinel is now reached **only** via account
+  deletion (`reconcile_account_delete`, DEFINER — legitimately reassigns a
+  departing user's still-owned items so FKs are not stranded; unchanged). No
+  RLS-policy change and no new DEFINER, so hard-invariant #3 and the `00_schema`
+  SECURITY-DEFINER-set invariant stay intact. `04_rpc` hide asserts flipped from
+  `todo` to hard assertions (ref dropped, ownership retained) +
+  `hide_owned_ingredient` coverage added.
 
 ### Sketch — mechanics
 - **OFF write API:** `POST https://world.openfoodfacts.org/cgi/product_jqm2.pl`
