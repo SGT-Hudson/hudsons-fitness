@@ -307,7 +307,7 @@ Standard per-user RLS (the four `auth.uid() = user_id` policies); the edge funct
 
 ### `exercises` (shared pool — R-19, applied 2026-05-21)
 
-Shared pool of exercises following the post-R-01 ingredient-pool shape: `created_by_user_id = null` = immutable system seed; a real user id = user-contributed; creator-hide transfers ownership to the library anon sentinel (same pattern as `ingredients`). Bilingual names with trigram indexes for search.
+Shared pool of exercises following the post-R-01 ingredient-pool shape: `created_by_user_id = null` = immutable system seed; a real user id = user-contributed; creator-hide just drops your reference row and keeps ownership (R-25; same pattern as `ingredients`). Bilingual names with trigram indexes for search.
 
 | Column | Type / constraint |
 |---|---|
@@ -477,20 +477,20 @@ Installed in the `extensions` schema (not `public`):
 ## Library Contribution & Lifecycle Model
 <a id="library-model"></a>
 
-This is the live model for `ingredients` and `recipes` as of the R-01 Phase 1 apply (2026-05-20). Phase 2 (the auto-reaper) is still gated on the deferred ratings/voting signal — see point 7 below and `roadmap.md` R-01.
+This is the live model for `ingredients` and `recipes` as of the R-01 Phase 1 apply (2026-05-20). Phase 2 (the auto-reaper) is **cancelled** (2026-06-03) — see point 7 below and `roadmap.md` R-01.
 
 1. **Pool + reference.** `ingredients` and `recipes` become shared-pool entities from creation. Creating one inserts a pool item **and** a per-user *reference* row for the creator. "My library" = the set of my reference rows. Discovery = search the whole pool; adding a found item to my library = create a reference.
 2. **Private notes on the reference only.** Per-user notes live on the reference row, never on the pooled item. This is the structural PII firewall — personal data physically cannot enter the shared pool.
-3. **No user hard-delete.** "Delete" = hide = remove your reference (and its private note). The pooled item is untouched.
-4. **Creator-hide transfers pool ownership to a reserved anon user id** — a fixed seeded `auth.users`/profile row. **Never `null`**: for `ingredients`, `created_by_user_id = null` already means "immutable system seed," so the anon owner must be a distinct sentinel id.
+3. **No user hard-delete.** "Delete" = hide = remove your reference (and its private note). The pooled item is untouched — including its ownership: the creator keeps it (R-25). `hide_owned_recipe` / `hide_owned_ingredient` are a single-table delete of the caller's reference row.
+4. **The anon sentinel** is a fixed seeded `auth.users`/profile row used to anonymize pool ownership. It is reached **only via account deletion** (point 8) — *not* via hide (R-25 removed the hide→anon transfer, which only ever served the now-cancelled Phase-2 reaper and was blocked by the pool UPDATE RLS anyway). **Never `null`**: for `ingredients`, `created_by_user_id = null` already means "immutable system seed," so the anon owner is a distinct sentinel id.
 5. **Item name is public from creation** — a UX/labeling concern only. The create form must state the item is contributed to the shared library; private content goes in notes, not the title.
 6. **No adoption / claim / fork.** Anon-owned items are never re-owned or user-edited.
-7. **Auto-GC (Phase 2, gated on the deferred ratings/voting system).** The system may auto-delete a pooled item only if all three hold: `owner = reserved anon id` AND zero live references (no `recipe_ingredients` → ingredient; no `meal_logs`/plan slots → recipe) AND negative community signal (sufficient downvotes / no likes). This preserves the never-orphan-dependent-data invariant and is the mechanism that resolves duplicate/bad pooled items (D-A4) and the tombstone-accumulation concern.
+7. **Auto-GC (Phase 2) — cancelled (2026-06-03).** No auto-reaper will be built. Anon-owned, zero-reference rows (now produced only by account deletions) are tolerated pool clutter, cleaned by manual SQL if they ever matter. The never-orphan-dependent-data invariant is held by `recipe_ingredients ON DELETE RESTRICT` + the no-hard-delete model alone; duplicate/bad items (D-A4) are better prevented at insert time (trigram warning) than reaped. See `roadmap.md` R-01.
 8. **GDPR account-delete reconciliation.** On account delete, hard-delete the user's reference rows (genuine erasure of personal notes) and reassign any still-owned pool items to the reserved anon id (anonymized retention of objective shared data). Replaces blanket CASCADE for `ingredients` + `recipes` in the `delete-account` edge function.
 
-**Phasing.** Phase 1 (own migration sprint): per-user reference tables, backfill every existing row to one pool item + one creator reference, rewrite reads/search/RLS on both layers, seed the reserved anon id, create-form labeling copy (ES+EN), rework `delete-account`; no GC in Phase 1. Phase 2 (depends on the ratings/voting feature): downvote/like signal + the 3-predicate safe auto-reaper.
+**Phasing.** Phase 1 (own migration sprint): per-user reference tables, backfill every existing row to one pool item + one creator reference, rewrite reads/search/RLS on both layers, seed the reserved anon id, create-form labeling copy (ES+EN), rework `delete-account`; no GC in Phase 1. Phase 2 is **cancelled** — no reaper, no ratings/voting signal.
 
-`recipe_ingredients` `ON DELETE RESTRICT` is kept as the DB-level backstop for the Phase-2 reaper: the GC predicate enforces zero references in app logic, and RESTRICT keeps that true at the DB even if the reaper logic has a bug.
+`recipe_ingredients` `ON DELETE RESTRICT` is kept as the DB-level backstop against orphaned recipe lines (`CASCADE`/`SET NULL` would silently corrupt macros). It stands on its own now that the Phase-2 reaper is cancelled.
 
 ## Type definitions & caveats
 

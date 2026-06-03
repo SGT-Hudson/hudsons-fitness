@@ -77,8 +77,8 @@ reference shard carries it (never edit the decision entry).
   via Supabase MCP `apply_migration`; reworked `delete-account` edge fn
   redeployed (version 2). Tier-3 pgTAP for RLS / RPC / backfill remains
   gated behind R-16-Tier-3 / `supabase start` infra (not yet set up —
-  documented gap). **Phase 2 (auto-reaper) deferred indefinitely — not a real
-  problem yet (2026-06-03).** Reapable garbage is structurally impossible with
+  documented gap). **Phase 2 (auto-reaper) cancelled (2026-06-03) — will not be
+  built.** Reapable garbage is structurally impossible with
   no community: it requires users creating pool items, hiding them, and no one
   else referencing them — the user base is currently one. Any stray duplicate
   or dead row is a 10-second manual SQL fix (the DB can still be reshaped
@@ -96,8 +96,10 @@ reference shard carries it (never edit the decision entry).
   covering ingredients and recipes. Phase 1 migration: replace per-user
   hard-delete and the recipe `deleted_at` soft-delete + partial unique index
   with the shared pool/reference structure — "delete" = hide = drop your
-  reference row; a creator-hide transfers pool-item ownership to a reserved
-  anon user id. Retain `recipe_ingredients ON DELETE RESTRICT` as the DB-level
+  reference row. (The creator keeps pool ownership; the anon transfer originally
+  planned for hide was removed in **R-25** — hiding is just "remove from my
+  library". The anon sentinel is now reached only via account deletion.)
+  Retain `recipe_ingredients ON DELETE RESTRICT` as the DB-level
   backstop so the reaper's zero-references predicate stays true at the DB even
   if the reaper logic has a bug (`CASCADE`/`SET NULL` remain rejected — silent
   macro corruption / orphaned recipe lines). The old "reword IngredientInUseError
@@ -873,31 +875,27 @@ reference shard carries it (never edit the decision entry).
   muscle-detail / browse view; recommendations driven off the volume data
   (the broader catalog-expansion goal that would power them is separate).
 
-## R-25 — Fix hide_owned_* blocked by pool UPDATE WITH CHECK (Tier-3 finding)
-- **decision:** (none yet)
+## R-25 — hide_owned_* drops the reference only (keep owner) — Tier-3 finding
+- **decision:** (folds into D-A4)
 - **blocked-by:** —
-- **status:** open — found by R-16 Tier-3 (2026-06-03). `hide_owned_recipe` and
-  `hide_owned_ingredient` are `SECURITY INVOKER` and transfer pool ownership to
-  the anon sentinel by `update … set created_by_user_id = anon`. But the pool
-  UPDATE policy (`recipes`/`ingredients`) has
-  `with check (auth.uid() = created_by_user_id and created_by_user_id <> anon)`,
-  so the new row is rejected (SQLSTATE 42501) — **hiding a pooled recipe /
-  ingredient is broken under RLS**. The DEFINER `reconcile_account_delete` does
-  the same transfer and works only because it bypasses RLS. Never surfaced
-  because there are no production users yet (no one has hidden a contributed
-  item). Asserted under `todo` in `supabase/tests/04_rpc.test.sql`.
-- **scope:** Pick a fix and record the decision:
-  1. Make `hide_owned_recipe` / `hide_owned_ingredient` `SECURITY DEFINER`
-     (mirrors `reconcile_account_delete`) — but this **adds two DEFINER
-     functions**, which violates hard-invariant #3's two-exception cap and the
-     `00_schema` SECURITY-DEFINER-set invariant; both would need updating and
-     the exception documented. Or
-  2. Widen the pool UPDATE `with check` to permit an owner→anon transition
-     (e.g. `with check (auth.uid() = created_by_user_id or created_by_user_id =
-     anon)`), keeping `using` as the ownership gate — a smaller blast radius and
-     no new DEFINER. Likely preferred; confirm it does not let a user orphan
-     someone else's row (it does not — `using` still requires prior ownership).
-  When fixed, flip the `04_rpc` hide asserts from `todo` to hard assertions.
+- **status:** done (2026-06-03) — found by R-16 Tier-3, fixed in
+  `20260603120000_r25_hide_drops_ref_only`. `hide_owned_recipe` /
+  `hide_owned_ingredient` were `SECURITY INVOKER` yet transferred pool
+  ownership to the anon sentinel (`update … set created_by_user_id = anon`),
+  which the pool UPDATE policy's `with check (auth.uid() = created_by_user_id
+  and created_by_user_id <> anon)` rejected (SQLSTATE 42501) — **hiding was
+  broken under RLS** (never surfaced: no prod users). The anon-transfer-on-hide
+  existed only to feed the R-01 Phase-2 reaper, which is now **cancelled**, so
+  it was dead complexity. **Fix: hide now just drops the caller's reference
+  row** — a single-table delete, still INVOKER. The creator keeps ownership +
+  edit rights and can re-add the item later; "hide" means "remove from my
+  library", not "disown". The anon sentinel is now reached **only** via account
+  deletion (`reconcile_account_delete`, DEFINER — legitimately reassigns a
+  departing user's still-owned items so FKs are not stranded; unchanged). No
+  RLS-policy change and no new DEFINER, so hard-invariant #3 and the `00_schema`
+  SECURITY-DEFINER-set invariant stay intact. `04_rpc` hide asserts flipped from
+  `todo` to hard assertions (ref dropped, ownership retained) +
+  `hide_owned_ingredient` coverage added.
 
 ### Sketch — mechanics
 - **OFF write API:** `POST https://world.openfoodfacts.org/cgi/product_jqm2.pl`

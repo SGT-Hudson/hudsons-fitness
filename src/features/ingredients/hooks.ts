@@ -101,11 +101,11 @@ export function useUpdateIngredient() {
   });
 }
 
-// R-01 (spec §6, §7): replaces `useDeleteIngredient` + `IngredientInUseError`.
-// Hard delete is impossible under the pool model (recipe_ingredients FK
-// keeps the pool row alive); the unified hide RPC drops my ref and, if I
-// am the owner, transfers pool ownership to anon. The "in use" error
-// path is gone — there is no error case to translate.
+// R-01: replaces `useDeleteIngredient` + `IngredientInUseError`. Hard delete
+// is impossible under the pool model (recipe_ingredients FK keeps the pool row
+// alive); the hide RPC just drops my reference row (R-25 — the pooled item and
+// its ownership are untouched). The "in use" error path is gone — there is no
+// error case to translate.
 export function useHideIngredient() {
   const qc = useQueryClient();
   return useMutation({
