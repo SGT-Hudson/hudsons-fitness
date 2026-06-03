@@ -140,8 +140,8 @@ export function RecetasPage() {
     [ordered, page, pageSize],
   );
 
-  // R-01: "Remove" replaces soft-delete. Owner clicks → creator-hide
-  // (anon-transfer); non-owner clicks → ref drop only.
+  // R-01: "Remove" replaces soft-delete — drops my reference row whether or
+  // not I'm the owner (R-25; the pooled item and its ownership are untouched).
   function handleRemove(id: string, name: string) {
     if (!window.confirm(t('list.removeConfirm', { name }))) return;
     hide.mutate(id);

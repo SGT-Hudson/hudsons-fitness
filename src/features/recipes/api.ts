@@ -160,9 +160,9 @@ export async function saveRecipe(payload: SaveRecipePayload): Promise<string> {
   return data as string;
 }
 
-// R-01 (spec §6, §7): replaces the old `softDeleteRecipe` (deleted_at
-// flag, dropped in migration 20260520120030). The unified RPC: drops my
-// ref, AND transfers pool ownership to anon if I am the owner.
+// R-01: replaces the old `softDeleteRecipe` (deleted_at flag, dropped in
+// migration 20260520120030). The hide RPC just drops my reference row
+// (R-25 — the pooled recipe and its ownership are untouched).
 export async function hideOwnedRecipe(recipeId: string): Promise<void> {
   const { error } = await supabase.rpc('hide_owned_recipe', { p_recipe_id: recipeId });
   if (error) throw error;
