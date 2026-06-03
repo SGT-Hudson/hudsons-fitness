@@ -1,0 +1,15 @@
+# Supabase local config — used only for the Tier-3 pgTAP test DB
+# (`supabase start` + `supabase test db`). Production is managed via the
+# dashboard/MCP; this file is NOT a deploy surface. See
+# docs/superpowers/specs/2026-06-03-tier3-pgtap-ci-design.md.
+#
+# Kept intentionally minimal: only project_id + the Postgres major version
+# (matching prod — `get_project` reports 17.6.x). Everything else defaults;
+# CI trims the heavy, flaky services via `supabase start -x ...` rather than
+# config toggles, so this file stays robust across CLI versions.
+
+project_id = "hudsons-fitness"
+
+[db]
+port = 54322
+major_version = 17
