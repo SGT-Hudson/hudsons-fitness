@@ -54,7 +54,11 @@ reference shard carries it (never edit the decision entry).
   schema already exists — every statement is `if not exists`/guarded so a
   prod re-apply is a verified no-op, which is itself a Wave-3 validation
   item). R-03/R-04/R-08/R-12/R-14 + R-16-Tier-3 are now unblocked (a
-  reproducible schema exists in-repo).
+  reproducible schema exists in-repo). The baseline-vs-prod reproducibility
+  check (the Wave-3 validation item) is now scripted at
+  `scripts/db-reproducibility-check.sh` and wired into the manual `db-tests`
+  workflow; it has not yet been executed (no Docker/CLI in the authoring
+  env) — running it is the remaining R-00 verification.
 - **scope:** At the time of the review only one migration file exists —
   `supabase/migrations/20260514120000_sprint9_cron_and_jobs.sql` — and the
   rest of the schema was built via the Supabase dashboard/MCP, so there is no
@@ -536,7 +540,7 @@ reference shard carries it (never edit the decision entry).
 ## R-16 — Vitest Tier-1 (spec-first) + Tier-2 (with R-09) + Tier-3 (after R-00)
 - **decision:** D-F1
 - **blocked-by:** R-00 (Tier-3 only)
-- **status:** in-progress — Tier-1 (Vitest + CI `pnpm test` in the `lint-build` job) landed; Tier-2 **landed** (rode R-09, 2026-05-18): `*.test.tsx` run under jsdom via `environmentMatchGlobs` while Tier-1 `*.test.ts` stay Node, all in the same `pnpm test` / unchanged `lint-build` job; PhaseDialog + MeasurementDialog component tests added (`@testing-library/react` + `jsdom`). Only Tier-3 (DB/RLS/RPC via local `supabase start` + pgTAP) remains, gated behind R-00.
+- **status:** in-progress — Tier-1 (Vitest + CI `pnpm test` in the `lint-build` job) landed; Tier-2 **landed** (rode R-09, 2026-05-18): `*.test.tsx` run under jsdom via `environmentMatchGlobs` while Tier-1 `*.test.ts` stay Node, all in the same `pnpm test` / unchanged `lint-build` job; PhaseDialog + MeasurementDialog component tests added (`@testing-library/react` + `jsdom`). Tier-3 is now **authored** (2026-05-18, not yet executed): test-strategy spec `docs/superpowers/specs/2026-05-18-test-strategy.md`; pgTAP suite `supabase/tests/database/{00_rls_structural,01_rls_behavioral,02_rpc_security,03_rpc_behavior}.sql`; the R-00 reproducibility script `scripts/db-reproducibility-check.sh`; and a manual (non-blocking) `.github/workflows/db-tests.yml`. Execution remains pending a Docker+Supabase-CLI env — run `supabase start && supabase test db` + `bash scripts/db-reproducibility-check.sh`; a clean run flips Tier-3 and closes the R-00 reproducibility check. Status stays **in-progress** (execution unverified). Scope items 1 (spec) and 5 (docs) done; item 4 (R-00 tracked prerequisite) — R-00 is `done` and its reproducibility check is now scripted.
 - **scope:** Spec-first; Tier 1 is its own sprint, Tier 2 rides with R-09,
   Tier 3 is gated behind R-00.
   1. Spec: `docs/superpowers/specs/` test-strategy doc — tier boundaries,
