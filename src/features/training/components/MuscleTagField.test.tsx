@@ -54,4 +54,17 @@ describe('MuscleTagField tri-state', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /exerciseDialog\.muscle\.full_body/ }));
     expect(onChange).toHaveBeenLastCalledWith({ primary: ['full_body'], secondary: [] });
   });
+
+  it('toggling full_body off clears back to an empty selection', () => {
+    const { onChange } = setup({ primary: ['full_body'], secondary: [] });
+    fireEvent.click(screen.getByRole('checkbox', { name: /exerciseDialog\.muscle\.full_body/ }));
+    expect(onChange).toHaveBeenLastCalledWith({ primary: [], secondary: [] });
+  });
+
+  it('disables the grouped pills while full_body is active', () => {
+    setup({ primary: ['full_body'], secondary: [] });
+    expect(
+      screen.getByRole('button', { name: /exerciseDialog\.muscle\.pec_lower/ }),
+    ).toBeDisabled();
+  });
 });

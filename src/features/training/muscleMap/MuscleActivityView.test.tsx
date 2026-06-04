@@ -31,10 +31,16 @@ vi.mock('./hooks', () => ({
 import { MuscleActivityView } from './MuscleActivityView';
 
 describe('MuscleActivityView', () => {
-  it('renders two bodies, the fine-resolution ranked list and the full-body footnote', () => {
-    render(<MuscleActivityView />);
+  it('renders two bodies, the fine ranked list sorted desc with values, and the footnote', () => {
+    const { container } = render(<MuscleActivityView />);
     expect(screen.getAllByTestId('body')).toHaveLength(2);
-    expect(screen.getByText('exerciseDialog.muscle.pec_lower')).toBeInTheDocument();
+    // ranked at fine resolution, highest-first: pec_lower(7) → lat(3) → the zeros.
+    const labels = [...container.querySelectorAll('li span.flex-1')].map((s) => s.textContent);
+    expect(labels).toHaveLength(22);
+    expect(labels[0]).toBe('exerciseDialog.muscle.pec_lower');
+    expect(labels[1]).toBe('exerciseDialog.muscle.lat');
+    // the working-set value is rendered, not just the label.
+    expect(container.querySelector('li strong')?.textContent).toBe('7');
     expect(screen.getByText('muscleMap.fullBodyFootnote:2')).toBeInTheDocument();
   });
 });

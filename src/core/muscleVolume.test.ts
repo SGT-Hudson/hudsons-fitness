@@ -55,11 +55,16 @@ describe('computeMuscleVolume (fine codes)', () => {
     expect(r.maxMuscleValue).toBe(0);
   });
 
-  it('respects the inclusive window lower bound', () => {
+  it('respects the inclusive window lower bound (a set ON the bound is kept)', () => {
     const r = computeMuscleVolume(
-      [s({ performedOn: '2026-05-01' }), s({ performedOn: '2026-05-20' })],
+      [
+        s({ performedOn: '2026-05-01' }), // before the bound → dropped
+        s({ performedOn: '2026-05-10' }), // exactly the bound → kept (inclusive)
+        s({ performedOn: '2026-05-20' }), // after the bound → kept
+      ],
       '2026-05-10',
     );
-    expect(r.totalWorkingSets).toBe(1);
+    // 2 kept — guards against a `<=` regression that would drop the boundary date.
+    expect(r.totalWorkingSets).toBe(2);
   });
 });

@@ -126,9 +126,9 @@ describe('searchExercises (fine-taxonomy array operators)', () => {
 
 describe('createExercise', () => {
   it('carries primary_muscles[] into the insert payload', async () => {
-    let insertArg: { primary_muscles?: unknown } | undefined;
+    let insertArg: { primary_muscles?: unknown; secondary_muscles?: unknown } | undefined;
     from.mockReturnValue({
-      insert: (payload: { primary_muscles?: unknown }) => {
+      insert: (payload: { primary_muscles?: unknown; secondary_muscles?: unknown }) => {
         insertArg = payload;
         return { select: () => ({ single: () => Promise.resolve({ data: { id: 'x' }, error: null }) }) };
       },
@@ -142,5 +142,6 @@ describe('createExercise', () => {
       default_increment_kg: 2.5,
     });
     expect(insertArg?.primary_muscles).toEqual(['pec_lower']);
+    expect(insertArg?.secondary_muscles).toEqual(['delt_front']);
   });
 });

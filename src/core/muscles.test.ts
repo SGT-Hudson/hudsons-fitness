@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   MUSCLES,
@@ -38,5 +40,26 @@ describe('muscles taxonomy', () => {
     expect([...codesForBodyRegion('deltoids')].sort()).toEqual(
       ['delt_front', 'delt_rear', 'delt_side'],
     );
+  });
+
+  // Real TS↔DB anti-drift guard: parse the codes seeded by the migration and
+  // assert they are exactly the canonical TS set. (The pgTAP suite then pins the
+  // applied DB == the migration seed, closing the loop TS→migration→DB.)
+  it('the migration muscles seed matches the canonical taxonomy', () => {
+    const sql = readFileSync(
+      fileURLToPath(
+        new URL(
+          '../../supabase/migrations/20260604120000_fine_muscle_taxonomy.sql',
+          import.meta.url,
+        ),
+      ),
+      'utf8',
+    );
+    const insertBlock = sql.slice(
+      sql.indexOf('insert into public.muscles'),
+      sql.indexOf('on conflict'),
+    );
+    const seeded = [...insertBlock.matchAll(/\(\s*'([a-z_]+)'\s*,/g)].map((m) => m[1]);
+    expect(seeded.sort()).toEqual(MUSCLES.map((m) => m.code).sort());
   });
 });
