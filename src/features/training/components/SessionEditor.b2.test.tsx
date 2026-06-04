@@ -9,8 +9,8 @@ import i18n from '@/i18n';
 vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
 
 const EXES = [
-  { id: 'aaaaaaaa-0000-0000-0000-000000000001', name_es: 'Press de banca', name_en: 'Bench', primary_muscle: 'chest', equipment: 'barbell', default_increment_kg: 2.5, is_verified: true, source: 'system', created_by_user_id: null, created_at: '', updated_at: '' },
-  { id: 'bbbbbbbb-0000-0000-0000-000000000002', name_es: 'Sentadilla', name_en: 'Squat', primary_muscle: 'quads', equipment: 'barbell', default_increment_kg: 5, is_verified: true, source: 'system', created_by_user_id: null, created_at: '', updated_at: '' },
+  { id: 'aaaaaaaa-0000-0000-0000-000000000001', name_es: 'Press de banca', name_en: 'Bench', primary_muscles: ['pec_lower'], secondary_muscles: [], equipment: 'barbell', default_increment_kg: 2.5, is_verified: true, source: 'system', created_by_user_id: null, created_at: '', updated_at: '' },
+  { id: 'bbbbbbbb-0000-0000-0000-000000000002', name_es: 'Sentadilla', name_en: 'Squat', primary_muscles: ['quads'], secondary_muscles: [], equipment: 'barbell', default_increment_kg: 5, is_verified: true, source: 'system', created_by_user_id: null, created_at: '', updated_at: '' },
 ];
 vi.mock('../exercises/hooks', () => ({
   useExerciseSearch: (q: string) => ({ data: EXES.filter((e) => e.name_es.toLowerCase().includes(q.toLowerCase())), isLoading: false }),

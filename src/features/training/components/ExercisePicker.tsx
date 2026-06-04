@@ -10,6 +10,7 @@ import {
   type Exercise,
   type PrimaryMuscle,
 } from '../exercises/api';
+import { MUSCLE_GROUPS, codesInGroup } from '@/core/muscles';
 import { musclesMatchingQuery } from '../exercises/muscleSearch';
 import { ExerciseDialog } from './ExerciseDialog';
 import { cn } from '@/lib/utils';
@@ -42,7 +43,7 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
   const [createOpen, setCreateOpen] = useState(false);
 
   const labelByCode = Object.fromEntries(
-    PRIMARY_MUSCLE_VALUES.map((c) => [c, t(`exerciseDialog.primaryMuscle.${c}`)]),
+    PRIMARY_MUSCLE_VALUES.map((c) => [c, t(`exerciseDialog.muscle.${c}`)]),
   );
   const textMuscles = musclesMatchingQuery(debounced, labelByCode);
 
@@ -115,10 +116,14 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
           className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="">{t('picker.allMuscles')}</option>
-          {PRIMARY_MUSCLE_VALUES.map((code) => (
-            <option key={code} value={code}>
-              {t(`exerciseDialog.primaryMuscle.${code}`)}
-            </option>
+          {MUSCLE_GROUPS.map((g) => (
+            <optgroup key={g} label={t(`exerciseDialog.muscleGroup.${g}`)}>
+              {codesInGroup(g).map((code) => (
+                <option key={code} value={code}>
+                  {t(`exerciseDialog.muscle.${code}`)}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
         {open && (

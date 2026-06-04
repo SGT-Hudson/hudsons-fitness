@@ -23,8 +23,6 @@ import {
 } from '@/components/ui/select';
 import {
   EQUIPMENT_VALUES,
-  PRIMARY_MUSCLE_VALUES,
-  SECONDARY_MUSCLE_VALUES,
   suggestIncrementForEquipment,
   type Equipment,
   type Exercise,
@@ -32,14 +30,14 @@ import {
   type SecondaryMuscle,
 } from '../exercises/api';
 import { useCreateExercise } from '../exercises/hooks';
-import { cn } from '@/lib/utils';
+import { MuscleTagField } from './MuscleTagField';
 
 const SENTINEL_NONE = '__none__';
 
 const formSchema = z.object({
   name_es: z.string().trim().min(1),
   name_en: z.string().trim().optional().transform((v) => (v && v.length > 0 ? v : null)),
-  primary_muscle: z.string().optional().transform((v) => (v && v !== SENTINEL_NONE ? v : null)),
+  primary_muscles: z.array(z.string()).optional().transform((v) => v ?? []),
   secondary_muscles: z
     .array(z.string())
     .optional()
@@ -91,7 +89,7 @@ export function ExerciseDialog({ open, onOpenChange, defaultName, onCreated }: P
     defaultValues: {
       name_es: '',
       name_en: '',
-      primary_muscle: SENTINEL_NONE,
+      primary_muscles: [],
       secondary_muscles: [],
       equipment: SENTINEL_NONE,
       default_increment_kg: '',
@@ -108,7 +106,7 @@ export function ExerciseDialog({ open, onOpenChange, defaultName, onCreated }: P
     reset({
       name_es: defaultName?.trim() ?? '',
       name_en: '',
-      primary_muscle: SENTINEL_NONE,
+      primary_muscles: [],
       secondary_muscles: [],
       equipment: SENTINEL_NONE,
       default_increment_kg: '',
@@ -135,7 +133,7 @@ export function ExerciseDialog({ open, onOpenChange, defaultName, onCreated }: P
       const saved = await create.mutateAsync({
         name_es: values.name_es,
         name_en: values.name_en,
-        primary_muscle: values.primary_muscle as PrimaryMuscle | null,
+        primary_muscles: values.primary_muscles as PrimaryMuscle[],
         secondary_muscles: values.secondary_muscles as SecondaryMuscle[],
         equipment: values.equipment as Equipment | null,
         default_increment_kg: values.default_increment_kg,
@@ -182,85 +180,37 @@ export function ExerciseDialog({ open, onOpenChange, defaultName, onCreated }: P
             <p className="text-xs text-muted-foreground">{t('exerciseDialog.fields.namesHelp')}</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="ex-muscle">{t('exerciseDialog.fields.primaryMuscle')}</Label>
-              <Select
-                value={watch('primary_muscle') || SENTINEL_NONE}
-                onValueChange={(v) => setValue('primary_muscle', v)}
-              >
-                <SelectTrigger id="ex-muscle">
-                  <SelectValue placeholder={t('exerciseDialog.fields.primaryMusclePlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SENTINEL_NONE}>
-                    {t('exerciseDialog.fields.primaryMuscleNone')}
-                  </SelectItem>
-                  {PRIMARY_MUSCLE_VALUES.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {t(`exerciseDialog.primaryMuscle.${m}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="ex-equipment">{t('exerciseDialog.fields.equipment')}</Label>
-              <Select
-                value={equipment || SENTINEL_NONE}
-                onValueChange={(v) => setValue('equipment', v)}
-              >
-                <SelectTrigger id="ex-equipment">
-                  <SelectValue placeholder={t('exerciseDialog.fields.equipmentPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SENTINEL_NONE}>
-                    {t('exerciseDialog.fields.equipmentNone')}
-                  </SelectItem>
-                  {EQUIPMENT_VALUES.map((e) => (
-                    <SelectItem key={e} value={e}>
-                      {t(`exerciseDialog.equipment.${e}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <MuscleTagField
+            value={{
+              primary: watch('primary_muscles') ?? [],
+              secondary: watch('secondary_muscles') ?? [],
+            }}
+            onChange={(next) => {
+              setValue('primary_muscles', next.primary, { shouldDirty: true });
+              setValue('secondary_muscles', next.secondary, { shouldDirty: true });
+            }}
+          />
 
           <div className="space-y-1.5">
-            <Label>{t('exerciseDialog.fields.secondaryMuscles')}</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {SECONDARY_MUSCLE_VALUES.map((m) => {
-                const current = (watch('secondary_muscles') ?? []) as string[];
-                const selected = current.includes(m);
-                return (
-                  <button
-                    key={m}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() =>
-                      setValue(
-                        'secondary_muscles',
-                        selected ? current.filter((x) => x !== m) : [...current, m],
-                        { shouldDirty: true },
-                      )
-                    }
-                    className={cn(
-                      'rounded-full border px-2.5 py-1 text-xs transition-colors',
-                      selected
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    {t(`exerciseDialog.primaryMuscle.${m}`)}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t('exerciseDialog.fields.secondaryMusclesHelp')}
-            </p>
+            <Label htmlFor="ex-equipment">{t('exerciseDialog.fields.equipment')}</Label>
+            <Select
+              value={equipment || SENTINEL_NONE}
+              onValueChange={(v) => setValue('equipment', v)}
+            >
+              <SelectTrigger id="ex-equipment">
+                <SelectValue placeholder={t('exerciseDialog.fields.equipmentPlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SENTINEL_NONE}>
+                  {t('exerciseDialog.fields.equipmentNone')}
+                </SelectItem>
+                {EQUIPMENT_VALUES.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {t(`exerciseDialog.equipment.${e}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">

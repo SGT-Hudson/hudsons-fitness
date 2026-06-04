@@ -24,6 +24,7 @@ select has_table('public', 'recipes',          'recipes exists');
 select has_table('public', 'recipe_ingredients','recipe_ingredients exists');
 select has_table('public', 'ingredients',      'ingredients exists');
 select has_table('public', 'exercises',        'exercises exists');
+select has_table('public', 'muscles',          'muscles exists');
 select has_table('public', 'workout_sessions', 'workout_sessions exists');
 select has_table('public', 'workout_sets',     'workout_sets exists');
 select has_table('public', 'routines',         'routines exists');

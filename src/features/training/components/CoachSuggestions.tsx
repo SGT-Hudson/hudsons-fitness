@@ -57,7 +57,17 @@ interface CardProps {
 
 function SuggestionCard({ suggestion, onApplySuggestedLoad }: CardProps) {
   const { t } = useTranslation('coach');
+  const { t: tMuscle } = useTranslation('entrenamiento');
   const isProgression = PROGRESSION_RULES.has(suggestion.ruleId);
+  // muscle-recency carries a raw fine muscle code in detail.primaryMuscle; localize
+  // it to the muscle name so the headline reads "…lower chest", not "…pec_lower".
+  const detail =
+    typeof suggestion.detail.primaryMuscle === 'string'
+      ? {
+          ...suggestion.detail,
+          primaryMuscle: tMuscle(`exerciseDialog.muscle.${suggestion.detail.primaryMuscle}`),
+        }
+      : suggestion.detail;
   const suggestedFromRule = isProgression ? Number(suggestion.detail.nextWeightKg) : NaN;
   const [editable, setEditable] = useState<string>(
     Number.isFinite(suggestedFromRule) ? String(suggestedFromRule) : '',
@@ -78,7 +88,7 @@ function SuggestionCard({ suggestion, onApplySuggestedLoad }: CardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium">
-              {t(suggestion.headline, suggestion.detail)}
+              {t(suggestion.headline, detail)}
             </span>
             <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
               {t(`severity.${suggestion.severity}`)}

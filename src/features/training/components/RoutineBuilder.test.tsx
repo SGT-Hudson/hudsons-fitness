@@ -10,7 +10,7 @@ vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }))
 // Stub the picker: clicking it selects a fixed exercise (avoids debounced query).
 const EX = {
   id: '11111111-1111-1111-1111-111111111111', name_es: 'Press de banca', name_en: 'Bench press',
-  primary_muscle: 'chest', equipment: 'barbell', default_increment_kg: 2.5,
+  primary_muscles: ['pec_lower'], secondary_muscles: [], equipment: 'barbell', default_increment_kg: 2.5,
   is_verified: true, source: 'system', created_by_user_id: null,
   created_at: '', updated_at: '',
 };

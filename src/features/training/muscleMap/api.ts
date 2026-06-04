@@ -4,7 +4,7 @@ import type { MuscleCode, SetInput } from '@/core/muscleVolume';
 interface Row {
   is_warmup: boolean;
   session: { performed_on: string } | null;
-  exercise: { primary_muscle: string | null; secondary_muscles: string[] } | null;
+  exercise: { primary_muscles: string[]; secondary_muscles: string[] } | null;
 }
 
 /**
@@ -19,7 +19,7 @@ export async function fetchWorkoutSetsForVolume(
     .from('workout_sets')
     .select(
       'is_warmup, session:workout_sessions!inner(performed_on, user_id), ' +
-        'exercise:exercises!inner(primary_muscle, secondary_muscles)',
+        'exercise:exercises!inner(primary_muscles, secondary_muscles)',
     );
   if (windowStart !== null) {
     query = query.gte('session.performed_on', windowStart);
@@ -31,7 +31,7 @@ export async function fetchWorkoutSetsForVolume(
   return ((data as unknown as Row[]) ?? []).map((r) => ({
     performedOn: r.session?.performed_on ?? '',
     isWarmup: r.is_warmup,
-    primaryMuscle: (r.exercise?.primary_muscle ?? null) as SetInput['primaryMuscle'],
+    primaryMuscles: (r.exercise?.primary_muscles ?? []) as SetInput['primaryMuscles'],
     secondaryMuscles: (r.exercise?.secondary_muscles ?? []) as MuscleCode[],
   }));
 }

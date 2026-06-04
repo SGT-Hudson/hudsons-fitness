@@ -91,7 +91,7 @@ export function EntrenamientoPage() {
         (lang === 'en' ? exRow?.name_en : null) ?? exRow?.name_es ?? re.exercise_id;
       coachContextByExercise[re.exercise_id] = {
         exerciseId: re.exercise_id,
-        primaryMuscle: exRow?.primary_muscle ?? null,
+        primaryMuscles: exRow?.primary_muscles ?? [],
         equipment: exRow?.equipment ?? null,
         defaultIncrementKg: exRow?.default_increment_kg ?? null,
         history,
