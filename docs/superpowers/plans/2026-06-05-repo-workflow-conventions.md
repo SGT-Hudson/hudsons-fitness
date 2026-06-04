@@ -317,10 +317,12 @@ grep -n "enumerated in \`data-model.md\`" CLAUDE.md
 grep -n "Ship flow (bright line)" CLAUDE.md
 grep -n "Never commit secrets" CLAUDE.md
 grep -n "## Session lifecycle" CLAUDE.md
-grep -cE "^[1-7]\. " CLAUDE.md
+# Count ONLY the invariants section (section-scoped — a bare `^[1-7]\.` grep also
+# catches the 4 numbered Working-preferences items and would print 11, not 7):
+awk '/^## Hard invariants/{f=1;next} /^## Working preferences/{f=0} f && /^[0-9]+\. /' CLAUDE.md | wc -l
 ```
 
-Expected: the first four greps each print one match; the last (count of top-level numbered invariant lines `1.`–`7.`) prints `7`. Also confirm the old strings are gone:
+Expected: the first four greps each print one match; the section-scoped invariant count prints `7`, and item 7 is "Never commit secrets". Also confirm the old strings are gone:
 
 ```bash
 grep -c "Never document an un-built design" CLAUDE.md   # expect 0
