@@ -42,7 +42,7 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
   const [createOpen, setCreateOpen] = useState(false);
 
   const labelByCode = Object.fromEntries(
-    PRIMARY_MUSCLE_VALUES.map((c) => [c, t(`exerciseDialog.primaryMuscle.${c}`)]),
+    PRIMARY_MUSCLE_VALUES.map((c) => [c, t(`exerciseDialog.muscle.${c}`)]),
   );
   const textMuscles = musclesMatchingQuery(debounced, labelByCode);
 
