@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { DOUBLE_PROGRESSION_DEFAULTS } from '@/core/training';
+import { MUSCLE_CODES, MUSCLES } from '@/core/muscles';
 import type { Tables, TablesInsert } from '@/types/database';
 
 export type Exercise = Tables<'exercises'>;
@@ -25,46 +26,22 @@ export const EQUIPMENT_VALUES: Equipment[] = [
   'other',
 ];
 
-export type PrimaryMuscle =
-  | 'chest'
-  | 'back'
-  | 'shoulders'
-  | 'quads'
-  | 'hamstrings'
-  | 'glutes'
-  | 'calves'
-  | 'biceps'
-  | 'triceps'
-  | 'core'
-  | 'forearms'
-  | 'full_body';
-
+// Fine taxonomy (Project A). full_body is a valid PRIMARY but never a secondary.
+export type PrimaryMuscle = (typeof MUSCLE_CODES)[number] | 'full_body';
 export const PRIMARY_MUSCLE_VALUES: PrimaryMuscle[] = [
-  'chest',
-  'back',
-  'shoulders',
-  'quads',
-  'hamstrings',
-  'glutes',
-  'calves',
-  'biceps',
-  'triceps',
-  'core',
-  'forearms',
+  ...MUSCLES.filter((m) => !m.isFullBody).map((m) => m.code),
   'full_body',
 ];
 
-/** Secondary movers — the coarse-11 (full_body is not a valid secondary). */
+/** Secondary movers — the 22 fine codes (full_body is not a valid secondary). */
 export type SecondaryMuscle = Exclude<PrimaryMuscle, 'full_body'>;
 
-export const SECONDARY_MUSCLE_VALUES: SecondaryMuscle[] = PRIMARY_MUSCLE_VALUES.filter(
-  (m): m is SecondaryMuscle => m !== 'full_body',
-);
+export const SECONDARY_MUSCLE_VALUES: SecondaryMuscle[] = MUSCLE_CODES.map((c) => c);
 
 export interface ExerciseCreateInput {
   name_es: string;
   name_en: string | null;
-  primary_muscle: PrimaryMuscle | null;
+  primary_muscles: PrimaryMuscle[];
   secondary_muscles: SecondaryMuscle[];
   equipment: Equipment | null;
   default_increment_kg: number | null;
@@ -88,8 +65,8 @@ export interface ExerciseSearchOptions {
  * before composition — otherwise a user typing `a,b` would split into
  * two filter terms.
  *
- * `opts.muscle` adds a hard AND equality filter (dropdown selection).
- * `opts.textMuscles` adds per-code `primary_muscle.eq.<code>` OR terms
+ * `opts.muscle` adds a hard AND contains-on-array filter (dropdown selection).
+ * `opts.textMuscles` adds per-code `primary_muscles.cs.{<code>}` OR terms
  * so that typing a muscle name in the text box surfaces matching exercises.
  */
 export async function searchExercises(
@@ -103,7 +80,7 @@ export async function searchExercises(
   let builder = supabase.from('exercises').select('*');
 
   if (muscle) {
-    builder = builder.eq('primary_muscle', muscle);
+    builder = builder.contains('primary_muscles', [muscle]);
   }
 
   const terms: string[] = [];
@@ -111,7 +88,7 @@ export async function searchExercises(
     terms.push(`name_es.ilike.%${safe}%`, `name_en.ilike.%${safe}%`);
   }
   for (const code of textMuscles) {
-    terms.push(`primary_muscle.eq.${code}`);
+    terms.push(`primary_muscles.cs.{${code}}`);
   }
 
   if (terms.length > 0) {
@@ -149,7 +126,7 @@ export async function createExercise(
     source: 'manual',
     name_es: input.name_es,
     name_en: input.name_en,
-    primary_muscle: input.primary_muscle,
+    primary_muscles: input.primary_muscles,
     secondary_muscles: input.secondary_muscles,
     equipment: input.equipment,
     default_increment_kg: input.default_increment_kg,
