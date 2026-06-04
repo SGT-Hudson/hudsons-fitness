@@ -241,7 +241,7 @@ describe('lastWorkingSetForExercise', () => {
 
 const ctx = (over: Partial<CoachContext> = {}): CoachContext => ({
   exerciseId: 'ex1',
-  primaryMuscle: 'chest',
+  primaryMuscles: ['pec_lower'],
   equipment: 'barbell',
   defaultIncrementKg: null, // exercises whose system seed / user override left null
   history: [],
@@ -514,7 +514,7 @@ describe('coach: muscle-recency rule', () => {
       .find((s) => s.ruleId === 'muscle-recency');
     expect(hit).toBeDefined();
     expect(hit?.detail.daysSince).toBe(19);
-    expect(hit?.detail.primaryMuscle).toBe('chest');
+    expect(hit?.detail.primaryMuscle).toBe('pec_lower');
   });
 
   it('does not fire when the last session is recent', () => {
@@ -529,8 +529,8 @@ describe('coach: muscle-recency rule', () => {
     expect(hit?.headline).toBe('coach.rules.muscleRecency.headlineNever');
   });
 
-  it('refuses to fire when primaryMuscle is null', () => {
-    const out = evaluateCoach(ctx({ history: [], primaryMuscle: null }));
+  it('refuses to fire when there are no primary movers', () => {
+    const out = evaluateCoach(ctx({ history: [], primaryMuscles: [] }));
     expect(out.find((s) => s.ruleId === 'muscle-recency')).toBeUndefined();
   });
 });
@@ -561,8 +561,8 @@ describe('evaluateCoach engine', () => {
     expect(dp < mr).toBe(dpRank < mrRank);
   });
 
-  it('returns [] when no rule fires (e.g. empty context, primaryMuscle null)', () => {
-    expect(evaluateCoach(ctx({ history: [], primaryMuscle: null }))).toEqual([]);
+  it('returns [] when no rule fires (e.g. empty context, no primary movers)', () => {
+    expect(evaluateCoach(ctx({ history: [], primaryMuscles: [] }))).toEqual([]);
   });
 
   it('accepts a custom rule list (extensibility test)', () => {

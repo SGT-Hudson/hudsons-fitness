@@ -320,7 +320,7 @@ export function prefillSetsForExercise(
 
 export interface CoachContext {
   exerciseId: string;
-  primaryMuscle: string | null;
+  primaryMuscles: string[];
   equipment: string | null;
   /**
    * Per-exercise load increment from `exercises.default_increment_kg`
@@ -629,7 +629,7 @@ const ruleRpeClimbingFatigue: CoachRule = {
 //
 // This rule reads about the muscle group, not the specific exercise. The
 // caller is responsible for assembling `history` from ALL exercises sharing
-// `ctx.primaryMuscle` if they want this rule to fire on a per-muscle basis.
+// `ctx.primaryMuscles[0]` if they want this rule to fire on a per-muscle basis.
 // When `history` is the single-exercise slice (the default elsewhere), this
 // rule simply tells you when you last did THIS exercise.
 
@@ -637,14 +637,16 @@ const ruleMuscleRecency: CoachRule = {
   id: 'muscle-recency',
   evaluate(ctx): CoachSuggestion | null {
     const { nudgeAfterDays } = MUSCLE_RECENCY_DEFAULTS;
-    if (ctx.primaryMuscle === null) return null;
+    // Multiple primaries: fire on the canonical-order lead mover.
+    const lead = ctx.primaryMuscles[0] ?? null;
+    if (lead === null) return null;
     if (!ctx.history?.length) {
       // Never trained: that's a stronger nudge than days-since.
       const never: CoachSuggestion = {
         ruleId: 'muscle-recency',
         severity: 'info',
         headline: 'coach.rules.muscleRecency.headlineNever',
-        detail: { primaryMuscle: ctx.primaryMuscle },
+        detail: { primaryMuscle: lead },
       };
       return never;
     }
@@ -660,7 +662,7 @@ const ruleMuscleRecency: CoachRule = {
       severity: 'info',
       headline: 'coach.rules.muscleRecency.headline',
       detail: {
-        primaryMuscle: ctx.primaryMuscle,
+        primaryMuscle: lead,
         daysSince: days,
         nudgeAfterDays,
       },

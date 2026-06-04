@@ -54,7 +54,7 @@ export function ExerciseBlock({ blockIndex, todayISO, initialExercise, onRemoveB
   const coachCtx: CoachContext | null = exercise
     ? {
         exerciseId: exercise.id,
-        primaryMuscle: exercise.primary_muscle,
+        primaryMuscles: exercise.primary_muscles,
         equipment: exercise.equipment,
         defaultIncrementKg: exercise.default_increment_kg,
         history: history.data ?? [],
