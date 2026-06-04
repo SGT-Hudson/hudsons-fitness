@@ -5,6 +5,11 @@ IDs are permanent and never renumbered or reused. When a decision's
 implementation is pending, it links its roadmap item: `roadmap: R-xx`.
 The `R-xx` items are defined in `roadmap.md`.
 
+**Going-forward logging rule:** add a new `D-xx` entry only for a real decision
+with a tradeoff — a choice between alternatives, a reversal, or a load-bearing
+constraint. Do not log "non-decisions" that merely restate the status quo with
+no change. Existing entries are immutable history and stay as written.
+
 ## Contents
 
 **A. Data model**
