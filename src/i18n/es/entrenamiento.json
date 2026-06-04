@@ -122,6 +122,13 @@
       "core": "Core",
       "legs": "Piernas"
     },
+    "muscleTag": {
+      "instruction": "Toca un músculo: 1 vez → primario, 2 → secundario, 3 → quitar.",
+      "legendPrimary": "Primario · cuenta 1.0",
+      "legendSecondary": "Secundario · cuenta 0.5",
+      "badgePrimary": "Prim",
+      "badgeSecondary": "Sec"
+    },
     "equipment": {
       "barbell": "Barra",
       "dumbbell": "Mancuerna",

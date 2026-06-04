@@ -122,6 +122,13 @@
       "core": "Core",
       "legs": "Legs"
     },
+    "muscleTag": {
+      "instruction": "Tap a muscle: 1 tap → primary, 2 → secondary, 3 → remove.",
+      "legendPrimary": "Primary · counts 1.0",
+      "legendSecondary": "Secondary · counts 0.5",
+      "badgePrimary": "Prim",
+      "badgeSecondary": "Sec"
+    },
     "equipment": {
       "barbell": "Barbell",
       "dumbbell": "Dumbbell",
