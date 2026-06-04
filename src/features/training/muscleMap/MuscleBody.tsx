@@ -1,4 +1,5 @@
 import type { MuscleCode } from '@/core/muscleVolume';
+import { codesForBodyRegion } from '@/core/muscles';
 import { ACTIVE_SKIN } from './skins/mitSkin';
 import type { Gender, Side } from './skins/types';
 import { muscleColor, NEUTRAL_PART } from './muscleColor';
@@ -20,8 +21,9 @@ export function MuscleBody({ intensityByMuscle, max, gender, side }: Props) {
       aria-label={`body-${gender}-${side}`}
     >
       {skin.parts(gender, side).flatMap((part, pi) => {
-        const muscle = skin.slugToMuscle[part.slug];
-        const fill = muscle ? muscleColor(intensityByMuscle[muscle] ?? 0, max) : NEUTRAL_PART;
+        const codes = codesForBodyRegion(part.slug);
+        const value = codes.reduce((sum, c) => sum + (intensityByMuscle[c] ?? 0), 0);
+        const fill = codes.length > 0 ? muscleColor(value, max) : NEUTRAL_PART;
         return part.paths.map((d, di) => (
           <path key={`${pi}-${di}`} d={d} fill={fill} stroke="#ffffff" strokeWidth={0.6} />
         ));

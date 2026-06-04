@@ -89,19 +89,45 @@
     "errors": {
       "nameEsRequired": "Spanish name is required."
     },
-    "primaryMuscle": {
-      "chest": "Chest",
-      "back": "Back",
-      "shoulders": "Shoulders",
+    "muscle": {
+      "delt_front": "Front deltoid",
+      "delt_side": "Side deltoid",
+      "delt_rear": "Rear deltoid",
+      "pec_upper": "Upper chest",
+      "pec_lower": "Lower chest",
+      "lat": "Lats",
+      "trap": "Traps",
+      "rhomboids": "Rhomboids",
+      "lower_back": "Lower back",
+      "biceps": "Biceps",
+      "tri_long": "Triceps (long head)",
+      "tri_lateral": "Triceps (lateral)",
+      "forearms": "Forearms",
+      "abs_upper": "Upper abs",
+      "abs_lower": "Lower abs",
+      "obliques": "Obliques",
       "quads": "Quads",
       "hamstrings": "Hamstrings",
       "glutes": "Glutes",
+      "adductors": "Adductors",
       "calves": "Calves",
-      "biceps": "Biceps",
-      "triceps": "Triceps",
-      "core": "Core",
-      "forearms": "Forearms",
+      "tibialis": "Tibialis",
       "full_body": "Full body"
+    },
+    "muscleGroup": {
+      "shoulders": "Shoulder",
+      "chest": "Chest",
+      "back": "Back",
+      "arms": "Arms",
+      "core": "Core",
+      "legs": "Legs"
+    },
+    "muscleTag": {
+      "instruction": "Tap a muscle: 1 tap → primary, 2 → secondary, 3 → remove.",
+      "legendPrimary": "Primary · counts 1.0",
+      "legendSecondary": "Secondary · counts 0.5",
+      "badgePrimary": "Prim",
+      "badgeSecondary": "Sec"
     },
     "equipment": {
       "barbell": "Barbell",

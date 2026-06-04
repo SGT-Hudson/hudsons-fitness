@@ -89,19 +89,45 @@
     "errors": {
       "nameEsRequired": "El nombre en español es obligatorio."
     },
-    "primaryMuscle": {
+    "muscle": {
+      "delt_front": "Deltoides anterior",
+      "delt_side": "Deltoides lateral",
+      "delt_rear": "Deltoides posterior",
+      "pec_upper": "Pectoral superior",
+      "pec_lower": "Pectoral inferior",
+      "lat": "Dorsal ancho",
+      "trap": "Trapecio",
+      "rhomboids": "Romboides",
+      "lower_back": "Lumbares",
+      "biceps": "Bíceps",
+      "tri_long": "Tríceps (largo)",
+      "tri_lateral": "Tríceps (lateral)",
+      "forearms": "Antebrazos",
+      "abs_upper": "Abdomen superior",
+      "abs_lower": "Abdomen inferior",
+      "obliques": "Oblicuos",
+      "quads": "Cuádriceps",
+      "hamstrings": "Isquiosurales",
+      "glutes": "Glúteos",
+      "adductors": "Aductores",
+      "calves": "Gemelos",
+      "tibialis": "Tibial anterior",
+      "full_body": "Cuerpo completo"
+    },
+    "muscleGroup": {
+      "shoulders": "Hombro",
       "chest": "Pecho",
       "back": "Espalda",
-      "shoulders": "Hombros",
-      "quads": "Cuádriceps",
-      "hamstrings": "Femorales",
-      "glutes": "Glúteos",
-      "calves": "Gemelos",
-      "biceps": "Bíceps",
-      "triceps": "Tríceps",
+      "arms": "Brazos",
       "core": "Core",
-      "forearms": "Antebrazos",
-      "full_body": "Cuerpo entero"
+      "legs": "Piernas"
+    },
+    "muscleTag": {
+      "instruction": "Toca un músculo: 1 vez → primario, 2 → secundario, 3 → quitar.",
+      "legendPrimary": "Primario · cuenta 1.0",
+      "legendSecondary": "Secundario · cuenta 0.5",
+      "badgePrimary": "Prim",
+      "badgeSecondary": "Sec"
     },
     "equipment": {
       "barbell": "Barra",

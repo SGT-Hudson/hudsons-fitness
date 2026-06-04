@@ -132,6 +132,93 @@ decision rationale in `decisions.md`.
 - Spec `docs/superpowers/specs/2026-05-26-muscle-heatmap-design.md`, plan
   `docs/superpowers/plans/2026-05-26-muscle-heatmap.md`. See R-24 / D-F10.
 
+### 2026-06-04 — R-26 Project A — fine muscle taxonomy
+
+- **Muscle model (#155).** Replaced the coarse-12 `primary_muscle` taxonomy with a
+  22-code fine taxonomy in 6 groups (shoulders/chest/back/arms/core/legs) + the
+  special `full_body`. New `public.muscles` table — `code` (pk), `muscle_group`
+  (CHECK), `body_region_slug`, `display_order`, `is_full_body`; RLS read-only
+  (`muscles_select_all` SELECT-true, no write policy); 23 seed rows (22 shadeable
+  codes + `full_body`). It mirrors `src/core/muscles.ts` (the canonical TS structural
+  source), guarded by a pgTAP anti-drift test.
+- **Exercises schema (#155).** `exercises.primary_muscle` (singular) was DROPPED and
+  replaced by `exercises.primary_muscles text[] not null default '{}'` (MULTIPLE
+  primaries); `secondary_muscles` retained, now fine codes. The old
+  `exercises_primary_muscle_check` + `exercises_secondary_muscles_valid` CHECKs were
+  dropped and replaced by trigger `trg_validate_exercise_muscles` →
+  `public.validate_exercise_muscles()` (INVOKER, `set search_path=public`): asserts
+  `primary_muscles ⊆ muscles.code` and `secondary_muscles ⊆ muscles.code WHERE NOT
+  is_full_body` (a CHECK can't reference another table). All 34 system rows re-tagged
+  to fine codes.
+- **Heatmap (#155).** `computeMuscleVolume` (`src/core/muscleVolume.ts`) stays pure
+  and now emits volume per FINE code; EACH primary mover earns 1.0 per working set
+  (multiple primaries each 1.0 — stimulus not conserved across a set), each secondary
+  0.5 (`SECONDARY_SET_WEIGHT`), warm-ups excluded, `full_body` footnoted. The render
+  layer (`MuscleBody.tsx`) sums fine→slug via `codesForBodyRegion(slug)` from
+  `core/muscles.ts`; the `BodyArtSkin` interface dropped `slugToMuscle` (moved into
+  core). The ranked "Muscle · N sets" list renders at fine resolution even where the
+  drawing co-shades. P1(a): fine data now, rendered on the current vendored MIT art
+  (core/back/legs gain detail; shoulders/chest/triceps co-shade until license-clean
+  finer art exists).
+- **Tagging UI + filter (#155).** `ExerciseDialog` now uses `MuscleTagField` — a
+  single grouped tri-state pill list under the 6 group headers (tap cycles neutral →
+  Primary → Secondary → remove) yielding `primary_muscles[]` + `secondary_muscles[]`.
+  The `ExercisePicker` muscle filter is `<optgroup>`'d by the 6 groups and filters by
+  a specific fine code; the PostgREST array filter is `primary_muscles.cs.{<code>}`
+  (contains), replacing `primary_muscle.eq.<code>`.
+- **i18n (#155).** The muscle-name block was renamed
+  `exerciseDialog.primaryMuscle.<code>` → `exerciseDialog.muscle.<code>` and re-keyed
+  to the 22 fine codes + `full_body`; new block `exerciseDialog.muscleGroup.<group>`
+  (6 labels); `hamstrings` relabelled "Femorales" → "Isquiosurales".
+- **Migrations + tests (#155).** `20260604120000` (muscles table + schema swap +
+  re-tag) and follow-up `20260604130000_fine_taxonomy_retag_review_fixes.sql` (an
+  expert anatomical review corrected 3 rows: Deadlift → hamstrings promoted to
+  primary; Kettlebell swing → +forearms secondary; Overhead press → +trap
+  secondary). New pgTAP suite `supabase/tests/05_muscles.test.sql` (seed
+  completeness, anti-drift vs `core/muscles.ts`, trigger rejects unknown /
+  full-body-as-secondary, every system row has ≥1 primary). See R-26 / D-F11.
+
+### 2026-05-19 → 2026-06-04 — F-1/F-2 training + nutrition batch (backfill)
+
+- **F-1 whole-foods bilingual library (#113).** Bulk bilingual whole-foods ingredient
+  library seeded via the `scripts/whole-foods/` pipeline →
+  `20260523120100_f1_whole_foods_seed.sql` (per-row idempotent system seed). U-4 was
+  dropped from the batch.
+- **Ingredient/recipe list pagination (#112).** Paginated the ingredient and recipe
+  lists (`pagination` i18n namespace).
+- **F-2 routines + cyclic planner (#122) — LIVE in production (tag v2026-06-03).**
+  New `routines` / `routine_exercises` / `programs` / `program_days` tables + RPCs
+  `save_routine`, `save_program`, `set_active_program`, and the 7-arg `save_workout`;
+  `workout_sessions` provenance stamps (`program_id` / `routine_id`). The `/routine`
+  builder + cyclic program planner.
+- **F-2b warm-up sets in routines (#128) — live.** `routine_exercises.warmup_sets`
+  jsonb.
+- **Exercise search-by-muscle (#127).** Muscle filter wired into the exercise picker.
+- **U-1 sub-macros sugar + saturated (#95) — live.** `ingredients.sugar_g_per_unit`,
+  `ingredients.saturated_fat_g_per_unit`; `meal_logs.custom_sugar_g`,
+  `meal_logs.custom_saturated_fat_g`; `daily_nutrition_history` planned/consumed sugar
+  + saturated_fat + the `*_complete` flags.
+- **U-2 recipe meal-type tags (#96) — live.** `recipes.meal_types text[]`.
+- **U-3 nutrition search filters + warning badges (#97).**
+- **U-5 day totals vs target (#101).**
+- **U-6 copy a meal across days (#116).**
+- **Nutrición/Entreno section-aware responsive shell (#91).** Post-V1 item 3; English
+  route slugs (`/diary`, `/progress`, `/recipes`, `/training`, `/routine`,
+  `/exercises`) — no Spanish route aliases.
+- **Planner shopping list (#46).**
+- **Settings grouped-list / drill-in redesign (#124).**
+
+### 2026-06-03 — R-16 Tier-3 pgTAP + R-25 hide fix
+
+- **R-16 Tier-3 pgTAP suite + db-test CI job (#149/#150).** pgTAP suites `00_schema`
+  .. `05_muscles` run as a `db-test` job inside `.github/workflows/ci.yml` (uses the
+  new minimal `supabase/config.toml`, required on `develop`). Closes the "Tier-3
+  gated" gaps noted in the earlier R-19 / R-01 entries. Only the R-22 UPDATE
+  WITH-CHECK gap remains as a pgTAP todo.
+- **R-25 hide drops the reference row only (#151).** Migration
+  `20260603120000_r25_hide_drops_ref_only.sql` — hiding an owned library item now
+  drops only the user's reference row; pool ownership is retained.
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |
@@ -165,4 +252,21 @@ decision rationale in `decisions.md`.
 | 135 | R-23 — switch-exercise fix | Leaving an exercise demotes it to partial/pending (resumable, not stranded) + leave-partial confirmation |
 | 136 | R-24 — F-4 muscle heatmap | `core/muscleVolume.ts` (primary 1 / secondary 0.5, warm-ups excluded, full-body footnoted) + `features/training/muscleMap/` body heatmap + pluggable body-art skin (vendored MIT art); `exercises.secondary_muscles` migration + ExerciseDialog picker |
 | 139 | R-24 — heatmap inline on `/training` | Embed muscle map inline on `/training` (drop the standalone page/route); gender auto-follows `profiles.sex` reactively |
+| 46  | Planificador — shopping list | Aggregated shopping list from the weekly plan |
+| 91  | Post-V1 — responsive shell | Nutrición/Entreno section-aware responsive shell; English route slugs (`/diary`, `/progress`, `/recipes`, `/training`, `/routine`, `/exercises`) |
+| 95  | U-1 — sub-macros | `sugar_g_per_unit` / `saturated_fat_g_per_unit` on ingredients + `custom_*` on meal_logs + planned/consumed + `*_complete` flags on `daily_nutrition_history` |
+| 96  | U-2 — recipe meal-type tags | `recipes.meal_types text[]` |
+| 97  | U-3 — nutrition search filters | Search filters + warning badges on nutrition lists |
+| 101 | U-5 — day totals vs target | Day totals compared against active-phase target |
+| 112 | F-1 — list pagination | Ingredient + recipe list pagination (`pagination` namespace) |
+| 113 | F-1 — whole-foods library | Bilingual whole-foods seed via `scripts/whole-foods/` → `20260523120100_f1_whole_foods_seed.sql`; U-4 dropped |
+| 116 | U-6 — copy a meal | Copy a meal across days |
+| 122 | F-2 — routines + cyclic planner | `routines` / `routine_exercises` / `programs` / `program_days` tables + `save_routine` / `save_program` / `set_active_program` / 7-arg `save_workout` RPCs + session `program_id`/`routine_id` provenance; `/routine` builder (LIVE, tag v2026-06-03) |
+| 124 | Settings — grouped-list redesign | Grouped-list / drill-in Settings redesign |
+| 127 | F-2 — exercise search-by-muscle | Muscle filter wired into the exercise picker |
+| 128 | F-2b — warm-up sets | `routine_exercises.warmup_sets` jsonb |
+| 149 | R-16 — Tier-3 pgTAP suite | pgTAP suites `00_schema`..`04_*` for RLS / RPC; closes R-19/R-01 Tier-3 gaps |
+| 150 | R-16 — db-test CI job | `db-test` job (`supabase start` + pgTAP) in `ci.yml`, required on `develop`; minimal `supabase/config.toml` |
+| 151 | R-25 — hide drops ref only | `20260603120000_r25_hide_drops_ref_only.sql` — hide drops only the reference row, pool ownership retained |
+| 155 | R-26 — fine muscle taxonomy | `public.muscles` table (22 fine codes + `full_body`, mirrors `core/muscles.ts`); `exercises.primary_muscles[]` (multi-primary) replacing singular `primary_muscle`; `validate_exercise_muscles` trigger; finer-resolution heatmap (per-primary 1.0); `MuscleTagField` grouped tri-state tagging + `<optgroup>`'d picker filter (`primary_muscles.cs.{code}`); i18n re-key to fine codes; migrations `20260604120000` + `20260604130000` retag-review fix; pgTAP `05_muscles`. See R-26 / D-F11 |
 
