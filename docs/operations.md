@@ -55,6 +55,13 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
   `release/YYYY-MM-DD`→`main` PR (merge commit, never squash, so histories
   stay convergent). These PRs are intentionally NOT auto-armed. Promotion is
   on-demand ("promote"), not scheduled.
+- **Release doc-reconcile (required):** before opening a `release/*`→`main` PR,
+  run the doc-audit (`.claude/workflows/doc-audit.js`) and fix any drift it
+  surfaces, so `main`'s living docs match the code being promoted. The audit is
+  advisory (LLM-semantic, not a CI gate) — skipping it lets drift ship, but it is
+  cheap to run; it may also run on a schedule for early warning. This replaces
+  the old "never document un-built as built" vow with a reconcile-at-release
+  mechanism.
 - **Hotfix:** `claude/hotfix-*` → PR into `main` (human-merged) → then an
   auto-opened back-merge PR `main`→`develop` so the fix survives the next
   promotion.
