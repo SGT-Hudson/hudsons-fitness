@@ -51,6 +51,7 @@ tracked in `roadmap.md`).
 ## i18n & locale
 
 - Bilingual ES/EN; for authenticated users `profile.language` is authoritative and is applied post-auth (the `ProfileLanguageSync` component, `src/features/i18n/`, mounted under `AuthProvider`); pre-auth and fallback chain is `localStorage → navigator → es` (D-E1).
+- Both locales stay complete and in sync: every user-facing key exists in **both** `src/i18n/es/*` and `src/i18n/en/*` with a real translation — no English-only fallback strings in the ES bundle (and vice-versa). New copy adds the key to both bundles in the same change (D-E1).
 - Stored content (recipe/ingredient/template names) is never auto-translated — stays as authored (D-E2).
 - Metric-only (kg/cm/g); no imperial (the dead legacy `profiles.units` column was dropped 2026-05-18, R-14) (D-E3).
 - Authenticated language change is Settings-only; the one-click `LanguageSwitcher` appears only on pre-auth and onboarding routes (removed from the `AppLayout` header) (D-E4).
