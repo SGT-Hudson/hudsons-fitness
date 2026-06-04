@@ -158,7 +158,7 @@ export type Database = {
           is_verified: boolean
           name_en: string | null
           name_es: string
-          primary_muscle: string | null
+          primary_muscles: string[]
           secondary_muscles: string[]
           source: string
           updated_at: string
@@ -172,7 +172,7 @@ export type Database = {
           is_verified?: boolean
           name_en?: string | null
           name_es: string
-          primary_muscle?: string | null
+          primary_muscles?: string[]
           secondary_muscles?: string[]
           source?: string
           updated_at?: string
@@ -186,7 +186,7 @@ export type Database = {
           is_verified?: boolean
           name_en?: string | null
           name_es?: string
-          primary_muscle?: string | null
+          primary_muscles?: string[]
           secondary_muscles?: string[]
           source?: string
           updated_at?: string
@@ -609,6 +609,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      // Project A fine muscle taxonomy hand-edit (interim until generated-types
+      // regen): structure-only dictionary mirroring src/core/muscles.ts — see
+      // supabase/migrations/20260604120000_fine_muscle_taxonomy.sql.
+      muscles: {
+        Row: {
+          body_region_slug: string | null
+          code: string
+          display_order: number
+          is_full_body: boolean
+          muscle_group: string
+        }
+        Insert: {
+          body_region_slug?: string | null
+          code: string
+          display_order?: number
+          is_full_body?: boolean
+          muscle_group: string
+        }
+        Update: {
+          body_region_slug?: string | null
+          code?: string
+          display_order?: number
+          is_full_body?: boolean
+          muscle_group?: string
+        }
+        Relationships: []
       }
       phases: {
         Row: {
