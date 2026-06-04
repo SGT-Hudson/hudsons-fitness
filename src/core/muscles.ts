@@ -24,6 +24,7 @@ export const MUSCLES: readonly MuscleDef[] = [
   { code: 'trap',        group: 'back',      bodyRegionSlug: 'trapezius',  displayOrder: 7,  isFullBody: false },
   { code: 'rhomboids',   group: 'back',      bodyRegionSlug: 'upper-back', displayOrder: 8,  isFullBody: false },
   { code: 'lower_back',  group: 'back',      bodyRegionSlug: 'lower-back', displayOrder: 9,  isFullBody: false },
+  { code: 'neck',        group: 'back',      bodyRegionSlug: 'neck',       displayOrder: 23, isFullBody: false },
   { code: 'biceps',      group: 'arms',      bodyRegionSlug: 'biceps',     displayOrder: 10, isFullBody: false },
   { code: 'tri_long',    group: 'arms',      bodyRegionSlug: 'triceps',    displayOrder: 11, isFullBody: false },
   { code: 'tri_lateral', group: 'arms',      bodyRegionSlug: 'triceps',    displayOrder: 12, isFullBody: false },
@@ -34,13 +35,14 @@ export const MUSCLES: readonly MuscleDef[] = [
   { code: 'quads',       group: 'legs',      bodyRegionSlug: 'quadriceps', displayOrder: 17, isFullBody: false },
   { code: 'hamstrings',  group: 'legs',      bodyRegionSlug: 'hamstring',  displayOrder: 18, isFullBody: false },
   { code: 'glutes',      group: 'legs',      bodyRegionSlug: 'gluteal',    displayOrder: 19, isFullBody: false },
+  { code: 'abductors',   group: 'legs',      bodyRegionSlug: 'gluteal',    displayOrder: 24, isFullBody: false },
   { code: 'adductors',   group: 'legs',      bodyRegionSlug: 'adductors',  displayOrder: 20, isFullBody: false },
   { code: 'calves',      group: 'legs',      bodyRegionSlug: 'calves',     displayOrder: 21, isFullBody: false },
   { code: 'tibialis',    group: 'legs',      bodyRegionSlug: 'tibialis',   displayOrder: 22, isFullBody: false },
   { code: 'full_body',   group: 'full_body', bodyRegionSlug: null,         displayOrder: 99, isFullBody: true },
 ];
 
-/** The 22 shadeable fine codes (excludes full_body). */
+/** The 24 shadeable fine codes (excludes full_body). */
 export const MUSCLE_CODES = MUSCLES.filter((m) => !m.isFullBody).map((m) => m.code) as readonly string[];
 
 /** The six taggable groups, in display order. */
