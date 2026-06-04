@@ -59,7 +59,7 @@ Users log measurements with `weight_kg` plus optional `body_fat_pct`,
 moving average; the first days use a shorter window) so trend consumers read
 smoothed weight rather than raw weigh-ins.
 
-The `/progreso` page leads with a **`LatestMeasurementCard`** whose weight
+The `/progress` page leads with a **`LatestMeasurementCard`** whose weight
 headline is the **smoothed (5-day-avg) trend weight** (`latestMa5`) rather
 than the raw weigh-in. Alongside it a **rate per week** (`smoothedRatePerWeek`
 — kg/week over a 7-day lookback on the smoothed series) is shown in
@@ -209,7 +209,7 @@ reads logged totals and the active phase's targets and feeds nothing back (no
 protein/TDEE/target writes). The active phase is resolved as "today's phase
 only" — no consumer reconstructs which phase was active on a past date.
 Editing a past phase's macros therefore changes nothing downstream: past
-phases are computationally **inert**. `/objetivos` lists and manages all
+phases are computationally **inert**. `/progress/goals` lists and manages all
 phases.
 
 Past phases follow a **grace-window** model (D-A5), not a hard
@@ -291,7 +291,7 @@ index `meal_logs (user_id, plan_week_slot_id) where plan_week_slot_id is not
 null` + `INSERT … ON CONFLICT DO NOTHING` (fixes the race-prone app-level
 read-then-write). An in-RPC `date <= today` guard (Europe/Madrid, same
 canonical "today" as `previousDayInTZ()`) makes opening
-`/diario/<future-date>` a no-op instead of materializing future slots. Live
+`/diary/<future-date>` a no-op instead of materializing future slots. Live
 in prod since 2026-05-18 (migration applied, then calling code merged).
 
 ## TDEE
@@ -304,8 +304,8 @@ filter on `[trend_weight, expenditure]` with persistent per-user state
 residual self-corrects expenditure (the Kalman gain's expenditure component).
 7700 kcal/kg survives only as an internal conversion prior, not the headline
 formula; the old `14d / 10d / ±3d` window gating is retired. Filter variance
-maps to a low/medium/high UI **confidence** band (surfaced on `/diario` and
-`/progreso` when the active phase is `tdee_delta`). The frontend still reads
+maps to a low/medium/high UI **confidence** band (surfaced on `/diary` and
+`/progress` when the active phase is `tdee_delta`). The frontend still reads
 the latest `tdee_estimates` row (Sprint-17 contract unchanged — additive
 `confidence`/`is_warmup` only), so `kcal_mode = 'tdee_delta'` phases resolve
 their kcal target from that estimate. The pure, deterministic filter math
@@ -321,11 +321,16 @@ rewritten `recalculate-tdee` edge function is deployed.
 
 ## Entrenamiento (training)
 
-The training area (`/training` "Hoy", `/routine` builders, `/exercises`) lets the
-user define routines, schedule them as a cycle, and run a workout guided.
+The training area (`/training` "Hoy" planner, `/routine` + child builder routes)
+lets the user define routines, schedule them as a cycle, and run a workout
+guided. `/exercises` is a "coming soon" placeholder (`EnProgresoPage`) — there is
+no standalone exercise-catalog page; exercise creation and muscle tagging happen
+via the `ExercisePicker` → `ExerciseDialog` flow inside the routine/session
+editors.
 
 - **Exercise pool & sessions (R-19 MVP).** A shared, bilingual `exercises` library
-  (per-exercise `default_increment_kg`, `primary_muscle`, equipment) backs ad-hoc
+  (per-exercise `default_increment_kg`, `primary_muscles` — an array of fine
+  muscle codes — and equipment) backs ad-hoc
   session logging (`workout_sessions` / `workout_sets`, saved via the `save_workout`
   RPC). A rule-based **coach** (`MVP_COACH_RULES` in `src/core/training.ts`:
   double-/rep-progression, flat-e1rm-deload, rpe-climbing-fatigue, muscle-recency)
@@ -359,16 +364,47 @@ user define routines, schedule them as a cycle, and run a workout guided.
   today's plan and the recent-sessions list — no separate route): a front+back body
   shaded **grey→amber→red** by how much each muscle has been trained, alongside a
   `Muscle · N sets` ranked list. Volume is computed by the pure
-  `computeMuscleVolume` (`src/core/muscleVolume.ts`) over your working sets — the
-  exercise's **primary mover earns 1 set, each secondary mover 0.5**, warm-ups are
-  excluded, and whole-body lifts are counted into a separate full-body footnote
-  rather than shading everything. A window selector (7d / 30d / 6mo / all, default
-  30d) bounds it. The body art is male/female, auto-picked from `profiles.sex`
-  (follows the profile once it loads) with a manual toggle. Each exercise carries
-  optional **secondary muscles** (`exercises.secondary_muscles`, edited in
-  `ExerciseDialog`) over the coarse-12 muscle taxonomy; the artwork is a swappable
-  **body-art skin** (v1 = vendored MIT art). See R-24 / D-F10. *(One additive schema
-  change — `exercises.secondary_muscles` — applied 2026-05-26; no backfill, the
+  `computeMuscleVolume` (`src/core/muscleVolume.ts`) over your working sets — each
+  **primary mover earns 1.0 set and each secondary mover 0.5**
+  (`SECONDARY_SET_WEIGHT`; multiple primaries each earn 1.0 — stimulus is not
+  conserved across a set), warm-ups are excluded, and whole-body lifts are footnoted
+  as full-body rather than shading everything. A window selector (7d / 30d / 6mo /
+  all, default 30d) bounds it. The body art is male/female, auto-picked from
+  `profiles.sex` (follows the profile once it loads) with a manual toggle. The
+  artwork is a swappable **body-art skin** (v1 = vendored MIT art); `computeMuscleVolume`
+  stays pure and emits volume per **fine code**, and the render layer (`MuscleBody.tsx`)
+  sums fine→body-region slug via `codesForBodyRegion(slug)` from `src/core/muscles.ts`.
+  The ranked list renders at fine resolution even where the current art co-shades.
+  See R-24 / D-F10.
+
+- **Fine muscle taxonomy (R-26 / D-F11, Project A — #155).** Muscles are a
+  **22-code fine taxonomy** in 6 groups plus a special `full_body`: shoulders
+  (`delt_front`, `delt_side`, `delt_rear`); chest (`pec_upper`, `pec_lower`); back
+  (`lat`, `trap`, `rhomboids`, `lower_back`); arms (`biceps`, `tri_long`,
+  `tri_lateral`, `forearms`); core (`abs_upper`, `abs_lower`, `obliques`); legs
+  (`quads`, `hamstrings`, `glutes`, `adductors`, `calves`, `tibialis`). The codes
+  live in a read-only **`muscles` dictionary table** (`code` PK, `muscle_group`,
+  `body_region_slug`, `display_order`, `is_full_body`; one `muscles_select_all`
+  policy, no write policy; 23 seed rows = 22 shadeable codes + `full_body`) that
+  mirrors `src/core/muscles.ts`, the canonical structural source — a pgTAP
+  anti-drift test guards the two against divergence. Each exercise carries
+  **`primary_muscles` text[]** (one or more primary movers) and
+  **`secondary_muscles` text[]** (fine codes); `full_body` is footnoted, never
+  shades, and is not a valid secondary. A `trg_validate_exercise_muscles` trigger
+  (function `validate_exercise_muscles`, `SECURITY INVOKER`) asserts both arrays are
+  subsets of `muscles.code` (secondaries excluding `full_body`), since a CHECK
+  cannot reference another table. Tagging happens in `ExerciseDialog` via
+  **`MuscleTagField`** — a single grouped tri-state pill list under the 6 group
+  headers (tap cycles neutral → Primary → Secondary → remove), yielding
+  `primary_muscles[]` + `secondary_muscles[]`; the `ExercisePicker` muscle filter is
+  `<optgroup>`'d by the 6 groups and filters by a specific fine code (PostgREST
+  `primary_muscles.cs.{<code>}`). All 34 system exercise rows were re-tagged to fine
+  codes in #155, with a follow-up anatomical-review migration
+  (`20260604130000_fine_taxonomy_retag_review_fixes.sql`) correcting 3 rows. See
+  R-26 / D-F11. *(Schema changes in #155: a new read-only `muscles` table;
+  `exercises.primary_muscles` text[] added; the singular `exercises.primary_muscle`
+  dropped; `secondary_muscles` retained as fine codes. The earlier additive
+  `exercises.secondary_muscles` column landed 2026-05-26 with F-4. No backfill — the
   system seed was re-tagged in place.)*
 
 ## Product ideas (uncommitted)
@@ -397,7 +433,7 @@ entries from the sources have been dropped. (Decided, scheduled work lives in
   an exercise library; cardio / NEAT and step tracking via wearables.
 - **Health & wellbeing:** sleep and mood logging correlated with
   performance; injury / niggle tracking with automatic exercise exclusion.
-- **Goals UX:** a body-fat-goal visual reference on `/objetivos` — reference
+- **Goals UX:** a body-fat-goal visual reference on `/progress/goals` — reference
   body images at e.g. 8/12/15/20/25/30 % paired with educational copy on the
   healthy / sustainable / athletic / minimum ranges per sex (men ~10–20 %
   healthy, ~6 % essential floor; women ~18–28 % healthy, ~12 % essential
