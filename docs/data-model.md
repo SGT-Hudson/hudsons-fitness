@@ -12,11 +12,11 @@
 
 ## Overview
 
-Hudson's Fitness has 18 tables in prod (the original 15, plus 3 Training MVP tables added by R-19 and applied 2026-05-21: `exercises`, `workout_sessions`, `workout_sets`), all RLS-enabled. Four additional tables are staged for F-2 (`routines`, `routine_exercises`, `programs`, `program_days`) and will bring the total to 22 once applied. Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The one deliberate exception is `ingredients`, which is the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
+Hudson's Fitness has ~25 base tables in prod, all RLS-enabled — the original 15, the 3 Training MVP tables added by R-19 and applied 2026-05-21 (`exercises`, `workout_sessions`, `workout_sets`), the 4 F-2 training tables (`routines`, `routine_exercises`, `programs`, `program_days`, live in prod since v2026-06-03 / #122), the 2 R-01 per-user reference tables (`user_ingredient_refs`, `user_recipe_refs`), and the R-26 read-only `muscles` reference dictionary (#155). The `body_measurements_smoothed` view sits on top of `body_measurements` (see Views). Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The one deliberate exception is `ingredients`, which is the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
 
 ## Tables
 
-Schema and column lists below are authoritative from `src/types/database.ts` (generated, R-04). Tables from R-19 and the staged F-2 tables are documented here even though `src/types/database.ts` has not yet been regenerated post-F-2-apply (the staged migrations have not been applied to prod). The legacy `hudsons-fitness-architecture.md` spec has drifted and is being retired; it must not be trusted for column lists wherever it conflicts with `src/types/database.ts` or the migration files in `supabase/migrations/`.
+Schema and column lists below are authoritative from `src/types/database.ts` (generated, R-04). The legacy `hudsons-fitness-architecture.md` spec has drifted and is being retired; it must not be trusted for column lists wherever it conflicts with `src/types/database.ts` or the migration files in `supabase/migrations/`.
 
 ### `profiles`
 
@@ -72,6 +72,8 @@ Shared across all users (crowdsourced library). `created_by_user_id = null` indi
 | `carbs_g_per_unit` | `numeric(6,2)` not null |
 | `fat_g_per_unit` | `numeric(6,2)` not null |
 | `fiber_g_per_unit` | `numeric(6,2)` not null default 0 |
+| `sugar_g_per_unit` | `numeric(6,2)` null — U-1 sub-macro of carbs |
+| `saturated_fat_g_per_unit` | `numeric(6,2)` null — U-1 sub-macro of fat |
 | `source` | `text` not null default `'manual'`, check in (`'manual'`, `'openfoodfacts'`, `'bedca'`, `'system'`) |
 | `external_id` | `text` |
 | `is_verified` | `boolean` not null default false |
@@ -93,9 +95,12 @@ Per-user (private), referencing the shared ingredient library. `unique (user_id,
 | `description` | `text` |
 | `instructions` | `text` |
 | `photo_url` | `text` |
+| `meal_types` | `text[]` not null default `'{}'`, check `meal_types <@ array['breakfast','lunch','snack','dinner','dessert']` — U-2 (#96); gin index `idx_recipes_meal_types` for slot filtering |
 | `deleted_at` | `timestamptz` (null = live; soft-delete marker, partial unique index `where deleted_at is null`) |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
+
+`meal_types` tags a recipe with the meals it suits (U-2 #96, live); `save_recipe` carries it as the `p_meal_types` argument.
 
 ### `recipe_ingredients`
 
@@ -112,6 +117,32 @@ Join rows from a recipe to the shared ingredient library. Index `idx_recipe_ingr
 | `created_at` | `timestamptz` not null default `now()` |
 
 `per_serving = true` means the quantity is added per serving served (e.g. rice in a curry) rather than scaled across servings.
+
+### `user_ingredient_refs` (R-01)
+
+Per-user reference rows that compose the live Library model (see Library Contribution & Lifecycle Model). One row = one ingredient in a user's library; "my library" is the set of my reference rows. Private notes live here, never on the shared pool item — the structural PII firewall. `unique (user_id, ingredient_id)`.
+
+| Column | Type / constraint |
+|---|---|
+| `id` | `uuid` primary key default `gen_random_uuid()` |
+| `user_id` | `uuid` not null, references `auth.users(id)` on delete cascade |
+| `ingredient_id` | `uuid` not null, references `ingredients(id)` on delete cascade |
+| `note` | `text` null — private, per-user |
+| `created_at` | `timestamptz` not null default `now()` |
+| `updated_at` | `timestamptz` not null default `now()` |
+
+### `user_recipe_refs` (R-01)
+
+Per-user reference rows for recipes — the recipe-layer counterpart of `user_ingredient_refs`. One row = one recipe in a user's library; hide = delete the caller's reference row (`hide_owned_recipe`), the pooled recipe is untouched. `unique (user_id, recipe_id)`.
+
+| Column | Type / constraint |
+|---|---|
+| `id` | `uuid` primary key default `gen_random_uuid()` |
+| `user_id` | `uuid` not null, references `auth.users(id)` on delete cascade |
+| `recipe_id` | `uuid` not null, references `recipes(id)` on delete cascade |
+| `note` | `text` null — private, per-user |
+| `created_at` | `timestamptz` not null default `now()` |
+| `updated_at` | `timestamptz` not null default `now()` |
 
 ### `meal_logs` (Diario)
 
@@ -133,6 +164,8 @@ One row per logged food item per day. Index `idx_meal_logs_user_date` on `(user_
 | `custom_carbs_g` | `numeric(6,2)` |
 | `custom_fat_g` | `numeric(6,2)` |
 | `custom_fiber_g` | `numeric(6,2)` |
+| `custom_sugar_g` | `numeric(6,2)` — U-1 sub-macro of carbs |
+| `custom_saturated_fat_g` | `numeric(6,2)` — U-1 sub-macro of fat |
 | `from_plan` | `boolean` not null default false — marks entries auto-materialized from the active plan |
 | `plan_week_slot_id` | `uuid`, references `meal_plan_week_slots(id)` on delete set null |
 | `notes` | `text` |
@@ -259,11 +292,19 @@ Daily snapshot of planned vs. consumed macros, computed by the `daily-nutrition-
 | `planned_carbs_g` | `numeric(6,2)` |
 | `planned_fat_g` | `numeric(6,2)` |
 | `planned_fiber_g` | `numeric(6,2)` |
+| `planned_sugar_g` | `numeric(6,2)` — U-1 |
+| `planned_saturated_fat_g` | `numeric(6,2)` — U-1 |
 | `consumed_kcal` | `numeric(7,1)` |
 | `consumed_protein_g` | `numeric(6,2)` |
 | `consumed_carbs_g` | `numeric(6,2)` |
 | `consumed_fat_g` | `numeric(6,2)` |
 | `consumed_fiber_g` | `numeric(6,2)` |
+| `consumed_sugar_g` | `numeric(6,2)` — U-1 |
+| `consumed_saturated_fat_g` | `numeric(6,2)` — U-1 |
+| `planned_sugar_complete` | `boolean` not null default false — U-1 data-completeness flag |
+| `planned_saturated_fat_complete` | `boolean` not null default false — U-1 data-completeness flag |
+| `consumed_sugar_complete` | `boolean` not null default false — U-1 data-completeness flag |
+| `consumed_saturated_fat_complete` | `boolean` not null default false — U-1 data-completeness flag |
 | `had_active_plan` | `boolean` not null default false |
 | `computed_at` | `timestamptz` not null default `now()` |
 
@@ -284,7 +325,7 @@ Emitted adaptive-TDEE series, upserted daily by the `recalculate-tdee` Edge Func
 | `confidence` | `text` (variance-derived UI band: `low`/`medium`/`high`; enum lives in `src/core/tdee.ts`, not a DB CHECK) |
 | `is_warmup` | `boolean` not null default false (cold-start/long-gap warm-up flag) |
 
-The `confidence` and `is_warmup` columns were added 2026-05-18 (R-07 / D-B4) for the adaptive Kalman estimator (Sprint-17 reader contract unchanged — additive only). Four dead always-null energy-breakdown columns — `bmr_kcal`, `activity_kcal`, `neat_residual_kcal`, `workout_kcal_logged` (§6.4 scaffolding on the replaced two-endpoint model, never written by `recalculate-tdee`) — were dropped the same day (R-08 / D-B5), code/types-first then the prod `DROP COLUMN`. BMR is now a derived, never-stored display (`estimatedBmr` in `src/lib/macros.ts`, surfaced on `/progreso`); any future expenditure decomposition is owned by the R-07 adaptive-TDEE spec.
+The `confidence` and `is_warmup` columns were added 2026-05-18 (R-07 / D-B4) for the adaptive Kalman estimator (Sprint-17 reader contract unchanged — additive only). Four dead always-null energy-breakdown columns — `bmr_kcal`, `activity_kcal`, `neat_residual_kcal`, `workout_kcal_logged` (§6.4 scaffolding on the replaced two-endpoint model, never written by `recalculate-tdee`) — were dropped the same day (R-08 / D-B5), code/types-first then the prod `DROP COLUMN`. BMR is now a derived, never-stored display (`estimatedBmr` in `src/lib/macros.ts`, surfaced on `/progress`); any future expenditure decomposition is owned by the R-07 adaptive-TDEE spec.
 
 ### `tdee_state`
 
@@ -314,8 +355,8 @@ Shared pool of exercises following the post-R-01 ingredient-pool shape: `created
 | `id` | `uuid` primary key default `gen_random_uuid()` |
 | `name_es` | `text` not null — primary Spanish name |
 | `name_en` | `text` null — optional English name |
-| `primary_muscle` | `text` null, check in (`'chest'`, `'back'`, `'shoulders'`, `'quads'`, `'hamstrings'`, `'glutes'`, `'calves'`, `'biceps'`, `'triceps'`, `'core'`, `'forearms'`, `'full_body'`) |
-| `secondary_muscles` | `text[]` not null default `'{}'`, check `secondary_muscles <@ array[…]` — F-4 (R-24), subset of the **11 specific** `primary_muscle` codes (`full_body` is **not** a valid secondary) |
+| `primary_muscles` | `text[]` not null default `'{}'` — one or more fine muscle codes; validated by `trg_validate_exercise_muscles` against `muscles.code` (R-26 / D-F11, #155). An exercise may have **multiple** primary movers. |
+| `secondary_muscles` | `text[]` not null default `'{}'` — fine muscle codes from the 22-code taxonomy; validated by `trg_validate_exercise_muscles` against `muscles.code WHERE NOT is_full_body` (`full_body` is **not** a valid secondary). |
 | `equipment` | `text` null, check in (`'barbell'`, `'dumbbell'`, `'kettlebell'`, `'machine'`, `'cable'`, `'bodyweight'`, `'band'`, `'other'`) |
 | `default_increment_kg` | `numeric` null, check `> 0` — used by the double-progression coach rule |
 | `is_verified` | `boolean` not null default false |
@@ -326,9 +367,23 @@ Shared pool of exercises following the post-R-01 ingredient-pool shape: `created
 
 Trigram indexes `idx_exercises_name_es_trgm` (gin on `name_es`) and `idx_exercises_name_en_trgm` (gin on `name_en` where not null). Ships with 34 system-seed exercises (verified applied 2026-05-21).
 
-`secondary_muscles` was added by F-4 (R-24, migration `20260530120000_f4_secondary_muscles`, applied 2026-05-26) to power the muscle-activity heatmap: the primary mover earns a full set and each secondary mover counts 0.5 (`src/core/muscleVolume.ts`). The `primary_muscle` + `secondary_muscles` codes form the **coarse-12** muscle taxonomy (11 specific muscles + `full_body`); the same codes are reused by the heatmap and its body-art skins. Because the app has no production users yet, the migration re-tagged the system seed in place (27 of 34 rows given secondaries, 7 isolation lifts left empty) with no backfill.
+**Fine muscle taxonomy (R-26 / D-F11, #155).** The legacy singular `primary_muscle` column (coarse-12 inline CHECK) was **dropped** by `20260604120000_fine_muscle_taxonomy` and replaced by `primary_muscles text[]` (multiple primaries). The old inline CHECK constraints `exercises_primary_muscle_check` and `exercises_secondary_muscles_valid` were both dropped: a CHECK constraint cannot reference another table, so validation moved to the trigger `trg_validate_exercise_muscles` → function `public.validate_exercise_muscles()` (`SECURITY INVOKER`, `set search_path = public`), which asserts `primary_muscles ⊆ muscles.code` and `secondary_muscles ⊆ muscles.code WHERE NOT is_full_body`. Both columns now carry **fine** codes from the 22-code taxonomy (see `muscles`); the same codes drive the muscle-activity heatmap (`src/core/muscleVolume.ts`): each primary mover earns 1.0 per working set (stimulus is **not** conserved across a set — multiple primaries each count 1.0) and each secondary earns `SECONDARY_SET_WEIGHT = 0.5`; warm-ups are excluded and `full_body` is footnoted, never shaded.
 
-### `workout_sessions` (R-19, applied 2026-05-21; extended by F-2 — staged)
+Because the app has no production users yet, #155 re-tagged all 34 system-seed rows to fine codes in place with no backfill; the follow-up migration `20260604130000_fine_taxonomy_retag_review_fixes.sql` corrected 3 rows after an expert anatomical review (Deadlift → `hamstrings` promoted to primary; Kettlebell swing → `+forearms` secondary; Overhead press → `+trap` secondary). The earlier coarse-12 F-4 retag (`20260530120000_f4_secondary_muscles`, applied 2026-05-26, when `secondary_muscles` was first added) is now historical.
+
+### `muscles` (read-only reference dictionary — R-26 / D-F11, #155)
+
+The structural source of the fine muscle taxonomy: 23 seed rows = 22 shadeable fine codes + `full_body`. Read-only reference data, mirrors `src/core/muscles.ts` (the canonical TS structural source); a pgTAP anti-drift test (`supabase/tests/05_muscles.test.sql`) guards the two against drift. The 22 shadeable codes span 6 groups: `shoulders` (`delt_front`, `delt_side`, `delt_rear`); `chest` (`pec_upper`, `pec_lower`); `back` (`lat`, `trap`, `rhomboids`, `lower_back`); `arms` (`biceps`, `tri_long`, `tri_lateral`, `forearms`); `core` (`abs_upper`, `abs_lower`, `obliques`); `legs` (`quads`, `hamstrings`, `glutes`, `adductors`, `calves`, `tibialis`). `full_body` is special — footnoted, never shades, not a valid secondary.
+
+| Column | Type / constraint |
+|---|---|
+| `code` | `text` primary key — fine muscle code |
+| `muscle_group` | `text` not null, check in (`'shoulders'`, `'chest'`, `'back'`, `'arms'`, `'core'`, `'legs'`, `'full_body'`) |
+| `body_region_slug` | `text` not null — body-art region the code co-shades into (see `codesForBodyRegion` in `src/core/muscles.ts`) |
+| `display_order` | `int` not null |
+| `is_full_body` | `boolean` not null default false |
+
+### `workout_sessions` (R-19, applied 2026-05-21; extended by F-2, live in prod #122 / v2026-06-03)
 
 One row per logged workout session. Multiple sessions per day are allowed (no unique on `(user_id, performed_on)`). Index `idx_workout_sessions_user_date` on `(user_id, performed_on desc)`.
 
@@ -344,7 +399,7 @@ One row per logged workout session. Multiple sessions per day are allowed (no un
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
 
-The two provenance columns (`program_id`, `routine_id`) are nullable F-2 additions (STAGED — `20260528120020_f2_workout_session_stamps.sql`). `ON DELETE SET NULL` ensures a logged session survives the deletion of the routine or program that spawned it. Index `idx_workout_sessions_program` on `(program_id) where program_id is not null`.
+The two provenance columns (`program_id`, `routine_id`) are nullable F-2 additions (live in prod, `20260528120020_f2_workout_session_stamps.sql`, #122 / v2026-06-03). `ON DELETE SET NULL` ensures a logged session survives the deletion of the routine or program that spawned it. Index `idx_workout_sessions_program` on `(program_id) where program_id is not null`.
 
 ### `workout_sets` (R-19, applied 2026-05-21)
 
@@ -362,7 +417,7 @@ Child rows of `workout_sessions` (one row per set logged). No `user_id` column �
 | `is_warmup` | `boolean` not null default false |
 | `created_at` | `timestamptz` not null default `now()` |
 
-### `routines` (F-2 — STAGED)
+### `routines` (F-2, live in prod #122 / v2026-06-03)
 
 User-owned, reusable exercise templates. A routine is a named list of exercise slots with target sets/reps/RPE/rest. It can be referenced by many program days. Index `idx_routines_user` on `(user_id, updated_at desc)`.
 
@@ -375,7 +430,7 @@ User-owned, reusable exercise templates. A routine is a named list of exercise s
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
 
-### `routine_exercises` (F-2 — STAGED)
+### `routine_exercises` (F-2, live in prod #122 / v2026-06-03)
 
 Child rows of `routines` — one row per exercise slot in the routine. Ordered by `position` (unique per routine). `exercise_id` is `ON DELETE RESTRICT` to preserve routine integrity. RLS routes through the parent routine via an `exists` subquery (same pattern as `workout_sets`). UPDATE policy carries both `using` and `with check` (closes the re-point-to-another-user's-parent gap). Index `idx_routine_exercises_routine` on `(routine_id)`.
 
@@ -390,8 +445,9 @@ Child rows of `routines` — one row per exercise slot in the routine. Ordered b
 | `target_reps_max` | `int` not null, check `>= target_reps_min` |
 | `rest_seconds` | `int` null, check `>= 0` when set |
 | `target_rpe` | `numeric` null, check between 6.0 and 10.0 in 0.5 steps when set (DB permits halves; **routine builder + zod enforce whole numbers** since F-3 — see D-F9d) |
+| `warmup_sets` | `jsonb` not null default `'[]'`, check `jsonb_typeof(warmup_sets) = 'array'` — F-2b (#128), live; per-slot warm-up prescriptions |
 
-### `programs` (F-2 — STAGED)
+### `programs` (F-2, live in prod #122 / v2026-06-03)
 
 User-owned training programs (cycles). Each program is a named, ordered list of day slots referencing routines. A program that is `is_active = true` must have an `anchor_date` (enforced by a check constraint). Partial unique index `programs_one_active_uidx` on `(user_id) WHERE is_active` — at most one active program per user at the DB level (D-F8). Index `idx_programs_user` on `(user_id, updated_at desc)`.
 
@@ -407,7 +463,7 @@ User-owned training programs (cycles). Each program is a named, ordered list of 
 
 Check constraint: `not is_active or anchor_date is not null`.
 
-### `program_days` (F-2 — STAGED)
+### `program_days` (F-2, live in prod #122 / v2026-06-03)
 
 Child rows of `programs` — one row per day in the cycle, identified by `day_index` (0-based, unique per program). A rest day has `is_rest = true` and `routine_id = null`; a training day has `is_rest = false` and a non-null `routine_id`. The check constraint enforces the mutual exclusion. `routine_id` is `ON DELETE RESTRICT` so a routine cannot be deleted while a program references it. RLS routes through the parent program via an `exists` subquery. UPDATE policy carries both `using` and `with check`. Index `idx_program_days_program` on `(program_id, day_index)`.
 
@@ -425,7 +481,7 @@ Check constraint: `(is_rest and routine_id is null) or (not is_rest and routine_
 
 Every table is RLS-enabled.
 
-**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `recipes`, `recipe_ingredients` (via join to `recipes`), `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`, `workout_sessions`, `routines`, `programs`.
+**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `recipes`, `recipe_ingredients` (via join to `recipes`), `user_ingredient_refs`, `user_recipe_refs`, `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`, `workout_sessions`, `routines`, `programs`.
 
 **RLS-via-parent-join pattern.** Child tables with no `user_id` column inherit authorization by joining to their parent: `workout_sets` (via `workout_sessions`), `routine_exercises` (via `routines`), `program_days` (via `programs`). Each carries SELECT / INSERT / UPDATE / DELETE policies using an `exists` subquery that checks the parent's `user_id = auth.uid()`. The UPDATE policies on `routine_exercises` and `program_days` carry both `using` and `with check` to prevent a user re-pointing a child row to another user's parent (F-2 closes this gap; `workout_sets` and `recipe_ingredients` carry `using`-only UPDATE policies — a follow-up migration is noted in R-22 to backfill them).
 
@@ -436,6 +492,8 @@ Every table is RLS-enabled.
 - DELETE: only the creator (`using (auth.uid() = created_by_user_id)`). The FK from `recipe_ingredients` is `ON DELETE RESTRICT`, which additionally blocks deletion if any user's recipe references the ingredient.
 
 Reversibility escape-hatch (D-A1): the open-SELECT model can later be tightened to `created_by_user_id = auth.uid() OR created_by_user_id IS NULL` with no schema change if the library ever needs privacy.
+
+**`muscles` (read-only reference table).** A single SELECT policy `muscles_select_all` (`using (true)`) — any authenticated user reads the whole dictionary. No INSERT / UPDATE / DELETE policy: the seed data is effectively immutable to all app roles (R-26 / D-F11).
 
 The repo is public, so RLS is the sole security boundary — there is no server-side application tier in front of the database.
 
@@ -451,9 +509,9 @@ User-facing RPCs, all `SECURITY INVOKER` with `set search_path = public`, each a
 - `materialize_plan_for_date` (R-12 / D-D6)
 
 **Training MVP (R-19, live in prod since 2026-05-21):**
-- `save_workout` — create-or-replace a workout session and its sets (5 args); extended to 7 args by F-2 to accept two nullable provenance stamps (`p_program_id`, `p_routine_id` — both `DEFAULT NULL`; null = ad-hoc). The 5-arg overload was dropped and replaced by the 7-arg signature in `20260528120030_f2_rpcs.sql` (STAGED).
+- `save_workout` — create-or-replace a workout session and its sets (5 args); extended to 7 args by F-2 to accept two nullable provenance stamps (`p_program_id`, `p_routine_id` — both `DEFAULT NULL`; null = ad-hoc). The 5-arg overload was dropped and replaced by the 7-arg signature in `20260528120030_f2_rpcs.sql` (live in prod #122 / v2026-06-03).
 
-**Training Routines & Cyclic Planner (F-2 — STAGED):**
+**Training Routines & Cyclic Planner (F-2, live in prod #122 / v2026-06-03):**
 - `save_routine` — create-or-replace a routine and its exercise slots (replace-children, mirrors `save_recipe`). INVOKER.
 - `save_program` — create-or-replace a program and its day slots (replace-children). Does NOT touch `is_active` or `anchor_date` — those are owned by `set_active_program`. INVOKER.
 - `set_active_program` — atomic active-flip: deactivates all other programs for the user then activates the target with the given `anchor_date`. Kept as an RPC (rather than client-side) because the two `UPDATE`s must be atomic with respect to the `programs_one_active_uidx` partial unique index — a gap between two client-side statements would transiently violate the constraint (D-F8). INVOKER.

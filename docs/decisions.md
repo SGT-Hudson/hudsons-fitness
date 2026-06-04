@@ -121,7 +121,7 @@ The `R-xx` items are defined in `roadmap.md`.
 
 **Why:** Hand-written types drift from the real schema and must be manually edited on every migration (at review time, the D-A6, D-B5, D-E3 column removals all required hand-edits to this file). Generated types make the schema the single source of truth and make those removals automatic. One caveat must be carried forward: CHECK-constraint enums (`kcal_mode`, `fiber_mode`) come through as plain `string` from the generator too, so future form work must still verify enum values against `pg_constraint` — the generator does not fix that.
 
-**Status:** decided · roadmap: R-04
+**Status:** decided · done (R-04) — `src/types/database.ts` is now generator output (regen command in `operations.md`).
 
 ## D-B1 — Protein — lean-mass, phase-aware code-constant table; canonical-fn refactor
 
@@ -202,6 +202,8 @@ But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves w
 ## D-C5 — RPCs — confirm + hard threshold + SECURITY INVOKER invariant
 
 **Ruling:** Confirmed and tightened. Hard threshold: any operation that mutates >1 table atomically MUST be an RPC; single-table mutations stay client-side. Security invariant: all user-callable RPCs must be `SECURITY INVOKER` with `set search_path = public`; `SECURITY DEFINER` is forbidden without explicit security review and a non-`public` schema home, with the cron-only `apply_template_to_week_admin` as the one documented exception (Sprint 9). A pre-doc audit must grep `SECURITY DEFINER` across migrations to confirm only the admin RPC uses it.
+
+**Update (2026-06-04):** there are now **two** sanctioned `SECURITY DEFINER` app-area exceptions, both reflected in CLAUDE.md invariant #3: `apply_template_to_week_admin` (cron-only) and `reconcile_account_delete` (account-delete reconciliation, added in R-01 #71 — revoked from public/anon/authenticated, granted only to `service_role`; edge/service-role only). Two further `SECURITY DEFINER` functions are baseline infra, not app-callable: the `handle_new_user` auth trigger and `private.invoke_edge_function` (cron auth, non-`public` schema). The Tier-3 `00_schema` pgTAP suite encodes the SECURITY-DEFINER-set + grant-isolation invariant, replacing the manual pre-doc grep.
 
 **Why:** The original "prefer the 4 RPCs" guidance was correct in spirit but soft — "prefer" gives no objective test for when an RPC is mandatory, and it said nothing about the security posture of RPCs. Making it a hard >1-table-atomic threshold gives an unambiguous rule (and is exactly the boundary D-D6's materialization fix relies on), while the explicit `SECURITY INVOKER` + `set search_path = public` invariant closes a real privilege-escalation/search-path-hijack class and documents the single sanctioned `DEFINER` exception so future RPCs cannot quietly add more.
 
@@ -387,6 +389,8 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **Ruling:** Five binding decisions govern the F-4 muscle-activity heatmap. Full rationale in the spec (`docs/superpowers/specs/2026-05-26-muscle-heatmap-design.md`).
 
+> ⚠ **(b) and (c) superseded by [D-F11] (2026-06-04, Project A / #155 / R-26).** The coarse-12 taxonomy + singular `exercises.primary_muscle` of (b), and the skin-owned `slugToMuscle` map of (c), were replaced by the fine 22-code `muscles` dictionary, `exercises.primary_muscles[]`, the `validate_exercise_muscles` trigger, and a core-owned `codesForBodyRegion`. (a)/(d)/(e) still hold — except (a) now credits **each** primary mover 1.0 (multiple primaries allowed). The (b)/(c) text below is kept as the F-4-era record.
+
 **(a) Secondary movers count 0.5 of a set; warm-ups excluded; `full_body` footnoted, not shaded.** Per working set the primary mover earns 1.0 and each secondary mover earns a flat `SECONDARY_SET_WEIGHT = 0.5` toward that muscle's volume. The weight is a single global constant, not per-exercise — finer per-exercise contribution factors are needless precision for a coarse activity map. Warm-up sets are excluded entirely (they are load-ramp, not training volume). `full_body` sets (e.g. kettlebell swing) are counted into a separate footnote count rather than shading every region, because spreading them across all muscles would wash out the map.
 
 **(b) Coarse-12 muscle taxonomy, extensible.** Volume aggregates into 11 specific muscle codes (`chest`, `back`, `shoulders`, `quads`, `hamstrings`, `glutes`, `calves`, `biceps`, `triceps`, `core`, `forearms`) plus `full_body` — the same set already used by `exercises.primary_muscle`. `secondary_muscles` is constrained to the 11 specific codes only (`full_body` is not a meaningful *secondary* mover). The taxonomy is deliberately coarse for an at-a-glance heatmap; it can be subdivided later without a model change (the skin's slug→code map already aggregates a finer region set down to it).
@@ -397,4 +401,22 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **(e) Pure volume core, one additive schema change.** All aggregation is a pure, I/O-free `computeMuscleVolume` in `src/core/muscleVolume.ts` (Tier-1 tested), keeping the boundary the rest of the app holds (pure core ← thin hooks/UI). The only schema change is the additive `exercises.secondary_muscles text[] not null default '{}'` column + its subset CHECK; everything else reuses the existing `workout_sets` / `exercises` shape. Because the app has no production users yet, the migration re-tags the 34 system-seed exercises in-place with no backfill.
 
-**Status:** decided · roadmap: R-24
+**Status:** decided · done (R-24) · (b)/(c) superseded by [D-F11]
+
+## D-F11 — Fine muscle taxonomy (Project A): 22-code model, multi-primary, dictionary table + trigger, data-fine-on-MIT-art
+
+**Ruling:** Project A (R-26, #155) replaces the F-4 coarse-12 muscle model (D-F10 b/c) with a fine taxonomy. Five binding decisions; full rationale in `docs/superpowers/specs/2026-06-04-exercise-catalog-expansion-design.md`.
+
+**(a) 22 fine codes in 6 groups + `full_body`.** shoulders (delt_front/side/rear), chest (pec_upper/lower), back (lat/trap/rhomboids/lower_back), arms (biceps/tri_long/tri_lateral/forearms), core (abs_upper/abs_lower/obliques), legs (quads/hamstrings/glutes/adductors/calves/tibialis), plus `full_body` (footnoted, never shades, not a valid secondary). No glute/quad sub-splits (the art collapses them and it complicates tagging for no visible gain); the triceps split is by movement emphasis (`tri_long` = overhead/long head, `tri_lateral` = pushdown/lateral+medial). Deltoid group label = "Hombro".
+
+**(b) Multiple primaries; each primary 1.0, each secondary 0.5.** `exercises.primary_muscle` (singular) → `exercises.primary_muscles text[]`. Each primary mover earns 1.0 per working set, each secondary `SECONDARY_SET_WEIGHT = 0.5`; stimulus is **not** conserved across a set (correct for a relative-activity map). Warm-ups excluded; `full_body` footnoted (unchanged from D-F10 a).
+
+**(c) Dictionary table + trigger; structure-only, names in i18n.** A `public.muscles` table (`code` pk, `muscle_group`, `body_region_slug`, `display_order`, `is_full_body`) holds structure only — names/group labels stay in i18n (D-E2). Integrity is a `validate_exercise_muscles` trigger (a CHECK cannot reference another table), replacing the old coarse inline CHECKs. The canonical **runtime** source is the TS const `src/core/muscles.ts` (`MUSCLES`); the DB table mirrors it for the trigger, with a pgTAP anti-drift test asserting TS == seed. The pure `computeMuscleVolume` core stays Tier-1 testable (no fetch).
+
+**(d) Fine→slug aggregation in the render layer; ranked list at fine resolution.** `computeMuscleVolume` emits volume per fine code; `MuscleBody` sums fine→slug via `codesForBodyRegion` (in `core/muscles.ts`, not on the skin — the `BodyArtSkin` interface drops `slugToMuscle` and exposes only `id`/`viewBox()`/`parts()`). Several fine codes can share one slug (co-shading falls out of the sum); the ranked "Muscle · N sets" list still renders at fine resolution.
+
+**(e) P1(a) — fine data now, current MIT art.** MuscleWiki art stays rejected (proprietary, public repo — D-F10 c). The data model is fully fine now; the heatmap renders at whatever the vendored MIT art distinguishes (core/back/legs gain visible detail; shoulders/chest/triceps co-shade) and finer license-clean art later changes only the skin's region map — no data/model change. Tagging UI = a single grouped tri-state `MuscleTagField` (neutral → Primary → Secondary → remove); picker filter optgroup'd, PostgREST `primary_muscles.cs.{code}`.
+
+**Out of scope → Project B (R-27):** bulk catalog content + tagging-accuracy verification; group-level picker filter, group-name search, lay-term aliases.
+
+**Status:** decided · done (R-26, #155 + the `20260604130000` retag-review fix)

@@ -34,6 +34,12 @@ reference shard carries it (never edit the decision entry).
 - R-23 — Guided active-workout runner (F-3)
 - R-24 — Muscle activity heatmap (F-4)
 - R-25 — Fix hide_owned_* blocked by pool UPDATE WITH CHECK (Tier-3 finding)
+- R-26 — Fine muscle taxonomy (Project A) — 22-code model + `primary_muscles[]`
+- R-27 — Bulk exercise catalog (Project B) — design in progress
+- R-28 — Rich home dashboard + diet-completion calendar + adaptive-TDEE surface (post-V1 item 4)
+- R-29 — In-app feature-discovery onboarding (post-V1 item 5)
+- R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
+- Feature & UX family index (F-x / U-x / post-V1 items / Projects A–B) — at end
 
 ## R-00 — Baseline current schema into migrations
 - **decision:** D-A8, D-A6, D-E3, D-D6, D-F1
@@ -75,10 +81,12 @@ reference shard carries it (never edit the decision entry).
 - **status:** Phase 1 done (2026-05-20) — 8 staged migrations + the
   `r01_backup_table_rls` follow-up applied to prod at the Wave-3 checkpoint
   via Supabase MCP `apply_migration`; reworked `delete-account` edge fn
-  redeployed (version 2). Tier-3 pgTAP for RLS / RPC / backfill remains
-  gated behind R-16-Tier-3 / `supabase start` infra (not yet set up —
-  documented gap). **Phase 2 (auto-reaper) cancelled (2026-06-03) — will not be
-  built.** Reapable garbage is structurally impossible with
+  redeployed (version 2). Tier-3 pgTAP for RLS / RPC now exists — the
+  R-16-Tier-3 `supabase start` + pgTAP db-test job landed (2026-06-03, #149/#150)
+  and is required on develop; the RLS/RPC/pool suites
+  (`supabase/tests/01_rls_user_owned`/`02_rls_child`/`03_rls_pool`/`04_rpc`)
+  cover this model (the gap is closed). **Phase 2 (auto-reaper) cancelled
+  (2026-06-03) — will not be built.** Reapable garbage is structurally impossible with
   no community: it requires users creating pool items, hiding them, and no one
   else referencing them — the user base is currently one. Any stray duplicate
   or dead row is a 10-second manual SQL fix (the DB can still be reshaped
@@ -559,19 +567,24 @@ reference shard carries it (never edit the decision entry).
   the SECURITY-DEFINER-set invariant, search_path pinning, admin/infra grant
   isolation, key view/index existence), `01_rls_user_owned`, `02_rls_child`,
   `03_rls_pool`, `04_rpc` (replace-children, materialize guard + idempotency,
-  one-active-program, hide/reconcile). Config in `supabase/config.toml`; design
-  spec `docs/superpowers/specs/2026-06-03-tier3-pgtap-ci-design.md` (+ the
-  earlier `2026-05-18-test-strategy.md`). Promoted to a **required check on
-  `develop`**. The R-00 reproducibility check is a manual workflow
-  (`.github/workflows/db-tests.yml`, needs `SUPABASE_ACCESS_TOKEN`). Standing
+  one-active-program, hide/reconcile), and `05_muscles` (fine-taxonomy seed
+  completeness, anti-drift vs `src/core/muscles.ts`, the
+  `validate_exercise_muscles` trigger — added with **R-26** / #155). Config in
+  `supabase/config.toml`; design spec
+  `docs/superpowers/specs/2026-06-03-tier3-pgtap-ci-design.md` (+ the earlier
+  `2026-05-18-test-strategy.md`). Promoted to a **required check on `develop`**.
+  The from-zero reproducibility check is intrinsic to the `db-test` job itself
+  (`supabase start` applies the full migration history from scratch each run);
+  the standalone manual `db-tests.yml` workflow was not merged. Standing
   Tier-3 up caught two real defects: (a) a migration-ordering bug — the F-1
   whole-foods seed (`0523`) inserted `ingredients.sugar_g_per_unit` /
   `saturated_fat_g_per_unit` before `u1_sub_macros` (`0525`) added them (they
   were added to prod out of band), so a from-zero reset failed — fixed by
   `20260523120050_f1_ingredients_submacro_cols`; (b) the INVOKER hide RPCs are
-  blocked by the pool UPDATE WITH CHECK (now **R-25**). The R-22 UPDATE
-  WITH-CHECK gap and the R-25 hide bug are both captured as pgTAP `todo` tests
-  (visible, non-failing) so they flip green when fixed.
+  blocked by the pool UPDATE WITH CHECK (now **R-25**). R-25 was fixed (#151,
+  migration `20260603120000_r25_hide_drops_ref_only`); only the R-22 UPDATE
+  WITH-CHECK gap remains as a pgTAP `todo` test (visible, non-failing) so it
+  flips green when fixed.
 - **scope:** Spec-first; Tier 1 is its own sprint, Tier 2 rides with R-09,
   Tier 3 is gated behind R-00.
   1. Spec: `docs/superpowers/specs/` test-strategy doc — tier boundaries,
@@ -705,9 +718,8 @@ reference shard carries it (never edit the decision entry).
 - **status:** done (2026-05-21) — Tasks 1–21 implemented; the 4 training
   migrations applied to prod 2026-05-21 (34 system-seed exercises,
   `workout_sessions`/`workout_sets`, `save_workout` RPC, 12 RLS policies).
-  Tier-3 pgTAP for RLS / RPC / save-workout-replace-children remains gated
-  behind R-16-Tier-3 / `supabase start` infra (not yet set up — documented
-  gap).
+  Tier-3 pgTAP for RLS / RPC / save-workout-replace-children now exists under
+  the R-16-Tier-3 `db-test` job (landed 2026-06-03, #149/#150 — gap closed).
 - **spec:** `docs/superpowers/specs/2026-05-20-training-mvp-design-v2.md`
 - **plan:** `docs/superpowers/plans/2026-05-20-training-mvp-plan.md`
 - **scope:** First instance of the Training module. 3 tables
@@ -848,6 +860,12 @@ reference shard carries it (never edit the decision entry).
   system exercises present, 27 re-tagged, 7 isolation lifts left empty). Because
   the app has no production users yet, the migration re-tags the system seed
   in-place with **no backfill**.
+- **superseded (2026-06-04) by R-26 (Project A, #155):** the coarse-12 taxonomy,
+  the single `exercises.primary_muscle` column, and the `exercises.secondary_muscles`
+  CHECK described in the scope below were replaced by the fine 22-code `muscles`
+  dictionary table + `exercises.primary_muscles[]` (multi-primary) + the
+  `validate_exercise_muscles` trigger; volume now credits **each** primary 1.0.
+  The scope text below is kept as the F-4-era record — see R-26 for the current model.
 - **spec:** `docs/superpowers/specs/2026-05-26-muscle-heatmap-design.md`
 - **plan:** `docs/superpowers/plans/2026-05-26-muscle-heatmap.md`
 - **scope:**
@@ -871,9 +889,10 @@ reference shard carries it (never edit the decision entry).
     subset of the 11 specific codes; `full_body` is not a valid secondary), edited
     via a multi-select in `ExerciseDialog`. Muscle labels reuse the existing
     `entrenamiento:exerciseDialog.primaryMuscle.<code>` keys.
-- **deferred (not built):** finer muscle taxonomy beyond coarse-12; a per-exercise
-  muscle-detail / browse view; recommendations driven off the volume data
-  (the broader catalog-expansion goal that would power them is separate).
+- **deferred (not built):** a per-exercise muscle-detail / browse view;
+  recommendations driven off the volume data (the broader catalog-expansion goal
+  that would power them is separate — Project B / R-27). (The finer muscle
+  taxonomy once deferred here shipped as **R-26**.)
 
 ## R-25 — hide_owned_* drops the reference only (keep owner) — Tier-3 finding
 - **decision:** (folds into D-A4)
@@ -952,3 +971,125 @@ Vault-held OFF creds), a small client opt-in toggle + fire-and-forget
 call wired into the existing ingredient-create success path, an OFF
 attribution credit, and Tier-1 tests on the field-mapping adapter
 (our `OFFSearchResult`/manual form → OFF write payload). No DB migration.
+
+## R-26 — Fine muscle taxonomy (Project A) — 22-code model + `primary_muscles[]`
+- **decision:** D-F11 (supersedes D-F10(b))
+- **blocked-by:** R-24 (refines the F-4 heatmap — shipped)
+- **status:** done — Project A merged to develop 2026-06-04 (#155) + the
+  anatomical-review retag-fix migration
+  `20260604130000_fine_taxonomy_retag_review_fixes` (#156); released to `main` in
+  release `2026-06-05`. No prod users → the 34-row system seed was re-tagged in
+  place (no backfill).
+- **spec:** `docs/superpowers/specs/2026-06-04-exercise-catalog-expansion-design.md`
+- **plan:** `docs/superpowers/plans/2026-06-04-fine-muscle-taxonomy-project-a.md`
+- **scope (Project A — the fine model + engine + UI):**
+  - **Taxonomy** — 22 fine shadeable codes in 6 groups (shoulders:
+    delt_front/side/rear; chest: pec_upper/lower; back: lat/trap/rhomboids/
+    lower_back; arms: biceps/tri_long/tri_lateral/forearms; core:
+    abs_upper/abs_lower/obliques; legs: quads/hamstrings/glutes/adductors/
+    calves/tibialis) + `full_body` (footnoted, never shades, not a valid
+    secondary). Canonical structural source = `src/core/muscles.ts` (`MUSCLES`);
+    the DB `muscles` dictionary table mirrors it (anti-drift pgTAP).
+  - **Schema** (`20260604120000_fine_muscle_taxonomy`) — new `public.muscles`
+    read-only reference table; `exercises.primary_muscle` (singular, coarse
+    CHECK) **dropped** → `exercises.primary_muscles text[]` (multiple primaries);
+    the old inline primary/secondary CHECKs replaced by the
+    `validate_exercise_muscles` trigger (a CHECK can't reference another table);
+    all 34 system rows re-tagged to fine codes.
+  - **Heatmap** — `computeMuscleVolume` stays pure, emits volume per fine code
+    (each primary 1.0, each secondary 0.5, warm-ups excluded, full_body
+    footnoted); the render layer sums fine→slug via `codesForBodyRegion`
+    (`src/core/muscles.ts`) — the skin no longer owns `slugToMuscle`. Ranked list
+    at fine resolution. P1(a): fine data now, art renders on the current vendored
+    MIT skin (core/back/legs gain detail; shoulders/chest/triceps co-shade until
+    license-clean finer art — then only the skin region map changes).
+  - **Tagging UI** — `ExerciseDialog` uses `MuscleTagField`: one grouped
+    tri-state pill list (neutral → Primary → Secondary → remove) →
+    `primary_muscles[]` + `secondary_muscles[]`. `ExercisePicker` filter
+    optgroup'd by group, filters by fine code (PostgREST `primary_muscles.cs.{}`).
+  - **i18n** — `exerciseDialog.primaryMuscle.<code>` → `exerciseDialog.muscle.<code>`
+    (22 codes + full_body) + new `exerciseDialog.muscleGroup.<group>` (6 labels);
+    hamstrings "Femorales" → "Isquiosurales".
+  - **tests** — Tier-1 `muscles`/`muscleVolume`/`training` (multi-primary),
+    Tier-2 `MuscleTagField`/`ExerciseDialog`, Tier-3 `05_muscles.test.sql`.
+- **post-merge review (2026-06-04):** an expert anatomical pass over the 34
+  re-tags confirmed them sound except 3, corrected in `20260604130000`: Deadlift
+  → `hamstrings` promoted to primary; Kettlebell swing → +`forearms` secondary;
+  Overhead press → +`trap` secondary.
+- **out-of-scope → R-27 (Project B):** the bulk catalog content; group-level
+  picker filter; group-name text search ("hombro" → all delts); lay-term aliases.
+
+## R-27 — Bulk exercise catalog (Project B)
+- **decision:** (D-id at plan time)
+- **blocked-by:** R-26 (the fine taxonomy — done)
+- **status:** design approved (2026-06-04), being specced in a **parallel
+  session** — not built, not on `develop`. Plan/impl pending. The catalog spec
+  lives on `claude/project-b-catalog-spec`; fill this entry in when it lands
+  (coordinate to avoid clobbering it).
+- **scope:** ingest a public-domain exercise dataset (free-exercise-db, ~873
+  exercises) as idempotent seed migrations, each fine-tagged via the R-26
+  taxonomy, with a tagging-accuracy verification step (anatomical source of
+  truth, not by guess). Also rolled in from R-26: group-level picker filter,
+  group-name text search, lay-term search aliases.
+
+## R-28 — Rich home dashboard + diet-completion calendar + adaptive-TDEE surface (post-V1 item 4)
+- **decision:** (none yet)
+- **blocked-by:** —
+- **status:** todo — `src/pages/HomePage.tsx` is an 18-line placeholder
+  ("the unified Nutrición + Entreno dashboard is item 4"); no calendar / dashboard
+  / adaptive-TDEE surface exists yet.
+- **scope:** a real Diet dashboard — a green/amber/red diet-completion calendar
+  from `daily_nutrition_history` × the active phase's targets (kcal-in-range **and**
+  protein-met → green; one of the two → amber; neither → red; tap-to-see-why);
+  surface the R-07 adaptive-TDEE expenditure estimate the app computes but never
+  shows; fold in the shipped goal-date ETA. From the post-V1 brainstorm
+  (`docs/superpowers/brainstorms/2026-05-21-post-v1-app-wide.md`, item 4 merged
+  with direction-doc "item A"). Highest daily value of the post-V1 set.
+
+## R-29 — In-app feature-discovery onboarding (post-V1 item 5)
+- **decision:** (none yet)
+- **blocked-by:** R-28 likely (shares the home/section surface)
+- **status:** todo — only the profile-setup `OnboardingPage` exists; no
+  feature-discovery layer (no welcome modal, tour, coachmarks, or empty-state CTAs).
+- **scope:** contextual empty states (explanation + CTA) + one short welcome modal
+  (esp. explaining the section split). Avoid an 8-screen wizard. Time to the
+  friends-and-family invite, not before. (post-V1 brainstorm item 5.)
+
+## R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
+- **decision:** (none yet)
+- **blocked-by:** —
+- **status:** partial — responsive `AppLayout` (md+ sidebar / bottom nav), the
+  grouped desktop sidebar, and the sidebar sticky fix (#121) are done; the
+  per-feature desktop **density modes** + the rich desktop home are not built.
+- **scope:** at desktop width, components opt into showing more data inline
+  (e.g. macro card also renders the day's TDEE breakdown) — not just wider
+  breakpoints. Deferred to public-launch prep. (post-V1 brainstorm item 6; the
+  U-8 visual pass.)
+
+## Feature & UX family index
+
+Cross-reference so the F-/U-/post-V1 families don't need re-deriving from specs.
+Status as of 2026-06-04. (R-xx entries above carry the detail.)
+
+| Item | What | R-id / PR | Status |
+|---|---|---|---|
+| Project A | Fine muscle taxonomy | R-26 / #155 | done |
+| Project B | Bulk exercise catalog | R-27 | design approved, not built |
+| F-1 | Whole-foods bilingual library | #113 | done |
+| F-2 | Training routines + cyclic planner | R-22 / #122 | done |
+| F-2b | Warm-up sets in routines | #128 | done |
+| F-3 | Guided active-workout runner | R-23 / #132–135 | done |
+| F-4 | Muscle activity heatmap | R-24 / #136,#139 | done |
+| F-5 | Micronutrient storage | — | deferred (pairs with F-1) |
+| U-1 | Sub-macros (sugar + saturated fat) | #95 | done |
+| U-2 | Recipe meal-type tags | #96 | done |
+| U-3 | Nutrition search filters + warning badges | #97 | done |
+| U-4 | (dropped) | — | dropped |
+| U-5 | Day totals vs target | #101 | done |
+| U-6 | Copy a meal across days | #116 | done |
+| U-7 | Nutrition fix batch | #98 | done |
+| U-8 | Desktop visual pass / density | R-30 | partial |
+| post-V1 item 3 | Nutrición/Entreno section split | #91 | done |
+| post-V1 item 4 | Rich home + diet calendar + TDEE surface | R-28 | todo |
+| post-V1 item 5 | In-app onboarding | R-29 | todo |
+| post-V1 item 6 | Responsive desktop density | R-30 / U-8 | partial |
