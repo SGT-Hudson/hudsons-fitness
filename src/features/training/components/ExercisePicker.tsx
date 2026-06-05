@@ -37,7 +37,7 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [selectedMuscle, setSelectedMuscle] = useState<PrimaryMuscle | ''>('');
+  const [selectedMuscle, setSelectedMuscle] = useState<string>(''); // '' | <fineCode> | `group:<group>`
   const debounced = useDebouncedValue(query, 200);
   const containerRef = useRef<HTMLDivElement>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -47,8 +47,13 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
   );
   const textMuscles = musclesMatchingQuery(debounced, labelByCode);
 
+  const isGroup = selectedMuscle.startsWith('group:');
+  const groupKey = isGroup
+    ? (selectedMuscle.slice('group:'.length) as (typeof MUSCLE_GROUPS)[number])
+    : null;
   const search = useExerciseSearch(debounced, {
-    muscle: selectedMuscle || null,
+    muscle: isGroup || selectedMuscle === '' ? null : (selectedMuscle as PrimaryMuscle),
+    groupMuscles: groupKey ? (codesInGroup(groupKey) as PrimaryMuscle[]) : [],
     textMuscles,
   });
 
@@ -110,7 +115,7 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
           aria-label={t('picker.allMuscles')}
           value={selectedMuscle}
           onChange={(e) => {
-            setSelectedMuscle(e.target.value as PrimaryMuscle | '');
+            setSelectedMuscle(e.target.value);
             setOpen(true);
           }}
           className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -118,6 +123,9 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
           <option value="">{t('picker.allMuscles')}</option>
           {MUSCLE_GROUPS.map((g) => (
             <optgroup key={g} label={t(`exerciseDialog.muscleGroup.${g}`)}>
+              <option value={`group:${g}`}>
+                {t('picker.allInGroup', { group: t(`exerciseDialog.muscleGroup.${g}`) })}
+              </option>
               {codesInGroup(g).map((code) => (
                 <option key={code} value={code}>
                   {t(`exerciseDialog.muscle.${code}`)}

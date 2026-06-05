@@ -4,14 +4,14 @@
 begin;
 select * from no_plan();
 
--- 23 codes seeded (22 shadeable + full_body), exactly matching src/core/muscles.ts.
+-- 25 codes seeded (24 shadeable + full_body), exactly matching src/core/muscles.ts.
 select set_eq(
   $$ select code from public.muscles $$,
   $$ values ('delt_front'),('delt_side'),('delt_rear'),('pec_upper'),('pec_lower'),
-            ('lat'),('trap'),('rhomboids'),('lower_back'),('biceps'),('tri_long'),
-            ('tri_lateral'),('forearms'),('abs_upper'),('abs_lower'),('obliques'),
-            ('quads'),('hamstrings'),('glutes'),('adductors'),('calves'),('tibialis'),
-            ('full_body') $$,
+            ('lat'),('trap'),('rhomboids'),('lower_back'),('neck'),('biceps'),
+            ('tri_long'),('tri_lateral'),('forearms'),('abs_upper'),('abs_lower'),
+            ('obliques'),('quads'),('hamstrings'),('glutes'),('abductors'),
+            ('adductors'),('calves'),('tibialis'),('full_body') $$,
   'muscles seed == src/core/muscles.ts code set'
 );
 
@@ -34,6 +34,67 @@ select throws_ok(
 select throws_ok(
   $$ insert into public.exercises (name_es, secondary_muscles) values ('bad', array['full_body']) $$,
   'secondary_muscles contains unknown or full_body code');
+
+-- ── B1 catalog seed (applied by 20260604120200_b1_catalog_seed.sql) ──────────
+-- ASSERTED FIRST, before the schema-CHECK test inserts below: those inserts run
+-- in this same transaction and one of them (`src1`, source='free-exercise-db',
+-- external_id null) would otherwise pollute these provenance counts.
+-- The seed imported exactly 873 rows, all is_verified=false + source provenance.
+select is(
+  (select count(*)::int from public.exercises where source = 'free-exercise-db'),
+  873, 'catalog seed imported 873 rows');
+select is(
+  (select count(*)::int from public.exercises
+     where source = 'free-exercise-db' and is_verified),
+  0, 'every imported row is is_verified=false');
+select is(
+  (select count(*)::int from public.exercises
+     where source = 'free-exercise-db' and external_id is null),
+  0, 'every imported row carries an external_id');
+
+-- ── B1 catalog schema ─────────────────────────────────────────────────────────
+
+-- equipment CHECK accepts all 12 values (a single multi-row insert; rolls back).
+insert into public.exercises (name_es, equipment) values
+  ('eq1','barbell'),('eq2','dumbbell'),('eq3','kettlebell'),('eq4','ez_curl_bar'),
+  ('eq5','machine'),('eq6','cable'),('eq7','bodyweight'),('eq8','band'),
+  ('eq9','medicine_ball'),('eq10','exercise_ball'),('eq11','foam_roller'),('eq12','other');
+select is(
+  (select count(*)::int from public.exercises where name_es like 'eq%'),
+  12, 'equipment CHECK accepts all 12 values');
+
+-- equipment CHECK rejects a bogus value.
+select throws_ok(
+  $$ insert into public.exercises (name_es, equipment) values ('bad','sledgehammer') $$,
+  '23514');  -- check_violation
+
+-- level / mechanic / force / category CHECKs reject bogus values.
+select throws_ok(
+  $$ insert into public.exercises (name_es, level) values ('bad','novice') $$, '23514');
+select throws_ok(
+  $$ insert into public.exercises (name_es, mechanic) values ('bad','hybrid') $$, '23514');
+select throws_ok(
+  $$ insert into public.exercises (name_es, force) values ('bad','twist') $$, '23514');
+select throws_ok(
+  $$ insert into public.exercises (name_es, category) values ('bad','calisthenics') $$, '23514');
+
+-- level / category accept verified values.
+insert into public.exercises (name_es, level, category) values ('ok1','expert','olympic weightlifting');
+select is(
+  (select count(*)::int from public.exercises where name_es = 'ok1'),
+  1, 'level=expert + category=olympic weightlifting accepted');
+
+-- external_id is unique (partial index — the second insert must throw 23505).
+insert into public.exercises (name_es, external_id) values ('ux1','dup_ext');
+select throws_ok(
+  $$ insert into public.exercises (name_es, external_id) values ('ux2','dup_ext') $$,
+  '23505');  -- unique_violation
+
+-- source CHECK now allows the import provenance.
+insert into public.exercises (name_es, source) values ('src1','free-exercise-db');
+select is(
+  (select source from public.exercises where name_es = 'src1'),
+  'free-exercise-db', 'source free-exercise-db accepted');
 
 select * from finish();
 rollback;

@@ -11,13 +11,13 @@ import {
 
 const EXPECTED_FINE = [
   'delt_front','delt_side','delt_rear','pec_upper','pec_lower','lat','trap',
-  'rhomboids','lower_back','biceps','tri_long','tri_lateral','forearms',
-  'abs_upper','abs_lower','obliques','quads','hamstrings','glutes','adductors',
-  'calves','tibialis',
+  'rhomboids','lower_back','neck','biceps','tri_long','tri_lateral','forearms',
+  'abs_upper','abs_lower','obliques','quads','hamstrings','glutes','abductors',
+  'adductors','calves','tibialis',
 ];
 
 describe('muscles taxonomy', () => {
-  it('MUSCLE_CODES is exactly the 22 shadeable fine codes (no full_body)', () => {
+  it('MUSCLE_CODES is exactly the 24 shadeable fine codes (no full_body)', () => {
     expect([...MUSCLE_CODES].sort()).toEqual([...EXPECTED_FINE].sort());
     expect(MUSCLE_CODES).not.toContain('full_body');
   });
@@ -40,6 +40,22 @@ describe('muscles taxonomy', () => {
     expect([...codesForBodyRegion('deltoids')].sort()).toEqual(
       ['delt_front', 'delt_rear', 'delt_side'],
     );
+  });
+
+  it('neck and abductors are wired with the right group and slug', () => {
+    const neck = MUSCLES.find((m) => m.code === 'neck');
+    expect(neck?.group).toBe('back');
+    expect(neck?.bodyRegionSlug).toBe('neck');
+    expect(neck?.isFullBody).toBe(false);
+
+    const abd = MUSCLES.find((m) => m.code === 'abductors');
+    expect(abd?.group).toBe('legs');
+    expect(abd?.bodyRegionSlug).toBe('gluteal'); // co-shades on glutes (no abductors art region)
+    expect(abd?.isFullBody).toBe(false);
+  });
+
+  it('abductors co-shades the gluteal region alongside glutes', () => {
+    expect([...codesForBodyRegion('gluteal')].sort()).toEqual(['abductors', 'glutes']);
   });
 
   // Real TS↔DB anti-drift guard: parse the codes seeded by the migration and

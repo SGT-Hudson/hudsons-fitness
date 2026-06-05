@@ -362,12 +362,16 @@ export const DOUBLE_PROGRESSION_DEFAULTS = {
    * Equipment-aware FALLBACK increment (kg) — used only when the
    * exercise's `default_increment_kg` is null (spec §4.1). Per
    * 2026-05-20 decision the per-exercise column is the primary source.
-   * Vocab: barbell/dumbbell/kettlebell/machine/cable/bodyweight/band/other.
+   * Vocab: barbell/dumbbell/kettlebell/ez_curl_bar/machine/cable/bodyweight/band/
+   * medicine_ball/exercise_ball/foam_roller/other. Values without an explicit
+   * entry fall back to fallbackIncrementKg via `?? fallback` (medicine_ball,
+   * exercise_ball, foam_roller).
    */
   incrementByEquipment: {
     barbell: 2.5,
     dumbbell: 1.0,
     kettlebell: 4.0, // KBs come in fixed-weight singles (8/12/16/20/24/28/32 kg standard)
+    ez_curl_bar: 1.0, // small fixed plates, like dumbbells
     machine: 2.5,
     cable: 2.5, // covers pulley exercises (§0.13)
     bodyweight: 0,

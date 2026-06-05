@@ -1,0 +1,313 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+// free-exercise-db pinned at b0eed061e1c832b3ed815fbaa4b45b3cdc14df49 (Unlicense).
+// Images served via jsDelivr; only the relative path is stored — the URL helper
+// (B2) builds the full CDN URL:
+//   https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@<PINNED_SHA>/exercises/<path>
+export const PINNED_SHA = 'b0eed061e1c832b3ed815fbaa4b45b3cdc14df49';
+
+export interface RawExercise {
+  id: string;
+  name: string;
+  force: string | null;
+  level: string;
+  mechanic: string | null;
+  equipment: string | null;
+  primaryMuscles: string[];
+  secondaryMuscles: string[];
+  category: string;
+  images?: string[];
+  instructions?: string[]; // present in source, deferred to B2 — not imported in B1
+}
+
+// ── equipment map (§5): dataset string -> our snake_case value, 1:1 lossless ──
+const EQUIPMENT_MAP: Record<string, string> = {
+  'body only': 'bodyweight',
+  bands: 'band',
+  kettlebells: 'kettlebell',
+  'e-z curl bar': 'ez_curl_bar',
+  'medicine ball': 'medicine_ball',
+  'exercise ball': 'exercise_ball',
+  'foam roll': 'foam_roller',
+  barbell: 'barbell',
+  dumbbell: 'dumbbell',
+  cable: 'cable',
+  machine: 'machine',
+  other: 'other',
+};
+
+export function mapEquipment(eq: string | null): string | null {
+  if (eq == null) return null;
+  return EQUIPMENT_MAP[eq] ?? null;
+}
+
+// ── 1:1 coarse -> fine maps (§7) ──────────────────────────────────────────────
+const ONE_TO_ONE: Record<string, string> = {
+  abductors: 'abductors',
+  adductors: 'adductors',
+  biceps: 'biceps',
+  calves: 'calves',
+  forearms: 'forearms',
+  glutes: 'glutes',
+  hamstrings: 'hamstrings',
+  lats: 'lat',
+  'lower back': 'lower_back',
+  'middle back': 'rhomboids',
+  neck: 'neck',
+  quadriceps: 'quads',
+  traps: 'trap',
+};
+
+// ── the four ambiguous coarse codes — disambiguate by name keyword (§7) ───────
+// NOTE: keyword precedence follows the §7 rule order. Because checks are ordered,
+// a confident-but-wrong hit is possible (e.g. a name containing both "lateral"
+// and "rear" returns delt_side — "lateral" is tested first per §7). Such rows do
+// NOT trip the linter's `ambiguous_default` flag (they hit a branch, not the
+// else-default), so they ship is_verified=false but unflagged. This is the
+// accepted §7/§8 approximation; see the README caveat.
+function mapChest(name: string): string {
+  if (name.includes('incline')) return 'pec_upper';
+  if (name.includes('decline')) return 'pec_lower';
+  return 'pec_lower';
+}
+function mapShoulders(name: string): string {
+  if (name.includes('lateral')) return 'delt_side';
+  if (name.includes('rear') || name.includes('reverse') || name.includes('face pull')) {
+    return 'delt_rear';
+  }
+  if (
+    name.includes('front raise') ||
+    name.includes('press') ||
+    name.includes('overhead') ||
+    name.includes('military')
+  ) {
+    return 'delt_front';
+  }
+  return 'delt_side';
+}
+function mapTriceps(name: string): string {
+  if (
+    name.includes('overhead') ||
+    name.includes('skull') ||
+    name.includes('french') ||
+    name.includes('lying')
+  ) {
+    return 'tri_long';
+  }
+  if (name.includes('pushdown') || name.includes('kickback') || name.includes('dip')) {
+    return 'tri_lateral';
+  }
+  return 'tri_lateral';
+}
+function mapAbdominals(name: string): string {
+  if (name.includes('leg raise') || name.includes('reverse') || name.includes('hanging')) {
+    return 'abs_lower';
+  }
+  return 'abs_upper';
+}
+
+/** Maps one dataset coarse muscle to our fine code, using the exercise name for
+ *  the four ambiguous codes. Returns null for an unrecognized coarse code. */
+export function mapFineMuscle(coarse: string, exerciseName: string): string | null {
+  const name = exerciseName.toLowerCase();
+  switch (coarse) {
+    case 'chest':
+      return mapChest(name);
+    case 'shoulders':
+      return mapShoulders(name);
+    case 'triceps':
+      return mapTriceps(name);
+    case 'abdominals':
+      return mapAbdominals(name);
+    default:
+      return ONE_TO_ONE[coarse] ?? null;
+  }
+}
+
+/** Image relative paths pass through verbatim (host decoupled — §6). */
+export function imagePaths(images: string[] | undefined): string[] {
+  return images ?? [];
+}
+
+// ── SQL emission helpers ──────────────────────────────────────────────────────
+const esc = (s: string) => s.replace(/'/g, "''");
+const sqlText = (s: string | null) => (s == null ? 'null' : `'${esc(s)}'`);
+const sqlTextArray = (xs: string[]) =>
+  xs.length === 0 ? `array[]::text[]` : `array[${xs.map((x) => `'${esc(x)}'`).join(',')}]`;
+
+/** One generated VALUES tuple. Constant columns (is_verified/source/created_by)
+ *  live in the migration footer's SELECT-less VALUES list cast — see Task 7 —
+ *  so they are NOT part of this tuple. `nameEs` is the reviewed ES name (falls
+ *  back to the English name upstream when es-names.json lacks the id). */
+export function buildRow(raw: RawExercise, nameEs: string): string {
+  const primary = raw.primaryMuscles
+    .map((m) => mapFineMuscle(m, raw.name))
+    .filter((c): c is string => c != null);
+  const secondary = raw.secondaryMuscles
+    .map((m) => mapFineMuscle(m, raw.name))
+    .filter((c): c is string => c != null);
+  return (
+    `  (${sqlText(nameEs)}, ${sqlText(raw.name)}, ` +
+    `${sqlTextArray(primary)}, ${sqlTextArray(secondary)}, ` +
+    `${sqlText(mapEquipment(raw.equipment))}, ${sqlText(raw.level)}, ` +
+    `${sqlText(raw.mechanic)}, ${sqlText(raw.force)}, ${sqlText(raw.category)}, ` +
+    `${sqlTextArray(imagePaths(raw.images))}, ${sqlText(raw.id)})`
+  );
+}
+
+// ── low-confidence linter (§8). Returns the flags that fired for one row. ─────
+const AMBIGUOUS_COARSE = new Set(['chest', 'shoulders', 'triceps', 'abdominals']);
+
+/** True when an ambiguous coarse code fell through to its `else` default. */
+function hitAmbiguousDefault(raw: RawExercise): boolean {
+  const name = raw.name.toLowerCase();
+  for (const coarse of raw.primaryMuscles) {
+    if (!AMBIGUOUS_COARSE.has(coarse)) continue;
+    if (coarse === 'chest' && !name.includes('incline') && !name.includes('decline')) return true;
+    if (
+      coarse === 'shoulders' &&
+      !name.includes('lateral') &&
+      !name.includes('rear') &&
+      !name.includes('reverse') &&
+      !name.includes('face pull') &&
+      !name.includes('front raise') &&
+      !name.includes('press') &&
+      !name.includes('overhead') &&
+      !name.includes('military')
+    ) {
+      return true;
+    }
+    if (
+      coarse === 'triceps' &&
+      !name.includes('overhead') &&
+      !name.includes('skull') &&
+      !name.includes('french') &&
+      !name.includes('lying') &&
+      !name.includes('pushdown') &&
+      !name.includes('kickback') &&
+      !name.includes('dip')
+    ) {
+      return true;
+    }
+    if (
+      coarse === 'abdominals' &&
+      !name.includes('leg raise') &&
+      !name.includes('reverse') &&
+      !name.includes('hanging')
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function lintRow(raw: RawExercise, nameEs: string): string[] {
+  const flags: string[] = [];
+  const name = raw.name.toLowerCase();
+  const primary = raw.primaryMuscles
+    .map((m) => mapFineMuscle(m, raw.name))
+    .filter((c): c is string => c != null);
+  const secondary = raw.secondaryMuscles
+    .map((m) => mapFineMuscle(m, raw.name))
+    .filter((c): c is string => c != null);
+
+  if (hitAmbiguousDefault(raw)) flags.push('ambiguous_default');
+  if (secondary.length >= 4) flags.push('big_compound');
+  if (name.includes('curl') && !primary.includes('biceps') && !secondary.includes('biceps')) {
+    flags.push('curl_no_biceps');
+  }
+  if (primary.length === 0 && raw.category !== 'cardio' && raw.category !== 'stretching') {
+    flags.push('empty_primary');
+  }
+  if (nameEs.trim() === '') flags.push('es_missing');
+  return flags;
+}
+
+// ── SQL migration header/footer (constant columns in the outer INSERT, not the
+//    per-row VALUES tuple — mirrors the whole-foods precedent to avoid VALUES
+//    type-inference on null::uuid). ────────────────────────────────────────────
+const MIGRATION_HEADER = `-- Project B1 step 2/2 — free-exercise-db catalog seed (873 exercises).
+-- Generated by scripts/exercise-catalog/build-seed.ts from the SHA-pinned
+-- scripts/exercise-catalog/exercises.json + es-names.json. DO NOT hand-edit —
+-- re-run \`pnpm exercises:build\`. Idempotent: on conflict (external_id) do update.
+-- Every imported row is is_verified=false, source='free-exercise-db'.
+
+insert into public.exercises
+  (name_es, name_en, primary_muscles, secondary_muscles, equipment, level,
+   mechanic, force, category, images, external_id, is_verified, source,
+   created_by_user_id)
+select v.name_es, v.name_en, v.primary_muscles, v.secondary_muscles, v.equipment,
+       v.level, v.mechanic, v.force, v.category, v.images, v.external_id,
+       false, 'free-exercise-db', null
+from (values
+`;
+
+const MIGRATION_FOOTER = `
+) as v(name_es, name_en, primary_muscles, secondary_muscles, equipment, level,
+       mechanic, force, category, images, external_id)
+-- DELIBERATELY does NOT update is_verified / source / created_by_user_id: a
+-- re-run must preserve operator-flipped is_verified=true on reviewed rows. Do
+-- NOT add \`is_verified = excluded.is_verified\` — that would silently un-verify
+-- every reviewed row on the next build.
+-- The \`where external_id is not null\` predicate is REQUIRED: idx_exercises_external_id
+-- is a PARTIAL unique index, so the ON CONFLICT arbiter must repeat its predicate
+-- for Postgres to infer it (else: "no unique or exclusion constraint matching").
+on conflict (external_id) where external_id is not null do update set
+  name_es = excluded.name_es, name_en = excluded.name_en,
+  primary_muscles = excluded.primary_muscles,
+  secondary_muscles = excluded.secondary_muscles,
+  equipment = excluded.equipment, level = excluded.level,
+  mechanic = excluded.mechanic, force = excluded.force,
+  category = excluded.category, images = excluded.images;
+`;
+
+async function main(): Promise<void> {
+  const dir = resolve(import.meta.dirname);
+  const raws = JSON.parse(
+    readFileSync(resolve(dir, 'exercises.json'), 'utf8'),
+  ) as RawExercise[];
+  const esNames = JSON.parse(
+    readFileSync(resolve(dir, 'es-names.json'), 'utf8'),
+  ) as Record<string, string>;
+
+  const rows: string[] = [];
+  const report: string[] = ['external_id,name_en,name_es,primary_fine,secondary_count,flags'];
+
+  for (const raw of raws) {
+    const nameEs = (esNames[raw.id] ?? '').trim() || raw.name; // fallback to EN, flagged below
+    const flags = lintRow(raw, esNames[raw.id] ?? '');
+    rows.push(buildRow(raw, nameEs));
+    if (flags.length > 0) {
+      const primary = raw.primaryMuscles
+        .map((m) => mapFineMuscle(m, raw.name))
+        .filter((c): c is string => c != null)
+        .join('|');
+      const csvEsc = (s: string) => `"${s.replace(/"/g, '""')}"`;
+      report.push(
+        [
+          csvEsc(raw.id),
+          csvEsc(raw.name),
+          csvEsc(nameEs),
+          csvEsc(primary),
+          String(raw.secondaryMuscles.length),
+          csvEsc(flags.join('|')),
+        ].join(','),
+      );
+    }
+  }
+
+  const sql = MIGRATION_HEADER + rows.join(',\n') + MIGRATION_FOOTER;
+  const outSql = resolve(dir, '../../supabase/migrations/20260604120200_b1_catalog_seed.sql');
+  writeFileSync(outSql, sql);
+  const outCsv = resolve(dir, 'ingest-report.csv');
+  writeFileSync(outCsv, report.join('\n') + '\n');
+  console.log(`wrote ${rows.length} rows -> ${outSql}`);
+  console.log(`flagged ${report.length - 1} low-confidence rows -> ${outCsv}`);
+}
+
+// Run main() only when invoked directly, never on import (keeps the test pure).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  void main();
+}
