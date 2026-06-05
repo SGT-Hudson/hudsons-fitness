@@ -9,20 +9,28 @@ export type Equipment =
   | 'barbell'
   | 'dumbbell'
   | 'kettlebell'
+  | 'ez_curl_bar'
   | 'machine'
   | 'cable'
   | 'bodyweight'
   | 'band'
+  | 'medicine_ball'
+  | 'exercise_ball'
+  | 'foam_roller'
   | 'other';
 
 export const EQUIPMENT_VALUES: Equipment[] = [
   'barbell',
   'dumbbell',
   'kettlebell',
+  'ez_curl_bar',
   'machine',
   'cable',
   'bodyweight',
   'band',
+  'medicine_ball',
+  'exercise_ball',
+  'foam_roller',
   'other',
 ];
 
