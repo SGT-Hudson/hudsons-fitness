@@ -35,22 +35,33 @@ select throws_ok(
   $$ insert into public.exercises (name_es, secondary_muscles) values ('bad', array['full_body']) $$,
   'secondary_muscles contains unknown or full_body code');
 
--- ── B1 catalog seed (applied by 20260604120200_b1_catalog_seed.sql) ──────────
+-- ── B1 catalog seed + post-import muscle-tag review ──────────────────────────
 -- ASSERTED FIRST, before the schema-CHECK test inserts below: those inserts run
 -- in this same transaction and one of them (`src1`, source='free-exercise-db',
 -- external_id null) would otherwise pollute these provenance counts.
--- The seed imported exactly 873 rows, all is_verified=false + source provenance.
+-- The seed imported exactly 873 rows; the review migration
+-- (20260605120000_b1_catalog_review) then corrected 146 primary tags and flipped
+-- is_verified=true on the 402 reviewed-correct rows (256 confirmed + 146 corrected).
 select is(
   (select count(*)::int from public.exercises where source = 'free-exercise-db'),
   873, 'catalog seed imported 873 rows');
 select is(
   (select count(*)::int from public.exercises
      where source = 'free-exercise-db' and is_verified),
-  0, 'every imported row is is_verified=false');
+  402, 'catalog review verified 402 reviewed-correct rows');
 select is(
   (select count(*)::int from public.exercises
      where source = 'free-exercise-db' and external_id is null),
   0, 'every imported row carries an external_id');
+-- the review assigns codes the coarse->fine mapper cannot emit (obliques/full_body)
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Clean' and source = 'free-exercise-db'),
+  array['full_body'], 'Olympic-lift Clean corrected to full_body primary');
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Advanced_Kettlebell_Windmill' and source = 'free-exercise-db'),
+  array['obliques'], 'kettlebell windmill corrected to obliques primary');
 
 -- ── B1 catalog schema ─────────────────────────────────────────────────────────
 

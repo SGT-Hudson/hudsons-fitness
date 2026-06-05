@@ -1,0 +1,450 @@
+{
+  "Advanced_Kettlebell_Windmill": [
+    "obliques"
+  ],
+  "Air_Bike": [
+    "obliques"
+  ],
+  "Alternate_Heel_Touchers": [
+    "obliques"
+  ],
+  "Alternating_Hang_Clean": [
+    "full_body"
+  ],
+  "Back_Flyes_-_With_Bands": [
+    "delt_rear"
+  ],
+  "Backward_Medicine_Ball_Throw": [
+    "delt_front"
+  ],
+  "Band_Pull_Apart": [
+    "delt_rear"
+  ],
+  "Barbell_Incline_Shoulder_Raise": [
+    "trap"
+  ],
+  "Barbell_Side_Bend": [
+    "obliques"
+  ],
+  "Battling_Ropes": [
+    "delt_front"
+  ],
+  "Bench_Press_-_Powerlifting": [
+    "pec_lower"
+  ],
+  "Bench_Press_with_Chains": [
+    "pec_lower"
+  ],
+  "Bent_Press": [
+    "obliques"
+  ],
+  "Bent-Knee_Hip_Raise": [
+    "abs_lower"
+  ],
+  "Board_Press": [
+    "pec_lower"
+  ],
+  "Bosu_Ball_Cable_Crunch_With_Side_Bends": [
+    "abs_upper",
+    "obliques"
+  ],
+  "Bottoms_Up": [
+    "abs_lower"
+  ],
+  "Box_Jump_Multiple_Response": [
+    "quads",
+    "glutes"
+  ],
+  "Box_Skip": [
+    "quads",
+    "glutes"
+  ],
+  "Cable_Incline_Triceps_Extension": [
+    "tri_long"
+  ],
+  "Cable_Internal_Rotation": [
+    "delt_front"
+  ],
+  "Cable_Judo_Flip": [
+    "obliques"
+  ],
+  "Cable_Russian_Twists": [
+    "obliques"
+  ],
+  "Car_Deadlift": [
+    "hamstrings",
+    "glutes",
+    "lower_back"
+  ],
+  "Car_Drivers": [
+    "delt_front"
+  ],
+  "Circus_Bell": [
+    "delt_front"
+  ],
+  "Clean": [
+    "full_body"
+  ],
+  "Clean_and_Jerk": [
+    "full_body"
+  ],
+  "Clean_and_Press": [
+    "full_body"
+  ],
+  "Clean_from_Blocks": [
+    "full_body"
+  ],
+  "Clean_Pull": [
+    "full_body"
+  ],
+  "Cocoons": [
+    "abs_lower"
+  ],
+  "Cross-Body_Crunch": [
+    "obliques",
+    "abs_upper"
+  ],
+  "Crossover_Reverse_Lunge": [
+    "quads",
+    "glutes"
+  ],
+  "Decline_Dumbbell_Triceps_Extension": [
+    "tri_long"
+  ],
+  "Decline_EZ_Bar_Triceps_Extension": [
+    "tri_long"
+  ],
+  "Decline_Oblique_Crunch": [
+    "obliques"
+  ],
+  "Double_Kettlebell_Alternating_Hang_Clean": [
+    "full_body"
+  ],
+  "Double_Kettlebell_Jerk": [
+    "delt_front"
+  ],
+  "Double_Kettlebell_Snatch": [
+    "full_body"
+  ],
+  "Double_Kettlebell_Windmill": [
+    "obliques"
+  ],
+  "Double_Leg_Butt_Kick": [
+    "hamstrings"
+  ],
+  "Dumbbell_Clean": [
+    "full_body"
+  ],
+  "Dumbbell_Incline_Shoulder_Raise": [
+    "delt_front"
+  ],
+  "Dumbbell_Side_Bend": [
+    "obliques"
+  ],
+  "Elbow_to_Knee": [
+    "obliques"
+  ],
+  "Exercise_Ball_Pull-In": [
+    "abs_lower"
+  ],
+  "External_Rotation": [
+    "delt_rear"
+  ],
+  "External_Rotation_with_Band": [
+    "delt_rear"
+  ],
+  "External_Rotation_with_Cable": [
+    "delt_rear"
+  ],
+  "Flat_Bench_Leg_Pull-In": [
+    "abs_lower"
+  ],
+  "Front_Box_Jump": [
+    "quads"
+  ],
+  "Front_Cable_Raise": [
+    "delt_front"
+  ],
+  "Front_Dumbbell_Raise": [
+    "delt_front"
+  ],
+  "Front_Incline_Dumbbell_Raise": [
+    "delt_front"
+  ],
+  "Front_Plate_Raise": [
+    "delt_front"
+  ],
+  "Front_Two-Dumbbell_Raise": [
+    "delt_front"
+  ],
+  "Handstand_Push-Ups": [
+    "delt_front"
+  ],
+  "Hang_Clean": [
+    "full_body"
+  ],
+  "Hang_Clean_-_Below_the_Knees": [
+    "full_body"
+  ],
+  "Hang_Snatch": [
+    "full_body"
+  ],
+  "Hang_Snatch_-_Below_Knees": [
+    "full_body"
+  ],
+  "Hurdle_Hops": [
+    "glutes",
+    "quads"
+  ],
+  "Incline_Barbell_Triceps_Extension": [
+    "tri_long"
+  ],
+  "Internal_Rotation_with_Band": [
+    "delt_front"
+  ],
+  "Isometric_Wipers": [
+    "obliques"
+  ],
+  "Jerk_Balance": [
+    "delt_front"
+  ],
+  "Kettlebell_Figure_8": [
+    "obliques"
+  ],
+  "Kettlebell_Pass_Between_The_Legs": [
+    "obliques"
+  ],
+  "Kettlebell_Pirate_Ships": [
+    "obliques"
+  ],
+  "Kettlebell_Thruster": [
+    "delt_front"
+  ],
+  "Kettlebell_Turkish_Get-Up_Lunge_style": [
+    "delt_front"
+  ],
+  "Kettlebell_Turkish_Get-Up_Squat_style": [
+    "delt_front"
+  ],
+  "Kettlebell_Windmill": [
+    "obliques"
+  ],
+  "Knee_Hip_Raise_On_Parallel_Bars": [
+    "abs_lower"
+  ],
+  "Knee_Tuck_Jump": [
+    "quads"
+  ],
+  "Kneeling_Arm_Drill": [
+    "delt_front"
+  ],
+  "Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists": [
+    "obliques"
+  ],
+  "Landmine_180s": [
+    "obliques"
+  ],
+  "Landmine_Linear_Jammer": [
+    "delt_front"
+  ],
+  "Leg_Pull-In": [
+    "abs_lower"
+  ],
+  "Log_Lift": [
+    "delt_front"
+  ],
+  "Low_Pulley_Row_To_Neck": [
+    "delt_rear"
+  ],
+  "Lower_Back_Curl": [
+    "lower_back"
+  ],
+  "Medicine_Ball_Full_Twist": [
+    "obliques"
+  ],
+  "Medicine_Ball_Scoop_Throw": [
+    "full_body"
+  ],
+  "Muscle_Snatch": [
+    "full_body"
+  ],
+  "Oblique_Crunches": [
+    "obliques"
+  ],
+  "Oblique_Crunches_-_On_The_Floor": [
+    "obliques"
+  ],
+  "One_Arm_Floor_Press": [
+    "pec_lower"
+  ],
+  "One-Arm_High-Pulley_Cable_Side_Bends": [
+    "obliques"
+  ],
+  "One-Arm_Kettlebell_Clean_and_Jerk": [
+    "full_body"
+  ],
+  "One-Arm_Kettlebell_Jerk": [
+    "full_body"
+  ],
+  "One-Arm_Kettlebell_Snatch": [
+    "full_body"
+  ],
+  "One-Arm_Kettlebell_Split_Jerk": [
+    "full_body"
+  ],
+  "One-Arm_Kettlebell_Split_Snatch": [
+    "full_body"
+  ],
+  "One-Arm_Medicine_Ball_Slam": [
+    "obliques"
+  ],
+  "Open_Palm_Kettlebell_Clean": [
+    "full_body"
+  ],
+  "Pallof_Press": [
+    "obliques"
+  ],
+  "Pallof_Press_With_Rotation": [
+    "obliques"
+  ],
+  "Plate_Twist": [
+    "obliques"
+  ],
+  "Power_Clean": [
+    "full_body"
+  ],
+  "Power_Jerk": [
+    "full_body"
+  ],
+  "Power_Snatch": [
+    "full_body"
+  ],
+  "Power_Snatch_from_Blocks": [
+    "full_body"
+  ],
+  "Power_Stairs": [
+    "full_body"
+  ],
+  "Rack_Delivery": [
+    "delt_front"
+  ],
+  "Return_Push_from_Stance": [
+    "delt_front"
+  ],
+  "Reverse_Band_Bench_Press": [
+    "pec_lower"
+  ],
+  "Russian_Twist": [
+    "obliques"
+  ],
+  "Scissor_Kick": [
+    "abs_lower"
+  ],
+  "Seated_Barbell_Twist": [
+    "obliques"
+  ],
+  "Seated_Flat_Bench_Leg_Pull-In": [
+    "abs_lower"
+  ],
+  "Seated_Front_Deltoid": [
+    "delt_front"
+  ],
+  "Seated_Leg_Tucks": [
+    "abs_lower"
+  ],
+  "Seated_Triceps_Press": [
+    "tri_long"
+  ],
+  "Shoulder_Raise": [
+    "trap"
+  ],
+  "Side_Bridge": [
+    "obliques"
+  ],
+  "Side_Jackknife": [
+    "obliques"
+  ],
+  "Single-Arm_Linear_Jammer": [
+    "delt_front"
+  ],
+  "Sledgehammer_Swings": [
+    "obliques"
+  ],
+  "Smith_Machine_Hang_Power_Clean": [
+    "full_body"
+  ],
+  "Smith_Machine_Hip_Raise": [
+    "abs_lower"
+  ],
+  "Snatch": [
+    "full_body"
+  ],
+  "Snatch_from_Blocks": [
+    "full_body"
+  ],
+  "Snatch_Pull": [
+    "full_body"
+  ],
+  "Spell_Caster": [
+    "obliques"
+  ],
+  "Split_Clean": [
+    "full_body"
+  ],
+  "Split_Jerk": [
+    "full_body"
+  ],
+  "Split_Snatch": [
+    "full_body"
+  ],
+  "Squat_Jerk": [
+    "full_body"
+  ],
+  "Standing_Cable_Lift": [
+    "obliques"
+  ],
+  "Standing_Cable_Wood_Chop": [
+    "obliques"
+  ],
+  "Standing_Dumbbell_Straight-Arm_Front_Delt_Raise_Above_Head": [
+    "delt_front"
+  ],
+  "Standing_Front_Barbell_Raise_Over_Head": [
+    "delt_front"
+  ],
+  "Standing_Lateral_Stretch": [
+    "obliques"
+  ],
+  "Standing_One-Arm_Dumbbell_Triceps_Extension": [
+    "tri_long"
+  ],
+  "Stomach_Vacuum": [
+    "abs_lower"
+  ],
+  "Straight_Raises_on_Incline_Bench": [
+    "delt_front"
+  ],
+  "Supine_Chest_Throw": [
+    "pec_lower"
+  ],
+  "Tire_Flip": [
+    "full_body"
+  ],
+  "Torso_Rotation": [
+    "obliques"
+  ],
+  "Two-Arm_Kettlebell_Clean": [
+    "full_body"
+  ],
+  "Two-Arm_Kettlebell_Jerk": [
+    "full_body"
+  ],
+  "Weighted_Ball_Side_Bend": [
+    "obliques"
+  ],
+  "Wind_Sprints": [
+    "glutes",
+    "hamstrings",
+    "quads"
+  ]
+}
