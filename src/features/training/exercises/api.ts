@@ -59,6 +59,7 @@ export interface ExerciseSearchOptions {
   limit?: number;
   muscle?: PrimaryMuscle | null; // hard AND filter from the dropdown
   textMuscles?: PrimaryMuscle[]; // muscle codes the typed text matched (OR'd with name)
+  groupMuscles?: PrimaryMuscle[]; // a whole group's fine codes — AND overlap filter
 }
 
 /**
@@ -81,7 +82,7 @@ export async function searchExercises(
   query: string,
   opts: ExerciseSearchOptions = {},
 ): Promise<Exercise[]> {
-  const { limit = 20, muscle = null, textMuscles = [] } = opts;
+  const { limit = 20, muscle = null, textMuscles = [], groupMuscles = [] } = opts;
   const trimmed = query.trim();
   const safe = trimmed.replace(/[%_,]/g, '');
 
@@ -89,6 +90,12 @@ export async function searchExercises(
 
   if (muscle) {
     builder = builder.contains('primary_muscles', [muscle]);
+  }
+
+  if (groupMuscles.length > 0) {
+    // ⚠ PostgREST array OVERLAP — primary_muscles && {codes}. The operator wire
+    // form escapes the typecheck; verified on the db-test CI, not locally.
+    builder = builder.overlaps('primary_muscles', groupMuscles);
   }
 
   const terms: string[] = [];

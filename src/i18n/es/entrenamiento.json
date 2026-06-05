@@ -55,7 +55,8 @@
     "noResults": "Sin resultados",
     "createNew": "Crear \"{{name}}\"",
     "change": "Cambiar",
-    "allMuscles": "Todos los músculos"
+    "allMuscles": "Todos los músculos",
+    "allInGroup": "{{group}} — todos"
   },
   "history": {
     "empty": "Aún no has registrado series para este ejercicio.",

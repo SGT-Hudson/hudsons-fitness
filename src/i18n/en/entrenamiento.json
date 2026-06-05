@@ -55,7 +55,8 @@
     "noResults": "No matches",
     "createNew": "Create \"{{name}}\"",
     "change": "Change",
-    "allMuscles": "All muscles"
+    "allMuscles": "All muscles",
+    "allInGroup": "{{group}} — all"
   },
   "history": {
     "empty": "No sets logged for this exercise yet.",
