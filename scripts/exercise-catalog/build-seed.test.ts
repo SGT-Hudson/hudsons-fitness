@@ -144,6 +144,16 @@ describe('buildRow', () => {
         "null, 'beginner', null, null, 'strongman', array[]::text[], 'Farmer''s_Walk')",
     );
   });
+
+  it('primaryOverride REPLACES the mapped primary (post-import review) but keeps mapped secondary', () => {
+    // Barbell Curl maps primary->biceps; an override forces a curated code the
+    // mapper could even never emit (e.g. full_body). Secondary stays mapper-derived.
+    expect(buildRow(raw, 'Curl con barra', ['full_body'])).toBe(
+      "  ('Curl con barra', 'Barbell Curl', array['full_body'], array['forearms'], " +
+        "'barbell', 'beginner', 'isolation', 'pull', 'strength', " +
+        "array['Barbell_Curl/0.jpg','Barbell_Curl/1.jpg'], 'Barbell_Curl')",
+    );
+  });
 });
 
 describe('lintRow', () => {

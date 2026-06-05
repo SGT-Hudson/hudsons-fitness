@@ -2,8 +2,8 @@
 
 Ingests the public-domain **free-exercise-db** (`yuhonas/free-exercise-db`,
 Unlicense) into our shared `exercises` pool. Dev-only build — NOT run in CI; the
-committed artifacts (the generated seed migration, `es-names.json`, and
-`ingest-report.csv`) are what gets reviewed and shipped.
+committed artifacts (the generated seed migration, `es-names.json`,
+`primary-overrides.json`, and `ingest-report.csv`) are what gets reviewed and shipped.
 
 **Dataset pin:** `exercises.json` is vendored from
 `cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@b0eed061e1c832b3ed815fbaa4b45b3cdc14df49/dist/exercises.json`.
@@ -23,7 +23,24 @@ Images are served from the same SHA via jsDelivr; only relative paths are stored
 4. Review `ingest-report.csv` (the low-confidence subset only — ambiguous
    defaults, big compounds, curl-without-biceps, empty primaries, missing ES).
    Fix inputs and re-run as needed. Spot-check ~10 generated rows, then commit
-   `exercises.json`, `es-names.json`, `ingest-report.csv`, and the migration.
+   `exercises.json`, `es-names.json`, `primary-overrides.json`, `ingest-report.csv`,
+   and the migration.
+
+**Post-import muscle-tag review.** The full 404-row low-confidence subset was
+reviewed once (256 tags confirmed correct, 146 wrong, 2 ambiguous). The 146
+corrections live in `primary-overrides.json` — `{ "<external_id>": ["<fine_code>",
+…] }` that **replaces** the mapper's `primary_muscles` for that row (secondary
+codes are always mapper-derived). `build-seed.ts` validates every override id
+against the dataset and every code against the fine taxonomy, fails the build on a
+stale entry, and records the applied override in the report's `override` column.
+This is the home for tags the coarse→fine mapper **cannot** emit at all —
+`obliques` (twists, side bends, windmills), `full_body` (Olympic lifts, cleans,
+snatches), `tibialis` — plus the mapper's keyword-ordering misses. Because the
+seed migration was already merged + applied, the live promotion of the 402
+reviewed-correct rows to `is_verified=true` **and** the 146 corrections to envs
+that already ran the old seed ship in a separate migration
+(`20260605120000_b1_catalog_review.sql`); the override map keeps a fresh `db reset`
+in sync.
 
 **Idempotency note.** The seed upserts on `external_id` via a PARTIAL unique
 index (`idx_exercises_external_id … where external_id is not null`). The
@@ -31,7 +48,9 @@ generated `on conflict (external_id) where external_id is not null do update`
 repeats that predicate so Postgres can infer the partial index — re-running the
 seed updates in place (`INSERT 0 873`) and never duplicates. The upsert
 deliberately does NOT touch `is_verified` / `source` / `created_by_user_id`, so
-operator-promoted `is_verified=true` rows survive a re-import.
+operator-promoted `is_verified=true` rows survive a re-import. (It DOES re-derive
+`primary_muscles` from the mapper + `primary-overrides.json`, so corrections
+survive a re-import only because they live in the override map.)
 
 **Mapper accuracy caveat.** The four ambiguous coarse codes (chest/shoulders/
 triceps/abdominals) disambiguate by name keyword in a fixed precedence order
