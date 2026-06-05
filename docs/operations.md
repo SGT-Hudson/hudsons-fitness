@@ -103,6 +103,19 @@ Provides Auth, the PostgREST data API, and Realtime; the app talks to it
 directly with no application server of its own. The full schema (tables, RLS,
 RPCs, views, extensions) is documented in `data-model.md`.
 
+### Regenerating database types (after a schema migration)
+
+`src/types/database.ts` is generated from the live schema. Regenerate against
+the linked project (or a develop branch DB) from a machine with the CLI:
+
+```bash
+supabase gen types typescript --project-id <PROJECT_ID> --schema public > src/types/database.ts
+```
+
+B1 (level/mechanic/force/category/images/external_id) does not require a regen to
+compile — the picker and api read only existing columns; the new columns are
+consumed in B2. Regenerate when B2 starts reading them, or opportunistically.
+
 ## Edge functions
 
 Edge functions are Deno + TypeScript. Code that is shared between functions
