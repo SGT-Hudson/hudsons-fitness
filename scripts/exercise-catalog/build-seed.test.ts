@@ -4,6 +4,7 @@ import {
   mapFineMuscle,
   imagePaths,
   buildRow,
+  lintRow,
   type RawExercise,
 } from './build-seed';
 
@@ -142,5 +143,55 @@ describe('buildRow', () => {
       "  ('Paseo del granjero', 'Farmer''s Walk', array['forearms'], array[]::text[], " +
         "null, 'beginner', null, null, 'strongman', array[]::text[], 'Farmer''s_Walk')",
     );
+  });
+});
+
+describe('lintRow', () => {
+  const base: RawExercise = {
+    id: 'X', name: 'Cable Crunch', force: null, level: 'beginner',
+    mechanic: 'isolation', equipment: 'cable', primaryMuscles: ['abdominals'],
+    secondaryMuscles: [], category: 'strength', images: [],
+  };
+
+  it('flags an ambiguous default (chest with no incline/decline keyword)', () => {
+    const flags = lintRow({ ...base, name: 'Bench Press', primaryMuscles: ['chest'] }, 'Press de banca');
+    expect(flags).toContain('ambiguous_default');
+  });
+  it('does NOT flag chest when the keyword is explicit', () => {
+    const flags = lintRow({ ...base, name: 'Incline Bench Press', primaryMuscles: ['chest'] }, 'Press inclinado');
+    expect(flags).not.toContain('ambiguous_default');
+  });
+  it('flags a big compound (>=4 secondaries)', () => {
+    const flags = lintRow(
+      { ...base, name: 'Deadlift', primaryMuscles: ['lower back'],
+        secondaryMuscles: ['hamstrings', 'glutes', 'quadriceps', 'traps', 'forearms'] },
+      'Peso muerto',
+    );
+    expect(flags).toContain('big_compound');
+  });
+  it('flags a curl with no biceps', () => {
+    const flags = lintRow({ ...base, name: 'Leg Curl', primaryMuscles: ['hamstrings'] }, 'Curl femoral');
+    expect(flags).toContain('curl_no_biceps');
+  });
+  it('does NOT flag a biceps curl', () => {
+    const flags = lintRow({ ...base, name: 'Barbell Curl', primaryMuscles: ['biceps'] }, 'Curl con barra');
+    expect(flags).not.toContain('curl_no_biceps');
+  });
+  it('flags empty primaries on a strength exercise', () => {
+    const flags = lintRow({ ...base, name: 'Foam Roll IT-Band', primaryMuscles: [], category: 'strength' }, 'Rodillo');
+    expect(flags).toContain('empty_primary');
+  });
+  it('does NOT flag empty primaries on stretching/cardio', () => {
+    const stretch = lintRow({ ...base, name: 'Calf Stretch', primaryMuscles: [], category: 'stretching' }, 'Estiramiento');
+    expect(stretch).not.toContain('empty_primary');
+    const cardio = lintRow({ ...base, name: 'Rowing', primaryMuscles: [], category: 'cardio' }, 'Remo');
+    expect(cardio).not.toContain('empty_primary');
+  });
+  it('flags a missing ES name (empty string passed)', () => {
+    const flags = lintRow({ ...base, name: 'Barbell Curl', primaryMuscles: ['biceps'] }, '');
+    expect(flags).toContain('es_missing');
+  });
+  it('returns no flags for a clean row', () => {
+    expect(lintRow({ ...base, name: 'Barbell Curl', primaryMuscles: ['biceps'] }, 'Curl con barra')).toEqual([]);
   });
 });
