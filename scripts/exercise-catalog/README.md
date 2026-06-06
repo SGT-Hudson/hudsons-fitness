@@ -2,14 +2,20 @@
 
 Ingests the public-domain **free-exercise-db** (`yuhonas/free-exercise-db`,
 Unlicense) into our shared `exercises` pool. Dev-only build — NOT run in CI; the
-committed artifacts (the generated seed migration, `es-names.json`,
-`primary-overrides.json`, and `ingest-report.csv`) are what gets reviewed and shipped.
+committed artifacts (the generated seed + instructions-backfill migrations,
+`es-names.json`, `es-instructions.json`, `primary-overrides.json`, and
+`ingest-report.csv`) are what gets reviewed and shipped.
 
 **Dataset pin:** `exercises.json` is vendored from
 `cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@b0eed061e1c832b3ed815fbaa4b45b3cdc14df49/dist/exercises.json`.
 Images are served from the same SHA via jsDelivr; only relative paths are stored
-(`exercises.images text[]`), and the full URL is built by the B2 helper:
+(`exercises.images text[]`), and the full URL is built by
+`src/features/training/exercises/images.ts` (`buildExerciseImageUrl`):
 `https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@b0eed061e1c832b3ed815fbaa4b45b3cdc14df49/exercises/<path>`.
+That helper's `SHA` constant is kept equal to `build-seed.ts`'s `PINNED_SHA` by a
+unit test (`images.test.ts`), which reads `PINNED_SHA` from `build-seed.ts` as
+**text** (not an import, so `scripts/**` stays out of the typed `src` program) —
+so the two SHAs cannot drift silently.
 
 1. Vendor the dataset at a pinned SHA into `exercises.json` (873 records). Record
    the SHA here, in `build-seed.ts` `PINNED_SHA`, and as the image-URL base.
@@ -25,6 +31,25 @@ Images are served from the same SHA via jsDelivr; only relative paths are stored
    Fix inputs and re-run as needed. Spot-check ~10 generated rows, then commit
    `exercises.json`, `es-names.json`, `primary-overrides.json`, `ingest-report.csv`,
    and the migration.
+
+**Instructions (`es-instructions.json`).** Step-by-step instructions are bilingual,
+stored in two index-aligned `text[]` columns (`instructions_en`/`instructions_es`,
+where `instructions_es[i]` translates `instructions_en[i]`). English comes straight
+from the SHA-pinned `exercises.json` (`RawExercise.instructions`). Spanish lives in
+the committed `es-instructions.json`, shaped `{ "<external_id>": ["<paso>", …] }`
+with one key per dataset id and `instructions_es.length === instructions_en.length`
+(empty `[]` for the 5 source rows with no instructions). Like `es-names.json` it is
+the output of a one-off dev-time agent translation workflow (NOT run in CI) and a
+**non-reproducible committed machine artifact with no generator** — correctness
+rests on `validateInstructions` + pgTAP, never on re-derivation. `build-seed.ts`
+fails the build (`validateInstructions`) on a stale id or an EN/ES length mismatch
+(unless both are empty) — the same drift guarantee `primary-overrides.json` gives.
+One deterministic `pnpm exercises:build` writes BOTH the regenerated seed
+(structurally unchanged — instructions are NOT carried in the seed) and the
+`20260606120400_b2a_instructions_backfill.sql` instructions backfill, so they can
+never disagree. The backfill (dated 2026-06-06) is the single populator for fresh
+and already-seeded envs alike: the seed (2026-06-04) sorts before the
+`20260606120300` columns migration and so cannot reference the instruction columns.
 
 **Post-import muscle-tag review.** The catalog has been fully judge-reviewed in
 two passes. Pass 1 (#160) reviewed the 404 low-confidence rows the linter flagged
