@@ -11,6 +11,15 @@
   "Alternating_Hang_Clean": [
     "full_body"
   ],
+  "Alternating_Kettlebell_Row": [
+    "lat"
+  ],
+  "Anterior_Tibialis-SMR": [
+    "tibialis"
+  ],
+  "Anti-Gravity_Press": [
+    "delt_rear"
+  ],
   "Back_Flyes_-_With_Bands": [
     "delt_rear"
   ],
@@ -29,17 +38,23 @@
   "Battling_Ropes": [
     "delt_front"
   ],
+  "Bear_Crawl_Sled_Drags": [
+    "full_body"
+  ],
   "Bench_Press_-_Powerlifting": [
     "pec_lower"
   ],
   "Bench_Press_with_Chains": [
     "pec_lower"
   ],
-  "Bent_Press": [
-    "obliques"
-  ],
   "Bent-Knee_Hip_Raise": [
     "abs_lower"
+  ],
+  "Bent_Over_Low-Pulley_Side_Lateral": [
+    "delt_rear"
+  ],
+  "Bent_Press": [
+    "obliques"
   ],
   "Board_Press": [
     "pec_lower"
@@ -58,6 +73,9 @@
   "Box_Skip": [
     "quads",
     "glutes"
+  ],
+  "Cable_Hip_Adduction": [
+    "adductors"
   ],
   "Cable_Incline_Triceps_Extension": [
     "tri_long"
@@ -85,6 +103,9 @@
   "Clean": [
     "full_body"
   ],
+  "Clean_Pull": [
+    "full_body"
+  ],
   "Clean_and_Jerk": [
     "full_body"
   ],
@@ -92,9 +113,6 @@
     "full_body"
   ],
   "Clean_from_Blocks": [
-    "full_body"
-  ],
-  "Clean_Pull": [
     "full_body"
   ],
   "Cocoons": [
@@ -107,6 +125,10 @@
   "Crossover_Reverse_Lunge": [
     "quads",
     "glutes"
+  ],
+  "Cuban_Press": [
+    "delt_rear",
+    "delt_side"
   ],
   "Decline_Dumbbell_Triceps_Extension": [
     "tri_long"
@@ -137,6 +159,12 @@
   ],
   "Dumbbell_Incline_Shoulder_Raise": [
     "delt_front"
+  ],
+  "Dumbbell_Lying_One-Arm_Rear_Lateral_Raise": [
+    "delt_rear"
+  ],
+  "Dumbbell_Lying_Rear_Lateral_Raise": [
+    "delt_rear"
   ],
   "Dumbbell_Side_Bend": [
     "obliques"
@@ -199,8 +227,33 @@
   "Incline_Barbell_Triceps_Extension": [
     "tri_long"
   ],
+  "Incline_Bench_Pull": [
+    "delt_rear",
+    "rhomboids"
+  ],
+  "Incline_Push-Up": [
+    "pec_lower"
+  ],
+  "Incline_Push-Up_Depth_Jump": [
+    "pec_lower"
+  ],
+  "Incline_Push-Up_Medium": [
+    "pec_lower"
+  ],
+  "Incline_Push-Up_Wide": [
+    "pec_lower"
+  ],
   "Internal_Rotation_with_Band": [
     "delt_front"
+  ],
+  "Inverted_Row": [
+    "lat"
+  ],
+  "Inverted_Row_with_Straps": [
+    "lat"
+  ],
+  "Iron_Crosses_stretch": [
+    "obliques"
   ],
   "Isometric_Wipers": [
     "obliques"
@@ -229,6 +282,9 @@
   "Kettlebell_Windmill": [
     "obliques"
   ],
+  "Knee_Circles": [
+    "quads"
+  ],
   "Knee_Hip_Raise_On_Parallel_Bars": [
     "abs_lower"
   ],
@@ -250,6 +306,18 @@
   "Leg_Pull-In": [
     "abs_lower"
   ],
+  "Leverage_High_Row": [
+    "lat"
+  ],
+  "Linear_3-Part_Start_Technique": [
+    "full_body"
+  ],
+  "Linear_Acceleration_Wall_Drill": [
+    "full_body"
+  ],
+  "Linear_Depth_Jump": [
+    "full_body"
+  ],
   "Log_Lift": [
     "delt_front"
   ],
@@ -265,6 +333,15 @@
   "Medicine_Ball_Scoop_Throw": [
     "full_body"
   ],
+  "Middle_Back_Stretch": [
+    "obliques"
+  ],
+  "Mixed_Grip_Chin": [
+    "lat"
+  ],
+  "Mountain_Climbers": [
+    "abs_lower"
+  ],
   "Muscle_Snatch": [
     "full_body"
   ],
@@ -274,8 +351,8 @@
   "Oblique_Crunches_-_On_The_Floor": [
     "obliques"
   ],
-  "One_Arm_Floor_Press": [
-    "pec_lower"
+  "One-Arm_Dumbbell_Row": [
+    "lat"
   ],
   "One-Arm_High-Pulley_Cable_Side_Bends": [
     "obliques"
@@ -286,6 +363,12 @@
   "One-Arm_Kettlebell_Jerk": [
     "full_body"
   ],
+  "One-Arm_Kettlebell_Para_Press": [
+    "delt_side"
+  ],
+  "One-Arm_Kettlebell_Row": [
+    "lat"
+  ],
   "One-Arm_Kettlebell_Snatch": [
     "full_body"
   ],
@@ -295,10 +378,22 @@
   "One-Arm_Kettlebell_Split_Snatch": [
     "full_body"
   ],
+  "One-Arm_Long_Bar_Row": [
+    "lat"
+  ],
   "One-Arm_Medicine_Ball_Slam": [
     "obliques"
   ],
+  "One_Arm_Chin-Up": [
+    "lat"
+  ],
+  "One_Arm_Floor_Press": [
+    "pec_lower"
+  ],
   "Open_Palm_Kettlebell_Clean": [
+    "full_body"
+  ],
+  "Overhead_Slam": [
     "full_body"
   ],
   "Pallof_Press": [
@@ -311,6 +406,9 @@
     "obliques"
   ],
   "Power_Clean": [
+    "full_body"
+  ],
+  "Power_Clean_from_Blocks": [
     "full_body"
   ],
   "Power_Jerk": [
@@ -328,11 +426,18 @@
   "Rack_Delivery": [
     "delt_front"
   ],
+  "Rear_Leg_Raises": [
+    "glutes"
+  ],
   "Return_Push_from_Stance": [
     "delt_front"
   ],
   "Reverse_Band_Bench_Press": [
     "pec_lower"
+  ],
+  "Ring_Dips": [
+    "pec_lower",
+    "tri_lateral"
   ],
   "Russian_Twist": [
     "obliques"
@@ -379,10 +484,10 @@
   "Snatch": [
     "full_body"
   ],
-  "Snatch_from_Blocks": [
+  "Snatch_Pull": [
     "full_body"
   ],
-  "Snatch_Pull": [
+  "Snatch_from_Blocks": [
     "full_body"
   ],
   "Spell_Caster": [
@@ -399,6 +504,12 @@
   ],
   "Squat_Jerk": [
     "full_body"
+  ],
+  "Standing_Barbell_Press_Behind_Neck": [
+    "delt_side"
+  ],
+  "Standing_Bradford_Press": [
+    "delt_side"
   ],
   "Standing_Cable_Lift": [
     "obliques"
@@ -417,6 +528,9 @@
   ],
   "Standing_One-Arm_Dumbbell_Triceps_Extension": [
     "tri_long"
+  ],
+  "Standing_Two-Arm_Overhead_Throw": [
+    "full_body"
   ],
   "Stomach_Vacuum": [
     "abs_lower"
@@ -442,9 +556,15 @@
   "Weighted_Ball_Side_Bend": [
     "obliques"
   ],
+  "Wide-Grip_Decline_Barbell_Pullover": [
+    "lat"
+  ],
   "Wind_Sprints": [
     "glutes",
     "hamstrings",
     "quads"
+  ],
+  "Windmills": [
+    "obliques"
   ]
 }

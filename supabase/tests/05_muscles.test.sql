@@ -39,16 +39,17 @@ select throws_ok(
 -- ASSERTED FIRST, before the schema-CHECK test inserts below: those inserts run
 -- in this same transaction and one of them (`src1`, source='free-exercise-db',
 -- external_id null) would otherwise pollute these provenance counts.
--- The seed imported exactly 873 rows; the review migration
--- (20260605120000_b1_catalog_review) then corrected 146 primary tags and flipped
--- is_verified=true on the 402 reviewed-correct rows (256 confirmed + 146 corrected).
+-- The seed imported exactly 873 rows; the #160 review migration
+-- (20260605120000_b1_catalog_review) corrected 146 primary tags + verified 402 rows;
+-- the full-catalog review (20260606120000_catalog_full_review) then reviewed the
+-- remaining 469 never-flagged rows, bringing the verified total to 869.
 select is(
   (select count(*)::int from public.exercises where source = 'free-exercise-db'),
   873, 'catalog seed imported 873 rows');
 select is(
   (select count(*)::int from public.exercises
      where source = 'free-exercise-db' and is_verified),
-  402, 'catalog review verified 402 reviewed-correct rows');
+  869, 'full-catalog review verified 869 reviewed-correct rows (402 from #160 + this pass)');
 select is(
   (select count(*)::int from public.exercises
      where source = 'free-exercise-db' and external_id is null),
@@ -62,6 +63,16 @@ select is(
   (select primary_muscles from public.exercises
      where external_id = 'Advanced_Kettlebell_Windmill' and source = 'free-exercise-db'),
   array['obliques'], 'kettlebell windmill corrected to obliques primary');
+-- the full-catalog pass (20260606120000) reviewed the 469 never-flagged rows;
+-- these two corrections use codes the mapper cannot emit (full_body / tibialis).
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Bear_Crawl_Sled_Drags' and source = 'free-exercise-db'),
+  array['full_body'], 'Bear Crawl Sled Drags corrected to full_body primary (full-catalog pass)');
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Anterior_Tibialis-SMR' and source = 'free-exercise-db'),
+  array['tibialis'], 'Anterior Tibialis SMR corrected to tibialis primary (full-catalog pass)');
 
 -- ── B1 catalog schema ─────────────────────────────────────────────────────────
 
