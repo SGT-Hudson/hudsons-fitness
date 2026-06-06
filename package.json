@@ -15,7 +15,9 @@
     "typecheck": "tsc --noEmit",
     "whole-foods:resolve": "tsx scripts/whole-foods/resolve.ts",
     "whole-foods:build": "tsx scripts/whole-foods/build-seed.ts",
-    "exercises:build": "tsx scripts/exercise-catalog/build-seed.ts"
+    "exercises:build": "tsx scripts/exercise-catalog/build-seed.ts",
+    "exercises:review-input": "tsx scripts/exercise-catalog/build-review-input.ts",
+    "exercises:reconcile-review": "tsx scripts/exercise-catalog/reconcile-review.ts"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
