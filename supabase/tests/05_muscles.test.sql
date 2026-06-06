@@ -55,6 +55,12 @@ select is(
   (select count(*)::int from public.exercises
      where source = 'free-exercise-db' and external_id is null),
   0, 'every imported row carries an external_id');
+-- no row tags a muscle as BOTH primary and secondary (would double-count in the
+-- heatmap); secondary is deduped against primary by 20260606120200 + build-seed.
+select is(
+  (select count(*)::int from public.exercises
+     where source = 'free-exercise-db' and primary_muscles && secondary_muscles),
+  0, 'no catalog row has a primary/secondary muscle overlap');
 -- the review assigns codes the coarse->fine mapper cannot emit (obliques/full_body)
 select is(
   (select primary_muscles from public.exercises

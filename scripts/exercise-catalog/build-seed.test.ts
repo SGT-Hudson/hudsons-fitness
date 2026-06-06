@@ -154,6 +154,30 @@ describe('buildRow', () => {
         "array['Barbell_Curl/0.jpg','Barbell_Curl/1.jpg'], 'Barbell_Curl')",
     );
   });
+
+  it('dedupes secondary against primary — a code promoted to primary is dropped from secondary, order preserved', () => {
+    // Vertical_Swing-style: the dataset secondary maps to a code an override
+    // promotes to primary. A muscle is the prime mover OR an assister, never both.
+    const r: RawExercise = {
+      id: 'Vertical_Swing_Test',
+      name: 'Vertical Swing Test',
+      force: 'pull',
+      level: 'beginner',
+      mechanic: 'compound',
+      equipment: 'dumbbell',
+      primaryMuscles: ['hamstrings'],
+      secondaryMuscles: ['glutes', 'quadriceps'], // -> glutes, quads
+      category: 'plyometrics',
+      images: [],
+    };
+    // override promotes glutes to primary; glutes must vanish from secondary,
+    // leaving quads (the remaining mapped secondary, in original order).
+    expect(buildRow(r, 'Swing', ['glutes'])).toBe(
+      "  ('Swing', 'Vertical Swing Test', array['glutes'], array['quads'], " +
+        "'dumbbell', 'beginner', 'compound', 'pull', 'plyometrics', " +
+        "array[]::text[], 'Vertical_Swing_Test')",
+    );
+  });
 });
 
 describe('lintRow', () => {

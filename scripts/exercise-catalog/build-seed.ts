@@ -150,9 +150,15 @@ export function buildRow(raw: RawExercise, nameEs: string, primaryOverride?: str
     raw.primaryMuscles
       .map((m) => mapFineMuscle(m, raw.name))
       .filter((c): c is string => c != null);
+  // Secondary is mapper-derived, then deduped against primary: a muscle is the
+  // prime mover OR an assister for a given exercise, never both. Without this a
+  // code promoted to primary (via override, or via two coarse codes collapsing to
+  // one fine code) would sit in both arrays and double-count in the heatmap
+  // (primary 1.0 + secondary 0.5). Order-preserving.
+  const primarySet = new Set(primary);
   const secondary = raw.secondaryMuscles
     .map((m) => mapFineMuscle(m, raw.name))
-    .filter((c): c is string => c != null);
+    .filter((c): c is string => c != null && !primarySet.has(c));
   return (
     `  (${sqlText(nameEs)}, ${sqlText(raw.name)}, ` +
     `${sqlTextArray(primary)}, ${sqlTextArray(secondary)}, ` +
