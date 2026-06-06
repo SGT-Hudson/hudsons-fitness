@@ -188,6 +188,33 @@ export function buildInstructionsBackfillRow(
   return `  (${sqlText(raw.id)}, ${sqlTextArray(en)}, ${sqlTextArray(esInstructions)})`;
 }
 
+/** Build-time integrity for es-instructions.json (fails `exercises:build` on
+ *  drift, mirroring the primary-overrides.json validation). Throws when:
+ *   (a) an es-instructions key is not a known dataset external_id (stale entry);
+ *   (b) for any exercise, instructions_es.length !== instructions_en.length,
+ *       UNLESS both are empty (the source='system' rows + the 5 no-source rows). */
+export function validateInstructions(
+  raws: RawExercise[],
+  esInstructions: Record<string, string[]>,
+): void {
+  const datasetIds = new Set(raws.map((r) => r.id));
+  for (const id of Object.keys(esInstructions)) {
+    if (!datasetIds.has(id)) {
+      throw new Error(`es-instructions.json: unknown external_id "${id}"`);
+    }
+  }
+  for (const raw of raws) {
+    const enLen = (raw.instructions ?? []).length;
+    const esLen = (esInstructions[raw.id] ?? []).length;
+    if (enLen === 0 && esLen === 0) continue;
+    if (enLen !== esLen) {
+      throw new Error(
+        `es-instructions.json: "${raw.id}" has ${esLen} ES steps but ${enLen} EN steps`,
+      );
+    }
+  }
+}
+
 // ── low-confidence linter (§8). Returns the flags that fired for one row. ─────
 const AMBIGUOUS_COARSE = new Set(['chest', 'shoulders', 'triceps', 'abdominals']);
 
