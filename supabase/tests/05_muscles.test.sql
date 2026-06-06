@@ -42,14 +42,15 @@ select throws_ok(
 -- The seed imported exactly 873 rows; the #160 review migration
 -- (20260605120000_b1_catalog_review) corrected 146 primary tags + verified 402 rows;
 -- the full-catalog review (20260606120000_catalog_full_review) then reviewed the
--- remaining 469 never-flagged rows, bringing the verified total to 869.
+-- remaining 469 never-flagged rows (verified 869); the hold-resolve migration
+-- (20260606120100_catalog_hold_resolve) then settled 2 held rows -> verified 871.
 select is(
   (select count(*)::int from public.exercises where source = 'free-exercise-db'),
   873, 'catalog seed imported 873 rows');
 select is(
   (select count(*)::int from public.exercises
      where source = 'free-exercise-db' and is_verified),
-  869, 'full-catalog review verified 869 reviewed-correct rows (402 from #160 + this pass)');
+  871, 'catalog review verified 871 reviewed-correct rows (402 #160 + 467 full-catalog + 2 hold-resolve)');
 select is(
   (select count(*)::int from public.exercises
      where source = 'free-exercise-db' and external_id is null),
@@ -73,6 +74,15 @@ select is(
   (select primary_muscles from public.exercises
      where external_id = 'Anterior_Tibialis-SMR' and source = 'free-exercise-db'),
   array['tibialis'], 'Anterior Tibialis SMR corrected to tibialis primary (full-catalog pass)');
+-- the hold-resolve pass (20260606120100) settled the 2 rows held on a 3-way split.
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Push_Press_-_Behind_the_Neck' and source = 'free-exercise-db'),
+  array['delt_side'], 'behind-neck push press resolved to delt_side primary (hold-resolve)');
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Vertical_Swing' and source = 'free-exercise-db'),
+  array['glutes'], 'vertical swing resolved to glutes primary (hold-resolve)');
 
 -- ── B1 catalog schema ─────────────────────────────────────────────────────────
 

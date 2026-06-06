@@ -1026,11 +1026,13 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   curated. Post-import muscle-tag review done in two passes: pass 1 (#160)
   reviewed the 404 linter-flagged rows (256 confirmed / 146 corrected / 2 held);
   the full-catalog pass reviewed the remaining 469 never-flagged rows (428
-  confirmed / 39 corrected / 2 held). All 873 rows are now judge-reviewed; **869
-  are `is_verified=true`** (4 held ambiguous). Corrections live in
-  `scripts/exercise-catalog/primary-overrides.json` (185 total) + review
-  migrations `20260605120000_b1_catalog_review.sql` and
-  `20260606120000_catalog_full_review.sql`. Remaining picker enhancements
+  confirmed / 39 corrected / 2 held); a hold-resolve pass then settled those 2
+  via anatomical review. All 873 rows are now judge-reviewed; **871 are
+  `is_verified=true`** (only the 2 pass-1/#160 holds remain ambiguous). Corrections
+  live in `scripts/exercise-catalog/primary-overrides.json` (187 total) + review
+  migrations `20260605120000_b1_catalog_review.sql`,
+  `20260606120000_catalog_full_review.sql`, and
+  `20260606120100_catalog_hold_resolve.sql`. Remaining picker enhancements
   (group-name text search, lay-term search aliases) deferred.
 - **scope:** ingest a public-domain exercise dataset (free-exercise-db, ~873
   exercises) as idempotent seed migrations, each fine-tagged via the R-26

@@ -29,8 +29,10 @@ Images are served from the same SHA via jsDelivr; only relative paths are stored
 **Post-import muscle-tag review.** The catalog has been fully judge-reviewed in
 two passes. Pass 1 (#160) reviewed the 404 low-confidence rows the linter flagged
 (256 confirmed correct, 146 corrected, 2 held ambiguous). Pass 2 (full-catalog)
-then reviewed the 469 never-flagged rows (428 confirmed, 39 corrected, 2 held) —
-so the whole 873-row pool is now reviewed. The combined 185 corrections live in
+then reviewed the 469 never-flagged rows (428 confirmed, 39 corrected, 2 held — the
+two pass-2 holds were later resolved by anatomical review) — so the whole 873-row
+pool is now reviewed, with only the 2 pass-1 holds left unverified. The combined
+187 corrections live in
 `primary-overrides.json` — `{ "<external_id>": ["<fine_code>",
 …] }` that **replaces** the mapper's `primary_muscles` for that row (secondary
 codes are always mapper-derived). `build-seed.ts` validates every override id
@@ -39,11 +41,13 @@ stale entry, and records the applied override in the report's `override` column.
 This is the home for tags the coarse→fine mapper **cannot** emit at all —
 `obliques` (twists, side bends, windmills), `full_body` (Olympic lifts, cleans,
 snatches), `tibialis` — plus the mapper's keyword-ordering misses. Because the
-seed migration was already merged + applied, the live promotion of the 869
+seed migration was already merged + applied, the live promotion of the 871
 reviewed-correct rows to `is_verified=true` **and** the corrections to envs that
 already ran the old seed ship in separate review migrations
 (`20260605120000_b1_catalog_review.sql` for pass 1,
-`20260606120000_catalog_full_review.sql` for pass 2); the override map keeps a
+`20260606120000_catalog_full_review.sql` for pass 2, and
+`20260606120100_catalog_hold_resolve.sql` for the 2 resolved holds); the override
+map keeps a
 fresh `db reset` in sync.
 
 **Idempotency note.** The seed upserts on `external_id` via a PARTIAL unique
