@@ -30,12 +30,20 @@ import type { SessionWithSets } from '../api';
 import { SessionEditor } from './SessionEditor';
 
 const mockExercise: Exercise = {
+  category: null,
   created_at: '2026-01-01T00:00:00Z',
   created_by_user_id: null,
   default_increment_kg: 2.5,
   equipment: 'barbell',
+  external_id: null,
+  force: null,
   id: '11111111-1111-1111-1111-111111111111',
+  images: [],
+  instructions_en: [],
+  instructions_es: [],
   is_verified: true,
+  level: null,
+  mechanic: null,
   name_en: 'Bench press',
   name_es: 'Press de banca',
   primary_muscles: ['pec_lower'],
