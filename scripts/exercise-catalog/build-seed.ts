@@ -168,6 +168,26 @@ export function buildRow(raw: RawExercise, nameEs: string, primaryOverride?: str
   );
 }
 
+/** One generated VALUES tuple for the instructions BACKFILL migration:
+ *  (external_id, instructions_en, instructions_es). English steps come from the
+ *  SHA-pinned source (raw.instructions ?? []); Spanish from es-instructions.json
+ *  (passed in as esInstructions). Both arrays go through sqlTextArray, which
+ *  doubles embedded single quotes — instruction prose has apostrophes (81 EN
+ *  steps; the ES translations too). Non-empty arrays are emitted UNCAST: the
+ *  standalone UPDATE…FROM(values) infers each column type from the first row
+ *  (matching the shipped 20260604120000 retag migration); only empty arrays
+ *  carry array[]::text[]. This is SEPARATE from the seed tuple (buildRow): the
+ *  seed (dated 2026-06-04) cannot reference the instruction columns, which are
+ *  added by a 2026-06-06 migration that sorts after it; all instruction data is
+ *  written by the 2026-06-06 backfill. */
+export function buildInstructionsBackfillRow(
+  raw: RawExercise,
+  esInstructions: string[],
+): string {
+  const en = raw.instructions ?? [];
+  return `  (${sqlText(raw.id)}, ${sqlTextArray(en)}, ${sqlTextArray(esInstructions)})`;
+}
+
 // ── low-confidence linter (§8). Returns the flags that fired for one row. ─────
 const AMBIGUOUS_COARSE = new Set(['chest', 'shoulders', 'triceps', 'abdominals']);
 

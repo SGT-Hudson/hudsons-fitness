@@ -5,6 +5,7 @@ import {
   imagePaths,
   buildRow,
   lintRow,
+  buildInstructionsBackfillRow,
   type RawExercise,
 } from './build-seed';
 
@@ -227,5 +228,51 @@ describe('lintRow', () => {
   });
   it('returns no flags for a clean row', () => {
     expect(lintRow({ ...base, name: 'Barbell Curl', primaryMuscles: ['biceps'] }, 'Curl con barra')).toEqual([]);
+  });
+});
+
+describe('buildInstructionsBackfillRow', () => {
+  const base: RawExercise = {
+    id: 'Barbell_Curl',
+    name: 'Barbell Curl',
+    force: 'pull',
+    level: 'beginner',
+    mechanic: 'isolation',
+    equipment: 'barbell',
+    primaryMuscles: ['biceps'],
+    secondaryMuscles: ['forearms'],
+    category: 'strength',
+    images: ['Barbell_Curl/0.jpg'],
+    instructions: ['Stand up.', "Don't swing."],
+  };
+
+  it('emits a (external_id, instructions_en, instructions_es) tuple', () => {
+    expect(
+      buildInstructionsBackfillRow(base, ['Ponte de pie.', 'No balancees.']),
+    ).toBe(
+      "  ('Barbell_Curl', array['Stand up.','Don''t swing.'], " +
+        "array['Ponte de pie.','No balancees.'])",
+    );
+  });
+
+  it('escapes single quotes in both languages', () => {
+    const r: RawExercise = { ...base, instructions: ["World's best."] };
+    expect(buildInstructionsBackfillRow(r, ["Lo mejor del mundo's."])).toBe(
+      "  ('Barbell_Curl', array['World''s best.'], array['Lo mejor del mundo''s.'])",
+    );
+  });
+
+  it('emits empty arrays when the exercise has no instructions', () => {
+    const r: RawExercise = { ...base, instructions: [] };
+    expect(buildInstructionsBackfillRow(r, [])).toBe(
+      "  ('Barbell_Curl', array[]::text[], array[]::text[])",
+    );
+  });
+
+  it('falls back to empty EN array when instructions is undefined', () => {
+    const r: RawExercise = { ...base, instructions: undefined };
+    expect(buildInstructionsBackfillRow(r, [])).toBe(
+      "  ('Barbell_Curl', array[]::text[], array[]::text[])",
+    );
   });
 });
