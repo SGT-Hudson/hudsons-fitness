@@ -35,7 +35,9 @@ pool is now reviewed, with only the 2 pass-1 holds left unverified. The combined
 187 corrections live in
 `primary-overrides.json` — `{ "<external_id>": ["<fine_code>",
 …] }` that **replaces** the mapper's `primary_muscles` for that row (secondary
-codes are always mapper-derived). `build-seed.ts` validates every override id
+codes stay mapper-derived, then deduped against primary — a muscle is the prime
+mover OR an assister, never both, so it never double-counts in the heatmap).
+`build-seed.ts` validates every override id
 against the dataset and every code against the fine taxonomy, fails the build on a
 stale entry, and records the applied override in the report's `override` column.
 This is the home for tags the coarse→fine mapper **cannot** emit at all —
