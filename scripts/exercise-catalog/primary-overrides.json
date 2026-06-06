@@ -423,6 +423,9 @@
   "Power_Stairs": [
     "full_body"
   ],
+  "Push_Press_-_Behind_the_Neck": [
+    "delt_side"
+  ],
   "Rack_Delivery": [
     "delt_front"
   ],
@@ -552,6 +555,9 @@
   ],
   "Two-Arm_Kettlebell_Jerk": [
     "full_body"
+  ],
+  "Vertical_Swing": [
+    "glutes"
   ],
   "Weighted_Ball_Side_Bend": [
     "obliques"
