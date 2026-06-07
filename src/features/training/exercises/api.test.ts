@@ -11,9 +11,14 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 import {
+  CATEGORY_VALUES,
+  LEVEL_VALUES,
+  categorySlug,
   createExercise,
   exerciseDisplayName,
+  exerciseInstructions,
   searchExercises,
+  searchExercisesPaged,
   suggestIncrementForEquipment,
   type Exercise,
 } from './api';
@@ -177,5 +182,148 @@ describe('createExercise', () => {
     });
     expect(insertArg?.primary_muscles).toEqual(['pec_lower']);
     expect(insertArg?.secondary_muscles).toEqual(['delt_front']);
+  });
+});
+
+describe('browse filter constants', () => {
+  it('exposes the 7 raw catalog categories', () => {
+    expect(CATEGORY_VALUES).toEqual([
+      'strength', 'stretching', 'plyometrics', 'powerlifting',
+      'strongman', 'olympic weightlifting', 'cardio',
+    ]);
+  });
+  it('exposes the 3 levels', () => {
+    expect(LEVEL_VALUES).toEqual(['beginner', 'intermediate', 'expert']);
+  });
+  it('slugifies a category for i18n keys (space → underscore)', () => {
+    expect(categorySlug('olympic weightlifting')).toBe('olympic_weightlifting');
+    expect(categorySlug('strength')).toBe('strength');
+  });
+});
+
+describe('exerciseInstructions', () => {
+  const base: Exercise = {
+    category: null,
+    created_at: '2026-01-01T00:00:00Z',
+    created_by_user_id: null,
+    default_increment_kg: 2.5,
+    equipment: 'barbell',
+    external_id: null,
+    force: null,
+    id: 'ex-1',
+    images: [],
+    instructions_en: ['Lie on the bench.', 'Press up.'],
+    instructions_es: ['Túmbate en el banco.', 'Empuja hacia arriba.'],
+    is_verified: true,
+    level: null,
+    mechanic: null,
+    name_en: 'Bench press',
+    name_es: 'Press de banca',
+    primary_muscles: ['pec_lower'],
+    secondary_muscles: [],
+    source: 'free-exercise-db',
+    updated_at: '2026-01-01T00:00:00Z',
+  };
+
+  it('returns Spanish steps when lang=es', () => {
+    expect(exerciseInstructions(base, 'es')).toEqual([
+      'Túmbate en el banco.',
+      'Empuja hacia arriba.',
+    ]);
+  });
+  it('returns English steps when lang=en and instructions_en is non-empty', () => {
+    expect(exerciseInstructions(base, 'en')).toEqual(['Lie on the bench.', 'Press up.']);
+  });
+  it('falls back to the other language when the chosen array is empty', () => {
+    expect(exerciseInstructions({ ...base, instructions_en: [] }, 'en')).toEqual([
+      'Túmbate en el banco.',
+      'Empuja hacia arriba.',
+    ]);
+  });
+  it('returns [] when both arrays are empty (system/no-source rows)', () => {
+    expect(
+      exerciseInstructions({ ...base, instructions_en: [], instructions_es: [] }, 'es'),
+    ).toEqual([]);
+  });
+});
+
+function pagedBuilder(rows: unknown[], count: number) {
+  const captured = {
+    selectArgs: [] as unknown[][],
+    eq: [] as unknown[][],
+    contains: [] as unknown[][],
+    overlaps: [] as unknown[][],
+    or: [] as string[],
+    order: [] as unknown[][],
+    range: [] as number[][],
+  };
+  const b: Record<string, unknown> = {};
+  b.select = (...a: unknown[]) => { captured.selectArgs.push(a); return b; };
+  b.eq = (c: string, v: unknown) => { captured.eq.push([c, v]); return b; };
+  b.contains = (c: string, v: unknown) => { captured.contains.push([c, v]); return b; };
+  b.overlaps = (c: string, v: unknown) => { captured.overlaps.push([c, v]); return b; };
+  b.or = (s: string) => { captured.or.push(s); return b; };
+  b.order = (...a: unknown[]) => { captured.order.push(a); return b; };
+  b.range = (from: number, to: number) => { captured.range.push([from, to]); return Promise.resolve({ data: rows, count, error: null }); };
+  return { b, captured };
+}
+
+describe('searchExercisesPaged', () => {
+  it('requests an exact count + right page window + verified-first order, returns rows + total', async () => {
+    const { b, captured } = pagedBuilder([{ id: 'a' }], 42);
+    from.mockReturnValue(b);
+    const res = await searchExercisesPaged({
+      query: '', category: null, equipment: null, level: null,
+      muscleValue: '', textMuscles: [], page: 2, pageSize: 10,
+    });
+    expect(captured.selectArgs[0]).toEqual(['*', { count: 'exact' }]);
+    expect(captured.range).toContainEqual([10, 19]); // page 2, size 10 → rows 10..19
+    // pin the shared builder's ordering contract (verified first, then name_es):
+    expect(captured.order[0]).toEqual(['is_verified', { ascending: false }]);
+    expect(captured.order[1]).toEqual(['name_es']);
+    expect(res).toEqual({ rows: [{ id: 'a' }], total: 42 });
+  });
+
+  it('applies category/equipment/level as eq filters when set', async () => {
+    const { b, captured } = pagedBuilder([], 0);
+    from.mockReturnValue(b);
+    await searchExercisesPaged({
+      query: '', category: 'strength', equipment: 'barbell', level: 'beginner',
+      muscleValue: '', textMuscles: [], page: 1, pageSize: 10,
+    });
+    expect(captured.eq).toContainEqual(['category', 'strength']);
+    expect(captured.eq).toContainEqual(['equipment', 'barbell']);
+    expect(captured.eq).toContainEqual(['level', 'beginner']);
+  });
+
+  it('a single fine muscle → contains; a group: value → overlaps', async () => {
+    const g = pagedBuilder([], 0);
+    from.mockReturnValue(g.b);
+    await searchExercisesPaged({
+      query: '', category: null, equipment: null, level: null,
+      muscleValue: 'group:arms', textMuscles: [], page: 1, pageSize: 10,
+    });
+    expect(g.captured.overlaps.length).toBe(1);
+    expect(g.captured.overlaps[0][0]).toBe('primary_muscles');
+
+    const s = pagedBuilder([], 0);
+    from.mockReturnValue(s.b);
+    await searchExercisesPaged({
+      query: '', category: null, equipment: null, level: null,
+      muscleValue: 'pec_lower', textMuscles: [], page: 1, pageSize: 10,
+    });
+    expect(s.captured.contains).toContainEqual(['primary_muscles', ['pec_lower']]);
+  });
+
+  it('builds the name + textMuscles OR clause from the query', async () => {
+    const { b, captured } = pagedBuilder([], 0);
+    from.mockReturnValue(b);
+    await searchExercisesPaged({
+      query: 'press', category: null, equipment: null, level: null,
+      muscleValue: '', textMuscles: ['pec_lower'], page: 1, pageSize: 10,
+    });
+    expect(captured.or[0]).toContain('name_es.ilike.%press%');
+    expect(captured.or[0]).toContain('name_en.ilike.%press%');
+    expect(captured.or[0]).toContain('primary_muscles.cs.{pec_lower}');
   });
 });

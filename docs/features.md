@@ -407,6 +407,14 @@ editors.
   `exercises.secondary_muscles` column landed 2026-05-26 with F-4. No backfill — the
   system seed was re-tagged in place.)*
 
+- **Exercise detail popup (R-27 / Project B2b).** An `Info` button on exercise
+  rows in the runner overview, the exercise picker, and the session + routine
+  editors opens a bilingual step-by-step instruction panel with a start/end
+  image loop. The reusable `ExerciseDetail` component adapts to a `density`
+  prop (`compact` in the popup; `full` is built but unmounted until B2c's
+  browse page). The responsive shell is a shadcn `Drawer` (bottom-sheet) on
+  mobile and a Radix `Dialog` on desktop. No schema or RPC change.
+
 ## Product ideas (uncommitted)
 
 Future-feature suggestions distilled from the original spreadsheet's §5 and

@@ -10,6 +10,7 @@ import {
 import { useExerciseHistory } from '../hooks';
 import { exerciseDisplayName, type Exercise } from '../exercises/api';
 import { ExercisePicker } from './ExercisePicker';
+import { ExerciseInfoButton } from './ExerciseInfoButton';
 import { CoachSuggestions } from './CoachSuggestions';
 import { SetRow } from './SetRow';
 import type { SessionFormValues } from '../schema';
@@ -115,17 +116,20 @@ export function ExerciseBlock({ blockIndex, todayISO, initialExercise, onRemoveB
   return (
     <div className="rounded-lg border bg-card p-3 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-medium truncate">{exerciseDisplayName(exercise, lang)}</h3>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-muted-foreground"
-          aria-label={t('block.remove')}
-          onClick={onRemoveBlock}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        <h3 className="font-medium truncate flex-1 min-w-0">{exerciseDisplayName(exercise, lang)}</h3>
+        <div className="flex items-center gap-1 shrink-0">
+          <ExerciseInfoButton exercise={exercise} />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-muted-foreground"
+            aria-label={t('block.remove')}
+            onClick={onRemoveBlock}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
 
       {coachCtx && (

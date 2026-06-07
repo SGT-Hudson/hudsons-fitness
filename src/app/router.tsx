@@ -8,7 +8,8 @@ import { LoginPage } from '@/pages/LoginPage';
 import { SignupPage } from '@/pages/SignupPage';
 import { OnboardingPage } from '@/pages/OnboardingPage';
 import { HomePage } from '@/pages/HomePage';
-import { EnProgresoPage } from '@/pages/EnProgresoPage';
+import { ExercisesPage } from '@/pages/ExercisesPage';
+import { ExerciseDetailPage } from '@/pages/ExerciseDetailPage';
 import { DiarioPage } from '@/pages/DiarioPage';
 import { PlanificadorPage } from '@/pages/PlanificadorPage';
 import { PlantillasPage } from '@/pages/PlantillasPage';
@@ -119,7 +120,8 @@ export function AppRoutes() {
           <Route path="/routine/rutinas/:id" element={<RoutineEditorPage />} />
           <Route path="/routine/programas/nuevo" element={<ProgramEditorPage />} />
           <Route path="/routine/programas/:id" element={<ProgramEditorPage />} />
-          <Route path="/exercises" element={<EnProgresoPage />} />
+          <Route path="/exercises" element={<ExercisesPage />} />
+          <Route path="/exercises/:id" element={<ExerciseDetailPage />} />
 
           {/* Shared */}
           <Route
