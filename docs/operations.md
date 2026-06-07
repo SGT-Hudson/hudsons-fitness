@@ -548,6 +548,29 @@ complete history rather than the lone Sprint-9 file.
 authoritative sequence; this list is a curated annotation of it and may trail by
 a file or two.
 
+**Project A / B1 / B2a backlog deploy (executed 2026-06-08).** The fine-taxonomy,
+B1-catalog, and B2a-instruction migrations had been authored + merged + CI-validated
+(Tier-3 from-zero) but were **never applied to the live project** — the live DB sat
+at `r25_hide_drops_ref_only` with the old singular `primary_muscle` column and 34
+seed rows, while the already-released `main` frontend expected the new schema (so the
+catalog/taxonomy/heatmap were silently broken in prod). The 10-migration backlog
+(`20260604120000_fine_muscle_taxonomy` … `20260606120400_b2a_instructions_backfill`)
+was applied **in filename order**, each in its own transaction (idempotent), by
+streaming the files straight to Postgres via a one-off `pg` client on the
+session-pooler connection. `supabase db push` is **unusable** against this project:
+the remote migration history was built separately (different version stamps/names
+than the repo files), so push would try to re-apply the entire 47-migration history;
+and MCP `apply_migration` can't carry the 1.25 MB backfill — the `pg`-stream path is
+the working one. Post-apply verified: **907 exercises** (34 system + 873 catalog),
+all with `primary_muscles`; 868 EN + 868 ES instruction sets; 873 with `category`;
+25 muscles. RLS (`Exercises pool readable`, authenticated read-all) makes the catalog
+visible in-app immediately — no frontend redeploy (the SPA queries at runtime).
+
+> ⚠ The dated "applied 20XX-XX-XX" notes in the migration list above are **authoring**
+> dates, not application dates. For the fine-taxonomy / B1 / B2a set the actual
+> application to the live DB was **2026-06-08** (this entry) — don't read the list
+> dates as deploy dates.
+
 **R-21 OFF contribute-back — REMOVED (2026-05-21).** The feature was pulled as
 a product decision before it was ever activated. Removal steps: (1) the
 `off-contribute` edge function + client/core code are deleted in-repo; (2) drop

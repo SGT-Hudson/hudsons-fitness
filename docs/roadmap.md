@@ -35,10 +35,11 @@ reference shard carries it (never edit the decision entry).
 - R-24 — Muscle activity heatmap (F-4)
 - R-25 — Fix hide_owned_* blocked by pool UPDATE WITH CHECK (Tier-3 finding)
 - R-26 — Fine muscle taxonomy (Project A) — 22-code model + `primary_muscles[]`
-- R-27 — Bulk exercise catalog (Project B) — design in progress
+- R-27 — Bulk exercise catalog (Project B) — COMPLETE + released (2026-06-08); catalog live in prod
 - R-28 — Rich home dashboard + diet-completion calendar + adaptive-TDEE surface (post-V1 item 4)
 - R-29 — In-app feature-discovery onboarding (post-V1 item 5)
 - R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
+- R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — deferred from R-27
 - Feature & UX family index (F-x / U-x / post-V1 items / Projects A–B) — at end
 
 ## R-00 — Baseline current schema into migrations
@@ -1032,8 +1033,17 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   live in `scripts/exercise-catalog/primary-overrides.json` (187 total) + review
   migrations `20260605120000_b1_catalog_review.sql`,
   `20260606120000_catalog_full_review.sql`, and
-  `20260606120100_catalog_hold_resolve.sql`. Remaining picker enhancements
-  (group-name text search, lay-term search aliases) deferred.
+  `20260606120100_catalog_hold_resolve.sql`.
+  **COMPLETE + RELEASED (2026-06-08).** The B2 exercise-detail UI shipped as three
+  sub-projects — B2a data foundation (#164: instruction columns + image helper),
+  B2b detail component + in-workout popup (#166), B2c `/exercises` browse page +
+  `/exercises/:id` detail page (#167) — released to `main` via
+  `release/2026-06-08-exercise-browse`. The full 10-migration backlog (fine taxonomy
+  + B1 catalog + B2a instructions) was deployed to the live DB on 2026-06-08
+  (873-exercise catalog now live in prod; see operations.md "Project A / B1 / B2a
+  backlog deploy"). **Follow-ups deferred** (not blocking; tracked as R-31): lay-term search
+  aliases; group-name text search (the browse muscle filter + name/muscle search
+  already cover the common cases); "add to session/routine" from the detail page.
 - **scope:** ingest a public-domain exercise dataset (free-exercise-db, ~873
   exercises) as idempotent seed migrations, each fine-tagged via the R-26
   taxonomy, with a tagging-accuracy verification step (anatomical source of
@@ -1073,6 +1083,19 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   (e.g. macro card also renders the day's TDEE breakdown) — not just wider
   breakpoints. Deferred to public-launch prep. (post-V1 brainstorm item 6; the
   U-8 visual pass.)
+
+## R-31 — Exercise search/browse follow-ups (deferred from Project B / R-27)
+- **decision:** (D-id at plan time)
+- **blocked-by:** none (Project B is complete + released)
+- **status:** not built — deferred, low priority.
+- **scope:** the polish items intentionally dropped from B2c to keep it focused:
+  (1) **lay-term search aliases** — a curated bilingual map (slang/lay term →
+  muscle code(s) / exercise keywords) feeding the browse + picker search, so e.g.
+  "abs"→core or "biceps"→arms surface without exact name/muscle matches;
+  (2) **group-name text search** in the picker; (3) **"add to session/routine"**
+  action from the `/exercises/:id` detail page (currently read-only — adding stays
+  the picker's job inside the runner/editors). The existing muscle filter + bilingual
+  name/muscle search cover the common cases, so these are nice-to-haves, not gaps.
 
 ## Feature & UX family index
 
