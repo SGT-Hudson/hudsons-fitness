@@ -38,6 +38,20 @@ describe('ExerciseImageLoop', () => {
     expect(screen.getByAltText('Bench press — end position')).toBeInTheDocument();
   });
 
+  it('applies the loop animation class to the end frame only', () => {
+    render(
+      <ExerciseImageLoop
+        images={['Bench_Press/0.jpg', 'Bench_Press/1.jpg']}
+        name="Bench press"
+        density="compact"
+      />,
+    );
+    const start = screen.getByAltText('Bench press — start position');
+    const end = screen.getByAltText('Bench press — end position');
+    expect(end).toHaveClass('motion-safe:animate-exercise-frame');
+    expect(start).not.toHaveClass('motion-safe:animate-exercise-frame');
+  });
+
   it('opens the enlarge dialog on tap', () => {
     render(
       <ExerciseImageLoop images={['Bench_Press/0.jpg']} name="Bench press" density="compact" />,

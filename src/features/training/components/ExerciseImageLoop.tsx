@@ -34,6 +34,9 @@ export function ExerciseImageLoop({ images, name, density }: Props) {
         alt={altStart}
         loading="lazy"
         decoding="async"
+        onError={(e) => {
+          e.currentTarget.style.visibility = 'hidden';
+        }}
         className={cn('absolute inset-0 h-full w-full', fit === 'cover' ? 'object-cover' : 'object-contain')}
       />
       {endSrc && (
@@ -42,6 +45,9 @@ export function ExerciseImageLoop({ images, name, density }: Props) {
           alt={altEnd}
           loading="lazy"
           decoding="async"
+          onError={(e) => {
+            e.currentTarget.style.visibility = 'hidden';
+          }}
           className={cn(
             'absolute inset-0 h-full w-full opacity-0 motion-safe:animate-exercise-frame',
             fit === 'cover' ? 'object-cover' : 'object-contain',
