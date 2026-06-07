@@ -6,6 +6,10 @@ import userEvent from '@testing-library/user-event';
 import i18n from '@/i18n';
 
 vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
+vi.mock('../exercises/hooks', () => ({
+  useExercise: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
+}));
+vi.mock('@/hooks/use-media-query', () => ({ useMediaQuery: () => false }));
 
 // Stub the picker: clicking it selects a fixed exercise (avoids debounced query).
 const EX = {
