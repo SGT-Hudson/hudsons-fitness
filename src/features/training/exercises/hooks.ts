@@ -10,10 +10,10 @@ import {
 } from './api';
 
 export function useExerciseSearch(query: string, opts: ExerciseSearchOptions = {}) {
-  const { limit = 20, muscle = null, textMuscles = [] } = opts;
+  const { limit = 20, muscle = null, textMuscles = [], groupMuscles = [] } = opts;
   return useQuery({
-    queryKey: ['exercises', 'search', query, limit, muscle, textMuscles] as const,
-    queryFn: () => searchExercises(query, { limit, muscle, textMuscles }),
+    queryKey: ['exercises', 'search', query, limit, muscle, textMuscles, groupMuscles] as const,
+    queryFn: () => searchExercises(query, { limit, muscle, textMuscles, groupMuscles }),
     placeholderData: (prev) => prev,
   });
 }

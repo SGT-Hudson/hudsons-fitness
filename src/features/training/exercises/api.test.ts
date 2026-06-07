@@ -54,12 +54,20 @@ describe('suggestIncrementForEquipment', () => {
 
 describe('exerciseDisplayName', () => {
   const base: Exercise = {
+    category: null,
     created_at: '2026-01-01T00:00:00Z',
     created_by_user_id: null,
     default_increment_kg: 2.5,
     equipment: 'barbell',
+    external_id: null,
+    force: null,
     id: 'ex-1',
+    images: [],
+    instructions_en: [],
+    instructions_es: [],
     is_verified: true,
+    level: null,
+    mechanic: null,
     name_en: 'Bench press',
     name_es: 'Press de banca',
     primary_muscles: ['pec_lower'],
@@ -85,17 +93,26 @@ describe('exerciseDisplayName', () => {
 interface SearchBuilder {
   select: () => SearchBuilder;
   contains: (col: string, val: unknown) => SearchBuilder;
+  overlaps: (col: string, val: unknown) => SearchBuilder;
   or: (s: string) => SearchBuilder;
   order: () => SearchBuilder;
   limit: () => Promise<{ data: unknown[]; error: null }>;
 }
 
 function searchBuilder() {
-  const captured = { contains: [] as unknown[][], or: [] as string[] };
+  const captured = {
+    contains: [] as unknown[][],
+    overlaps: [] as unknown[][],
+    or: [] as string[],
+  };
   const builder: SearchBuilder = {
     select: () => builder,
     contains: (col, val) => {
       captured.contains.push([col, val]);
+      return builder;
+    },
+    overlaps: (col, val) => {
+      captured.overlaps.push([col, val]);
       return builder;
     },
     or: (s) => {
@@ -121,6 +138,23 @@ describe('searchExercises (fine-taxonomy array operators)', () => {
     from.mockReturnValue(builder);
     await searchExercises('dorsal', { textMuscles: ['lat'] });
     expect(captured.or.join('|')).toContain('primary_muscles.cs.{lat}');
+  });
+
+  it('a group filter becomes an overlaps-on-array filter', async () => {
+    const { builder, captured } = searchBuilder();
+    from.mockReturnValue(builder);
+    await searchExercises('', { groupMuscles: ['delt_front', 'delt_side', 'delt_rear'] });
+    expect(captured.overlaps).toContainEqual([
+      'primary_muscles',
+      ['delt_front', 'delt_side', 'delt_rear'],
+    ]);
+  });
+
+  it('no group filter issues no overlaps call', async () => {
+    const { builder, captured } = searchBuilder();
+    from.mockReturnValue(builder);
+    await searchExercises('', {});
+    expect(captured.overlaps).toEqual([]);
   });
 });
 

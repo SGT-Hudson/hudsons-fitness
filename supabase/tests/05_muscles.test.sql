@@ -4,14 +4,14 @@
 begin;
 select * from no_plan();
 
--- 23 codes seeded (22 shadeable + full_body), exactly matching src/core/muscles.ts.
+-- 25 codes seeded (24 shadeable + full_body), exactly matching src/core/muscles.ts.
 select set_eq(
   $$ select code from public.muscles $$,
   $$ values ('delt_front'),('delt_side'),('delt_rear'),('pec_upper'),('pec_lower'),
-            ('lat'),('trap'),('rhomboids'),('lower_back'),('biceps'),('tri_long'),
-            ('tri_lateral'),('forearms'),('abs_upper'),('abs_lower'),('obliques'),
-            ('quads'),('hamstrings'),('glutes'),('adductors'),('calves'),('tibialis'),
-            ('full_body') $$,
+            ('lat'),('trap'),('rhomboids'),('lower_back'),('neck'),('biceps'),
+            ('tri_long'),('tri_lateral'),('forearms'),('abs_upper'),('abs_lower'),
+            ('obliques'),('quads'),('hamstrings'),('glutes'),('abductors'),
+            ('adductors'),('calves'),('tibialis'),('full_body') $$,
   'muscles seed == src/core/muscles.ts code set'
 );
 
@@ -34,6 +34,105 @@ select throws_ok(
 select throws_ok(
   $$ insert into public.exercises (name_es, secondary_muscles) values ('bad', array['full_body']) $$,
   'secondary_muscles contains unknown or full_body code');
+
+-- ── B1 catalog seed + post-import muscle-tag review ──────────────────────────
+-- ASSERTED FIRST, before the schema-CHECK test inserts below: those inserts run
+-- in this same transaction and one of them (`src1`, source='free-exercise-db',
+-- external_id null) would otherwise pollute these provenance counts.
+-- The seed imported exactly 873 rows; the #160 review migration
+-- (20260605120000_b1_catalog_review) corrected 146 primary tags + verified 402 rows;
+-- the full-catalog review (20260606120000_catalog_full_review) then reviewed the
+-- remaining 469 never-flagged rows (verified 869); the hold-resolve migration
+-- (20260606120100_catalog_hold_resolve) then settled 2 held rows -> verified 871.
+select is(
+  (select count(*)::int from public.exercises where source = 'free-exercise-db'),
+  873, 'catalog seed imported 873 rows');
+select is(
+  (select count(*)::int from public.exercises
+     where source = 'free-exercise-db' and is_verified),
+  871, 'catalog review verified 871 reviewed-correct rows (402 #160 + 467 full-catalog + 2 hold-resolve)');
+select is(
+  (select count(*)::int from public.exercises
+     where source = 'free-exercise-db' and external_id is null),
+  0, 'every imported row carries an external_id');
+-- no row tags a muscle as BOTH primary and secondary (would double-count in the
+-- heatmap); secondary is deduped against primary by 20260606120200 + build-seed.
+select is(
+  (select count(*)::int from public.exercises
+     where source = 'free-exercise-db' and primary_muscles && secondary_muscles),
+  0, 'no catalog row has a primary/secondary muscle overlap');
+-- the review assigns codes the coarse->fine mapper cannot emit (obliques/full_body)
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Clean' and source = 'free-exercise-db'),
+  array['full_body'], 'Olympic-lift Clean corrected to full_body primary');
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Advanced_Kettlebell_Windmill' and source = 'free-exercise-db'),
+  array['obliques'], 'kettlebell windmill corrected to obliques primary');
+-- the full-catalog pass (20260606120000) reviewed the 469 never-flagged rows;
+-- these two corrections use codes the mapper cannot emit (full_body / tibialis).
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Bear_Crawl_Sled_Drags' and source = 'free-exercise-db'),
+  array['full_body'], 'Bear Crawl Sled Drags corrected to full_body primary (full-catalog pass)');
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Anterior_Tibialis-SMR' and source = 'free-exercise-db'),
+  array['tibialis'], 'Anterior Tibialis SMR corrected to tibialis primary (full-catalog pass)');
+-- the hold-resolve pass (20260606120100) settled the 2 rows held on a 3-way split.
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Push_Press_-_Behind_the_Neck' and source = 'free-exercise-db'),
+  array['delt_side'], 'behind-neck push press resolved to delt_side primary (hold-resolve)');
+select is(
+  (select primary_muscles from public.exercises
+     where external_id = 'Vertical_Swing' and source = 'free-exercise-db'),
+  array['glutes'], 'vertical swing resolved to glutes primary (hold-resolve)');
+
+-- ── B1 catalog schema ─────────────────────────────────────────────────────────
+
+-- equipment CHECK accepts all 12 values (a single multi-row insert; rolls back).
+insert into public.exercises (name_es, equipment) values
+  ('eq1','barbell'),('eq2','dumbbell'),('eq3','kettlebell'),('eq4','ez_curl_bar'),
+  ('eq5','machine'),('eq6','cable'),('eq7','bodyweight'),('eq8','band'),
+  ('eq9','medicine_ball'),('eq10','exercise_ball'),('eq11','foam_roller'),('eq12','other');
+select is(
+  (select count(*)::int from public.exercises where name_es like 'eq%'),
+  12, 'equipment CHECK accepts all 12 values');
+
+-- equipment CHECK rejects a bogus value.
+select throws_ok(
+  $$ insert into public.exercises (name_es, equipment) values ('bad','sledgehammer') $$,
+  '23514');  -- check_violation
+
+-- level / mechanic / force / category CHECKs reject bogus values.
+select throws_ok(
+  $$ insert into public.exercises (name_es, level) values ('bad','novice') $$, '23514');
+select throws_ok(
+  $$ insert into public.exercises (name_es, mechanic) values ('bad','hybrid') $$, '23514');
+select throws_ok(
+  $$ insert into public.exercises (name_es, force) values ('bad','twist') $$, '23514');
+select throws_ok(
+  $$ insert into public.exercises (name_es, category) values ('bad','calisthenics') $$, '23514');
+
+-- level / category accept verified values.
+insert into public.exercises (name_es, level, category) values ('ok1','expert','olympic weightlifting');
+select is(
+  (select count(*)::int from public.exercises where name_es = 'ok1'),
+  1, 'level=expert + category=olympic weightlifting accepted');
+
+-- external_id is unique (partial index — the second insert must throw 23505).
+insert into public.exercises (name_es, external_id) values ('ux1','dup_ext');
+select throws_ok(
+  $$ insert into public.exercises (name_es, external_id) values ('ux2','dup_ext') $$,
+  '23505');  -- unique_violation
+
+-- source CHECK now allows the import provenance.
+insert into public.exercises (name_es, source) values ('src1','free-exercise-db');
+select is(
+  (select source from public.exercises where name_es = 'src1'),
+  'free-exercise-db', 'source free-exercise-db accepted');
 
 select * from finish();
 rollback;
