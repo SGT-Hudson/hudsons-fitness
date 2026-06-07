@@ -5,7 +5,9 @@ import {
   createExercise,
   getExercise,
   searchExercises,
+  searchExercisesPaged,
   type Exercise,
+  type ExerciseBrowseParams,
   type ExerciseCreateInput,
   type ExerciseSearchOptions,
 } from './api';
@@ -15,6 +17,18 @@ export function useExerciseSearch(query: string, opts: ExerciseSearchOptions = {
   return useQuery({
     queryKey: ['exercises', 'search', query, limit, muscle, textMuscles, groupMuscles] as const,
     queryFn: () => searchExercises(query, { limit, muscle, textMuscles, groupMuscles }),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useExercisesBrowse(params: ExerciseBrowseParams) {
+  const { query, category, equipment, level, muscleValue, textMuscles, page, pageSize } = params;
+  return useQuery({
+    queryKey: [
+      'exercises', 'browse',
+      query, category, equipment, level, muscleValue, textMuscles, page, pageSize,
+    ] as const,
+    queryFn: () => searchExercisesPaged(params),
     placeholderData: (prev) => prev,
   });
 }
