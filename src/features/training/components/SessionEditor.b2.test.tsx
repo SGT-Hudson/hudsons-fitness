@@ -7,6 +7,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n';
 
 vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
+// ExerciseBlock renders ExerciseInfoButton once an exercise is picked, which needs
+// useMediaQuery (window.matchMedia is unpolyfilled in jsdom).
+vi.mock('@/hooks/use-media-query', () => ({ useMediaQuery: () => false }));
 
 const EXES = [
   { id: 'aaaaaaaa-0000-0000-0000-000000000001', name_es: 'Press de banca', name_en: 'Bench', primary_muscles: ['pec_lower'], secondary_muscles: [], equipment: 'barbell', default_increment_kg: 2.5, is_verified: true, source: 'system', created_by_user_id: null, created_at: '', updated_at: '' },
@@ -15,6 +18,7 @@ const EXES = [
 vi.mock('../exercises/hooks', () => ({
   useExerciseSearch: (q: string) => ({ data: EXES.filter((e) => e.name_es.toLowerCase().includes(q.toLowerCase())), isLoading: false }),
   useCreateExercise: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useExercise: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
 }));
 vi.mock('../hooks', () => ({ useExerciseHistory: () => ({ data: [], isLoading: false }) }));
 
