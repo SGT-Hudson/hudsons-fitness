@@ -3,6 +3,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { toastCreated, toastError } from '@/lib/toast-helpers';
 import {
   createExercise,
+  getExercise,
   searchExercises,
   type Exercise,
   type ExerciseCreateInput,
@@ -15,6 +16,17 @@ export function useExerciseSearch(query: string, opts: ExerciseSearchOptions = {
     queryKey: ['exercises', 'search', query, limit, muscle, textMuscles, groupMuscles] as const,
     queryFn: () => searchExercises(query, { limit, muscle, textMuscles, groupMuscles }),
     placeholderData: (prev) => prev,
+  });
+}
+
+export function useExercise(
+  id: string | undefined,
+  opts: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: ['exercises', 'byId', id] as const,
+    queryFn: () => getExercise(id as string),
+    enabled: (opts.enabled ?? true) && !!id,
   });
 }
 
