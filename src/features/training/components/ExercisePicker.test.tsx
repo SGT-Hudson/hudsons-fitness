@@ -12,7 +12,9 @@ vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }))
 vi.mock('../exercises/hooks', () => ({
   useExerciseSearch: () => ({ data: [], isLoading: false }),
   useCreateExercise: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useExercise: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
 }));
+vi.mock('@/hooks/use-media-query', () => ({ useMediaQuery: () => false }));
 
 import { ExercisePicker } from './ExercisePicker';
 import { MUSCLE_GROUPS } from '@/core/muscles';
