@@ -11,6 +11,9 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 import {
+  CATEGORY_VALUES,
+  LEVEL_VALUES,
+  categorySlug,
   createExercise,
   exerciseDisplayName,
   exerciseInstructions,
@@ -178,6 +181,22 @@ describe('createExercise', () => {
     });
     expect(insertArg?.primary_muscles).toEqual(['pec_lower']);
     expect(insertArg?.secondary_muscles).toEqual(['delt_front']);
+  });
+});
+
+describe('browse filter constants', () => {
+  it('exposes the 7 raw catalog categories', () => {
+    expect(CATEGORY_VALUES).toEqual([
+      'strength', 'stretching', 'plyometrics', 'powerlifting',
+      'strongman', 'olympic weightlifting', 'cardio',
+    ]);
+  });
+  it('exposes the 3 levels', () => {
+    expect(LEVEL_VALUES).toEqual(['beginner', 'intermediate', 'expert']);
+  });
+  it('slugifies a category for i18n keys (space → underscore)', () => {
+    expect(categorySlug('olympic weightlifting')).toBe('olympic_weightlifting');
+    expect(categorySlug('strength')).toBe('strength');
   });
 });
 

@@ -19,6 +19,22 @@ export type Equipment =
   | 'foam_roller'
   | 'other';
 
+/** Raw `category` strings as stored at ingest (free-exercise-db, un-mapped). */
+export const CATEGORY_VALUES = [
+  'strength', 'stretching', 'plyometrics', 'powerlifting',
+  'strongman', 'olympic weightlifting', 'cardio',
+] as const;
+export type Category = (typeof CATEGORY_VALUES)[number];
+
+/** Raw `level` strings as stored at ingest. */
+export const LEVEL_VALUES = ['beginner', 'intermediate', 'expert'] as const;
+export type Level = (typeof LEVEL_VALUES)[number];
+
+/** i18n-key-safe slug for a category (the raw value has a space). */
+export function categorySlug(value: string): string {
+  return value.replace(/\s+/g, '_');
+}
+
 export const EQUIPMENT_VALUES: Equipment[] = [
   'barbell',
   'dumbbell',
