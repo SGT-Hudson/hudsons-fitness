@@ -164,3 +164,29 @@ export function exerciseDisplayName(ex: Exercise, lang: 'es' | 'en'): string {
   if (lang === 'es') return ex.name_es;
   return ex.name_en ?? ex.name_es;
 }
+
+/**
+ * Instruction-steps picker. Mirrors `exerciseDisplayName`'s fallback: returns the
+ * stored steps for the requested language, falling back to the other language when
+ * the chosen array is empty (e.g. an EN-only or ES-only row), and `[]` when both
+ * are empty (the source='system' rows + the 5 no-source rows). The ES steps are
+ * the machine-translated B2a content — this is a stored-array pick, NOT a runtime
+ * translation.
+ */
+export function exerciseInstructions(ex: Exercise, lang: 'es' | 'en'): string[] {
+  const preferred = lang === 'es' ? ex.instructions_es : ex.instructions_en;
+  if (preferred.length > 0) return preferred;
+  return lang === 'es' ? ex.instructions_en : ex.instructions_es;
+}
+
+/** Fetch a single exercise by id (the runner's id-only detail path). Uses
+ *  `select('*')` so it carries instructions + images with no fragile column list. */
+export async function getExercise(id: string): Promise<Exercise> {
+  const { data, error } = await supabase
+    .from('exercises')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
+}
