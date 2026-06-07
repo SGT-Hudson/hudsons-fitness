@@ -5,6 +5,8 @@ import {
   imagePaths,
   buildRow,
   lintRow,
+  buildInstructionsBackfillRow,
+  validateInstructions,
   type RawExercise,
 } from './build-seed';
 
@@ -227,5 +229,103 @@ describe('lintRow', () => {
   });
   it('returns no flags for a clean row', () => {
     expect(lintRow({ ...base, name: 'Barbell Curl', primaryMuscles: ['biceps'] }, 'Curl con barra')).toEqual([]);
+  });
+});
+
+describe('buildInstructionsBackfillRow', () => {
+  const base: RawExercise = {
+    id: 'Barbell_Curl',
+    name: 'Barbell Curl',
+    force: 'pull',
+    level: 'beginner',
+    mechanic: 'isolation',
+    equipment: 'barbell',
+    primaryMuscles: ['biceps'],
+    secondaryMuscles: ['forearms'],
+    category: 'strength',
+    images: ['Barbell_Curl/0.jpg'],
+    instructions: ['Stand up.', "Don't swing."],
+  };
+
+  it('emits a (external_id, instructions_en, instructions_es) tuple', () => {
+    expect(
+      buildInstructionsBackfillRow(base, ['Ponte de pie.', 'No balancees.']),
+    ).toBe(
+      "  ('Barbell_Curl', array['Stand up.','Don''t swing.'], " +
+        "array['Ponte de pie.','No balancees.'])",
+    );
+  });
+
+  it('escapes single quotes in both languages', () => {
+    const r: RawExercise = { ...base, instructions: ["World's best."] };
+    expect(buildInstructionsBackfillRow(r, ["Lo mejor del mundo's."])).toBe(
+      "  ('Barbell_Curl', array['World''s best.'], array['Lo mejor del mundo''s.'])",
+    );
+  });
+
+  it('emits empty arrays when the exercise has no instructions', () => {
+    const r: RawExercise = { ...base, instructions: [] };
+    expect(buildInstructionsBackfillRow(r, [])).toBe(
+      "  ('Barbell_Curl', array[]::text[], array[]::text[])",
+    );
+  });
+
+  it('falls back to empty EN array when instructions is undefined', () => {
+    const r: RawExercise = { ...base, instructions: undefined };
+    expect(buildInstructionsBackfillRow(r, [])).toBe(
+      "  ('Barbell_Curl', array[]::text[], array[]::text[])",
+    );
+  });
+});
+
+describe('validateInstructions', () => {
+  const mk = (id: string, instructions: string[]): RawExercise => ({
+    id,
+    name: id,
+    force: null,
+    level: 'beginner',
+    mechanic: null,
+    equipment: null,
+    primaryMuscles: [],
+    secondaryMuscles: [],
+    category: 'strength',
+    images: [],
+    instructions,
+  });
+
+  it('passes when every es entry is index-aligned to a known exercise', () => {
+    const raws = [mk('A', ['one', 'two']), mk('B', [])];
+    const es = { A: ['uno', 'dos'], B: [] };
+    expect(() => validateInstructions(raws, es)).not.toThrow();
+  });
+
+  it('passes when both EN and ES are empty (system/no-source case)', () => {
+    const raws = [mk('A', [])];
+    const es = { A: [] };
+    expect(() => validateInstructions(raws, es)).not.toThrow();
+  });
+
+  it('throws on a stale es-instructions key (unknown external_id)', () => {
+    const raws = [mk('A', ['one'])];
+    const es = { A: ['uno'], GHOST: ['x'] };
+    expect(() => validateInstructions(raws, es)).toThrow(
+      'es-instructions.json: unknown external_id "GHOST"',
+    );
+  });
+
+  it('throws when ES length does not match EN length', () => {
+    const raws = [mk('A', ['one', 'two'])];
+    const es = { A: ['uno'] };
+    expect(() => validateInstructions(raws, es)).toThrow(
+      'es-instructions.json: "A" has 1 ES steps but 2 EN steps',
+    );
+  });
+
+  it('throws when EN has steps but ES is missing (treated as empty, mismatch)', () => {
+    const raws = [mk('A', ['one'])];
+    const es = {};
+    expect(() => validateInstructions(raws, es)).toThrow(
+      'es-instructions.json: "A" has 0 ES steps but 1 EN steps',
+    );
   });
 });
