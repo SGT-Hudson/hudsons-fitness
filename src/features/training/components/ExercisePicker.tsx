@@ -13,6 +13,7 @@ import {
 import { MUSCLE_GROUPS, codesInGroup } from '@/core/muscles';
 import { musclesMatchingQuery } from '../exercises/muscleSearch';
 import { ExerciseDialog } from './ExerciseDialog';
+import { ExerciseInfoButton } from './ExerciseInfoButton';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -151,11 +152,11 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
                 const subtitle = otherLang === 'en' ? ex.name_en : ex.name_es;
                 const primary = exerciseDisplayName(ex, lang);
                 return (
-                  <li key={ex.id}>
+                  <li key={ex.id} className="flex items-center gap-1 pr-1">
                     <button
                       type="button"
                       className={cn(
-                        'w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground',
+                        'flex-1 min-w-0 text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground',
                         'flex items-center gap-2 justify-between',
                       )}
                       onClick={() => {
@@ -176,6 +177,7 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
                         </span>
                       )}
                     </button>
+                    <ExerciseInfoButton exercise={ex} />
                   </li>
                 );
               })}

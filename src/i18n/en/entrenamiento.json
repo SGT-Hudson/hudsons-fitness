@@ -147,6 +147,19 @@
       "other": "Other"
     }
   },
+  "exerciseDetail": {
+    "title": "Exercise details",
+    "openAria": "View exercise details",
+    "instructions": "Instructions",
+    "noInstructions": "No instructions yet",
+    "enlargeAria": "Enlarge image",
+    "imageAlt": {
+      "start": "{{name}} — start position",
+      "end": "{{name}} — end position"
+    },
+    "loadError": "Couldn't load exercise",
+    "retry": "Retry"
+  },
   "tabs": {
     "routines": "Routines",
     "programs": "Programs"

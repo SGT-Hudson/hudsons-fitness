@@ -1,6 +1,17 @@
 import { it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import i18n from '@/i18n';
+
+// Runner renders ExerciseOverview, which now imports ExerciseInfoButton — pulling
+// in @/lib/supabase (throws without env), useExercise (needs a QueryClient), and
+// useMediaQuery (needs window.matchMedia). Mock them so the runner flow renders;
+// the detail popup stays closed in these tests.
+vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
+vi.mock('@/hooks/use-media-query', () => ({ useMediaQuery: () => false }));
+vi.mock('@/features/training/exercises/hooks', () => ({
+  useExercise: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
+}));
+
 import { Runner } from './Runner';
 import { buildRunnerState, type RunnerInput } from '@/core/runner';
 

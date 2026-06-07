@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { RunnerExercise } from '@/core/runner';
+import { ExerciseInfoButton } from '@/features/training/components/ExerciseInfoButton';
 
 interface Props {
   exercises: RunnerExercise[];
@@ -32,33 +33,35 @@ export function ExerciseOverview({
         const isCurrent = i === currentIndex;
         const canJump = !isCurrent && (ex.status === 'pending' || skipped || partial);
         return (
-          <button
-            key={ex.exerciseId}
-            type="button"
-            disabled={!canJump}
-            onClick={() => canJump && onJump(i)}
-            className={cn(
-              'flex items-center justify-between rounded-md px-3 py-2 text-sm text-left',
-              done && 'bg-muted/40 text-muted-foreground',
-              skipped && 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-              partial && 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
-              isCurrent && 'border border-primary/50 bg-primary/10',
-              !done && !skipped && !partial && !isCurrent && 'bg-muted/30',
-            )}
-          >
-            <span>{ex.position} · {names[ex.exerciseId] ?? ex.exerciseId}</span>
-            <span>
-              {done
-                ? '✓'
-                : isCurrent
-                  ? t('runner.now')
-                  : skipped
-                    ? t('runner.skippedDoIt')
-                    : partial
-                      ? t('runner.partialDoIt')
-                      : t('runner.jump')}
-            </span>
-          </button>
+          <div key={ex.exerciseId} className="flex items-center gap-1">
+            <button
+              type="button"
+              disabled={!canJump}
+              onClick={() => canJump && onJump(i)}
+              className={cn(
+                'flex flex-1 items-center justify-between rounded-md px-3 py-2 text-sm text-left',
+                done && 'bg-muted/40 text-muted-foreground',
+                skipped && 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+                partial && 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
+                isCurrent && 'border border-primary/50 bg-primary/10',
+                !done && !skipped && !partial && !isCurrent && 'bg-muted/30',
+              )}
+            >
+              <span>{ex.position} · {names[ex.exerciseId] ?? ex.exerciseId}</span>
+              <span>
+                {done
+                  ? '✓'
+                  : isCurrent
+                    ? t('runner.now')
+                    : skipped
+                      ? t('runner.skippedDoIt')
+                      : partial
+                        ? t('runner.partialDoIt')
+                        : t('runner.jump')}
+              </span>
+            </button>
+            <ExerciseInfoButton exerciseId={ex.exerciseId} />
+          </div>
         );
       })}
       <div className="mt-auto flex flex-col gap-2">

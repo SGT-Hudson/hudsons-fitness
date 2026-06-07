@@ -13,6 +13,7 @@ vi.mock('@/lib/supabase', () => ({
 import {
   createExercise,
   exerciseDisplayName,
+  exerciseInstructions,
   searchExercises,
   suggestIncrementForEquipment,
   type Exercise,
@@ -177,5 +178,51 @@ describe('createExercise', () => {
     });
     expect(insertArg?.primary_muscles).toEqual(['pec_lower']);
     expect(insertArg?.secondary_muscles).toEqual(['delt_front']);
+  });
+});
+
+describe('exerciseInstructions', () => {
+  const base: Exercise = {
+    category: null,
+    created_at: '2026-01-01T00:00:00Z',
+    created_by_user_id: null,
+    default_increment_kg: 2.5,
+    equipment: 'barbell',
+    external_id: null,
+    force: null,
+    id: 'ex-1',
+    images: [],
+    instructions_en: ['Lie on the bench.', 'Press up.'],
+    instructions_es: ['Túmbate en el banco.', 'Empuja hacia arriba.'],
+    is_verified: true,
+    level: null,
+    mechanic: null,
+    name_en: 'Bench press',
+    name_es: 'Press de banca',
+    primary_muscles: ['pec_lower'],
+    secondary_muscles: [],
+    source: 'free-exercise-db',
+    updated_at: '2026-01-01T00:00:00Z',
+  };
+
+  it('returns Spanish steps when lang=es', () => {
+    expect(exerciseInstructions(base, 'es')).toEqual([
+      'Túmbate en el banco.',
+      'Empuja hacia arriba.',
+    ]);
+  });
+  it('returns English steps when lang=en and instructions_en is non-empty', () => {
+    expect(exerciseInstructions(base, 'en')).toEqual(['Lie on the bench.', 'Press up.']);
+  });
+  it('falls back to the other language when the chosen array is empty', () => {
+    expect(exerciseInstructions({ ...base, instructions_en: [] }, 'en')).toEqual([
+      'Túmbate en el banco.',
+      'Empuja hacia arriba.',
+    ]);
+  });
+  it('returns [] when both arrays are empty (system/no-source rows)', () => {
+    expect(
+      exerciseInstructions({ ...base, instructions_en: [], instructions_es: [] }, 'es'),
+    ).toEqual([]);
   });
 });
