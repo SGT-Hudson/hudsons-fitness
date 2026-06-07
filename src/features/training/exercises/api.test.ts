@@ -18,6 +18,7 @@ import {
   exerciseDisplayName,
   exerciseInstructions,
   searchExercises,
+  searchExercisesPaged,
   suggestIncrementForEquipment,
   type Exercise,
 } from './api';
@@ -243,5 +244,86 @@ describe('exerciseInstructions', () => {
     expect(
       exerciseInstructions({ ...base, instructions_en: [], instructions_es: [] }, 'es'),
     ).toEqual([]);
+  });
+});
+
+function pagedBuilder(rows: unknown[], count: number) {
+  const captured = {
+    selectArgs: [] as unknown[][],
+    eq: [] as unknown[][],
+    contains: [] as unknown[][],
+    overlaps: [] as unknown[][],
+    or: [] as string[],
+    order: [] as unknown[][],
+    range: [] as number[][],
+  };
+  const b: Record<string, unknown> = {};
+  b.select = (...a: unknown[]) => { captured.selectArgs.push(a); return b; };
+  b.eq = (c: string, v: unknown) => { captured.eq.push([c, v]); return b; };
+  b.contains = (c: string, v: unknown) => { captured.contains.push([c, v]); return b; };
+  b.overlaps = (c: string, v: unknown) => { captured.overlaps.push([c, v]); return b; };
+  b.or = (s: string) => { captured.or.push(s); return b; };
+  b.order = (...a: unknown[]) => { captured.order.push(a); return b; };
+  b.range = (from: number, to: number) => { captured.range.push([from, to]); return Promise.resolve({ data: rows, count, error: null }); };
+  return { b, captured };
+}
+
+describe('searchExercisesPaged', () => {
+  it('requests an exact count + right page window + verified-first order, returns rows + total', async () => {
+    const { b, captured } = pagedBuilder([{ id: 'a' }], 42);
+    from.mockReturnValue(b);
+    const res = await searchExercisesPaged({
+      query: '', category: null, equipment: null, level: null,
+      muscleValue: '', textMuscles: [], page: 2, pageSize: 10,
+    });
+    expect(captured.selectArgs[0]).toEqual(['*', { count: 'exact' }]);
+    expect(captured.range).toContainEqual([10, 19]); // page 2, size 10 → rows 10..19
+    // pin the shared builder's ordering contract (verified first, then name_es):
+    expect(captured.order[0]).toEqual(['is_verified', { ascending: false }]);
+    expect(captured.order[1]).toEqual(['name_es']);
+    expect(res).toEqual({ rows: [{ id: 'a' }], total: 42 });
+  });
+
+  it('applies category/equipment/level as eq filters when set', async () => {
+    const { b, captured } = pagedBuilder([], 0);
+    from.mockReturnValue(b);
+    await searchExercisesPaged({
+      query: '', category: 'strength', equipment: 'barbell', level: 'beginner',
+      muscleValue: '', textMuscles: [], page: 1, pageSize: 10,
+    });
+    expect(captured.eq).toContainEqual(['category', 'strength']);
+    expect(captured.eq).toContainEqual(['equipment', 'barbell']);
+    expect(captured.eq).toContainEqual(['level', 'beginner']);
+  });
+
+  it('a single fine muscle → contains; a group: value → overlaps', async () => {
+    const g = pagedBuilder([], 0);
+    from.mockReturnValue(g.b);
+    await searchExercisesPaged({
+      query: '', category: null, equipment: null, level: null,
+      muscleValue: 'group:arms', textMuscles: [], page: 1, pageSize: 10,
+    });
+    expect(g.captured.overlaps.length).toBe(1);
+    expect(g.captured.overlaps[0][0]).toBe('primary_muscles');
+
+    const s = pagedBuilder([], 0);
+    from.mockReturnValue(s.b);
+    await searchExercisesPaged({
+      query: '', category: null, equipment: null, level: null,
+      muscleValue: 'pec_lower', textMuscles: [], page: 1, pageSize: 10,
+    });
+    expect(s.captured.contains).toContainEqual(['primary_muscles', ['pec_lower']]);
+  });
+
+  it('builds the name + textMuscles OR clause from the query', async () => {
+    const { b, captured } = pagedBuilder([], 0);
+    from.mockReturnValue(b);
+    await searchExercisesPaged({
+      query: 'press', category: null, equipment: null, level: null,
+      muscleValue: '', textMuscles: ['pec_lower'], page: 1, pageSize: 10,
+    });
+    expect(captured.or[0]).toContain('name_es.ilike.%press%');
+    expect(captured.or[0]).toContain('name_en.ilike.%press%');
+    expect(captured.or[0]).toContain('primary_muscles.cs.{pec_lower}');
   });
 });
