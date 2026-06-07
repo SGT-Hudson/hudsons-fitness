@@ -37,9 +37,12 @@ schema changes, no migrations, no RPCs.**
   card grid, and pagination.
 - `ExerciseCard` — start-frame thumbnail + localized name + primary-muscle &
   equipment badges; navigates to `/exercises/:id`.
-- `ExerciseFiltersSheet` — a shadcn **Sheet** holding four controls: category,
-  equipment, level (single-select dropdowns) and muscle (the picker's grouped
-  optgroup pattern).
+- `ExerciseFiltersSheet` — a panel (the **existing vaul `Drawer`** bottom-sheet, not
+  a new Sheet primitive — `sheet.tsx` doesn't exist and `Drawer` is already in the
+  tree from B2b) holding four controls: category, equipment, level (single-select
+  dropdowns) and muscle (the picker's grouped optgroup pattern). *("Sheet" in the
+  brainstorm meant a slide-in filter panel; reusing `Drawer` honors that intent
+  without a new dependency — the same kind of refinement B2b made.)*
 - `AppliedFilterChips` — removable chips under the search bar reflecting active
   filters + a "clear all".
 - `ExerciseDetailPage` mounted at `/exercises/:id` — back button +
@@ -76,10 +79,10 @@ From the original B2 brainstorm and this B2c session:
 1. **Browse = `/exercises`** (repurpose the placeholder; route + Dumbbell nav entry
    already exist in `nav-config.ts`, no plumbing to invent). **Detail =
    `/exercises/:id`**, full page, deep-linkable, **read-only**.
-2. **Filters live in a shadcn Sheet**, not inline. Search box is always visible;
-   the four filters open in the sheet; applied filters show as removable chips
-   under the search. Rationale: muscle alone is 6 groups / 24 codes, too much for
-   inline chips on mobile.
+2. **Filters live in a slide-in panel** (the existing vaul `Drawer`), not inline.
+   Search box is always visible; the four filters open in the panel; applied
+   filters show as removable chips under the search. Rationale: muscle alone is 6
+   groups / 24 codes, too much for inline chips on mobile.
 3. **Card = thumbnail + name + primary-muscle badge + equipment badge.** Level is
    *not* on the card (shown on the detail page). Tap → `/exercises/:id` (full page,
    **not** the B2b popup — the popup stays the in-workout affordance).
@@ -114,14 +117,17 @@ Owns the browse state and layout. Composition top-to-bottom:
 - **Applied chips**: `AppliedFilterChips` (rendered only when ≥1 filter active).
 - **Grid**: responsive 1 / 2 / 3 columns of `ExerciseCard`; a loading skeleton grid
   on first load, an empty state when the result set is 0.
-- **Footer**: `PaginationBar` (existing) wired to `usePagination` (existing;
-  page sizes 12 / 24 / 48, default 24).
+- **Footer**: `PaginationBar` (existing) wired to `usePagination` (existing; page
+  sizes 5 / 10 / 20 / 50, default 10, persisted globally — reuse as-is, do not
+  invent new sizes).
 
 State: `query` (debounced), `filters` (`{ category, equipment, level, muscle }`,
 each nullable; muscle uses the picker's `'' | <fineCode> | group:<group>`
-convention), and pagination (`page`, `pageSize`). Data comes from
-`useExercisesBrowse` (§6). Changing search or any filter resets to page 1 (the
-`usePagination` `resetKey`).
+convention), and pagination (`page`, `pageSize`). **Pagination is server-side**:
+`usePagination({ total: data?.total ?? 0, resetKey })` produces `page`/`pageSize`,
+which feed `useExercisesBrowse` (§6); the hook returns `{ rows, total }` and `total`
+flows back into `usePagination` for `pageCount`/clamping. Changing search or any
+filter resets to page 1 via the `resetKey`.
 
 ### 5.2 `ExerciseCard`
 Pure presentational. Props: `{ exercise: Exercise }`. Renders the start-frame
