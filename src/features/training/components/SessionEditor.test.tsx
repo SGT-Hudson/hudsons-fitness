@@ -64,6 +64,14 @@ vi.mock('../hooks', () => ({
   useExerciseHistory: () => ({ data: [], isLoading: false }),
 }));
 
+vi.mock('../exercises/hooks', () => ({
+  useExerciseSearch: () => ({ data: [], isLoading: false }),
+  useCreateExercise: () => ({ mutate: vi.fn(), isPending: false }),
+  useExercise: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
+}));
+
+vi.mock('@/hooks/use-media-query', () => ({ useMediaQuery: () => false }));
+
 function renderEditor(props: Partial<Parameters<typeof SessionEditor>[0]> = {}) {
   const onSubmit = vi.fn().mockResolvedValue('saved-id');
   const onSaved = vi.fn();
@@ -167,6 +175,11 @@ describe('SessionEditor (Tier-2)', () => {
       weight_kg: 100,
       rpe: 7.5,
     });
+
+    // Two blocks rendered — use getAllByRole (multiple matches expected).
+    expect(
+      screen.getAllByRole('button', { name: i18n.t('entrenamiento:exerciseDetail.openAria') }).length,
+    ).toBeGreaterThan(0);
 
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith('saved-id'));
   });
