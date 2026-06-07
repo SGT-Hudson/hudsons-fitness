@@ -251,13 +251,16 @@ Added to both `src/i18n/es/entrenamiento.json` and `en/entrenamiento.json`
 (nested-string structure, per the JSON convention):
 - `exerciseDetail.openAria` — Info button aria-label ("View exercise details" /
   "Ver detalles del ejercicio").
+- `exerciseDetail.title` — sr-only title for the popup shell (`DialogTitle`/
+  `DrawerTitle`, required by Radix for a11y) ("Exercise details" / "Detalles del
+  ejercicio").
 - `exerciseDetail.instructions` — section heading ("Instructions" / "Instrucciones").
 - `exerciseDetail.noInstructions` — empty-state ("No instructions yet" / "Sin
   instrucciones todavía").
 - `exerciseDetail.imageAlt.start` / `.end` — `"{{name}} — start/end position"` /
   `"{{name}} — posición inicial/final"`.
-- `exerciseDetail.enlargeAria` / `exerciseDetail.closeAria` — image enlarge / close
-  aria-labels.
+- `exerciseDetail.enlargeAria` — tap-to-enlarge aria-label. (No `closeAria` — the
+  Radix `Dialog` close and the `Drawer`'s swipe/overlay/Esc provide dismissal.)
 - `exerciseDetail.loadError` + `exerciseDetail.retry` — runner fetch-path error +
   retry.
 
