@@ -132,6 +132,20 @@ decision rationale in `decisions.md`.
 - Spec `docs/superpowers/specs/2026-05-26-muscle-heatmap-design.md`, plan
   `docs/superpowers/plans/2026-05-26-muscle-heatmap.md`. See R-24 / D-F10.
 
+### 2026-06-07 — R-27 Project B2b — exercise detail popup
+
+- **Exercise detail popup (B2b).** An `Info` button on exercise rows in the
+  runner overview, the exercise picker, and the session + routine editors opens
+  a bilingual step-by-step instruction panel with a start/end image loop.
+  Images render via `buildExerciseImageUrl` (B2a) in a fixed aspect-ratio box
+  with `loading="lazy"`. The panel is a reusable presentational
+  **`ExerciseDetail`** component with an adaptive `density` prop (`compact` for
+  the popup; `full` density is built but unmounted — reserved for B2c's
+  standalone browse page). The responsive shell is a shadcn **`Drawer`**
+  (bottom-sheet, vaul) on mobile / Radix **`Dialog`** (centered) on desktop,
+  switching via `useMediaQuery('(min-width: 768px)')`. No schema or RPC change.
+  See R-27.
+
 ### 2026-06-04 — R-26 Project A — fine muscle taxonomy
 
 - **Muscle model (#155).** Replaced the coarse-12 `primary_muscle` taxonomy with a
