@@ -58,6 +58,23 @@
     "allMuscles": "Todos los músculos",
     "allInGroup": "{{group}} — todos"
   },
+  "browse": {
+    "title": "Ejercicios",
+    "subtitle": "Explora el catálogo completo de ejercicios.",
+    "searchPlaceholder": "Buscar ejercicios…",
+    "filters": "Filtros",
+    "filtersTitle": "Filtrar ejercicios",
+    "clearAll": "Limpiar filtros",
+    "apply": "Aplicar",
+    "empty": "No se encontraron ejercicios.",
+    "back": "Volver",
+    "labels": { "category": "Categoría", "equipment": "Equipo", "level": "Nivel", "muscle": "Músculo", "all": "Todos" },
+    "notFound": {
+      "title": "Ejercicio no encontrado",
+      "body": "Este ejercicio no existe o fue eliminado.",
+      "back": "Volver a ejercicios"
+    }
+  },
   "history": {
     "empty": "Aún no has registrado series para este ejercicio.",
     "e1rmTrend": "1RM estimado",
@@ -145,6 +162,20 @@
       "exercise_ball": "Pelota de ejercicio",
       "foam_roller": "Rodillo de espuma",
       "other": "Otro"
+    },
+    "category": {
+      "strength": "Fuerza",
+      "stretching": "Estiramiento",
+      "plyometrics": "Pliometría",
+      "powerlifting": "Powerlifting",
+      "strongman": "Strongman",
+      "olympic_weightlifting": "Halterofilia",
+      "cardio": "Cardio"
+    },
+    "level": {
+      "beginner": "Principiante",
+      "intermediate": "Intermedio",
+      "expert": "Experto"
     }
   },
   "exerciseDetail": {
