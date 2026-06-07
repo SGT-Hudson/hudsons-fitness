@@ -123,7 +123,7 @@ git commit -m "feat(B2c): add category/level filter constants + category slug he
 
 Extract the shared WHERE/ORDER builder out of `searchExercises` so both the picker path (limit) and the browse path (count + range) compose identically, then add `searchExercisesPaged`.
 
-- [ ] **Step 1: Write the failing test** — append to `api.test.ts`. The existing `SearchBuilder` mock (top of the file) captures `contains`/`overlaps`/`or`/`order`/`limit`; extend a local builder here to also capture `select` options, `eq`, and `range`, and to resolve with `{ data, count }`:
+- [ ] **Step 1: Write the failing test** — append to `api.test.ts`. Add a self-contained `pagedBuilder` factory (modeled on the file's existing per-call `searchBuilder` factory — there is no shared top-level builder object) that captures `select` options, `eq`, `contains`/`overlaps`, `or`, `order`, and `range`, resolving with `{ data, count, error }`:
 
 ```ts
 import { searchExercisesPaged } from './api';
@@ -135,6 +135,7 @@ function pagedBuilder(rows: unknown[], count: number) {
     contains: [] as unknown[][],
     overlaps: [] as unknown[][],
     or: [] as string[],
+    order: [] as unknown[][],
     range: [] as number[][],
   };
   const b: Record<string, unknown> = {};
@@ -143,13 +144,13 @@ function pagedBuilder(rows: unknown[], count: number) {
   b.contains = (c: string, v: unknown) => { captured.contains.push([c, v]); return b; };
   b.overlaps = (c: string, v: unknown) => { captured.overlaps.push([c, v]); return b; };
   b.or = (s: string) => { captured.or.push(s); return b; };
-  b.order = () => b;
+  b.order = (...a: unknown[]) => { captured.order.push(a); return b; };
   b.range = (from: number, to: number) => { captured.range.push([from, to]); return Promise.resolve({ data: rows, count, error: null }); };
   return { b, captured };
 }
 
 describe('searchExercisesPaged', () => {
-  it('requests an exact count and the right page window, returns rows + total', async () => {
+  it('requests an exact count + right page window + verified-first order, returns rows + total', async () => {
     const { b, captured } = pagedBuilder([{ id: 'a' }], 42);
     from.mockReturnValue(b);
     const res = await searchExercisesPaged({
@@ -158,6 +159,9 @@ describe('searchExercisesPaged', () => {
     });
     expect(captured.selectArgs[0]).toEqual(['*', { count: 'exact' }]);
     expect(captured.range).toContainEqual([10, 19]); // page 2, size 10 → rows 10..19
+    // pin the shared builder's ordering contract (verified first, then name_es):
+    expect(captured.order[0]).toEqual(['is_verified', { ascending: false }]);
+    expect(captured.order[1]).toEqual(['name_es']);
     expect(res).toEqual({ rows: [{ id: 'a' }], total: 42 });
   });
 
@@ -324,50 +328,43 @@ git commit -m "feat(B2c): server-side paged/filterable exercise search (shared q
 
 **Files:**
 - Modify: `src/features/training/exercises/hooks.ts`
-- Test: `src/features/training/exercises/hooks.test.ts` (create)
+- Test: `src/features/training/exercises/hooks.test.tsx` (extend — it already exists and tests `useExercise`; do NOT create a new `.ts` file, the test body uses JSX)
 
-- [ ] **Step 1: Write the failing test** — `hooks.test.ts`:
+- [ ] **Step 1: Extend the existing test.** `hooks.test.tsx` already mocks `@/lib/supabase` and `./api` with `{ getExercise }` only, and defines a `wrapper`. (1) Widen its `./api` mock factory to also expose `searchExercisesPaged`, (2) add the spy + its reset alongside `getExercise`, (3) append the new `describe`. Concretely:
 
+Change the existing `./api` mock line:
 ```ts
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
-
+const getExercise = vi.fn();
 const searchExercisesPaged = vi.fn();
 vi.mock('./api', () => ({
+  getExercise: (...a: unknown[]) => getExercise(...a),
   searchExercisesPaged: (...a: unknown[]) => searchExercisesPaged(...a),
 }));
-
-import { useExercisesBrowse } from './hooks';
-
-function wrapper({ children }: { children: React.ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-}
-
-const params = {
+```
+Add to the existing `beforeEach`:
+```ts
+searchExercisesPaged.mockReset();
+searchExercisesPaged.mockResolvedValue({ rows: [{ id: 'a' }], total: 1 });
+```
+Update the import to include the new hook (`import { useExercise, useExercisesBrowse } from './hooks';`) and append:
+```tsx
+const browseParams = {
   query: 'press', category: 'strength' as const, equipment: null, level: null,
   muscleValue: '', textMuscles: [], page: 1, pageSize: 10,
 };
 
-beforeEach(() => {
-  searchExercisesPaged.mockReset();
-  searchExercisesPaged.mockResolvedValue({ rows: [{ id: 'a' }], total: 1 });
-});
-
 describe('useExercisesBrowse', () => {
   it('calls searchExercisesPaged with the params and returns rows + total', async () => {
-    const { result } = renderHook(() => useExercisesBrowse(params), { wrapper });
+    const { result } = renderHook(() => useExercisesBrowse(browseParams), { wrapper });
     await waitFor(() => expect(result.current.data).toEqual({ rows: [{ id: 'a' }], total: 1 }));
-    expect(searchExercisesPaged).toHaveBeenCalledWith(params);
+    expect(searchExercisesPaged).toHaveBeenCalledWith(browseParams);
   });
 });
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `corepack pnpm test src/features/training/exercises/hooks.test.ts`
+Run: `corepack pnpm test src/features/training/exercises/hooks.test.tsx`
 Expected: FAIL — `useExercisesBrowse` not exported.
 
 - [ ] **Step 3: Add the hook** to `hooks.ts`:
@@ -393,13 +390,13 @@ export function useExercisesBrowse(params: ExerciseBrowseParams) {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `corepack pnpm test src/features/training/exercises/hooks.test.ts`
-Expected: PASS.
+Run: `corepack pnpm test src/features/training/exercises/hooks.test.tsx`
+Expected: PASS (existing `useExercise` cases stay green too).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/features/training/exercises/hooks.ts src/features/training/exercises/hooks.test.ts
+git add src/features/training/exercises/hooks.ts src/features/training/exercises/hooks.test.tsx
 git commit -m "feat(B2c): useExercisesBrowse query hook"
 ```
 
@@ -426,19 +423,21 @@ import { MuscleSelect } from './MuscleSelect';
 beforeEach(async () => { await i18n.changeLanguage('es'); });
 
 describe('MuscleSelect', () => {
-  it('renders the All option, group headers, and fine codes; emits the picked value', () => {
+  it('renders the All option + fine codes and forwards the picked value', () => {
     const onChange = vi.fn();
     render(<MuscleSelect value="" onChange={onChange} ariaLabel="Todos los músculos" />);
     const select = screen.getByRole('combobox', { name: 'Todos los músculos' });
-    // group "All in …" options use the `group:` prefix
-    expect(screen.getByRole('option', { name: /Press de banca|.*/ })).toBeTruthy(); // smoke
+    // concrete, unique assertions (no catch-all regex):
+    const all = screen.getByRole('option', { name: 'Todos los músculos' }) as HTMLOptionElement;
+    expect(all.value).toBe('');
+    expect(screen.getByRole('option', { name: 'Pectoral inferior' })).toBeInTheDocument(); // pec_lower
     fireEvent.change(select, { target: { value: 'group:arms' } });
     expect(onChange).toHaveBeenCalledWith('group:arms');
   });
 });
 ```
 
-(Keep the assertion minimal and robust — the key behaviors are: it is a `combobox` with the given aria-label, contains an `All` option valued `""`, and `onChange` forwards `e.target.value`.)
+(The behaviors covered: it is a `combobox` with the given aria-label, the `All` option is valued `""`, a known fine-code label renders, and `onChange` forwards `e.target.value`.)
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -650,8 +649,8 @@ describe('ExerciseCard', () => {
   it('shows the name, primary-muscle + equipment badges, and links to the detail page', () => {
     renderCard(base);
     expect(screen.getByText('Press de banca')).toBeInTheDocument();
-    expect(screen.getByText('Pecho inferior')).toBeInTheDocument(); // exerciseDialog.muscle.pec_lower
-    expect(screen.getByText('Barra')).toBeInTheDocument();          // exerciseDialog.equipment.barbell
+    expect(screen.getByText('Pectoral inferior')).toBeInTheDocument(); // exerciseDialog.muscle.pec_lower (verified)
+    expect(screen.getByText('Barra')).toBeInTheDocument();             // exerciseDialog.equipment.barbell (verified)
     expect(screen.getByRole('link')).toHaveAttribute('href', '/exercises/ex-1');
   });
 
@@ -667,7 +666,7 @@ describe('ExerciseCard', () => {
 });
 ```
 
-> Verify the exact ES labels for `pec_lower` and `barbell` against `src/i18n/es/entrenamiento.json` (`exerciseDialog.muscle.pec_lower`, `exerciseDialog.equipment.barbell`) before locking the strings — adjust the expected text to match.
+> Label literals verified against `src/i18n/es/entrenamiento.json`: `exerciseDialog.muscle.pec_lower` = "Pectoral inferior", `exerciseDialog.equipment.barbell` = "Barra". (Note: "Pecho" is the *group* label for `chest` — don't confuse it with the fine code.)
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -886,23 +885,27 @@ import { EMPTY_FILTERS } from './AppliedFilterChips';
 beforeEach(async () => { await i18n.changeLanguage('es'); });
 
 describe('ExerciseFilters', () => {
-  it('shows the active-filter count on the trigger and opens the drawer', () => {
+  it('shows the active-filter count on the closed trigger button', () => {
+    // count badge lives on the always-rendered trigger — no portal needed
     render(<ExerciseFilters filters={{ ...EMPTY_FILTERS, category: 'strength' }} onChange={vi.fn()} />);
-    const trigger = screen.getByRole('button', { name: /Filtros/ });
-    expect(trigger).toHaveTextContent('1');
-    fireEvent.click(trigger);
-    expect(screen.getByText('Filtrar ejercicios')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Filtros/ })).toHaveTextContent('1');
   });
 
-  it('changing the category select emits an updated filters object', () => {
+  it('opens on click and emits an updated filters object on category change', () => {
     const onChange = vi.fn();
     render(<ExerciseFilters filters={EMPTY_FILTERS} onChange={onChange} />);
+    // Component controls `open` via its own React state (no DrawerTrigger), so a
+    // click flips state and the controlled Drawer renders content synchronously —
+    // the pattern drawer.test.tsx proves with <Drawer open> and ExerciseInfoButton uses.
     fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    expect(screen.getByText('Filtrar ejercicios')).toBeInTheDocument();
     fireEvent.change(screen.getByRole('combobox', { name: 'Categoría' }), { target: { value: 'strength' } });
     expect(onChange).toHaveBeenCalledWith({ ...EMPTY_FILTERS, category: 'strength' });
   });
 });
 ```
+
+> **Why no `DrawerTrigger`:** vaul's `DrawerTrigger` relies on pointer events that don't reliably toggle `open` synchronously in jsdom — no repo test opens a Drawer that way. The repo's only Drawer test (`src/components/ui/drawer.test.tsx`) renders `<Drawer open>` declaratively, and `ExerciseInfoButton.tsx` controls `open` via its own state. We follow that proven pattern (controlled `open` + a plain `Button onClick`), so the test's click works without a portal-mount race.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -916,7 +919,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { MuscleSelect } from './MuscleSelect';
 import { CATEGORY_VALUES, LEVEL_VALUES, EQUIPMENT_VALUES, categorySlug } from '../exercises/api';
 import { type BrowseFilters, EMPTY_FILTERS, activeFilterCount } from './AppliedFilterChips';
@@ -932,17 +935,17 @@ export function ExerciseFilters({
   const count = activeFilterCount(filters);
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <SlidersHorizontal className="h-4 w-4" />
-          {t('browse.filters')}
-          {count > 0 && (
-            <span className="ml-1 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{count}</span>
-          )}
-        </Button>
-      </DrawerTrigger>
-      <DrawerContent>
+    <>
+      {/* Plain button controls `open` (no DrawerTrigger) — see the test note. */}
+      <Button variant="outline" className="gap-2" onClick={() => setOpen(true)}>
+        <SlidersHorizontal className="h-4 w-4" />
+        {t('browse.filters')}
+        {count > 0 && (
+          <span className="ml-1 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{count}</span>
+        )}
+      </Button>
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>{t('browse.filtersTitle')}</DrawerTitle>
         </DrawerHeader>
@@ -1006,13 +1009,12 @@ export function ExerciseFilters({
             <Button onClick={() => setOpen(false)}>{t('browse.apply')}</Button>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }
 ```
-
-> **Drawer-in-jsdom caveat:** vaul/Radix Drawer content is portaled and may not mount its content synchronously in jsdom. If `getByText('Filtrar ejercicios')` after a click flakes, follow `ExerciseInfoButton.test.tsx`'s working approach (it drives the same Drawer/Dialog primitives) — match its query/wait style. The two assertions (count badge on the trigger; category-change emits) are the contract; adapt the open-mechanics to whatever ExerciseInfoButton's test proves works.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1083,11 +1085,17 @@ describe('ExercisesPage', () => {
     expect(screen.getByText('No se encontraron ejercicios.')).toBeInTheDocument();
   });
 
-  it('shows a skeleton grid on first load', () => {
+  it('shows a skeleton grid on first load (not the empty state)', () => {
     useExercisesBrowse.mockReturnValue({ data: undefined, isLoading: true });
     renderPage();
+    expect(screen.getByTestId('exercise-skeleton-grid')).toBeInTheDocument();
     expect(screen.queryByText('No se encontraron ejercicios.')).not.toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Buscar ejercicios…')).toBeInTheDocument();
+  });
+
+  it('does not render the skeleton once loaded', () => {
+    useExercisesBrowse.mockReturnValue({ data: { rows: [row], total: 1 }, isLoading: false });
+    renderPage();
+    expect(screen.queryByTestId('exercise-skeleton-grid')).not.toBeInTheDocument();
   });
 });
 ```
@@ -1139,7 +1147,11 @@ export function ExercisesPage() {
 
   const resetKey = `${debounced}|${filters.category}|${filters.equipment}|${filters.level}|${filters.muscleValue}`;
 
-  // page/pageSize first; total fed back after the query resolves.
+  // Hook-order cycle: usePagination must run BEFORE useExercisesBrowse (it produces
+  // page/pageSize), so it can't read this render's browse.data.total directly.
+  // We hold `total` in state and feed back the resolved count via an effect — this
+  // gives usePagination a real total for pageCount/clamping. (placeholderData on the
+  // query keeps prior rows visible between page changes, so no flash.)
   const [total, setTotal] = useState(0);
   const { page, pageSize, pageCount, setPage, setPageSize } = usePagination({ total, resetKey });
 
@@ -1183,7 +1195,7 @@ export function ExercisesPage() {
       <AppliedFilterChips filters={filters} onChange={setFilters} />
 
       {browse.isLoading ? (
-        <ul className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <ul data-testid="exercise-skeleton-grid" className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <li key={i}>
               <Card><div className="aspect-[4/3] w-full"><Skeleton className="h-full w-full" /></div>
@@ -1366,7 +1378,7 @@ git commit -m "feat(B2c): ExerciseDetailPage (/exercises/:id, read-only)"
 **Files:**
 - Modify: `src/app/router.tsx`
 
-- [ ] **Step 1: Update imports** in `router.tsx` — remove `EnProgresoPage` from the `/exercises` slot (keep the import; it's still used by other not-built routes — verify with a grep; if `/exercises` was its only use, remove the import too) and add:
+- [ ] **Step 1: Update imports** in `router.tsx`. `/exercises` (line 122) is `EnProgresoPage`'s **only** reference in `router.tsx` (confirmed: the sole other refs are `EnProgresoPage.tsx` itself + its `.test.tsx`). Once `/exercises` is repointed the import is dead and **will fail lint/typecheck**, so **remove the `import { EnProgresoPage } from '@/pages/EnProgresoPage';` line** (do NOT delete `EnProgresoPage.tsx` — its own test still imports it). Add:
 
 ```tsx
 import { ExercisesPage } from '@/pages/ExercisesPage';
@@ -1380,10 +1392,10 @@ import { ExerciseDetailPage } from '@/pages/ExerciseDetailPage';
 <Route path="/exercises/:id" element={<ExerciseDetailPage />} />
 ```
 
-- [ ] **Step 3: Check whether `EnProgresoPage` is now unused**
+- [ ] **Step 3: Confirm no dead `EnProgresoPage` reference remains**
 
 Run: `grep -rn "EnProgresoPage" src/`
-Expected: if `router.tsx` was the only reference, remove its import line; otherwise leave it. (Do not delete `EnProgresoPage.tsx` — other not-built routes may still point at it.)
+Expected: only `src/pages/EnProgresoPage.tsx` + `src/pages/EnProgresoPage.test.tsx` — i.e. the import line in `router.tsx` is gone (Step 1). The component file stays (still tested); only the router import was removed.
 
 - [ ] **Step 4: Full local gate**
 

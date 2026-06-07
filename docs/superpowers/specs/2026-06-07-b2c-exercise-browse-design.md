@@ -100,8 +100,9 @@ From the original B2 brainstorm and this B2c session:
 Both pages live under the existing authenticated `entreno`-section layout. The
 `exercises` nav item already exists (`nav-config.ts`, Dumbbell icon, `mobile:true`)
 and lights up automatically once the page renders real content — **no nav change**.
-`EnProgresoPage` stays in the tree (still referenced by other not-built routes); we
-only swap the `/exercises` element.
+`/exercises` is `EnProgresoPage`'s only router reference, so swapping the element
+makes its import dead — remove the import (the `EnProgresoPage.tsx` file stays; its
+own test still uses it).
 
 ## 5. Components
 
@@ -196,8 +197,10 @@ the picker, **extract the shared query-building** (the muscle/group/text OR-term
 construction + ordering) into an internal helper, then add a **new paginated path**:
 
 ```
-searchExercisesPaged(opts): Promise<{ rows: Exercise[]; total: number }>
-  opts: { query, category, equipment, level, muscle, group, page, pageSize }
+searchExercisesPaged(params): Promise<{ rows: Exercise[]; total: number }>
+  params: { query, category, equipment, level, muscleValue, textMuscles, page, pageSize }
+  // muscleValue is the picker convention ('' | <fineCode> | `group:<g>`), split
+  // internally into a contains (fine) or overlaps (group) filter.
 ```
 Implementation notes:
 - Build with `.select('*', { count: 'exact' })` and `.range(from, to)` for the page
@@ -212,11 +215,17 @@ Implementation notes:
   the TS typecheck — they must be verified on the **db-test (Tier-3) CI**, not just
   locally (per the project's standing integration-gap note).
 
-**Hook:** `useExercisesBrowse(params)` → `useQuery` keyed on every param
-(`['exercises','browse', query, category, equipment, level, muscle, page, pageSize]`),
-`placeholderData: (prev) => prev` to avoid fl/grid flash between pages, returning
-`{ rows, total }`. The picker's `useExerciseSearch`/`searchExercises` stay
-untouched.
+**Hook:** `useExercisesBrowse(params)` → `useQuery` keyed on every input that
+changes the result (`['exercises','browse', query, category, equipment, level,
+muscleValue, textMuscles, page, pageSize]` — `textMuscles` is included because it
+changes the rows), `placeholderData: (prev) => prev` to avoid grid flash between
+pages, returning `{ rows, total }`. The picker's `useExerciseSearch`/`searchExercises`
+stay untouched.
+
+**Pagination wiring (hook-order note).** `usePagination` runs before
+`useExercisesBrowse` (it produces `page`/`pageSize`), so it can't read the same
+render's `total`. The page holds `total` in state and feeds the resolved count back
+via an effect, giving `usePagination` a real total for `pageCount`/clamping.
 
 ## 7. i18n
 
