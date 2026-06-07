@@ -1,0 +1,84 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ExerciseDetail > snapshots the full (visual-first) density layout 1`] = `
+<div
+  class="flex flex-col gap-4"
+>
+  <button
+    aria-label="Ampliar imagen"
+    class="block w-full overflow-hidden rounded-md"
+    type="button"
+  >
+    <div
+      class="relative w-full bg-muted aspect-[4/3]"
+    >
+      <img
+        alt="Press de banca — posición inicial"
+        class="absolute inset-0 h-full w-full object-cover"
+        decoding="async"
+        loading="lazy"
+        src="https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@b0eed061e1c832b3ed815fbaa4b45b3cdc14df49/exercises/Bench_Press/0.jpg"
+      />
+      <img
+        alt="Press de banca — posición final"
+        class="absolute inset-0 h-full w-full opacity-0 motion-safe:animate-exercise-frame object-cover"
+        decoding="async"
+        loading="lazy"
+        src="https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@b0eed061e1c832b3ed815fbaa4b45b3cdc14df49/exercises/Bench_Press/1.jpg"
+      />
+    </div>
+  </button>
+  <div
+    class="space-y-1.5"
+  >
+    <h2
+      class="text-lg font-semibold leading-tight"
+    >
+      Press de banca
+    </h2>
+    <div
+      class="flex flex-wrap gap-1"
+    >
+      <span
+        class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-md font-medium bg-secondary text-secondary-foreground"
+      >
+        Pectoral inferior
+      </span>
+      <span
+        class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-md font-medium bg-secondary text-secondary-foreground"
+      >
+        Barra
+      </span>
+      <span
+        class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-md font-medium border border-border text-muted-foreground"
+      >
+        Tríceps (largo)
+      </span>
+      <span
+        class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-md font-medium border border-border text-muted-foreground"
+      >
+        beginner
+      </span>
+    </div>
+  </div>
+  <div
+    class="space-y-2"
+  >
+    <h3
+      class="text-sm font-medium text-muted-foreground"
+    >
+      Instrucciones
+    </h3>
+    <ol
+      class="list-decimal space-y-1 pl-5 text-sm"
+    >
+      <li>
+        Túmbate en el banco.
+      </li>
+      <li>
+        Empuja la barra hacia arriba.
+      </li>
+    </ol>
+  </div>
+</div>
+`;
