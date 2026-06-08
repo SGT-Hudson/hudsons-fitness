@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ExercisePicker } from './ExercisePicker';
+import { ExerciseInfoButton } from './ExerciseInfoButton';
 import { exerciseDisplayName, type Exercise } from '../exercises/api';
 import { routineSchema, type RoutineFormValues } from '../routines/routineSchema';
 import type { RoutineWithExercises, SaveRoutinePayload } from '../routines/api';
@@ -113,6 +114,7 @@ function ExerciseRow({ index, totalCount, initialExercise, onRemove, onMoveUp, o
           </span>
         )}
         <div className="flex items-center gap-1 shrink-0">
+          {exercise && <ExerciseInfoButton exercise={exercise} />}
           <Button
             type="button"
             size="icon"

@@ -14,7 +14,10 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "whole-foods:resolve": "tsx scripts/whole-foods/resolve.ts",
-    "whole-foods:build": "tsx scripts/whole-foods/build-seed.ts"
+    "whole-foods:build": "tsx scripts/whole-foods/build-seed.ts",
+    "exercises:build": "tsx scripts/exercise-catalog/build-seed.ts",
+    "exercises:review-input": "tsx scripts/exercise-catalog/build-review-input.ts",
+    "exercises:reconcile-review": "tsx scripts/exercise-catalog/reconcile-review.ts"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -49,6 +52,7 @@
     "recharts": "^2.13.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
+    "vaul": "^1.1.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {

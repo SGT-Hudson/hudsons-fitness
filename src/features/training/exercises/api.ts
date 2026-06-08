@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { DOUBLE_PROGRESSION_DEFAULTS } from '@/core/training';
-import { MUSCLE_CODES, MUSCLES } from '@/core/muscles';
+import { MUSCLE_CODES, MUSCLES, codesInGroup, MUSCLE_GROUPS } from '@/core/muscles';
 import type { Tables, TablesInsert } from '@/types/database';
 
 export type Exercise = Tables<'exercises'>;
@@ -9,20 +9,44 @@ export type Equipment =
   | 'barbell'
   | 'dumbbell'
   | 'kettlebell'
+  | 'ez_curl_bar'
   | 'machine'
   | 'cable'
   | 'bodyweight'
   | 'band'
+  | 'medicine_ball'
+  | 'exercise_ball'
+  | 'foam_roller'
   | 'other';
+
+/** Raw `category` strings as stored at ingest (free-exercise-db, un-mapped). */
+export const CATEGORY_VALUES = [
+  'strength', 'stretching', 'plyometrics', 'powerlifting',
+  'strongman', 'olympic weightlifting', 'cardio',
+] as const;
+export type Category = (typeof CATEGORY_VALUES)[number];
+
+/** Raw `level` strings as stored at ingest. */
+export const LEVEL_VALUES = ['beginner', 'intermediate', 'expert'] as const;
+export type Level = (typeof LEVEL_VALUES)[number];
+
+/** i18n-key-safe slug for a category (the raw value has a space). */
+export function categorySlug(value: string): string {
+  return value.replace(/\s+/g, '_');
+}
 
 export const EQUIPMENT_VALUES: Equipment[] = [
   'barbell',
   'dumbbell',
   'kettlebell',
+  'ez_curl_bar',
   'machine',
   'cable',
   'bodyweight',
   'band',
+  'medicine_ball',
+  'exercise_ball',
+  'foam_roller',
   'other',
 ];
 
@@ -51,6 +75,44 @@ export interface ExerciseSearchOptions {
   limit?: number;
   muscle?: PrimaryMuscle | null; // hard AND filter from the dropdown
   textMuscles?: PrimaryMuscle[]; // muscle codes the typed text matched (OR'd with name)
+  groupMuscles?: PrimaryMuscle[]; // a whole group's fine codes — AND overlap filter
+}
+
+export interface ExerciseFilterOptions {
+  query?: string;
+  category?: string | null;
+  equipment?: Equipment | null;
+  level?: string | null;
+  muscle?: PrimaryMuscle | null;     // hard AND contains
+  groupMuscles?: PrimaryMuscle[];    // AND overlap
+  textMuscles?: PrimaryMuscle[];     // OR'd with name terms
+}
+
+/**
+ * Apply the shared WHERE + ORDER for every exercise pool query. Returns the
+ * builder for the caller to finish with `.limit()` or `.range()`. The PostgREST
+ * array operators here escape the typecheck — verified on Tier-3 db-test CI.
+ */
+function buildExerciseQuery<B>(builder: B, opts: ExerciseFilterOptions): B {
+  const {
+    query = '', category = null, equipment = null, level = null,
+    muscle = null, groupMuscles = [], textMuscles = [],
+  } = opts;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let b: any = builder;
+  if (category) b = b.eq('category', category);
+  if (equipment) b = b.eq('equipment', equipment);
+  if (level) b = b.eq('level', level);
+  if (muscle) b = b.contains('primary_muscles', [muscle]);
+  if (groupMuscles.length > 0) b = b.overlaps('primary_muscles', groupMuscles);
+
+  const safe = query.trim().replace(/[%_,]/g, '');
+  const terms: string[] = [];
+  if (safe !== '') terms.push(`name_es.ilike.%${safe}%`, `name_en.ilike.%${safe}%`);
+  for (const code of textMuscles) terms.push(`primary_muscles.cs.{${code}}`);
+  if (terms.length > 0) b = b.or(terms.join(','));
+
+  return b.order('is_verified', { ascending: false }).order('name_es') as B;
 }
 
 /**
@@ -73,35 +135,49 @@ export async function searchExercises(
   query: string,
   opts: ExerciseSearchOptions = {},
 ): Promise<Exercise[]> {
-  const { limit = 20, muscle = null, textMuscles = [] } = opts;
-  const trimmed = query.trim();
-  const safe = trimmed.replace(/[%_,]/g, '');
-
-  let builder = supabase.from('exercises').select('*');
-
-  if (muscle) {
-    builder = builder.contains('primary_muscles', [muscle]);
-  }
-
-  const terms: string[] = [];
-  if (safe !== '') {
-    terms.push(`name_es.ilike.%${safe}%`, `name_en.ilike.%${safe}%`);
-  }
-  for (const code of textMuscles) {
-    terms.push(`primary_muscles.cs.{${code}}`);
-  }
-
-  if (terms.length > 0) {
-    builder = builder.or(terms.join(','));
-  }
-
-  const { data, error } = await builder
-    .order('is_verified', { ascending: false })
-    .order('name_es')
-    .limit(limit);
-
+  const { limit = 20, muscle = null, textMuscles = [], groupMuscles = [] } = opts;
+  const builder = buildExerciseQuery(supabase.from('exercises').select('*'), {
+    query, muscle, textMuscles, groupMuscles,
+  });
+  const { data, error } = await builder.limit(limit);
   if (error) throw error;
   return data ?? [];
+}
+
+export interface ExerciseBrowseParams {
+  query: string;
+  category: string | null;
+  equipment: Equipment | null;
+  level: string | null;
+  /** picker convention: '' | <fineCode> | `group:<group>` */
+  muscleValue: string;
+  textMuscles: PrimaryMuscle[];
+  page: number;
+  pageSize: number;
+}
+
+/** Server-side paged + filtered pool query for the browse page. */
+export async function searchExercisesPaged(
+  params: ExerciseBrowseParams,
+): Promise<{ rows: Exercise[]; total: number }> {
+  const { query, category, equipment, level, muscleValue, textMuscles, page, pageSize } = params;
+
+  const isGroup = muscleValue.startsWith('group:');
+  const groupKey = isGroup ? muscleValue.slice('group:'.length) : null;
+  const muscle = !isGroup && muscleValue !== '' ? (muscleValue as PrimaryMuscle) : null;
+  const groupMuscles = groupKey
+    ? (codesInGroup(groupKey as (typeof MUSCLE_GROUPS)[number]) as PrimaryMuscle[])
+    : [];
+
+  const builder = buildExerciseQuery(
+    supabase.from('exercises').select('*', { count: 'exact' }),
+    { query, category, equipment, level, muscle, groupMuscles, textMuscles },
+  );
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const { data, count, error } = await builder.range(from, to);
+  if (error) throw error;
+  return { rows: data ?? [], total: count ?? 0 };
 }
 
 /**
@@ -148,4 +224,30 @@ export async function createExercise(
 export function exerciseDisplayName(ex: Exercise, lang: 'es' | 'en'): string {
   if (lang === 'es') return ex.name_es;
   return ex.name_en ?? ex.name_es;
+}
+
+/**
+ * Instruction-steps picker. Mirrors `exerciseDisplayName`'s fallback: returns the
+ * stored steps for the requested language, falling back to the other language when
+ * the chosen array is empty (e.g. an EN-only or ES-only row), and `[]` when both
+ * are empty (the source='system' rows + the 5 no-source rows). The ES steps are
+ * the machine-translated B2a content — this is a stored-array pick, NOT a runtime
+ * translation.
+ */
+export function exerciseInstructions(ex: Exercise, lang: 'es' | 'en'): string[] {
+  const preferred = lang === 'es' ? ex.instructions_es : ex.instructions_en;
+  if (preferred.length > 0) return preferred;
+  return lang === 'es' ? ex.instructions_en : ex.instructions_es;
+}
+
+/** Fetch a single exercise by id (the runner's id-only detail path). Uses
+ *  `select('*')` so it carries instructions + images with no fragile column list. */
+export async function getExercise(id: string): Promise<Exercise> {
+  const { data, error } = await supabase
+    .from('exercises')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
 }

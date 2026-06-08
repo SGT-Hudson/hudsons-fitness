@@ -55,7 +55,25 @@
     "noResults": "Sin resultados",
     "createNew": "Crear \"{{name}}\"",
     "change": "Cambiar",
-    "allMuscles": "Todos los músculos"
+    "allMuscles": "Todos los músculos",
+    "allInGroup": "{{group}} — todos"
+  },
+  "browse": {
+    "title": "Ejercicios",
+    "subtitle": "Explora el catálogo completo de ejercicios.",
+    "searchPlaceholder": "Buscar ejercicios…",
+    "filters": "Filtros",
+    "filtersTitle": "Filtrar ejercicios",
+    "clearAll": "Limpiar filtros",
+    "apply": "Aplicar",
+    "empty": "No se encontraron ejercicios.",
+    "back": "Volver",
+    "labels": { "category": "Categoría", "equipment": "Equipo", "level": "Nivel", "muscle": "Músculo", "all": "Todos" },
+    "notFound": {
+      "title": "Ejercicio no encontrado",
+      "body": "Este ejercicio no existe o fue eliminado.",
+      "back": "Volver a ejercicios"
+    }
   },
   "history": {
     "empty": "Aún no has registrado series para este ejercicio.",
@@ -99,6 +117,7 @@
       "trap": "Trapecio",
       "rhomboids": "Romboides",
       "lower_back": "Lumbares",
+      "neck": "Cuello",
       "biceps": "Bíceps",
       "tri_long": "Tríceps (largo)",
       "tri_lateral": "Tríceps (lateral)",
@@ -109,6 +128,7 @@
       "quads": "Cuádriceps",
       "hamstrings": "Isquiosurales",
       "glutes": "Glúteos",
+      "abductors": "Abductores",
       "adductors": "Aductores",
       "calves": "Gemelos",
       "tibialis": "Tibial anterior",
@@ -133,12 +153,43 @@
       "barbell": "Barra",
       "dumbbell": "Mancuerna",
       "kettlebell": "Kettlebell",
+      "ez_curl_bar": "Barra Z",
       "machine": "Máquina",
       "cable": "Polea",
       "bodyweight": "Peso corporal",
       "band": "Goma",
+      "medicine_ball": "Balón medicinal",
+      "exercise_ball": "Pelota de ejercicio",
+      "foam_roller": "Rodillo de espuma",
       "other": "Otro"
+    },
+    "category": {
+      "strength": "Fuerza",
+      "stretching": "Estiramiento",
+      "plyometrics": "Pliometría",
+      "powerlifting": "Powerlifting",
+      "strongman": "Strongman",
+      "olympic_weightlifting": "Halterofilia",
+      "cardio": "Cardio"
+    },
+    "level": {
+      "beginner": "Principiante",
+      "intermediate": "Intermedio",
+      "expert": "Experto"
     }
+  },
+  "exerciseDetail": {
+    "title": "Detalles del ejercicio",
+    "openAria": "Ver detalles del ejercicio",
+    "instructions": "Instrucciones",
+    "noInstructions": "Sin instrucciones todavía",
+    "enlargeAria": "Ampliar imagen",
+    "imageAlt": {
+      "start": "{{name}} — posición inicial",
+      "end": "{{name}} — posición final"
+    },
+    "loadError": "No se pudo cargar el ejercicio",
+    "retry": "Reintentar"
   },
   "tabs": {
     "routines": "Rutinas",

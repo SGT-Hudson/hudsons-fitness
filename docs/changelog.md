@@ -219,6 +219,38 @@ decision rationale in `decisions.md`.
   `20260603120000_r25_hide_drops_ref_only.sql` — hiding an owned library item now
   drops only the user's reference row; pool ownership is retained.
 
+### 2026-06-07 — R-27 Project B2b — exercise detail popup
+
+- **Exercise detail popup (B2b).** An `Info` button on exercise rows in the
+  runner overview, the exercise picker, and the session + routine editors opens
+  a bilingual step-by-step instruction panel with a start/end image loop.
+  Images render via `buildExerciseImageUrl` (B2a) in a fixed aspect-ratio box
+  with `loading="lazy"`. The panel is a reusable presentational
+  **`ExerciseDetail`** component with an adaptive `density` prop (`compact` for
+  the popup; `full` density is built but unmounted — reserved for B2c's
+  standalone browse page). The responsive shell is a shadcn **`Drawer`**
+  (bottom-sheet, vaul) on mobile / Radix **`Dialog`** (centered) on desktop,
+  switching via `useMediaQuery('(min-width: 768px)')`. No schema or RPC change.
+  See R-27.
+
+### 2026-06-08 — R-27 Project B2c — exercise browse + detail pages (Project B complete)
+
+- **Exercise browse page (B2c, #167).** The `/exercises` placeholder becomes a real
+  browse experience: debounced search, a filters `Drawer` (category / equipment /
+  level / muscle), removable applied-filter chips, a responsive `ExerciseCard` grid,
+  and **server-side pagination** (`searchExercisesPaged` — `count:'exact'` + `.range`,
+  sharing a `buildExerciseQuery` helper with the picker's search). A read-only
+  `/exercises/:id` page reuses B2b's `ExerciseDetail` (`full` density). The picker's
+  grouped muscle dropdown was extracted into a shared `MuscleSelect`. New
+  `entrenamiento` i18n: `browse.*` + `exerciseDialog.category.*` / `.level.*`. No
+  schema/RPC change.
+- **Released to `main`** via `release/2026-06-08-exercise-browse` (B2b + B2c).
+- **Live-DB backlog deploy (2026-06-08).** The Project A / B1 / B2a migrations (fine
+  taxonomy + 873-row catalog + bilingual instructions) had never been applied to the
+  live database; the 10-migration backlog was deployed in order, bringing prod to
+  **907 exercises** (873 catalog) with instructions + fine-muscle tags. See
+  operations.md "Project A / B1 / B2a backlog deploy". **Project B (R-27) complete.**
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |

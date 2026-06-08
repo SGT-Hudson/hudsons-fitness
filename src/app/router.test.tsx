@@ -30,6 +30,8 @@ vi.mock('@/pages/ExerciseHistoryPage', () => ({ ExerciseHistoryPage: () => <div>
 vi.mock('@/pages/RoutinePage', () => ({ RoutinePage: () => <div>RoutinePage</div> }));
 vi.mock('@/pages/RoutineEditorPage', () => ({ RoutineEditorPage: () => <div>RoutineEditorPage</div> }));
 vi.mock('@/pages/ProgramEditorPage', () => ({ ProgramEditorPage: () => <div>ProgramEditorPage</div> }));
+vi.mock('@/pages/ExercisesPage', () => ({ ExercisesPage: () => <div>ExercisesPage</div> }));
+vi.mock('@/pages/ExerciseDetailPage', () => ({ ExerciseDetailPage: () => <div>ExerciseDetailPage</div> }));
 vi.mock('@/pages/ProgresoPage', () => ({ ProgresoPage: () => <div>ProgresoPage</div> }));
 vi.mock('@/pages/ObjetivosPage', () => ({ ObjetivosPage: () => <div>ObjetivosPage</div> }));
 vi.mock('@/pages/SettingsPage', () => ({ SettingsPage: () => <div>SettingsPage</div> }));
@@ -59,9 +61,14 @@ describe('AppRoutes', () => {
     expect(screen.getByText('RoutinePage')).toBeInTheDocument();
   });
 
-  it('routes /exercises to the En progreso placeholder', () => {
+  it('routes /exercises to the exercise browse page', () => {
     render(<MemoryRouter initialEntries={['/exercises']}><AppRoutes /></MemoryRouter>);
-    expect(screen.getByText('En progreso')).toBeInTheDocument();
+    expect(screen.getByText('ExercisesPage')).toBeInTheDocument();
+  });
+
+  it('routes /exercises/:id to the exercise detail page', () => {
+    render(<MemoryRouter initialEntries={['/exercises/abc-123']}><AppRoutes /></MemoryRouter>);
+    expect(screen.getByText('ExerciseDetailPage')).toBeInTheDocument();
   });
 
   it('renders the diary page at /diary', () => {
@@ -69,8 +76,8 @@ describe('AppRoutes', () => {
     expect(screen.getByText('DiarioPage')).toBeInTheDocument();
   });
 
-  it('redirects the index to /home (desktop dashboard)', () => {
+  it('redirects the index to /diary', () => {
     render(<MemoryRouter initialEntries={['/']}><AppRoutes /></MemoryRouter>);
-    expect(screen.getByText('Inicio')).toBeInTheDocument();
+    expect(screen.getByText('DiarioPage')).toBeInTheDocument();
   });
 });

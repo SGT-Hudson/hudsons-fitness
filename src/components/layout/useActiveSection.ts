@@ -6,8 +6,8 @@ const STORAGE_KEY = 'hf-section';
 
 /**
  * The section the mobile shell should present. Section-owned routes resolve
- * directly (and are remembered); shared routes (`/home`, `/progress`,
- * `/settings`) fall back to the last remembered section (default nutricion).
+ * directly (and are remembered); shared routes (`/progress`, `/settings`)
+ * fall back to the last remembered section (default nutricion).
  */
 export function useActiveSection(): Section {
   const { pathname } = useLocation();

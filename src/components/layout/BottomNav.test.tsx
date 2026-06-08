@@ -20,7 +20,6 @@ describe('BottomNav', () => {
     for (const label of ['Diario', 'Planificador', 'Recetas', 'Progreso']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
-    expect(screen.queryByRole('link', { name: 'Inicio' })).toBeNull();
   });
 
   it('shows the Entreno tabs on a training route', () => {

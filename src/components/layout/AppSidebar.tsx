@@ -40,7 +40,7 @@ export function AppSidebar() {
                 <NavLink
                   key={item.key}
                   to={item.route}
-                  end={item.route === '/home' || item.route === '/progress'}
+                  end={item.route === '/progress'}
                   className={({ isActive }) =>
                     cn(
                       'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors',

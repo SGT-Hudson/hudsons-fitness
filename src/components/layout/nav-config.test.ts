@@ -23,18 +23,16 @@ describe('nav-config', () => {
   });
 
   it('sectionOf returns null for shared routes', () => {
-    expect(sectionOf('/home')).toBeNull();
     expect(sectionOf('/progress')).toBeNull();
     expect(sectionOf('/progress/goals')).toBeNull();
     expect(sectionOf('/settings')).toBeNull();
   });
 
-  it('bottom nav shows the section tabs plus shared Progreso, never Home', () => {
+  it('bottom nav shows the section tabs plus shared Progreso', () => {
     const nut = bottomNavItems('nutricion').map((i) => i.key);
     expect(nut).toEqual(['diary', 'planner', 'recipes', 'progress']);
     const ent = bottomNavItems('entreno').map((i) => i.key);
     expect(ent).toEqual(['today', 'routine', 'exercises', 'progress']);
-    expect(nut).not.toContain('home');
   });
 
   it('sidebar groups render shared, then nutricion, then entreno', () => {
@@ -44,6 +42,6 @@ describe('nav-config', () => {
       'entreno',
     ]);
     const shared = sidebarGroups()[0].items.map((i) => i.key);
-    expect(shared).toEqual(['home', 'progress']);
+    expect(shared).toEqual(['progress']);
   });
 });

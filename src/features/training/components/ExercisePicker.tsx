@@ -10,9 +10,11 @@ import {
   type Exercise,
   type PrimaryMuscle,
 } from '../exercises/api';
-import { MUSCLE_GROUPS, codesInGroup } from '@/core/muscles';
+import { codesInGroup, type MuscleGroup } from '@/core/muscles';
+import { MuscleSelect } from './MuscleSelect';
 import { musclesMatchingQuery } from '../exercises/muscleSearch';
 import { ExerciseDialog } from './ExerciseDialog';
+import { ExerciseInfoButton } from './ExerciseInfoButton';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -37,7 +39,7 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [selectedMuscle, setSelectedMuscle] = useState<PrimaryMuscle | ''>('');
+  const [selectedMuscle, setSelectedMuscle] = useState<string>(''); // '' | <fineCode> | `group:<group>`
   const debounced = useDebouncedValue(query, 200);
   const containerRef = useRef<HTMLDivElement>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -47,8 +49,13 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
   );
   const textMuscles = musclesMatchingQuery(debounced, labelByCode);
 
+  const isGroup = selectedMuscle.startsWith('group:');
+  const groupKey = isGroup
+    ? (selectedMuscle.slice('group:'.length) as MuscleGroup)
+    : null;
   const search = useExerciseSearch(debounced, {
-    muscle: selectedMuscle || null,
+    muscle: isGroup || selectedMuscle === '' ? null : (selectedMuscle as PrimaryMuscle),
+    groupMuscles: groupKey ? (codesInGroup(groupKey) as PrimaryMuscle[]) : [],
     textMuscles,
   });
 
@@ -105,27 +112,11 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
             }}
           />
         </div>
-        <select
-          role="combobox"
-          aria-label={t('picker.allMuscles')}
+        <MuscleSelect
           value={selectedMuscle}
-          onChange={(e) => {
-            setSelectedMuscle(e.target.value as PrimaryMuscle | '');
-            setOpen(true);
-          }}
-          className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">{t('picker.allMuscles')}</option>
-          {MUSCLE_GROUPS.map((g) => (
-            <optgroup key={g} label={t(`exerciseDialog.muscleGroup.${g}`)}>
-              {codesInGroup(g).map((code) => (
-                <option key={code} value={code}>
-                  {t(`exerciseDialog.muscle.${code}`)}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+          onChange={(v) => { setSelectedMuscle(v); setOpen(true); }}
+          ariaLabel={t('picker.allMuscles')}
+        />
         {open && (
           <div className="absolute z-20 top-full mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md">
             <ul className="max-h-64 overflow-y-auto py-1">
@@ -143,11 +134,11 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
                 const subtitle = otherLang === 'en' ? ex.name_en : ex.name_es;
                 const primary = exerciseDisplayName(ex, lang);
                 return (
-                  <li key={ex.id}>
+                  <li key={ex.id} className="flex items-center gap-1 pr-1">
                     <button
                       type="button"
                       className={cn(
-                        'w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground',
+                        'flex-1 min-w-0 text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground',
                         'flex items-center gap-2 justify-between',
                       )}
                       onClick={() => {
@@ -168,6 +159,7 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
                         </span>
                       )}
                     </button>
+                    <ExerciseInfoButton exercise={ex} />
                   </li>
                 );
               })}

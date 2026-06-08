@@ -16,10 +16,10 @@ vi.mock('./hooks', () => ({
       byMuscle: {
         delt_front: 0, delt_side: 0, delt_rear: 0,
         pec_upper: 0, pec_lower: 7,
-        lat: 3, trap: 0, rhomboids: 0, lower_back: 0,
+        lat: 3, trap: 0, rhomboids: 0, lower_back: 0, neck: 0,
         biceps: 0, tri_long: 0, tri_lateral: 0, forearms: 0,
         abs_upper: 0, abs_lower: 0, obliques: 0,
-        quads: 0, hamstrings: 0, glutes: 0, adductors: 0, calves: 0, tibialis: 0,
+        quads: 0, hamstrings: 0, glutes: 0, abductors: 0, adductors: 0, calves: 0, tibialis: 0,
       },
       maxMuscleValue: 7,
       totalWorkingSets: 10,
@@ -36,7 +36,7 @@ describe('MuscleActivityView', () => {
     expect(screen.getAllByTestId('body')).toHaveLength(2);
     // ranked at fine resolution, highest-first: pec_lower(7) → lat(3) → the zeros.
     const labels = [...container.querySelectorAll('li span.flex-1')].map((s) => s.textContent);
-    expect(labels).toHaveLength(22);
+    expect(labels).toHaveLength(24);
     expect(labels[0]).toBe('exerciseDialog.muscle.pec_lower');
     expect(labels[1]).toBe('exerciseDialog.muscle.lat');
     // the working-set value is rendered, not just the label.

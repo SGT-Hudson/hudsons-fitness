@@ -55,7 +55,25 @@
     "noResults": "No matches",
     "createNew": "Create \"{{name}}\"",
     "change": "Change",
-    "allMuscles": "All muscles"
+    "allMuscles": "All muscles",
+    "allInGroup": "{{group}} — all"
+  },
+  "browse": {
+    "title": "Exercises",
+    "subtitle": "Browse the full exercise catalog.",
+    "searchPlaceholder": "Search exercises…",
+    "filters": "Filters",
+    "filtersTitle": "Filter exercises",
+    "clearAll": "Clear filters",
+    "apply": "Apply",
+    "empty": "No exercises found.",
+    "back": "Back",
+    "labels": { "category": "Category", "equipment": "Equipment", "level": "Level", "muscle": "Muscle", "all": "All" },
+    "notFound": {
+      "title": "Exercise not found",
+      "body": "This exercise doesn't exist or was removed.",
+      "back": "Back to exercises"
+    }
   },
   "history": {
     "empty": "No sets logged for this exercise yet.",
@@ -99,6 +117,7 @@
       "trap": "Traps",
       "rhomboids": "Rhomboids",
       "lower_back": "Lower back",
+      "neck": "Neck",
       "biceps": "Biceps",
       "tri_long": "Triceps (long head)",
       "tri_lateral": "Triceps (lateral)",
@@ -109,6 +128,7 @@
       "quads": "Quads",
       "hamstrings": "Hamstrings",
       "glutes": "Glutes",
+      "abductors": "Abductors",
       "adductors": "Adductors",
       "calves": "Calves",
       "tibialis": "Tibialis",
@@ -133,12 +153,39 @@
       "barbell": "Barbell",
       "dumbbell": "Dumbbell",
       "kettlebell": "Kettlebell",
+      "ez_curl_bar": "EZ curl bar",
       "machine": "Machine",
       "cable": "Cable",
       "bodyweight": "Bodyweight",
       "band": "Band",
+      "medicine_ball": "Medicine ball",
+      "exercise_ball": "Exercise ball",
+      "foam_roller": "Foam roller",
       "other": "Other"
-    }
+    },
+    "category": {
+      "strength": "Strength",
+      "stretching": "Stretching",
+      "plyometrics": "Plyometrics",
+      "powerlifting": "Powerlifting",
+      "strongman": "Strongman",
+      "olympic_weightlifting": "Olympic weightlifting",
+      "cardio": "Cardio"
+    },
+    "level": { "beginner": "Beginner", "intermediate": "Intermediate", "expert": "Expert" }
+  },
+  "exerciseDetail": {
+    "title": "Exercise details",
+    "openAria": "View exercise details",
+    "instructions": "Instructions",
+    "noInstructions": "No instructions yet",
+    "enlargeAria": "Enlarge image",
+    "imageAlt": {
+      "start": "{{name}} — start position",
+      "end": "{{name}} — end position"
+    },
+    "loadError": "Couldn't load exercise",
+    "retry": "Retry"
   },
   "tabs": {
     "routines": "Routines",

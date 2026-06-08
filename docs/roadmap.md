@@ -35,10 +35,10 @@ reference shard carries it (never edit the decision entry).
 - R-24 — Muscle activity heatmap (F-4)
 - R-25 — Fix hide_owned_* blocked by pool UPDATE WITH CHECK (Tier-3 finding)
 - R-26 — Fine muscle taxonomy (Project A) — 22-code model + `primary_muscles[]`
-- R-27 — Bulk exercise catalog (Project B) — design in progress
-- R-28 — Rich home dashboard + diet-completion calendar + adaptive-TDEE surface (post-V1 item 4)
+- R-27 — Bulk exercise catalog (Project B) — COMPLETE + released (2026-06-08); catalog live in prod
 - R-29 — In-app feature-discovery onboarding (post-V1 item 5)
 - R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
+- R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — deferred from R-27
 - Feature & UX family index (F-x / U-x / post-V1 items / Projects A–B) — at end
 
 ## R-00 — Baseline current schema into migrations
@@ -1022,33 +1022,36 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 ## R-27 — Bulk exercise catalog (Project B)
 - **decision:** (D-id at plan time)
 - **blocked-by:** R-26 (the fine taxonomy — done)
-- **status:** design approved (2026-06-04), being specced in a **parallel
-  session** — not built, not on `develop`. Plan/impl pending. The catalog spec
-  lives on `claude/project-b-catalog-spec`; fill this entry in when it lands
-  (coordinate to avoid clobbering it).
+- **status:** ingestion SHIPPED to `develop` (#158, 873 exercises) + fully
+  curated. Post-import muscle-tag review done in two passes: pass 1 (#160)
+  reviewed the 404 linter-flagged rows (256 confirmed / 146 corrected / 2 held);
+  the full-catalog pass reviewed the remaining 469 never-flagged rows (428
+  confirmed / 39 corrected / 2 held); a hold-resolve pass then settled those 2
+  via anatomical review. All 873 rows are now judge-reviewed; **871 are
+  `is_verified=true`** (only the 2 pass-1/#160 holds remain ambiguous). Corrections
+  live in `scripts/exercise-catalog/primary-overrides.json` (187 total) + review
+  migrations `20260605120000_b1_catalog_review.sql`,
+  `20260606120000_catalog_full_review.sql`, and
+  `20260606120100_catalog_hold_resolve.sql`.
+  **COMPLETE + RELEASED (2026-06-08).** The B2 exercise-detail UI shipped as three
+  sub-projects — B2a data foundation (#164: instruction columns + image helper),
+  B2b detail component + in-workout popup (#166), B2c `/exercises` browse page +
+  `/exercises/:id` detail page (#167) — released to `main` via
+  `release/2026-06-08-exercise-browse`. The full 10-migration backlog (fine taxonomy
+  + B1 catalog + B2a instructions) was deployed to the live DB on 2026-06-08
+  (873-exercise catalog now live in prod; see operations.md "Project A / B1 / B2a
+  backlog deploy"). **Follow-ups deferred** (not blocking; tracked as R-31): lay-term search
+  aliases; group-name text search (the browse muscle filter + name/muscle search
+  already cover the common cases); "add to session/routine" from the detail page.
 - **scope:** ingest a public-domain exercise dataset (free-exercise-db, ~873
   exercises) as idempotent seed migrations, each fine-tagged via the R-26
   taxonomy, with a tagging-accuracy verification step (anatomical source of
   truth, not by guess). Also rolled in from R-26: group-level picker filter,
   group-name text search, lay-term search aliases.
 
-## R-28 — Rich home dashboard + diet-completion calendar + adaptive-TDEE surface (post-V1 item 4)
-- **decision:** (none yet)
-- **blocked-by:** —
-- **status:** todo — `src/pages/HomePage.tsx` is an 18-line placeholder
-  ("the unified Nutrición + Entreno dashboard is item 4"); no calendar / dashboard
-  / adaptive-TDEE surface exists yet.
-- **scope:** a real Diet dashboard — a green/amber/red diet-completion calendar
-  from `daily_nutrition_history` × the active phase's targets (kcal-in-range **and**
-  protein-met → green; one of the two → amber; neither → red; tap-to-see-why);
-  surface the R-07 adaptive-TDEE expenditure estimate the app computes but never
-  shows; fold in the shipped goal-date ETA. From the post-V1 brainstorm
-  (`docs/superpowers/brainstorms/2026-05-21-post-v1-app-wide.md`, item 4 merged
-  with direction-doc "item A"). Highest daily value of the post-V1 set.
-
 ## R-29 — In-app feature-discovery onboarding (post-V1 item 5)
 - **decision:** (none yet)
-- **blocked-by:** R-28 likely (shares the home/section surface)
+- **blocked-by:** —
 - **status:** todo — only the profile-setup `OnboardingPage` exists; no
   feature-discovery layer (no welcome modal, tour, coachmarks, or empty-state CTAs).
 - **scope:** contextual empty states (explanation + CTA) + one short welcome modal
@@ -1065,6 +1068,19 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   (e.g. macro card also renders the day's TDEE breakdown) — not just wider
   breakpoints. Deferred to public-launch prep. (post-V1 brainstorm item 6; the
   U-8 visual pass.)
+
+## R-31 — Exercise search/browse follow-ups (deferred from Project B / R-27)
+- **decision:** (D-id at plan time)
+- **blocked-by:** none (Project B is complete + released)
+- **status:** not built — deferred, low priority.
+- **scope:** the polish items intentionally dropped from B2c to keep it focused:
+  (1) **lay-term search aliases** — a curated bilingual map (slang/lay term →
+  muscle code(s) / exercise keywords) feeding the browse + picker search, so e.g.
+  "abs"→core or "biceps"→arms surface without exact name/muscle matches;
+  (2) **group-name text search** in the picker; (3) **"add to session/routine"**
+  action from the `/exercises/:id` detail page (currently read-only — adding stays
+  the picker's job inside the runner/editors). The existing muscle filter + bilingual
+  name/muscle search cover the common cases, so these are nice-to-haves, not gaps.
 
 ## Feature & UX family index
 
@@ -1090,6 +1106,6 @@ Status as of 2026-06-04. (R-xx entries above carry the detail.)
 | U-7 | Nutrition fix batch | #98 | done |
 | U-8 | Desktop visual pass / density | R-30 | partial |
 | post-V1 item 3 | Nutrición/Entreno section split | #91 | done |
-| post-V1 item 4 | Rich home + diet calendar + TDEE surface | R-28 | todo |
+| post-V1 item 4 | Rich home + diet calendar + TDEE surface | — | dropped (R-28 removed; reframed into a separate UI refactor) |
 | post-V1 item 5 | In-app onboarding | R-29 | todo |
 | post-V1 item 6 | Responsive desktop density | R-30 / U-8 | partial |

@@ -7,13 +7,51 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
+      _r01_recipes_owner_backup: {
+        Row: {
+          deleted_at: string | null
+          recipe_id: string
+          user_id: string | null
+        }
+        Insert: {
+          deleted_at?: string | null
+          recipe_id: string
+          user_id?: string | null
+        }
+        Update: {
+          deleted_at?: string | null
+          recipe_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       body_measurements: {
         Row: {
           body_fat_pct: number | null
@@ -58,9 +96,6 @@ export type Database = {
           },
         ]
       }
-      // U-1 sub-macros interim hand-edit (until R-04 generated-types regen):
-      // sugar/saturated-fat known-sum grams + per-field completeness booleans —
-      // see supabase/migrations/20260525120000_u1_sub_macros.sql.
       daily_nutrition_history: {
         Row: {
           computed_at: string
@@ -144,18 +179,22 @@ export type Database = {
           },
         ]
       }
-      // Training MVP hand-edit (interim until R-04 generated-types regen):
-      // exercises pool — see supabase/migrations/20260522120000_training_exercises.sql
-      // for the source of truth (post-R-01 shape, bilingual names,
-      // expanded equipment vocab, per-exercise default_increment_kg).
       exercises: {
         Row: {
+          category: string | null
           created_at: string
           created_by_user_id: string | null
           default_increment_kg: number | null
           equipment: string | null
+          external_id: string | null
+          force: string | null
           id: string
+          images: string[]
+          instructions_en: string[]
+          instructions_es: string[]
           is_verified: boolean
+          level: string | null
+          mechanic: string | null
           name_en: string | null
           name_es: string
           primary_muscles: string[]
@@ -164,12 +203,20 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           created_by_user_id?: string | null
           default_increment_kg?: number | null
           equipment?: string | null
+          external_id?: string | null
+          force?: string | null
           id?: string
+          images?: string[]
+          instructions_en?: string[]
+          instructions_es?: string[]
           is_verified?: boolean
+          level?: string | null
+          mechanic?: string | null
           name_en?: string | null
           name_es: string
           primary_muscles?: string[]
@@ -178,12 +225,20 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           created_by_user_id?: string | null
           default_increment_kg?: number | null
           equipment?: string | null
+          external_id?: string | null
+          force?: string | null
           id?: string
+          images?: string[]
+          instructions_en?: string[]
+          instructions_es?: string[]
           is_verified?: boolean
+          level?: string | null
+          mechanic?: string | null
           name_en?: string | null
           name_es?: string
           primary_muscles?: string[]
@@ -222,8 +277,6 @@ export type Database = {
           },
         ]
       }
-      // U-1 sub-macros interim hand-edit (until R-04 regen): optional sugar +
-      // saturated fat per unit (nullable; NULL = unknown).
       ingredients: {
         Row: {
           brand: string | null
@@ -610,9 +663,6 @@ export type Database = {
           },
         ]
       }
-      // Project A fine muscle taxonomy hand-edit (interim until generated-types
-      // regen): structure-only dictionary mirroring src/core/muscles.ts — see
-      // supabase/migrations/20260604120000_fine_muscle_taxonomy.sql.
       muscles: {
         Row: {
           body_region_slug: string | null
@@ -735,7 +785,6 @@ export type Database = {
         }
         Relationships: []
       }
-      // F-2 hand-edit (interim until R-04 regen): routines + cyclic planner — source supabase/migrations/20260528120000…120030.
       program_days: {
         Row: {
           day_index: number
@@ -803,15 +852,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "programs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       recipe_ingredients: {
         Row: {
@@ -858,8 +899,53 @@ export type Database = {
           },
         ]
       }
-      // F-2b hand-edit (interim until R-04 regen): + warmup_sets jsonb
-      // (migration 20260529120000_f2b_warmup_sets.sql).
+      recipes: {
+        Row: {
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          id: string
+          instructions: string | null
+          meal_types: string[]
+          name: string
+          photo_url: string | null
+          servings: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          id?: string
+          instructions?: string | null
+          meal_types?: string[]
+          name: string
+          photo_url?: string | null
+          servings?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          id?: string
+          instructions?: string | null
+          meal_types?: string[]
+          name?: string
+          photo_url?: string | null
+          servings?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipes_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       routine_exercises: {
         Row: {
           exercise_id: string
@@ -939,156 +1025,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "routines_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      recipes: {
-        // R-01 hand-edit (interim until R-04 regen): `deleted_at` removed
-        // (staged migration 20260520120030); `user_id` → `created_by_user_id`
-        // (same migration; semantic shift from per-user FK to the
-        // three-state pool-owner pointer matching `ingredients`).
-        // U-2 interim hand-edit (until R-04 regen): + meal_types text[]
-        // (migration 20260526120000).
-        Row: {
-          created_at: string
-          created_by_user_id: string | null
-          description: string | null
-          id: string
-          instructions: string | null
-          meal_types: string[]
-          name: string
-          photo_url: string | null
-          servings: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by_user_id?: string | null
-          description?: string | null
-          id?: string
-          instructions?: string | null
-          meal_types?: string[]
-          name: string
-          photo_url?: string | null
-          servings?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by_user_id?: string | null
-          description?: string | null
-          id?: string
-          instructions?: string | null
-          meal_types?: string[]
-          name?: string
-          photo_url?: string | null
-          servings?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recipes_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      // R-01 hand-edit (interim until R-04 regen): two new ref tables that
-      // carry the per-user "I have this in my library" relationship + the
-      // private `note` PII firewall (spec §2/§3, staged migration
-      // 20260520120010).
-      user_ingredient_refs: {
-        Row: {
-          created_at: string
-          id: string
-          ingredient_id: string
-          note: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          ingredient_id: string
-          note?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          ingredient_id?: string
-          note?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_ingredient_refs_ingredient_id_fkey"
-            columns: ["ingredient_id"]
-            isOneToOne: false
-            referencedRelation: "ingredients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_ingredient_refs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_recipe_refs: {
-        Row: {
-          created_at: string
-          id: string
-          note: string | null
-          recipe_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          note?: string | null
-          recipe_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          note?: string | null
-          recipe_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_recipe_refs_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_recipe_refs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tdee_estimates: {
         Row: {
@@ -1184,12 +1121,76 @@ export type Database = {
           },
         ]
       }
-      // Training MVP hand-edit (interim until R-04 generated-types regen):
-      // workout_sessions + workout_sets — see
-      // supabase/migrations/20260522120010_training_sessions_sets.sql
-      // for the source of truth (RLS-via-join on workout_sets per §0.5).
-      // F-2 hand-edit: + program_id / routine_id provenance stamps
-      // (migration 20260528120020_f2_workout_session_stamps.sql).
+      user_ingredient_refs: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ingredient_refs_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_recipe_refs: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          recipe_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          recipe_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          recipe_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_recipe_refs_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workout_sessions: {
         Row: {
           created_at: string
@@ -1224,7 +1225,22 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workout_sessions_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_routine_id_fkey"
+            columns: ["routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workout_sets: {
         Row: {
@@ -1262,17 +1278,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "workout_sets_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "workout_sessions"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "workout_sets_exercise_id_fkey"
             columns: ["exercise_id"]
             isOneToOne: false
             referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sets_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -1306,10 +1322,14 @@ export type Database = {
     // Post-generation correction: `supabase gen types` cannot infer
     // nullability of SQL function parameters (Postgres carries no NULL flag
     // on function args), so it emits every text arg as non-null `string`.
-    // The marked args below are nullable BY DESIGN (a null p_recipe_id /
-    // p_template_id means "create new"); restored to `string | null` so call
-    // sites stay honest instead of casting NULL to ''. Re-apply after any
-    // regen — see docs/conventions.md (generated-types caveats).
+    // The marked args below are nullable BY DESIGN — a null create-or-update id
+    // (p_recipe_id / p_template_id / p_program_id / p_routine_id / p_session_id)
+    // means "create new", and p_notes / p_title / p_performed_on / p_anchor_date
+    // are optional metadata. Restored to `string | null` so call sites stay
+    // honest instead of casting NULL to ''. Re-apply to save_recipe /
+    // save_template / save_program / save_routine / save_workout /
+    // set_active_program after any regen — see docs/conventions.md
+    // (generated-types caveats).
     Functions: {
       apply_template_to_week: {
         Args: { p_target_date: string; p_template_id: string }
@@ -1323,25 +1343,33 @@ export type Database = {
         }
         Returns: string
       }
-      // R-01 hand-edit (staged migration 20260520120040): "Remove from my
-      // library" surface; same RPC serves "creator-hide" (owner-transfer
-      // to anon happens) and "drop my ref" (UPDATE no-ops, only ref
-      // deleted). See spec §6 + the hide RPC SQL for the full semantics.
+      copy_week_meal: {
+        Args: {
+          p_meal_index: number
+          p_plan_week_id: string
+          p_source_date: string
+          p_target_dates: string[]
+        }
+        Returns: undefined
+      }
       hide_owned_ingredient: {
         Args: { p_ingredient_id: string }
         Returns: undefined
       }
-      hide_owned_recipe: {
-        Args: { p_recipe_id: string }
-        Returns: undefined
-      }
+      hide_owned_recipe: { Args: { p_recipe_id: string }; Returns: undefined }
       materialize_plan_for_date: {
         Args: { p_date: string; p_user_id: string }
         Returns: number
       }
+      reconcile_account_delete: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
+      save_program: {
+        Args: { p_days: Json; p_name: string; p_program_id: string | null }
+        Returns: string
+      }
       save_recipe: {
-        // U-2 interim hand-edit (until R-04 regen): + p_meal_types (defaulted,
-        // so optional) — see migration 20260526120000_u2_recipe_meal_types.sql.
         Args: {
           p_description: string | null
           p_ingredients: Json
@@ -1353,17 +1381,14 @@ export type Database = {
         }
         Returns: string
       }
-      // U-6 hand-edit (interim until generated-types regen, plan Task 9):
-      // copy_week_meal — see supabase/migrations/20260527120000_u6_copy_week_meal.sql
-      // (INVOKER, atomic delete-then-insert across target days).
-      copy_week_meal: {
+      save_routine: {
         Args: {
-          p_meal_index: number
-          p_plan_week_id: string
-          p_source_date: string
-          p_target_dates: string[]
+          p_exercises: Json
+          p_name: string
+          p_notes: string | null
+          p_routine_id: string | null
         }
-        Returns: undefined
+        Returns: string
       }
       save_template: {
         Args: {
@@ -1380,11 +1405,6 @@ export type Database = {
         Args: { p_name: string; p_week_id: string }
         Returns: string
       }
-      // Training MVP hand-edit (interim until R-04 generated-types regen):
-      // save_workout — see supabase/migrations/20260522120020_training_save_workout_rpc.sql
-      // (INVOKER, replace-children, mirrors save_recipe shape).
-      // F-2 hand-edit: extended with p_program_id + p_routine_id provenance stamps
-      // (migration 20260528120030_f2_rpcs.sql; both defaulted null → optional).
       save_workout: {
         Args: {
           p_notes: string | null
@@ -1397,30 +1417,8 @@ export type Database = {
         }
         Returns: string
       }
-      // F-2 hand-edit (interim until R-04 regen): save_routine / save_program /
-      // set_active_program — see supabase/migrations/20260528120030_f2_rpcs.sql.
-      save_routine: {
-        Args: {
-          p_exercises: Json
-          p_name: string
-          p_notes: string | null
-          p_routine_id: string | null
-        }
-        Returns: string
-      }
-      save_program: {
-        Args: {
-          p_days: Json
-          p_name: string
-          p_program_id: string | null
-        }
-        Returns: string
-      }
       set_active_program: {
-        Args: {
-          p_anchor_date: string | null
-          p_program_id: string
-        }
+        Args: { p_anchor_date: string | null; p_program_id: string }
         Returns: undefined
       }
     }
@@ -1551,7 +1549,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
+

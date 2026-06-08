@@ -47,6 +47,7 @@ tracked in `roadmap.md`).
 - Toasts fire from the layer that owns the mutation (usually `hooks.ts`); a component owning its own mutation flow (e.g. destructive confirm dialogs) calls toast directly; pages never call toast (D-D2).
 - Success toasts only when the action is user-triggered AND low-frequency; high-frequency, background, or implicit mutations toast on error only; `useDeleteWeekSlot` is the documented success-on-slot-mutation exception (D-D3).
 - Chart time-range pills: options 30d/90d/1y/all, default 90d, per-chart independent local `useState`, no cross-chart sync, no persistence (D-D4).
+- New overlays use shadcn primitives: `Dialog` (centered) for desktop, `Drawer` (bottom-sheet, vaul) for mobile; responsive shells switch via `useMediaQuery('(min-width: 768px)')`. Exercise images render via `buildExerciseImageUrl` in a fixed aspect-ratio box with `loading="lazy"` (B2b).
 
 ## i18n & locale
 
