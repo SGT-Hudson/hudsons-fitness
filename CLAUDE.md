@@ -21,17 +21,25 @@ pnpm preview      # preview ./dist locally
 ## Hard invariants (never violate)
 1. Metric-only (kg/cm/g).
 2. DB is canonical; RLS is the sole security boundary (repo is public).
-3. Any >1-table atomic mutation is an RPC (`SECURITY INVOKER` + `set search_path = public`); the cron-only `apply_template_to_week_admin` is one documented `SECURITY DEFINER` exception, and `reconcile_account_delete` (account-delete reconciliation; service-role/edge-only, granted only to `service_role` — no app-facing role) is the second.
-4. **Ship flow.** `pnpm lint` + `pnpm build` + `pnpm test` (CI-enforced) must pass before merge. Short-lived `claude/*` branch → PR into **`develop`** → CI → auto-merge (squash). `develop` is integration+staging (its Vercel preview is the soak surface). Production = `main`, advanced only by a user-approved `release/*`→`main` PR (merge commit); hotfixes `claude/hotfix-*`→`main` then auto back-merge to `develop`. Never push directly to `main`/`develop`.
+3. Any >1-table atomic mutation is an RPC (`SECURITY INVOKER` + `set search_path = public`). `SECURITY DEFINER` is forbidden without security review; the two sanctioned exceptions are enumerated in `data-model.md`.
+4. **Ship flow (bright line).** Never push directly to `main`/`develop`. `develop` advances only by squash-auto-merge of a CI-green `claude/*` PR; `main` only by a user-approved `release/*` PR. CI (`pnpm lint` + `pnpm build` + `pnpm test`) must be green before any merge. Full flow in `operations.md`.
 5. BMR (Mifflin-St Jeor) and target-weight are derived — never stored.
 6. Convert units/fractions only at the form boundary via shared helpers.
-7. Never document an un-built design as if it exists — mark it `> ⚠ Changing — see R-xx`.
+7. Never commit secrets. Public repo → a committed key persists in history and is irreversible. Client config is public-tier `.env.local`; server secrets live in Supabase Vault.
 
 ## Working preferences
 1. Greenlit work proceeds autonomously; design decisions check in first. While a design is still exploratory (reasoning toward a model, floating ideas), discuss in prose with honest pushback — do not force multiple-choice prompts. Reserve structured option-questions for converged decisions.
 2. On any pick-one question: lead with the recommended option + a one-line reason; if options are genuinely equivalent, say so rather than fake a preference.
 3. No AI/Claude attribution anywhere in commits or PR titles/bodies (no `Co-Authored-By`, no "Generated with…" footer, no AI-process phrasing) — repo is public; plain conventional commits.
 4. Don't paste diffs / before→after file content into chat — state concisely what changed and why.
+
+## Session lifecycle
+- The main checkout (`/mnt/d/dev/hudsons-fitness`) is **sacred**: it stays on `develop`, advanced only by `fetch` + fast-forward — never used for feature work. It is the trustworthy baseline for reading real state.
+- All write-work happens in an **ephemeral worktree** created **from WSL** off `origin/develop`, named for the task (`.claude/worktrees/<task>`) on a fresh `claude/<task>` branch. Never create worktrees from Windows `D:/` git (mixing environments produced the ghost worktrees).
+- **Teardown on merge:** once the branch merges, `git worktree remove` it and delete the local branch.
+- Read-only/brainstorm sessions need no worktree — the SessionStart hook keeps `develop` synced; read docs from there.
+- Doc accuracy is reconciled to shipped code **at release** via the doc-audit (`operations.md`), not continuously; mark known-divergent docs `> ⚠ Changing — see R-xx` in the meantime.
+- **Scale spec/plan to change size:** no spec for single-file/component changes, copy/i18n tweaks, dependency bumps, pure-doc edits, isolated bug fixes; a spec (and a plan if multi-step) for schema/RLS/RPC changes, a new feature/page, cross-cutting refactors, or anything touching a hard invariant or the data model. Borderline → err toward a short spec (a few sentences is fine).
 
 ## Routing
 - Schema / RLS / RPCs / ★ Library model → `docs/data-model.md`
