@@ -36,7 +36,6 @@ reference shard carries it (never edit the decision entry).
 - R-25 — Fix hide_owned_* blocked by pool UPDATE WITH CHECK (Tier-3 finding)
 - R-26 — Fine muscle taxonomy (Project A) — 22-code model + `primary_muscles[]`
 - R-27 — Bulk exercise catalog (Project B) — COMPLETE + released (2026-06-08); catalog live in prod
-- R-28 — Rich home dashboard + diet-completion calendar + adaptive-TDEE surface (post-V1 item 4)
 - R-29 — In-app feature-discovery onboarding (post-V1 item 5)
 - R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
 - R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — deferred from R-27
@@ -1050,23 +1049,9 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   truth, not by guess). Also rolled in from R-26: group-level picker filter,
   group-name text search, lay-term search aliases.
 
-## R-28 — Rich home dashboard + diet-completion calendar + adaptive-TDEE surface (post-V1 item 4)
-- **decision:** (none yet)
-- **blocked-by:** —
-- **status:** todo — `src/pages/HomePage.tsx` is an 18-line placeholder
-  ("the unified Nutrición + Entreno dashboard is item 4"); no calendar / dashboard
-  / adaptive-TDEE surface exists yet.
-- **scope:** a real Diet dashboard — a green/amber/red diet-completion calendar
-  from `daily_nutrition_history` × the active phase's targets (kcal-in-range **and**
-  protein-met → green; one of the two → amber; neither → red; tap-to-see-why);
-  surface the R-07 adaptive-TDEE expenditure estimate the app computes but never
-  shows; fold in the shipped goal-date ETA. From the post-V1 brainstorm
-  (`docs/superpowers/brainstorms/2026-05-21-post-v1-app-wide.md`, item 4 merged
-  with direction-doc "item A"). Highest daily value of the post-V1 set.
-
 ## R-29 — In-app feature-discovery onboarding (post-V1 item 5)
 - **decision:** (none yet)
-- **blocked-by:** R-28 likely (shares the home/section surface)
+- **blocked-by:** —
 - **status:** todo — only the profile-setup `OnboardingPage` exists; no
   feature-discovery layer (no welcome modal, tour, coachmarks, or empty-state CTAs).
 - **scope:** contextual empty states (explanation + CTA) + one short welcome modal
@@ -1121,6 +1106,6 @@ Status as of 2026-06-04. (R-xx entries above carry the detail.)
 | U-7 | Nutrition fix batch | #98 | done |
 | U-8 | Desktop visual pass / density | R-30 | partial |
 | post-V1 item 3 | Nutrición/Entreno section split | #91 | done |
-| post-V1 item 4 | Rich home + diet calendar + TDEE surface | R-28 | todo |
+| post-V1 item 4 | Rich home + diet calendar + TDEE surface | — | dropped (R-28 removed; reframed into a separate UI refactor) |
 | post-V1 item 5 | In-app onboarding | R-29 | todo |
 | post-V1 item 6 | Responsive desktop density | R-30 / U-8 | partial |

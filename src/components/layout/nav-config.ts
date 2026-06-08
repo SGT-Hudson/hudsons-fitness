@@ -3,7 +3,6 @@ import {
   BookOpen,
   CalendarDays,
   Dumbbell,
-  Home,
   LineChart,
   NotebookText,
   Repeat,
@@ -25,7 +24,6 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { key: 'home', route: '/home', group: 'shared', icon: Home, mobile: false },
   { key: 'progress', route: '/progress', group: 'shared', icon: LineChart, mobile: true },
   { key: 'diary', route: '/diary', group: 'nutricion', icon: NotebookText, mobile: true },
   { key: 'planner', route: '/planner', group: 'nutricion', icon: CalendarDays, mobile: true },
