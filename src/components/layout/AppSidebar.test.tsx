@@ -14,13 +14,12 @@ beforeEach(async () => {
 });
 
 describe('AppSidebar', () => {
-  it('renders Home + Progreso and both section groups with their items', () => {
+  it('renders Progreso and both section groups with their items', () => {
     render(
-      <MemoryRouter initialEntries={['/home']}>
+      <MemoryRouter initialEntries={['/diary']}>
         <AppSidebar />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('link', { name: 'Inicio' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Progreso' })).toBeInTheDocument();
     expect(screen.getByText('Nutrición')).toBeInTheDocument();
     expect(screen.getByText('Entreno')).toBeInTheDocument();
@@ -30,7 +29,7 @@ describe('AppSidebar', () => {
 
   it('pins the sidebar to the viewport (sticky, full dvh) so its footer stays visible on long pages', () => {
     const { container } = render(
-      <MemoryRouter initialEntries={['/home']}>
+      <MemoryRouter initialEntries={['/diary']}>
         <AppSidebar />
       </MemoryRouter>,
     );

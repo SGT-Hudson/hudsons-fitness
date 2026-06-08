@@ -7,7 +7,6 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { SignupPage } from '@/pages/SignupPage';
 import { OnboardingPage } from '@/pages/OnboardingPage';
-import { HomePage } from '@/pages/HomePage';
 import { ExercisesPage } from '@/pages/ExercisesPage';
 import { ExerciseDetailPage } from '@/pages/ExerciseDetailPage';
 import { DiarioPage } from '@/pages/DiarioPage';
@@ -48,7 +47,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <FullPageLoader />;
-  if (user) return <Navigate to="/home" replace />;
+  if (user) return <Navigate to="/diary" replace />;
   return <>{children}</>;
 }
 
@@ -94,8 +93,7 @@ export function AppRoutes() {
         }
       >
         <Route element={<AppLayout />}>
-          <Route index element={<Navigate to="/home" replace />} />
-          <Route path="/home" element={<HomePage />} />
+          <Route index element={<Navigate to="/diary" replace />} />
 
           {/* Nutrición */}
           <Route path="/diary" element={<DiarioPage />} />

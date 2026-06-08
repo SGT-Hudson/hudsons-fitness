@@ -76,8 +76,8 @@ describe('AppRoutes', () => {
     expect(screen.getByText('DiarioPage')).toBeInTheDocument();
   });
 
-  it('redirects the index to /home (desktop dashboard)', () => {
+  it('redirects the index to /diary', () => {
     render(<MemoryRouter initialEntries={['/']}><AppRoutes /></MemoryRouter>);
-    expect(screen.getByText('Inicio')).toBeInTheDocument();
+    expect(screen.getByText('DiarioPage')).toBeInTheDocument();
   });
 });
