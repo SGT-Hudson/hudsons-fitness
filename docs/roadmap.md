@@ -36,9 +36,11 @@ reference shard carries it (never edit the decision entry).
 - R-25 — Fix hide_owned_* blocked by pool UPDATE WITH CHECK (Tier-3 finding)
 - R-26 — Fine muscle taxonomy (Project A) — 22-code model + `primary_muscles[]`
 - R-27 — Bulk exercise catalog (Project B) — COMPLETE + released (2026-06-08); catalog live in prod
-- R-29 — In-app feature-discovery onboarding (post-V1 item 5)
-- R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
+- R-29 — In-app feature-discovery onboarding (post-V1 item 5) — deferred until after R-33
+- R-30 — Responsive desktop density, per-feature (REMOVED 2026-06-11 — folded into R-33)
 - R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — deferred from R-27
+- R-32 — DB-integration test tier / e2e guard for PostgREST select strings
+- R-33 — UI redesign (colors, typography, app-wide visual overhaul) — design in progress
 - Feature & UX family index (F-x / U-x / post-V1 items / Projects A–B) — at end
 
 ## R-00 — Baseline current schema into migrations
@@ -1052,8 +1054,10 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 ## R-29 — In-app feature-discovery onboarding (post-V1 item 5)
 - **decision:** (none yet)
 - **blocked-by:** —
-- **status:** todo — only the profile-setup `OnboardingPage` exists; no
-  feature-discovery layer (no welcome modal, tour, coachmarks, or empty-state CTAs).
+- **status:** deferred (2026-06-11) — explicitly sequenced **after the R-33 UI
+  redesign**: onboarding should teach the final UI, not one about to change.
+  Only the profile-setup `OnboardingPage` exists; no feature-discovery layer
+  (no welcome modal, tour, coachmarks, or empty-state CTAs).
 - **scope:** contextual empty states (explanation + CTA) + one short welcome modal
   (esp. explaining the section split). Avoid an 8-screen wizard. Time to the
   friends-and-family invite, not before. (post-V1 brainstorm item 5.)
@@ -1061,13 +1065,15 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 ## R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
 - **decision:** (none yet)
 - **blocked-by:** —
-- **status:** partial — responsive `AppLayout` (md+ sidebar / bottom nav), the
-  grouped desktop sidebar, and the sidebar sticky fix (#121) are done; the
-  per-feature desktop **density modes** + the rich desktop home are not built.
-- **scope:** at desktop width, components opt into showing more data inline
-  (e.g. macro card also renders the day's TDEE breakdown) — not just wider
-  breakpoints. Deferred to public-launch prep. (post-V1 brainstorm item 6; the
-  U-8 visual pass.)
+- **status:** **removed (2026-06-11)** — folded into the **R-33 UI redesign**;
+  desktop density / the U-8 visual pass will be addressed there, not as a
+  standalone item. What had already landed stays (responsive `AppLayout` md+
+  sidebar / bottom nav, grouped desktop sidebar, sidebar sticky fix #121); the
+  never-built parts (per-feature density modes, rich desktop home) are now
+  R-33 scope.
+- **scope (historical):** at desktop width, components opt into showing more data
+  inline (e.g. macro card also renders the day's TDEE breakdown) — not just wider
+  breakpoints. (post-V1 brainstorm item 6; the U-8 visual pass.)
 
 ## R-31 — Exercise search/browse follow-ups (deferred from Project B / R-27)
 - **decision:** (D-id at plan time)
@@ -1082,21 +1088,58 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   the picker's job inside the runner/editors). The existing muscle filter + bilingual
   name/muscle search cover the common cases, so these are nice-to-haves, not gaps.
 
+## R-32 — DB-integration test tier / e2e guard for PostgREST select strings
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo — promoted from a session note (decided 2026-05-24) to the
+  roadmap 2026-06-11.
+- **origin:** a planner regression shipped to prod on 2026-05-24: a bad PostgREST
+  `.select(...)` string (selected `meal_times` from `meal_plan_weeks`, which has
+  no such column) broke the planner and nothing caught it. Typecheck is blind —
+  the fetch helpers cast results `as unknown as {…}`, discarding supabase-js's
+  typed-select inference, and postgrest-js's compile-time select parser is
+  unreliable for deep nested embeds anyway. Unit tests are blind — component/hook
+  tests mock Supabase, so the real query never runs. No existing tier exercises
+  real `.select()` strings against the real schema (Tier-3 pgTAP covers
+  schema/RLS/RPC in SQL, not the client's PostgREST queries).
+- **scope:** either or both of:
+  1. An **integration test tier** running the real fetch helpers (e.g.
+     `fetchActiveWeek`) against a local Supabase — the `supabase start` + seed
+     infra already exists for Tier-3 — so bad select strings fail CI
+     deterministically.
+  2. Extend the **agent-browser e2e harness** (seeded QA user) to cover critical
+     flows (planner load + apply template) against a real backend, in the gate.
+- **standing rule until built:** any change to a PostgREST `.select(...)` string
+  must be verified against a real DB / the running app before merge — typecheck +
+  `pnpm test` are not sufficient.
+
+## R-33 — UI redesign (colors, typography, app-wide visual overhaul)
+- **decision:** (D-id when the design converges)
+- **blocked-by:** — (design in progress outside the repo)
+- **status:** design in progress (2026-06-11) — being designed externally with
+  Claude design; this is a placeholder entry so other items can reference it.
+  Scope lands here once the design converges.
+- **scope (provisional):** new color palette, typography change, and a broader
+  app-wide visual overhaul (details TBD by the design). Absorbs **R-30**
+  (per-feature desktop density / the U-8 visual pass) and is the reframed home
+  of post-V1 item 4's UI-refactor remainder; **R-29** (onboarding) is sequenced
+  after it so onboarding teaches the final UI.
+
 ## Feature & UX family index
 
 Cross-reference so the F-/U-/post-V1 families don't need re-deriving from specs.
-Status as of 2026-06-04. (R-xx entries above carry the detail.)
+Status as of 2026-06-11. (R-xx entries above carry the detail.)
 
 | Item | What | R-id / PR | Status |
 |---|---|---|---|
 | Project A | Fine muscle taxonomy | R-26 / #155 | done |
-| Project B | Bulk exercise catalog | R-27 | design approved, not built |
+| Project B | Bulk exercise catalog | R-27 | done |
 | F-1 | Whole-foods bilingual library | #113 | done |
 | F-2 | Training routines + cyclic planner | R-22 / #122 | done |
 | F-2b | Warm-up sets in routines | #128 | done |
 | F-3 | Guided active-workout runner | R-23 / #132–135 | done |
 | F-4 | Muscle activity heatmap | R-24 / #136,#139 | done |
-| F-5 | Micronutrient storage | — | deferred (pairs with F-1) |
+| F-5 | Micronutrient storage | — | removed (2026-06-11 — will not be implemented) |
 | U-1 | Sub-macros (sugar + saturated fat) | #95 | done |
 | U-2 | Recipe meal-type tags | #96 | done |
 | U-3 | Nutrition search filters + warning badges | #97 | done |
@@ -1104,8 +1147,8 @@ Status as of 2026-06-04. (R-xx entries above carry the detail.)
 | U-5 | Day totals vs target | #101 | done |
 | U-6 | Copy a meal across days | #116 | done |
 | U-7 | Nutrition fix batch | #98 | done |
-| U-8 | Desktop visual pass / density | R-30 | partial |
+| U-8 | Desktop visual pass / density | R-30 → R-33 | folded into R-33 |
 | post-V1 item 3 | Nutrición/Entreno section split | #91 | done |
-| post-V1 item 4 | Rich home + diet calendar + TDEE surface | — | dropped (R-28 removed; reframed into a separate UI refactor) |
-| post-V1 item 5 | In-app onboarding | R-29 | todo |
-| post-V1 item 6 | Responsive desktop density | R-30 / U-8 | partial |
+| post-V1 item 4 | Rich home + diet calendar + TDEE surface | — | dropped (R-28 removed; UI-refactor remainder → R-33) |
+| post-V1 item 5 | In-app onboarding | R-29 | deferred until after R-33 |
+| post-V1 item 6 | Responsive desktop density | R-30 → R-33 | folded into R-33 |
