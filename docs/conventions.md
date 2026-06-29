@@ -24,7 +24,7 @@ tracked in `roadmap.md`).
   - **Pattern B** — `z.number()` + `register(field, { valueAsNumber: true })` + plain `z.infer`, with a single generic per-field message. Used by PhaseDialog/`phases` and `objetivos` (already RHF before R-09; they carry R-02 notes-only / R-05 prefill / R-06 fraction interactions, so converting them is out of scope). Use B only when extending an existing B form where a single message is acceptable.
   - New forms prefer pattern A unless they extend an existing pattern-B form.
 - The shared first-error precedence helper `pickFirstError(errors, orderedKeys, order)` (also `src/lib/zod.ts`) backs each feature's `first<X>Error` wrapper for multi-rule `superRefine` schemas (recipes, diario, templates, planning); the wrapper keeps the feature-named export and passes its ordered key list (D-C2).
-- Single-control, instant-apply settings (the Settings language + theme Selects) are controlled `<Select>`s, not RHF forms — they have no validated submit (theme is localStorage-only per D-F6).
+- Single-control, instant-apply settings (the Settings language segmented buttons + theme `<Select>`) are controlled inputs, not RHF forms — they have no validated submit (theme is localStorage-only per D-F6).
 
 ## Types & macros
 

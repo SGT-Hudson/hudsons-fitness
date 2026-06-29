@@ -323,10 +323,11 @@ rewritten `recalculate-tdee` edge function is deployed.
 
 The training area (`/training` "Hoy" planner, `/routine` + child builder routes)
 lets the user define routines, schedule them as a cycle, and run a workout
-guided. `/exercises` is a "coming soon" placeholder (`EnProgresoPage`) — there is
-no standalone exercise-catalog page; exercise creation and muscle tagging happen
-via the `ExercisePicker` → `ExerciseDialog` flow inside the routine/session
-editors.
+guided. `/exercises` is a full browse/catalog page (`ExercisesPage` — debounced
+search + equipment/category/level/muscle filters + pagination + `ExerciseCard`
+grid) and `/exercises/:id` is a real detail page (`ExerciseDetailPage`).
+Exercise creation and muscle tagging also happen via the `ExercisePicker` →
+`ExerciseDialog` flow inside the routine/session editors.
 
 - **Exercise pool & sessions (R-19 MVP).** A shared, bilingual `exercises` library
   (per-exercise `default_increment_kg`, `primary_muscles` — an array of fine
@@ -378,14 +379,15 @@ editors.
   See R-24 / D-F10.
 
 - **Fine muscle taxonomy (R-26 / D-F11, Project A — #155).** Muscles are a
-  **22-code fine taxonomy** in 6 groups plus a special `full_body`: shoulders
+  **24-code fine taxonomy** in 6 groups plus a special `full_body`: shoulders
   (`delt_front`, `delt_side`, `delt_rear`); chest (`pec_upper`, `pec_lower`); back
-  (`lat`, `trap`, `rhomboids`, `lower_back`); arms (`biceps`, `tri_long`,
+  (`lat`, `trap`, `rhomboids`, `lower_back`, `neck`); arms (`biceps`, `tri_long`,
   `tri_lateral`, `forearms`); core (`abs_upper`, `abs_lower`, `obliques`); legs
-  (`quads`, `hamstrings`, `glutes`, `adductors`, `calves`, `tibialis`). The codes
+  (`quads`, `hamstrings`, `glutes`, `adductors`, `calves`, `tibialis`,
+  `abductors`). The codes
   live in a read-only **`muscles` dictionary table** (`code` PK, `muscle_group`,
   `body_region_slug`, `display_order`, `is_full_body`; one `muscles_select_all`
-  policy, no write policy; 23 seed rows = 22 shadeable codes + `full_body`) that
+  policy, no write policy; 25 seed rows = 24 shadeable codes + `full_body`) that
   mirrors `src/core/muscles.ts`, the canonical structural source — a pgTAP
   anti-drift test guards the two against divergence. Each exercise carries
   **`primary_muscles` text[]** (one or more primary movers) and
@@ -411,8 +413,8 @@ editors.
   rows in the runner overview, the exercise picker, and the session + routine
   editors opens a bilingual step-by-step instruction panel with a start/end
   image loop. The reusable `ExerciseDetail` component adapts to a `density`
-  prop (`compact` in the popup; `full` is built but unmounted until B2c's
-  browse page). The responsive shell is a shadcn `Drawer` (bottom-sheet) on
+  prop (`compact` in the popup; `full` is mounted/live in `ExerciseDetailPage`
+  — B2c, #167). The responsive shell is a shadcn `Drawer` (bottom-sheet) on
   mobile and a Radix `Dialog` on desktop. No schema or RPC change.
 
 ## Product ideas (uncommitted)
