@@ -102,7 +102,7 @@ no change. Existing entries are immutable history and stay as written.
 
 **Why:** The original "frozen to protect history" framing is misleading. The finding established that past phases are computationally **inert**: no code reconstructs which phase was active on a past date — every computational consumer uses `useActivePhase()` (today's phase only); `MacrosChart` draws the target line from today's phase across the whole chart, not the phase active on each historical day. Editing a past phase's macros changes nothing downstream. So the freeze protects nothing integrity-critical; it is purely a UX stance ("history is closed"), not a data invariant. That justifies a softer, more forgiving model: a grace window for late corrections, and forever-editable notes since retrospective annotations affect no computation. Recording the inert-past-phases finding here prevents the integrity misconception from being reintroduced and prevents a needless DB backstop.
 
-**Status:** decided · roadmap: R-02
+**Status:** decided · done (R-02)
 
 ## D-A6 — `bone_kg` removed entirely
 
@@ -110,7 +110,7 @@ no change. Existing entries are immutable history and stay as written.
 
 **Why:** What looked like a static "set once at onboarding" field is actually a mandatory, post-onboarding-editable, friction-adding field that feeds **zero computations**. The finding surfaced three drifts: (1) "set once" is false — it is editable in Settings; (2) it is a mandatory onboarding field that blocks app entry via `isProfileOnboarded()`; (3) it feeds nothing — Mifflin uses weight/height/age/sex, protein uses bf%-derived lean mass, the composition chart never references it; `estimateBoneKg` exists solely to pre-fill the input. The decisive analysis: because `bone_kg` is a single static regression estimate (set once, ~never re-edited), any downstream use would be a constant offset — it changes absolute labels but carries zero trend information, which is the only thing a progress tracker cares about. It must never feed protein/TDEE/targets (that would inject a noisy constant into the app's load-bearing numbers). Marginal flat-band presentational value is not worth a mandatory friction field. This also moots the bone half of D-B5 and simplifies the D-A8 generated-types switch.
 
-**Status:** decided · roadmap: R-03
+**Status:** decided · done (R-03)
 
 ## D-A7 — `initial_weight_kg` read-only after onboarding
 
@@ -134,7 +134,7 @@ no change. Existing entries are immutable history and stay as written.
 
 **Why:** The formula structure was right but mis-housed and mis-anchored. The finding caught three smells: (1) a naming landmine — lean mass was passed into `computeDailyMacroTargets` via a parameter misleadingly named `weightKg`, so any future weight-dependent term would silently get lean mass; (2) the "canonical" fn was not canonical — the protein rule actually lived in the thin `computePhaseTargets` wrapper, contradicting the documented convention; (3) fallback asymmetry — no-bf% fell back to total weight, producing *higher* protein than a user who has bf% data (more data → less protein, inverted). Nutrition analysis: the lean-mass *structure* is the better science (Helms et al.: 2.3–3.1 g/kg FFM for deficit muscle retention), but the old `1.6` default is a *bodyweight* guideline applied to a lean basis, causing systematic under-targeting. The phase-aware lean table fixes the anchor; pre-filling the already-stored per-phase `protein_g_per_kg` *is* the snapshot, so no extra column is needed (this is why D-B2's column-based plan is reversed). The `1.6 g/kg bodyweight` fallback is chosen over assumed-bf% estimation because it is the most recognized literature number, keeps targets sane, and the mild under-target for a bf%-less cutter is a deliberate nudge to log body fat.
 
-**Status:** decided · roadmap: R-05
+**Status:** decided · done (R-05)
 
 ## D-B2 — Default protein 1.6 g/kg — REVERSED, superseded by D-B1
 
@@ -150,7 +150,7 @@ no change. Existing entries are immutable history and stay as written.
 
 **Why:** Fraction storage is mathematically natural for `kcal × fraction`; an integer-percent migration is rescale risk for purely cosmetic gain, and "store grams" is rejected because fat-% is a phase policy input while grams are derived. The implementation was correct but the conversion was duplicated inline in three separate places (read in PhaseDialog, write in PhaseDialog, display in ObjetivosPage) with no shared helper — a drift hazard. Additionally no DB CHECK for the 0.10–0.60 bound was found; the bound may be UI-only via `register` min/max, so a DB constraint should back it.
 
-**Status:** decided · roadmap: R-06
+**Status:** decided · done (R-06)
 
 ## D-B4 — TDEE window — replace with adaptive Kalman model
 
@@ -158,7 +158,7 @@ no change. Existing entries are immutable history and stay as written.
 
 **Why:** The convention was fully implemented and matched exactly, but the finding exposed two real execution defects and a fundamental fragility. Defects: (A) it uses single raw weigh-ins at each window edge instead of the existing `body_measurements_smoothed` 5-day average → roughly ±800 kcal/day noise over 14 days; (B) it always divides by the nominal 14 days though the two picked points can span ~5–20 actual days under the ±3-day tolerance → systematic rate bias. The deeper issue: a two-endpoint method discards all interior measurements and is inherently noise-fragile. An adaptive filter absorbs systematic over/under-estimation automatically, needs no fixed-window recompute, keeps 7700 kcal/kg only as an internal prior, and yields a natural confidence signal from filter variance. 14d/10d/7700/±3d are retired as the primary mechanism.
 
-**Status:** decided · roadmap: R-07
+**Status:** decided · done (R-07)
 
 ## D-B5 — BMR Mifflin — keep as derived/never-stored display; drop 4 dead tdee_estimates cols
 
@@ -170,7 +170,7 @@ But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves w
 
 `bmr_kcal` is denormalization (recompute, don't store, since a historical series is reconstructable any time); `neat_residual_kcal`/`workout_kcal_logged` are pure speculation for a non-existent module (YAGNI, D-A6 precedent); `activity_kcal` (the decomposition) is handed to D-B4. The energy-breakdown chain was descaffolded for these reasons.
 
-**Status:** decided · roadmap: R-08
+**Status:** decided · done (R-08)
 
 ## D-C1 — State mgmt — confirm + decision boundary + Zustand escape hatch
 
@@ -186,7 +186,7 @@ But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves w
 
 **Why:** The inherited convention deliberately ran RHF *without* `zodResolver` because `@hookform/resolvers` was never installed, despite `zod` already being a dependency. That leaves validation hand-rolled via `register` options and `validate` callbacks, inconsistent across ~6–8 forms, while `zod` sits as dead weight. Standardizing on RHF + zod gives one validation model, makes `zod` earn its place, and gives every form a single typed schema as the source of truth (which also resolves D-C3). ObjetivosPage + PhaseDialog already use RHF so they only need `zodResolver` added; the rest convert in one coordinated PR.
 
-**Status:** decided · roadmap: R-09
+**Status:** decided · done (R-09)
 
 ## D-C3 — Form types — implicitly reversed by D-C2 (z.infer)
 
@@ -220,7 +220,7 @@ But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves w
 
 **Why:** The inherited rule banned the shadcn Badge component and mandated inline Tailwind spans, but that has produced 4 copy-pasted badge implementations (including a local `badgeCls` helper) with no shared variant vocabulary — exactly the inconsistency a component prevents. The shadcn Badge is ~50 lines, CVA-based, and matches the existing shadcn-primitive pattern in `components/ui/`; adopting it removes the duplication and gives a single typed variant set (including the amber `warning` variant the app already uses ad hoc). HANDOFF.md's "Missing: badge" line and the inherited CLAUDE.md convention must be updated to reflect the new state.
 
-**Status:** decided · roadmap: R-10
+**Status:** decided · done (R-10)
 
 ## D-D2 — Toasts fire from mutation-owning layer — confirm + tighten
 
@@ -256,7 +256,7 @@ The "body fat at bottom" sub-rule only existed *because* of that incorrect stack
 
 The kg toggle is the more honest view for the key cut question ("am I retaining muscle *mass* while losing fat?" — muscle% can rise merely because fat fell) and costs zero schema/data work. The kg decomposition is presentational only and must not feed protein/TDEE — same guardrail as D-A6's bone analysis. Recording why the old fat+muscle+water stack was a category error (non-disjoint ratios) prevents its reintroduction.
 
-**Status:** decided · roadmap: R-11
+**Status:** decided · done (R-11)
 
 ## D-D6 — Plan = default truth — confirm + single RPC + partial unique index + today-guard
 
@@ -264,7 +264,7 @@ The kg toggle is the more honest view for the key cut question ("am I retaining 
 
 **Why:** The model works, but the finding exposed three real defects. (1) `materializePlanForDate` is hand-mirrored across two runtimes — client TS in `features/diario/api.ts` and re-typed Deno in `daily-nutrition-snapshot/index.ts` (the file literally comments "Server-side mirror of…") — a drift hazard and exactly the single-source-of-truth case the D-C5 RPC invariant targets. (2) No DB-level idempotency: `meal_logs` has no unique constraint on `(user_id, plan_week_slot_id)`; dedup is app-level read-then-write, so a concurrent client effect + cron (or two tabs / fast double-mount) can both read "missing" and double-insert. (3) The client materializes future dates: the architecture spec's Diario-materialization rule says "today or any past date" but `materializePlanForDate` has no `date <= today` bound and `DiarioPage` fires for whatever date is in the URL, so `/diario/<future-date>` inserts future plan slots as already-consumed logs, contradicting "the diary is the truth of what I ate" (the cron is safe; the client is the leak). One INVOKER RPC + a partial unique index + an in-RPC date guard fixes all three at once and enacts the D-C5 invariant; the `date <= today` guard must use the same Madrid-TZ "today" as `previousDayInTZ()` (see D-F4).
 
-**Status:** decided · roadmap: R-12
+**Status:** decided · done (R-12)
 
 ## D-E1 — i18n detection — wire profile.language authoritative
 
@@ -272,7 +272,7 @@ The kg toggle is the more honest view for the key cut question ("am I retaining 
 
 **Why:** This was doc-drift plus a latent cross-device bug. `i18n/index.ts` sets `detection.order = ['localStorage', 'navigator']` with `fallbackLng: 'es'`, so the real precedence is `localStorage → navigator → es` and **`profile.language` is never consulted at boot**. Only Settings persists language to the profile; no app-load/login effect reads it back. Consequence: on a fresh browser or new device (empty localStorage) the user's saved `profile.language` is silently ignored, falling through to navigator → es. For an ES/EN-parity app that is a real UX failure, not just a wording slip. Recording the prior drift here prevents it being reintroduced. Note: D-E4 removes the `LanguageSwitcher` from the authenticated app, so the previously-considered "persist from the switcher when authed" action is dropped — the profile→i18n sync plus Settings (the only authed write path) fully reconcile the pre-auth choice.
 
-**Status:** decided · roadmap: R-13
+**Status:** decided · done (R-13)
 
 ## D-E2 — Stored content never auto-translated — keep; rationale documented
 
@@ -288,7 +288,7 @@ The kg toggle is the more honest view for the key cut question ("am I retaining 
 
 **Why:** `profiles.units` is fully dead — `text not null default 'metric'`, never written by any form (always the default), never read, with no imperial code path anywhere (every display hardcodes kg/g/cm). This is a cleaner-cut removal than D-A6's `bone_kg`: not even a mandatory field, zero UI, zero computations — pure abandoned-design residue. Keeping a dead column as a speculative future hook is exactly the YAGNI pattern D-A6/D-B5 also rejected this session. The shelved imperial-toggle design is preserved in the roadmap/decision record (profile-backed like language, `useUnits()` hook, client-side conversion *only at display/input boundaries via shared helpers*, DB always metric, ft/in input UX, round-trip stability — mirroring the B3 fraction and D-D5 frontend-kg "convert only at the edge" rule) so a future revisit starts from the analysis, not zero.
 
-**Status:** decided · roadmap: R-14
+**Status:** decided · done (R-14)
 
 ## D-E4 — Language toggle — remove header switcher; Settings-only when authed
 
@@ -296,7 +296,7 @@ The kg toggle is the more honest view for the key cut question ("am I retaining 
 
 **Why:** The convention is drifted/false as written. `LanguageSwitcher` is rendered in the persistent `AppLayout` header on *every authenticated page*, directly contradicting "no header switcher in main app." This also compounds the D-E1 bug: the header switcher calls `i18n.changeLanguage` but does **not** persist to `profile.language` (only Settings does), creating two inconsistent authed paths — the app-wide header (non-persisting, loses the preference on a fresh device) and Settings (persisting). Removing the header switcher restores the documented intent, removes header clutter and the dual-path inconsistency, and is consistent with this session's single-source-of-truth pattern (D-D6, D-E3). The pre-auth switcher is correct localStorage-only behavior (no profile row exists yet; the post-onboarding write + D-E1's sync reconcile it). Recording the drift prevents the header switcher being reintroduced.
 
-**Status:** decided · roadmap: R-15
+**Status:** decided · done (R-15)
 
 ## D-F1 — Lint/build gate + no test runner — add CI + tiered tests (spec-first)
 
@@ -304,7 +304,7 @@ The kg toggle is the more honest view for the key cut question ("am I retaining 
 
 **Why:** Scripts were confirmed but the bigger finding is that, at the time of the review, **there was no CI at all** — the review found no `.github/` directory. "MUST pass before push" and the "auto-merge after CI" claim described a gate that did not exist; it was enforced only by manual discipline (Vercel ran `build` post-push but `lint` was gated by nothing and nothing blocked the merge). This was acute at review time because the review queued logic-heavy sprints (B1 protein, B4 Kalman TDEE, B3 helpers, D5 chart math, D6 idempotent RPC) whose correctness is exactly what cheap unit tests guard. A Tier-3 blocker was also discovered: at the time of the review, `supabase/migrations/` held only one file (schema was built via dashboard/MCP), so there was no reproducible migration history to stand up a local DB for RLS/RPC tests — that schema-baseline task is a shared prerequisite (also unblocks D-A8 generated types and the D-A6/D-E3/D-D6 migrations). The tiering keeps Tier 1 cheap and immediate, defers expensive Tier 3 honestly behind its blocker, and excludes E2E as low-ROI for a solo MVP.
 
-**Status:** decided · roadmap: R-16
+**Status:** decided · done (R-16)
 
 ## D-F2 — Auto-merge — repo public + real branch protection + auto-merge
 
@@ -324,7 +324,7 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **Why:** Structure is confirmed and followed, but two findings sit beneath it. (1) `_shared/` is edge↔edge only and cannot bridge client↔edge (Vite browser bundle vs Deno cannot import the same aliased module), so the app's core macro math is duplicated — `_shared/macros.ts` (snake_case) vs client `features/recipes/macros.ts` (camelCase), plus date/TZ helpers vs `src/lib/dates.ts`; the file's own header says "Server-side mirror of…". (2) Dependency pinning is scattered — each function inlines its own `esm.sh` Supabase URL with no import map. The key technical truth: `_shared/macros.ts` is *already* pure and dependency-free (only `Intl`), so importable by Vite too — the only real blocker to one module is casing (edge snake_case vs client camelCase), which D-C4 deliberately ruled. So no transpile/codegen is needed; a literal codegen build step is the fragile form. The shared-pure-core + thin edge adapter keeps D-C4 intact (core camelCase; snake_case confined to the one DB-write mapping) and uses D-F1 golden vectors as the parity regression net.
 
-**Status:** decided · roadmap: R-17
+**Status:** decided · done (R-17)
 
 ## D-F4 — Cron UTC/DST — confirm single-TZ + record pre-specced multi-TZ path
 
@@ -340,7 +340,7 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **Why:** The pattern is correct and soundly implemented (`private.invoke_edge_function` is `SECURITY DEFINER`, `set search_path = ''`, revoked from public/anon/authenticated, reads `cron_service_role_key` by name from `vault.decrypted_secrets`; migration references the secret by name not value → repo clean by design; fails loud if missing). The gaps are operational: (1) silent under-running — if the secret is absent/stale (project restore, re-branch, key rotation) every cron raises with no alerting, and these crons also keep the free project from auto-pausing (double impact); pg_cron also skips (does not overlap) a job's next occurrence if a run overruns — another silent under-run the liveness alert catches. (2) No rotation runbook. (3) `cron_service_role_key` is the full service-role key (bypasses all RLS) — standard for Supabase but D-F2 (go-public) elevates blast-radius stakes. The scaling question is a non-issue by design (3 fixed job rows regardless of user count; per-user fan-out is inside the edge fn loop, not pg_cron rows); the real future ceiling is a single invocation processing all profiles exceeding the edge execution-time limit (deferrable via batch/queue/shard). The D-F2 secrets-history scan must explicitly verify the `cron_service_role_key` *value* never appeared in any commit (expected clean — name only).
 
-**Status:** decided · roadmap: R-18
+**Status:** decided · done (R-18)
 
 ## D-F6 — Theme localStorage/FOUC — confirm + document the D-E1 contrast
 
@@ -372,7 +372,7 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **(e) `set_active_program` is kept as an RPC despite mutating a single table.** The D-C5 invariant requires an RPC only for >1-table atomic mutations; technically a client-side `UPDATE programs SET is_active = false WHERE user_id = … AND is_active; UPDATE programs SET is_active = true … ` would work. It is an RPC anyway because the two `UPDATE`s must be atomic with respect to the partial unique index: between the two client-side statements the index would transiently see two active rows, causing a constraint violation. A single RPC deactivates all others then activates the target in one transaction, making the flip always safe.
 
-**Status:** decided · roadmap: R-22
+**Status:** decided · done (R-22)
 
 ## D-F9 — F-3 guided active-workout runner: client-only persistence, pure reducer, PWA wake-lock, integer RPE, partial-on-leave
 
@@ -388,7 +388,7 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **(e) Leaving an in-progress exercise demotes it (partial / pending), never stranded.** `activate()` demotes the exercise being left: `partial` if a working set was logged (kept in the save payload, resumable at its first unrecorded set) or back to `pending` if nothing was logged — both remain jump-back-able in the overview. This fixed a bug where the left exercise stayed `active` (limbo: shown as "jump" but un-clickable). "Skip current" likewise targets the exercise about to be performed (`focusIndex`), never a finished one; "End exercise" finishes early keeping recorded sets (so users never fake a 0/0 set to stop).
 
-**Status:** decided · roadmap: R-23
+**Status:** decided · done (R-23)
 
 ## D-F10 — F-4 muscle activity heatmap: secondary-mover weight, coarse-12 taxonomy, pluggable body-art skin, inline placement, pure volume core
 
@@ -423,5 +423,7 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **(e) P1(a) — fine data now, current MIT art.** MuscleWiki art stays rejected (proprietary, public repo — D-F10 c). The data model is fully fine now; the heatmap renders at whatever the vendored MIT art distinguishes (core/back/legs gain visible detail; shoulders/chest/triceps co-shade) and finer license-clean art later changes only the skin's region map — no data/model change. Tagging UI = a single grouped tri-state `MuscleTagField` (neutral → Primary → Secondary → remove); picker filter optgroup'd, PostgREST `primary_muscles.cs.{code}`.
 
 **Out of scope → Project B (R-27):** bulk catalog content + tagging-accuracy verification; group-level picker filter, group-name search, lay-term aliases.
+
+**Update (2026-06-05) — runtime taxonomy extended to 24 shadeable codes (Project B1, #158).** Catalog ingestion added two fine codes beyond the (a) enumeration: `neck` (group **back**, `body_region_slug` `neck`, `display_order` 23) and `abductors` (group **legs**, `body_region_slug` `gluteal` — co-shaded with `glutes` under the current MIT art, `display_order` 24); both shadeable (`is_full_body = false`). The runtime model is therefore now **24 shadeable fine codes + `full_body`** (back → 5 codes, legs → 7); `src/core/muscles.ts` and the `muscles` seed both hold 25 rows. No separate `D-xx` was opened for the extension.
 
 **Status:** decided · done (R-26, #155 + the `20260604130000` retag-review fix)

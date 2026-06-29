@@ -136,7 +136,8 @@ decision rationale in `decisions.md`.
 
 - **Muscle model (#155).** Replaced the coarse-12 `primary_muscle` taxonomy with a
   22-code fine taxonomy in 6 groups (shoulders/chest/back/arms/core/legs) + the
-  special `full_body`. New `public.muscles` table — `code` (pk), `muscle_group`
+  special `full_body` (later extended to 24 shadeable codes when #158 added `neck` +
+  `abductors`). New `public.muscles` table — `code` (pk), `muscle_group`
   (CHECK), `body_region_slug`, `display_order`, `is_full_body`; RLS read-only
   (`muscles_select_all` SELECT-true, no write policy); 23 seed rows (22 shadeable
   codes + `full_body`). It mirrors `src/core/muscles.ts` (the canonical TS structural
@@ -171,12 +172,14 @@ decision rationale in `decisions.md`.
   to the 22 fine codes + `full_body`; new block `exerciseDialog.muscleGroup.<group>`
   (6 labels); `hamstrings` relabelled "Femorales" → "Isquiosurales".
 - **Migrations + tests (#155).** `20260604120000` (muscles table + schema swap +
-  re-tag) and follow-up `20260604130000_fine_taxonomy_retag_review_fixes.sql` (an
-  expert anatomical review corrected 3 rows: Deadlift → hamstrings promoted to
-  primary; Kettlebell swing → +forearms secondary; Overhead press → +trap
-  secondary). New pgTAP suite `supabase/tests/05_muscles.test.sql` (seed
+  re-tag). New pgTAP suite `supabase/tests/05_muscles.test.sql` (seed
   completeness, anti-drift vs `core/muscles.ts`, trigger rejects unknown /
   full-body-as-secondary, every system row has ≥1 primary). See R-26 / D-F11.
+- **Retag review fix (#156).** Follow-up migration
+  `20260604130000_fine_taxonomy_retag_review_fixes.sql` (an expert anatomical review
+  corrected 3 rows: Deadlift → hamstrings promoted to primary; Kettlebell swing →
+  +forearms secondary; Overhead press → +trap secondary), shipped alongside a docs
+  reconcile to shipped state.
 
 ### 2026-05-19 → 2026-06-04 — F-1/F-2 training + nutrition batch (backfill)
 
@@ -210,9 +213,11 @@ decision rationale in `decisions.md`.
 
 ### 2026-06-03 — R-16 Tier-3 pgTAP + R-25 hide fix
 
-- **R-16 Tier-3 pgTAP suite + db-test CI job (#149/#150).** pgTAP suites `00_schema`
-  .. `05_muscles` run as a `db-test` job inside `.github/workflows/ci.yml` (uses the
-  new minimal `supabase/config.toml`, required on `develop`). Closes the "Tier-3
+- **R-16 Tier-3 pgTAP suite + db-test CI job (#148).** pgTAP suites `00_schema`
+  .. `04_rpc` (later joined by `05_muscles` from R-26) run as a `db-test` job inside
+  `.github/workflows/ci.yml` (uses the new minimal `supabase/config.toml`, required on
+  `develop`). Test-file refinements followed: **#149** repaired apply-from-zero
+  (`00_schema`); **#150** made tests `01`–`04` green on `develop`. Closes the "Tier-3
   gated" gaps noted in the earlier R-19 / R-01 entries. Only the R-22 UPDATE
   WITH-CHECK gap remains as a pgTAP todo.
 - **R-25 hide drops the reference row only (#151).** Migration
@@ -297,8 +302,10 @@ decision rationale in `decisions.md`.
 | 124 | Settings — grouped-list redesign | Grouped-list / drill-in Settings redesign |
 | 127 | F-2 — exercise search-by-muscle | Muscle filter wired into the exercise picker |
 | 128 | F-2b — warm-up sets | `routine_exercises.warmup_sets` jsonb |
-| 149 | R-16 — Tier-3 pgTAP suite | pgTAP suites `00_schema`..`04_*` for RLS / RPC; closes R-19/R-01 Tier-3 gaps |
-| 150 | R-16 — db-test CI job | `db-test` job (`supabase start` + pgTAP) in `ci.yml`, required on `develop`; minimal `supabase/config.toml` |
+| 148 | R-16 — Tier-3 pgTAP suite + db-test CI job | pgTAP suites `00_schema`..`04_*` for RLS / RPC + `db-test` job (`supabase start` + pgTAP) in `ci.yml` (required on `develop`) + minimal `supabase/config.toml`; closes R-19/R-01 Tier-3 gaps |
+| 149 | R-16 — Tier-3 test refinement | Repair apply-from-zero so `db-test` runs (`00_schema.test.sql`) |
+| 150 | R-16 — Tier-3 test refinement | Make tests `01`–`04` green on `develop` |
 | 151 | R-25 — hide drops ref only | `20260603120000_r25_hide_drops_ref_only.sql` — hide drops only the reference row, pool ownership retained |
-| 155 | R-26 — fine muscle taxonomy | `public.muscles` table (22 fine codes + `full_body`, mirrors `core/muscles.ts`); `exercises.primary_muscles[]` (multi-primary) replacing singular `primary_muscle`; `validate_exercise_muscles` trigger; finer-resolution heatmap (per-primary 1.0); `MuscleTagField` grouped tri-state tagging + `<optgroup>`'d picker filter (`primary_muscles.cs.{code}`); i18n re-key to fine codes; migrations `20260604120000` + `20260604130000` retag-review fix; pgTAP `05_muscles`. See R-26 / D-F11 |
+| 155 | R-26 — fine muscle taxonomy | `public.muscles` table (22 fine codes + `full_body`, mirrors `core/muscles.ts`); `exercises.primary_muscles[]` (multi-primary) replacing singular `primary_muscle`; `validate_exercise_muscles` trigger; finer-resolution heatmap (per-primary 1.0); `MuscleTagField` grouped tri-state tagging + `<optgroup>`'d picker filter (`primary_muscles.cs.{code}`); i18n re-key to fine codes; migration `20260604120000`; pgTAP `05_muscles`. See R-26 / D-F11 |
+| 156 | R-26 — docs reconcile + retag review fix | Reconcile docs to shipped state + migration `20260604130000_fine_taxonomy_retag_review_fixes.sql` (3 anatomical re-tags: Deadlift +hamstrings primary, Kettlebell swing +forearms, Overhead press +trap) |
 
