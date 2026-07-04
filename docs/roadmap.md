@@ -40,7 +40,17 @@ reference shard carries it (never edit the decision entry).
 - R-30 — Responsive desktop density, per-feature (REMOVED 2026-06-11 — folded into R-33)
 - R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — deferred from R-27
 - R-32 — DB-integration test tier / e2e guard for PostgREST select strings
-- R-33 — UI redesign (colors, typography, app-wide visual overhaul) — design in progress
+- R-33 — UI redesign: design system + nutrition screens (spec 2026-07-02)
+- R-34 — Gym screens redesign (blocked on gym design convergence)
+- R-35 — Shopping list from the planned week
+- R-36 — Recipe steps & photos (schema + editor + settings)
+- R-37 — Interactive TDEE calculator linked from the phase editor
+- R-38 — Progress analytics extras (adherence heatmap, ETA banner, energy balance, custom range)
+- R-39 — Measurement extras (progress photos, streak, smart-scale source toggle)
+- R-40 — cmd-K command palette (navigate-only)
+- R-41 — Planner recipe suggestions by macro fit (add-drawer V2)
+- R-42 — Per-phase default template
+- R-43 — Small verifications & leftovers (ingredient is_verified, comida libre, meal times, bell, glyphs)
 - Feature & UX family index (F-x / U-x / post-V1 items / Projects A–B) — at end
 
 ## R-00 — Baseline current schema into migrations
@@ -1113,17 +1123,104 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   must be verified against a real DB / the running app before merge — typecheck +
   `pnpm test` are not sufficient.
 
-## R-33 — UI redesign (colors, typography, app-wide visual overhaul)
-- **decision:** (D-id when the design converges)
-- **blocked-by:** — (design in progress outside the repo)
-- **status:** design in progress (2026-06-11) — being designed externally with
-  Claude design; this is a placeholder entry so other items can reference it.
-  Scope lands here once the design converges.
-- **scope (provisional):** new color palette, typography change, and a broader
-  app-wide visual overhaul (details TBD by the design). Absorbs **R-30**
-  (per-feature desktop density / the U-8 visual pass) and is the reframed home
-  of post-V1 item 4's UI-refactor remainder; **R-29** (onboarding) is sequenced
-  after it so onboarding teaches the final UI.
+## R-33 — UI redesign: design system + nutrition screens
+- **decision:** (D-ids at impl time: TW4+token architecture, navigation IA,
+  Rubik, tone system + fat floor, heatmap ramp)
+- **blocked-by:** —
+- **status:** spec done (2026-07-02) — design converged; full spec in
+  `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md`. Execution
+  pending (~12 PRs: 2 foundation + shell + tone core + 8 nutrition screen
+  waves).
+- **scope:** apply the external Claude-design canvas in two layers:
+  1. **Foundation retheme (app-wide, gym included):** Tailwind v4 migration;
+     `tokens.css` oklch token system as the app's source; Rubik + Geist Mono
+     self-hosted; restyled shadcn primitives; hardcoded-palette sweep;
+     `--entreno`→blue (`--gym`); heatmap ramp light→blue.
+  2. **Redesigned nutrition screens:** new shell/navigation ("dos apps en
+     una": two bottom navs + section switch + `/more` hub on mobile,
+     collapsible grouped sidebar + PageHeaderV2 on web), the phase-aware
+     semantic tone core (`src/core/nutritionTone.ts` — the only new logic),
+     and per-feature restyle waves for Diario, Planificador, Plantillas,
+     Recetas, Ingredientes, Progreso, Objetivos, Ajustes/Más (web + mobile).
+  Net-new features drawn in the artboards are **out of scope** → R-35…R-43.
+  Gym screens → **R-34**. Absorbs **R-30** and post-V1 item 4's UI-refactor
+  remainder; **R-29** (onboarding) stays sequenced after it.
+
+## R-34 — Gym screens redesign
+- **decision:** (D-id at spec time)
+- **blocked-by:** gym design convergence (canvas holes: program builder,
+  manual session editor/history detail, most web screens, exercise-filter
+  exploration V1/V2/V3, runner intermediate states)
+- **status:** todo (spawned by R-33 spec, 2026-07-02). The R-33 foundation
+  retheme already reaches gym; this item is the gym *layouts/flows*.
+- **scope:** apply the gym artboards (22 mobile) once the design closes:
+  Hoy hero card, numbered workout editor, runner enhancements (fullscreen
+  rest timer, finish modal, summary), plus artboard extras (tonnage, streaks,
+  free session, %1RM prescriptions, session share) to triage at spec time.
+
+## R-35 — Shopping list from the planned week
+- **decision:** (D-id at spec time)
+- **blocked-by:** R-33 (Planificador wave ships the button's home)
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** consolidated/per-recipe views, check-off, share, extra items.
+  Flat list until ingredient categories exist.
+
+## R-36 — Recipe steps & photos
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** schema for structured/reorderable steps, per-step photos,
+  favorites, prep time, private notes; editor UI; "Fotos de los pasos"
+  setting; photo-storage decisions.
+
+## R-37 — Interactive TDEE calculator
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** Mifflin-St Jeor + Katch-McArdle with activity multipliers,
+  linked from the phase editor. Derived-only (hard invariant 5).
+
+## R-38 — Progress analytics extras
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** nutrition adherence heatmap calendar, ETA banner + projection
+  (eta.ts/trend.ts data largely exists), energy-balance visual, custom
+  date-range filter.
+
+## R-39 — Measurement extras
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** progress photo attach, measurement streak, smart-scale source
+  toggle (ties to the post-V1 scale integration).
+
+## R-40 — cmd-K command palette
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** navigate-only per the canvas decision.
+
+## R-41 — Planner recipe suggestions by macro fit
+- **decision:** (D-id at spec time)
+- **blocked-by:** R-33 (builds on the V1 add-drawer)
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** the "Añadir receta" drawer V2 — fit-scored suggestions + FitRing.
+
+## R-42 — Per-phase default template
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** pick a default meal-plan template per phase; auto-apply when
+  planning weeks of that phase.
+
+## R-43 — Small verifications & leftovers
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** ingredient `is_verified` + verify flow; "comida libre" free
+  entries; per-meal times; notifications bell (ties to the notifications
+  backlog); MealLogEntry per-meal glyph set.
 
 ## Feature & UX family index
 
