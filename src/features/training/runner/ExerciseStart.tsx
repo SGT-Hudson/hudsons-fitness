@@ -59,7 +59,7 @@ export function ExerciseStart({ exercise, exerciseName, coachContext, onSetWorki
               aria-label={t('runner.workingWeight')}
               value={ww || ''}
               onChange={(e) => onSetWorkingWeight(Math.max(0, Number(e.target.value)))}
-              className="w-24 border-0 bg-transparent p-0 text-center text-4xl font-bold tabular-nums focus:outline-none focus:ring-0"
+              className="w-24 border-0 bg-transparent p-0 text-center text-4xl font-bold tabular-nums focus:outline-hidden focus:ring-0"
             />
             <span className="text-lg font-medium text-muted-foreground">kg</span>
           </div>

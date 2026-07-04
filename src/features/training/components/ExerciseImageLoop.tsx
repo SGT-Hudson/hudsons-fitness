@@ -68,7 +68,7 @@ export function ExerciseImageLoop({ images, name, density }: Props) {
         <div
           className={cn(
             'relative w-full bg-muted',
-            density === 'compact' ? 'aspect-[4/3] max-h-44' : 'aspect-[4/3]',
+            density === 'compact' ? 'aspect-4/3 max-h-44' : 'aspect-4/3',
           )}
         >
           {frames('cover')}
@@ -78,7 +78,7 @@ export function ExerciseImageLoop({ images, name, density }: Props) {
       <Dialog open={enlarged} onOpenChange={setEnlarged}>
         <DialogContent className="max-w-2xl">
           <DialogTitle className="sr-only">{name}</DialogTitle>
-          <div className="relative aspect-[4/3] w-full">{frames('contain')}</div>
+          <div className="relative aspect-4/3 w-full">{frames('contain')}</div>
         </DialogContent>
       </Dialog>
     </>

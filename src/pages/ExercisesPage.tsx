@@ -88,7 +88,7 @@ export function ExercisesPage() {
         <ul data-testid="exercise-skeleton-grid" className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <li key={i}>
-              <Card><div className="aspect-[4/3] w-full"><Skeleton className="h-full w-full" /></div>
+              <Card><div className="aspect-4/3 w-full"><Skeleton className="h-full w-full" /></div>
                 <CardContent className="space-y-2 py-3">
                   <Skeleton className="h-4 w-2/3" /><Skeleton className="h-3 w-1/2" />
                 </CardContent>

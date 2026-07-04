@@ -45,7 +45,7 @@ export function ExerciseInfoButton({ exercise, exerciseId }: Props) {
   ) : (
     <div role="status" className="space-y-3">
       <Skeleton className="h-6 w-2/3" />
-      <Skeleton className="aspect-[4/3] w-full" />
+      <Skeleton className="aspect-4/3 w-full" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-5/6" />
     </div>

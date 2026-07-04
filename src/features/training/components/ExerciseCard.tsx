@@ -16,9 +16,9 @@ export function ExerciseCard({ exercise }: Props) {
   const primary = exercise.primary_muscles[0];
 
   return (
-    <Link to={`/exercises/${exercise.id}`} className="block focus:outline-none focus:ring-2 focus:ring-ring rounded-lg">
+    <Link to={`/exercises/${exercise.id}`} className="block focus:outline-hidden focus:ring-2 focus:ring-ring rounded-lg">
       <Card className="h-full overflow-hidden hover:shadow-md transition-shadow">
-        <div className="aspect-[4/3] w-full bg-muted flex items-center justify-center overflow-hidden">
+        <div className="aspect-4/3 w-full bg-muted flex items-center justify-center overflow-hidden">
           {src ? (
             <img src={src} alt={name} loading="lazy" className="h-full w-full object-cover" />
           ) : (
