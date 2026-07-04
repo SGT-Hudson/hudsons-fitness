@@ -10,7 +10,7 @@ exports[`ExerciseDetail > snapshots the full (visual-first) density layout 1`] =
     type="button"
   >
     <div
-      class="relative w-full bg-muted aspect-[4/3]"
+      class="relative w-full bg-muted aspect-4/3"
     >
       <img
         alt="Press de banca — posición inicial"

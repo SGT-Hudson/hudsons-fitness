@@ -91,7 +91,7 @@ export function PaginationBar({
           value={String(pageSize)}
           onValueChange={(v) => onPageSizeChange(Number(v) as PageSize)}
         >
-          <SelectTrigger className="h-8 w-[4.75rem] ml-1" aria-label={t('perPage')}>
+          <SelectTrigger className="h-8 w-19 ml-1" aria-label={t('perPage')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

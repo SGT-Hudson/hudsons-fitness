@@ -97,7 +97,7 @@ export function SettingsPage() {
 
       <Link
         to="/settings/profile"
-        className="flex items-center gap-4 rounded-xl border bg-gradient-to-br from-primary/5 to-primary/10 p-4 transition-colors hover:from-primary/10 hover:to-primary/15"
+        className="flex items-center gap-4 rounded-xl border bg-linear-to-br from-primary/5 to-primary/10 p-4 transition-colors hover:from-primary/10 hover:to-primary/15"
       >
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
           {initial}

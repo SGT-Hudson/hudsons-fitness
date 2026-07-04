@@ -116,7 +116,7 @@ export function BarcodeScanner({ onDetected }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="relative overflow-hidden rounded-md bg-black aspect-[4/3]">
+      <div className="relative overflow-hidden rounded-md bg-black aspect-4/3">
         <video ref={videoRef} className="h-full w-full object-cover" />
         <div className="pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 h-20 border-2 border-white/80 rounded" />
         {status === 'starting' && (
