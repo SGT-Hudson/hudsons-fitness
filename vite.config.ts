@@ -15,7 +15,7 @@ export default defineConfig({
         name: "Hudson's Fitness",
         short_name: 'Hudson',
         description: 'Bilingual fitness tracker — macros, recipes, meal plans, body composition.',
-        theme_color: '#16a34a',
+        theme_color: '#13702f',
         background_color: '#0f172a',
         display: 'standalone',
         start_url: '/',

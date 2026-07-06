@@ -18,6 +18,41 @@
   max-width: 1280px; /* canvas --content-max (V2 web convention) */
 }
 
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+@utility text-title-screen {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@utility text-title-sheet {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@utility text-title-card {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@utility text-body-app {
+  font-size: 12.5px;
+  font-weight: 400;
+}
+@utility text-meta {
+  font-size: 11px;
+  font-weight: 500;
+}
+@utility text-cap-label {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
 /* ── Design tokens — ported from canvas tokens.css (source of truth) ── */
 :root {
   /* Neutrals (light) — warm tinted */
@@ -257,6 +292,10 @@
 }
 
 @theme {
+  /* Typography — self-hosted (fontsource), no CDN font requests */
+  --font-sans: 'Rubik Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'JetBrains Mono', monospace;
+
   /* Radii — canvas scale; shadcn names map onto it (cards md·14, fields sm·10) */
   --radius-xs: 6px;
   --radius-sm: 10px;
@@ -320,8 +359,9 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-      'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    @apply bg-background text-foreground font-sans;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 }
