@@ -15,11 +15,11 @@ describe('nav-config', () => {
   });
 
   it('sectionOf maps section-owned routes to their section', () => {
-    expect(sectionOf('/diary')).toBe('nutricion');
-    expect(sectionOf('/diary/2026-05-21')).toBe('nutricion');
-    expect(sectionOf('/recipes/ingredients')).toBe('nutricion');
-    expect(sectionOf('/training')).toBe('entreno');
-    expect(sectionOf('/routine')).toBe('entreno');
+    expect(sectionOf('/diary')).toBe('nutri');
+    expect(sectionOf('/diary/2026-05-21')).toBe('nutri');
+    expect(sectionOf('/recipes/ingredients')).toBe('nutri');
+    expect(sectionOf('/training')).toBe('gym');
+    expect(sectionOf('/routine')).toBe('gym');
   });
 
   it('sectionOf returns null for shared routes', () => {
@@ -29,17 +29,17 @@ describe('nav-config', () => {
   });
 
   it('bottom nav shows the section tabs plus shared Progreso', () => {
-    const nut = bottomNavItems('nutricion').map((i) => i.key);
+    const nut = bottomNavItems('nutri').map((i) => i.key);
     expect(nut).toEqual(['diary', 'planner', 'recipes', 'progress']);
-    const ent = bottomNavItems('entreno').map((i) => i.key);
+    const ent = bottomNavItems('gym').map((i) => i.key);
     expect(ent).toEqual(['today', 'routine', 'exercises', 'progress']);
   });
 
-  it('sidebar groups render shared, then nutricion, then entreno', () => {
+  it('sidebar groups render shared, then nutri, then gym', () => {
     expect(sidebarGroups().map((g) => g.group)).toEqual([
       'shared',
-      'nutricion',
-      'entreno',
+      'nutri',
+      'gym',
     ]);
     const shared = sidebarGroups()[0].items.map((i) => i.key);
     expect(shared).toEqual(['progress']);

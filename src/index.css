@@ -42,11 +42,11 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
-  --color-nutricion: hsl(var(--nutricion));
-  --color-nutricion-foreground: hsl(var(--nutricion-foreground));
+  --color-nutri: hsl(var(--nutri));
+  --color-nutri-foreground: hsl(var(--nutri-foreground));
 
-  --color-entreno: hsl(var(--entreno));
-  --color-entreno-foreground: hsl(var(--entreno-foreground));
+  --color-gym: hsl(var(--gym));
+  --color-gym-foreground: hsl(var(--gym-foreground));
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -124,10 +124,10 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 142.1 76.2% 36.3%;
-    --nutricion: 142.1 76.2% 36.3%;
-    --nutricion-foreground: 0 0% 100%;
-    --entreno: 0 72.2% 50.6%;
-    --entreno-foreground: 0 0% 100%;
+    --nutri: 142.1 76.2% 36.3%;
+    --nutri-foreground: 0 0% 100%;
+    --gym: 0 72.2% 50.6%;
+    --gym-foreground: 0 0% 100%;
     --radius: 0.5rem;
   }
 
@@ -151,10 +151,10 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 142.4 71.8% 29.2%;
-    --nutricion: 142.1 70.6% 45.3%;
-    --nutricion-foreground: 144.9 80.4% 10%;
-    --entreno: 0 72.2% 58%;
-    --entreno-foreground: 0 0% 100%;
+    --nutri: 142.1 70.6% 45.3%;
+    --nutri-foreground: 144.9 80.4% 10%;
+    --gym: 0 72.2% 58%;
+    --gym-foreground: 0 0% 100%;
   }
 
   * {

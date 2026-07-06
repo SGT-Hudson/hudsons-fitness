@@ -5,8 +5,8 @@ import { bottomNavItems, type Section } from './nav-config';
 import { useActiveSection } from './useActiveSection';
 
 const ACTIVE: Record<Section, string> = {
-  nutricion: 'text-nutricion',
-  entreno: 'text-entreno',
+  nutri: 'text-nutri',
+  gym: 'text-gym',
 };
 
 export function BottomNav() {

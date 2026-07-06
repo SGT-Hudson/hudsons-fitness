@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { AvatarMenu } from './AvatarMenu';
-import { sidebarGroups, type NavGroup } from './nav-config';
+import { sidebarGroups, SECTION_I18N_KEY, type NavGroup } from './nav-config';
 
 const ACTIVE: Record<NavGroup, string> = {
   shared: 'bg-accent text-foreground before:bg-foreground',
-  nutricion: 'bg-nutricion/10 text-nutricion before:bg-nutricion',
-  entreno: 'bg-entreno/10 text-entreno before:bg-entreno',
+  nutri: 'bg-nutri/10 text-nutri before:bg-nutri',
+  gym: 'bg-gym/10 text-gym before:bg-gym',
 };
 
 export function AppSidebar() {
@@ -31,7 +31,7 @@ export function AppSidebar() {
           <div key={group} className="space-y-1">
             {group !== 'shared' && (
               <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                {t(`section.${group}`)}
+                {t(`section.${SECTION_I18N_KEY[group]}`)}
               </p>
             )}
             {items.map((item) => {
