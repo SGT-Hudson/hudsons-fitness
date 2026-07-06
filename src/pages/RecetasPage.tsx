@@ -280,7 +280,7 @@ export function RecetasPage() {
                       <Star
                         className={cn(
                           'h-4 w-4',
-                          favorites.has(r.id) && 'fill-amber-400 text-amber-400',
+                          favorites.has(r.id) && 'fill-amber text-amber',
                         )}
                       />
                     </Button>
@@ -351,7 +351,7 @@ export function RecetasPage() {
                     <Star
                       className={cn(
                         'h-4 w-4',
-                        favorites.has(r.id) && 'fill-amber-400 text-amber-400',
+                        favorites.has(r.id) && 'fill-amber text-amber',
                       )}
                     />
                   </Button>

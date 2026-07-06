@@ -160,7 +160,7 @@ export function MacrosChart() {
         {(tdeeConfidence === 'low' || tdeeConfidence === 'medium') && (
           <p
             role="note"
-            className="text-xs rounded-md px-2 py-1 bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+            className="text-xs rounded-md px-2 py-1 bg-amber-soft text-amber-ink"
           >
             {tdeeConfidence === 'low'
               ? t('charts.macros.tdeeConfidence.low')

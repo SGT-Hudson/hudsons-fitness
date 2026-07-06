@@ -31,7 +31,7 @@ interface Props {
 }
 
 const TONE_CLASS: Record<DeltaTone, string> = {
-  good: 'text-emerald-600 dark:text-emerald-400',
+  good: 'text-tone-good',
   bad: 'text-destructive',
   neutral: 'text-muted-foreground',
 };
@@ -244,7 +244,7 @@ export function LatestMeasurementCard({
         {!isToday && (
           <div
             role="status"
-            className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-200"
+            className="rounded-md border border-transparent bg-amber-soft px-3 py-2 text-sm text-amber-ink"
           >
             {t('latest.stale.prefix')} {staleLabel} · {t('latest.stale.usingValues')}
           </div>

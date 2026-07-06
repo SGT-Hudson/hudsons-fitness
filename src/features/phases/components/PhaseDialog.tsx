@@ -165,7 +165,7 @@ export function PhaseDialog({
           {notesOnly && (
             <p
               role="note"
-              className="text-xs rounded-md bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 px-3 py-2"
+              className="text-xs rounded-md bg-amber-soft text-amber-ink px-3 py-2"
             >
               {t('phases.form.notesOnlyHint')}
             </p>

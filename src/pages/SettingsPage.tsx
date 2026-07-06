@@ -17,10 +17,10 @@ type Lang = 'es' | 'en';
 type Tone = 'indigo' | 'green' | 'amber' | 'rose';
 
 const TONE: Record<Tone, string> = {
-  indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400',
-  green: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
-  amber: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400',
-  rose: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400',
+  indigo: 'bg-gym-soft text-gym-ink',
+  green: 'bg-nutri-soft text-nutri-ink',
+  amber: 'bg-amber-soft text-amber-ink',
+  rose: 'bg-danger-soft text-danger-ink',
 };
 
 function IconChip({ tone, children }: { tone: Tone; children: React.ReactNode }) {

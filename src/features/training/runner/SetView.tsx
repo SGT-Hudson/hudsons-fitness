@@ -150,6 +150,6 @@ function round(n: number): number {
 function perfClass(current: number, baseline: number | null): string {
   if (baseline == null) return '';
   if (current > baseline) return 'text-[var(--primary)]';
-  if (current < baseline) return 'text-amber-400';
+  if (current < baseline) return 'text-tone-warn';
   return '';
 }

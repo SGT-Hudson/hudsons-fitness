@@ -1,18 +1,13 @@
-function lerp(a: number, b: number, t: number): number {
-  return Math.round(a + (b - a) * t);
-}
-
-/** Map a value in [0, max] to grey→amber→red. Zero/no-data returns the neutral grey. */
+/**
+ * Map a value in [0, max] to the gym-blue heat ramp (zero → --heat-zero,
+ * max → --gym), token-driven via color-mix so light/dark both resolve.
+ */
 export function muscleColor(value: number, max: number): string {
-  if (value <= 0 || max <= 0) return '#e5e7eb';
+  if (value <= 0 || max <= 0) return 'var(--heat-zero)';
   const t = Math.min(1, value / max);
-  if (t < 0.5) {
-    const k = t / 0.5;
-    return `rgb(${lerp(229, 253, k)},${lerp(231, 186, k)},${lerp(235, 116, k)})`;
-  }
-  const k = (t - 0.5) / 0.5;
-  return `rgb(${lerp(253, 220, k)},${lerp(186, 38, k)},${lerp(116, 38, k)})`;
+  const pct = Math.round(15 + t * 85); // floor 15% so the lowest load is visibly tinted
+  return `color-mix(in oklab, var(--gym) ${pct}%, var(--heat-zero))`;
 }
 
-/** Fill for non-muscle parts (head/hands/feet) — slightly distinct from the zero-set grey. */
-export const NEUTRAL_PART = '#e3e5e9';
+/** Fill for non-muscle parts (head/hands/feet) — distinct from the zero fill. */
+export const NEUTRAL_PART = 'var(--heat-part)';
