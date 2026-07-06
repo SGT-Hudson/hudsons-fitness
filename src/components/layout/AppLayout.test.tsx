@@ -29,4 +29,33 @@ describe('AppLayout', () => {
     expect(screen.getByRole('button', { name: /Nutrición/ })).toBeInTheDocument();
     expect(screen.getByText('Entreno')).toBeInTheDocument();
   });
+
+  it('toggles the section-accent class on <html> (not the layout div) so portaled overlays inherit it', () => {
+    // MemoryRouter builds its history once from initialEntries at mount, so each
+    // route under test needs its own render/unmount rather than a single rerender.
+    const gym = render(
+      <MemoryRouter initialEntries={['/training']}>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/training" element={<div>training-content</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(document.documentElement.classList.contains('section-gym')).toBe(true);
+    expect(document.documentElement.classList.contains('section-nutri')).toBe(false);
+    gym.unmount();
+
+    render(
+      <MemoryRouter initialEntries={['/diary']}>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/diary" element={<div>diary-content</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(document.documentElement.classList.contains('section-nutri')).toBe(true);
+    expect(document.documentElement.classList.contains('section-gym')).toBe(false);
+  });
 });

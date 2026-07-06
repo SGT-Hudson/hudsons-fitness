@@ -152,7 +152,7 @@ export function IngredientFormFields({ value, onChange, idPrefix = 'ing' }: Prop
           />
         </div>
         {showSubWarning && (
-          <p className="text-xs text-amber-600 dark:text-amber-500">{t('form.subMacroWarning')}</p>
+          <p className="text-xs text-tone-warn">{t('form.subMacroWarning')}</p>
         )}
       </div>
     </div>

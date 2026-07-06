@@ -347,7 +347,7 @@ function OFFSearchPanel({
                     'w-full flex items-center gap-3 rounded-md border p-2 text-left transition-colors ' +
                     (isPicked
                       ? 'border-primary bg-primary/5'
-                      : 'hover:bg-accent hover:text-accent-foreground')
+                      : 'hover:bg-muted hover:text-foreground')
                   }
                 >
                   {r.thumbnailUrl ? (

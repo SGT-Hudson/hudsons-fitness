@@ -94,7 +94,7 @@ export function RecipeAutocomplete({ selected, onSelect, onClear }: Props) {
                 <button
                   type="button"
                   className={cn(
-                    'w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground',
+                    'w-full text-left px-3 py-2 text-sm hover:bg-muted hover:text-foreground',
                     'flex items-center gap-2 justify-between',
                   )}
                   onClick={() => {

@@ -108,7 +108,7 @@ export function IngredientAutocomplete({ selected, onSelect, onClear }: Props) {
                   <button
                     type="button"
                     className={cn(
-                      'w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground',
+                      'w-full text-left px-3 py-2 text-sm hover:bg-muted hover:text-foreground',
                       'flex items-center gap-2 justify-between',
                     )}
                     onClick={() => {
@@ -133,7 +133,7 @@ export function IngredientAutocomplete({ selected, onSelect, onClear }: Props) {
             {showCreate && (
               <button
                 type="button"
-                className="w-full text-left px-3 py-2 text-sm font-medium text-primary border-t hover:bg-accent flex items-center gap-2"
+                className="w-full text-left px-3 py-2 text-sm font-medium text-primary border-t hover:bg-muted flex items-center gap-2"
                 onClick={() => {
                   setCreateOpen(true);
                   setOpen(false);

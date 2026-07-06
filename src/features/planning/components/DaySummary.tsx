@@ -12,11 +12,11 @@ import {
 } from '@/lib/macroStatus';
 
 const TEXT_TONE: Record<MacroTone, string> = {
-  budget: 'text-sky-600 dark:text-sky-400',
-  onTarget: 'text-emerald-600 dark:text-emerald-400',
-  floorMet: 'text-emerald-600 dark:text-emerald-400',
-  slightOver: 'text-amber-600 dark:text-amber-400',
-  surplusHigh: 'text-amber-600 dark:text-amber-400',
+  budget: 'text-tone-info',
+  onTarget: 'text-tone-good',
+  floorMet: 'text-tone-good',
+  slightOver: 'text-tone-warn',
+  surplusHigh: 'text-tone-warn',
   over: 'text-destructive',
   fatLow: 'text-destructive',
   neutral: 'text-muted-foreground',
@@ -63,7 +63,7 @@ export function DaySummary({ totals, targets, phaseType, className }: Props) {
           <div key={r.key} className="space-y-0.5">
             <div className="flex justify-between items-baseline text-[10px] uppercase tracking-wide text-muted-foreground">
               <span>{r.label}</span>
-              <span className={cn('tabular-nums', s.tone === 'fatLow' && 'text-destructive', s.tone === 'floorMet' && 'text-emerald-600 dark:text-emerald-400')}>
+              <span className={cn('tabular-nums', s.tone === 'fatLow' && 'text-destructive', s.tone === 'floorMet' && 'text-tone-good')}>
                 {roundMacro(r.consumed)}{r.target != null && <> / {roundMacro(r.target)}</>}
               </span>
             </div>

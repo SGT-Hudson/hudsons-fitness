@@ -74,7 +74,7 @@ describe('DayTotalsCard', () => {
       />,
     );
     // Must NOT render any amber or destructive text for fiber
-    expect(container.querySelector('.text-amber-600')).toBeNull();
+    expect(container.querySelector('.text-tone-warn')).toBeNull();
     // Must NOT show the old "bajo el mínimo" / "below minimum" warning text
     expect(screen.queryByText(/bajo el mínimo|below minimum/i)).toBeNull();
   });

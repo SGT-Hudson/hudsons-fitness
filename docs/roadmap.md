@@ -1130,7 +1130,9 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 - **status:** spec done (2026-07-02) — design converged; full spec in
   `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md`. Execution
   pending (~12 PRs: 2 foundation + shell + tone core + 8 nutrition screen
-  waves).
+  waves). PR-1 (Tailwind v4 migration) and PR-2 (foundation retheme:
+  tokens.css, self-hosted fonts, restyled shadcn primitives, hardcoded-colour
+  sweep, heatmap ramp) landed on `develop` (2026-07-06).
 - **scope:** apply the external Claude-design canvas in two layers:
   1. **Foundation retheme (app-wide, gym included):** Tailwind v4 migration;
      `tokens.css` oklch token system as the app's source; Rubik + Geist Mono

@@ -158,7 +158,7 @@ export function OnboardingPage() {
                 <Label htmlFor="initialWeightKg">{t('initialWeightKg')}</Label>
                 <div
                   role="alert"
-                  className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-200"
+                  className="rounded-md border border-transparent bg-amber-soft px-3 py-2 text-sm text-amber-ink"
                 >
                   {t('initialWeightWarning')}
                 </div>

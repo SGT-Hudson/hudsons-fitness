@@ -69,11 +69,11 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={points} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                 {targetWeightKg != null && (
                   <ReferenceLine
                     y={targetWeightKg}
-                    stroke="hsl(var(--primary))"
+                    stroke="var(--primary)"
                     strokeDasharray="4 4"
                     label={{
                       value: t('charts.weight.targetLine', {
@@ -81,26 +81,26 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
                       }),
                       position: 'insideTopRight',
                       fontSize: 10,
-                      fill: 'hsl(var(--primary))',
+                      fill: 'var(--primary)',
                     }}
                   />
                 )}
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                   tickFormatter={(d: string) => formatDate(d, 'd MMM', locale)}
                   minTickGap={32}
                 />
                 <YAxis
                   domain={yDomain ?? ['auto', 'auto']}
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                   width={48}
                   tickFormatter={(v: number) => `${v}`}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 8,
                     fontSize: 12,
                   }}
@@ -113,7 +113,7 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
                 <Line
                   type="monotone"
                   dataKey="weight"
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   strokeWidth={1}
                   dot={{ r: 2 }}
                   activeDot={{ r: 4 }}
@@ -123,7 +123,7 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
                 <Line
                   type="monotone"
                   dataKey="ma5"
-                  stroke="hsl(var(--primary))"
+                  stroke="var(--primary)"
                   strokeWidth={2.5}
                   dot={false}
                   connectNulls

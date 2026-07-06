@@ -43,6 +43,8 @@ tracked in `roadmap.md`).
 
 ## UI
 
+> ⚠ Changing — see R-33
+
 - Use the shadcn `Badge` component for badges (D-D1).
 - Toasts fire from the layer that owns the mutation (usually `hooks.ts`); a component owning its own mutation flow (e.g. destructive confirm dialogs) calls toast directly; pages never call toast (D-D2).
 - Success toasts only when the action is user-triggered AND low-frequency; high-frequency, background, or implicit mutations toast on error only; `useDeleteWeekSlot` is the documented success-on-slot-mutation exception (D-D3).
@@ -58,6 +60,8 @@ tracked in `roadmap.md`).
 - Authenticated language change is Settings-only; the one-click `LanguageSwitcher` appears only on pre-auth and onboarding routes (removed from the `AppLayout` header) (D-E4).
 
 ## Theme
+
+> ⚠ Changing — see R-33
 
 - Theme is localStorage-only (key `hf-theme`), never profile-backed (D-F6).
 - The `index.html` pre-paint IIFE and `ThemeProvider` `STORAGE_KEY`/system-resolution MUST stay identical — change one, change the other (D-F6).

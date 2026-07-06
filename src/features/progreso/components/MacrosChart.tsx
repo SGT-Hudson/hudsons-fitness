@@ -160,7 +160,7 @@ export function MacrosChart() {
         {(tdeeConfidence === 'low' || tdeeConfidence === 'medium') && (
           <p
             role="note"
-            className="text-xs rounded-md px-2 py-1 bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+            className="text-xs rounded-md px-2 py-1 bg-amber-soft text-amber-ink"
           >
             {tdeeConfidence === 'low'
               ? t('charts.macros.tdeeConfidence.low')
@@ -180,22 +180,22 @@ export function MacrosChart() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={points} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                   tickFormatter={(d: string) => formatDate(d, 'd MMM', locale)}
                   minTickGap={32}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                   width={48}
                   tickFormatter={(v: number) => `${Math.round(v)}`}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 8,
                     fontSize: 12,
                   }}
@@ -212,14 +212,14 @@ export function MacrosChart() {
                 {targetValue != null ? (
                   <ReferenceLine
                     y={targetValue}
-                    stroke="hsl(var(--primary))"
+                    stroke="var(--primary)"
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
                       value: `${t('charts.macros.target')}: ${Math.round(targetValue)}${unitSuffix}`,
                       position: 'insideTopRight',
                       fontSize: 11,
-                      fill: 'hsl(var(--primary))',
+                      fill: 'var(--primary)',
                     }}
                   />
                 ) : null}
@@ -227,7 +227,7 @@ export function MacrosChart() {
                   type="monotone"
                   dataKey="planned"
                   name={t('charts.macros.planned')}
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   strokeWidth={1.5}
                   strokeDasharray="3 3"
                   dot={{ r: 2 }}
@@ -239,7 +239,7 @@ export function MacrosChart() {
                   type="monotone"
                   dataKey="consumed"
                   name={t('charts.macros.consumed')}
-                  stroke="hsl(var(--primary))"
+                  stroke="var(--primary)"
                   strokeWidth={2.5}
                   dot={{ r: 2.5 }}
                   activeDot={{ r: 5 }}

@@ -188,7 +188,7 @@ export function RecipeEditorForm({
                         'rounded-full border px-3 py-1 text-sm transition-colors',
                         active
                           ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-input bg-background text-muted-foreground hover:bg-accent',
+                          : 'border-input bg-background text-muted-foreground hover:bg-muted',
                       )}
                     >
                       {t(`mealTypes.${key}`)}

@@ -7,7 +7,7 @@ const STORAGE_KEY = 'hf-section';
 /**
  * The section the mobile shell should present. Section-owned routes resolve
  * directly (and are remembered); shared routes (`/progress`, `/settings`)
- * fall back to the last remembered section (default nutricion).
+ * fall back to the last remembered section (default nutri).
  */
 export function useActiveSection(): Section {
   const { pathname } = useLocation();
@@ -18,5 +18,6 @@ export function useActiveSection(): Section {
   }, [routeSection]);
 
   if (routeSection) return routeSection;
-  return localStorage.getItem(STORAGE_KEY) === 'entreno' ? 'entreno' : 'nutricion';
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored === 'gym' || stored === 'entreno' ? 'gym' : 'nutri';
 }

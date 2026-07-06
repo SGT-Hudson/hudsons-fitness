@@ -128,7 +128,7 @@ export function CopyMealDialog({
                     )}
                   </span>
                   {tg.willOverwrite && (
-                    <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+                    <span className="rounded-full border border-transparent bg-amber-soft px-2 py-0.5 text-xs text-amber-ink">
                       {t('copyMeal.willOverwrite')}
                     </span>
                   )}

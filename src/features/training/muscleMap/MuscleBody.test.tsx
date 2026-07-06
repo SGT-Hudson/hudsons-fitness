@@ -10,9 +10,9 @@ describe('MuscleBody fine→slug aggregation', () => {
     );
     const fills = [...container.querySelectorAll('path')].map((p) => p.getAttribute('fill'));
     // deltoids sums to 2.0 === max → the max-intensity colour (co-shading the 3 delts).
-    expect(fills).toContain('rgb(220,38,38)'); // muscleColor(2,2)
-    // and a region with zero volume (e.g. chest/quads) stays the zero-data grey,
+    expect(fills).toContain('color-mix(in oklab, var(--gym) 100%, var(--heat-zero))'); // muscleColor(2,2)
+    // and a region with zero volume (e.g. chest/quads) stays the zero-data tint,
     // proving the aggregation discriminates rather than colouring everything.
-    expect(fills).toContain('#e5e7eb'); // muscleColor(0,2)
+    expect(fills).toContain('var(--heat-zero)'); // muscleColor(0,2)
   });
 });

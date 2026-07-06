@@ -21,7 +21,7 @@ export function MealLogEntry({ log, onEdit }: Props) {
   // (the never-orphan invariant).
 
   return (
-    <li className="flex items-start gap-3 px-4 py-3 hover:bg-accent/40 transition-colors">
+    <li className="flex items-start gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium truncate">{desc.title}</span>

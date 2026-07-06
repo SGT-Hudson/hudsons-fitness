@@ -14,43 +14,299 @@
   }
 }
 
+@utility max-w-content {
+  max-width: 1280px; /* canvas --content-max (V2 web convention) */
+}
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+@utility text-title-screen {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@utility text-title-sheet {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@utility text-title-card {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@utility text-body-app {
+  font-size: 12.5px;
+  font-weight: 400;
+}
+@utility text-meta {
+  font-size: 11px;
+  font-weight: 500;
+}
+@utility text-cap-label {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* ── Design tokens — ported from canvas tokens.css (source of truth) ── */
+:root {
+  /* Neutrals (light) — warm tinted */
+  --bg:          oklch(0.985 0.003 95);
+  --bg-elev:     #ffffff;
+  --bg-sunken:   oklch(0.965 0.004 95);
+  --line:        oklch(0.92 0.005 95);
+  --line-strong: oklch(0.84 0.006 95);
+  --text:        oklch(0.18 0.01 95);
+  --text-muted:  oklch(0.48 0.01 95);
+  --text-dim:    oklch(0.62 0.008 95);
+
+  /* Accents */
+  --nutri:        oklch(0.48 0.13 148);
+  --nutri-soft:   oklch(0.94 0.04 148);
+  --nutri-ink:    oklch(0.34 0.09 148);
+  --nutri-line:   oklch(0.82 0.06 148);
+  --gym:          #007cfb;
+  --gym-soft:     oklch(0.95 0.045 256);
+  --gym-ink:      oklch(0.46 0.16 256);
+  --gym-line:     oklch(0.83 0.09 256);
+
+  /* Danger — always red, section-independent */
+  --danger:       oklch(0.55 0.20 27);
+  --danger-soft:  oklch(0.95 0.035 27);
+  --danger-ink:   oklch(0.47 0.17 27);
+  --danger-line:  oklch(0.84 0.07 27);
+  --amber:        oklch(0.74 0.15 75);
+  --amber-soft:   oklch(0.95 0.05 80);
+
+  /* Nutritional phases */
+  --phase-cut:        oklch(0.62 0.14 350);
+  --phase-cut-soft:   oklch(0.94 0.045 350);
+  --phase-cut-ink:    oklch(0.34 0.098 350);
+  --phase-cut-line:   oklch(0.82 0.063 350);
+  --phase-bulk:       oklch(0.62 0.14 300);
+  --phase-bulk-soft:  oklch(0.94 0.045 300);
+  --phase-bulk-ink:   oklch(0.34 0.098 300);
+  --phase-bulk-line:  oklch(0.82 0.063 300);
+  --phase-maint:      oklch(0.58 0.015 95);
+  --phase-maint-soft: oklch(0.945 0.006 95);
+  --phase-maint-ink:  oklch(0.34 0.012 95);
+  --phase-maint-line: oklch(0.84 0.010 95);
+
+  /* Macro identity dots (identity only — bars use the section accent) */
+  --macro-p:   oklch(0.74 0.13 30);
+  --macro-c:   oklch(0.78 0.10 250);
+  --macro-g:   oklch(0.84 0.12 92);
+  --macro-fib: oklch(0.70 0.10 150);
+
+  /* app extensions — not in canvas tokens.css (see plan header table) */
+  --tone-info:      oklch(0.55 0.14 256);
+  --tone-good:      oklch(0.52 0.13 148);
+  --tone-warn:      oklch(0.62 0.13 75);
+  --excess-neutral: oklch(0.82 0.03 95);
+  --excess-warn:    oklch(0.78 0.13 75);
+  --excess-bad:     oklch(0.66 0.17 27);
+  --excess-good:    oklch(0.38 0.10 148);
+  --amber-ink:      oklch(0.50 0.11 75);
+  --heat-zero:      oklch(0.945 0.005 250);
+  --heat-part:      oklch(0.92 0.004 250);
+
+  /* Shadows (raw; wired to utilities via @theme inline below) */
+  --shadow-card-raw: 0 1px 0 oklch(0.92 0.005 95), 0 1px 2px oklch(0.18 0.01 95 / 0.04);
+  --shadow-hi-raw:   0 8px 24px oklch(0.18 0.01 95 / 0.08);
+
+  /* Default accent = nutri (shared routes); section classes override */
+  --accent: var(--nutri); --accent-soft: var(--nutri-soft);
+  --accent-ink: var(--nutri-ink); --accent-line: var(--nutri-line);
+  --on-accent: #ffffff; /* text on solid accent; dark mode flips to --bg */
+
+  /* shadcn role tokens := design tokens */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--bg-elev);
+  --card-foreground: var(--text);
+  --popover: var(--bg-elev);
+  --popover-foreground: var(--text);
+  --muted: var(--bg-sunken);
+  --muted-foreground: var(--text-muted);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: var(--accent);
+  --primary: var(--accent);
+  --primary-foreground: var(--on-accent);
+  --secondary: var(--bg-sunken);
+  --secondary-foreground: var(--text);
+  --destructive: var(--danger);
+  --destructive-foreground: #ffffff;
+  --nutri-foreground: #ffffff;
+  --gym-foreground: #ffffff;
+}
+
+.dark {
+  --bg:          oklch(0.16 0.008 250);
+  --bg-elev:     oklch(0.21 0.01 250);
+  --bg-sunken:   oklch(0.13 0.008 250);
+  --line:        oklch(0.27 0.008 250);
+  --line-strong: oklch(0.36 0.008 250);
+  --text:        oklch(0.97 0.003 250);
+  --text-muted:  oklch(0.70 0.008 250);
+  --text-dim:    oklch(0.55 0.008 250);
+
+  --nutri:       oklch(0.74 0.14 148);
+  --nutri-soft:  oklch(0.30 0.07 148);
+  --nutri-ink:   oklch(0.86 0.12 148);
+  --nutri-line:  oklch(0.40 0.07 148);
+  --gym:         oklch(0.70 0.17 256);
+  --gym-soft:    oklch(0.30 0.10 256);
+  --gym-ink:     oklch(0.84 0.13 256);
+  --gym-line:    oklch(0.44 0.12 256);
+
+  --danger:      oklch(0.70 0.17 27);
+  --danger-soft: oklch(0.30 0.09 27);
+  --danger-ink:  oklch(0.82 0.14 27);
+  --danger-line: oklch(0.44 0.10 27);
+  --amber:       oklch(0.80 0.14 75);
+  --amber-soft:  oklch(0.32 0.07 75);
+
+  --phase-cut:        oklch(0.72 0.14 350);
+  --phase-cut-soft:   oklch(0.30 0.08 350);
+  --phase-cut-ink:    oklch(0.84 0.11 350);
+  --phase-cut-line:   oklch(0.44 0.10 350);
+  --phase-bulk:       oklch(0.72 0.14 300);
+  --phase-bulk-soft:  oklch(0.30 0.08 300);
+  --phase-bulk-ink:   oklch(0.84 0.11 300);
+  --phase-bulk-line:  oklch(0.44 0.10 300);
+  --phase-maint:      oklch(0.70 0.015 95);
+  --phase-maint-soft: oklch(0.29 0.008 95);
+  --phase-maint-ink:  oklch(0.84 0.012 95);
+  --phase-maint-line: oklch(0.42 0.012 95);
+
+  --macro-p:   oklch(0.72 0.15 30);
+  --macro-c:   oklch(0.72 0.14 250);
+  --macro-g:   oklch(0.80 0.14 92);
+  --macro-fib: oklch(0.72 0.13 150);
+
+  /* app extensions */
+  --tone-info:      oklch(0.72 0.14 256);
+  --tone-good:      oklch(0.74 0.14 148);
+  --tone-warn:      oklch(0.80 0.14 75);
+  --excess-neutral: oklch(0.40 0.02 95);
+  --excess-warn:    oklch(0.60 0.12 75);
+  --excess-bad:     oklch(0.55 0.15 27);
+  --excess-good:    oklch(0.55 0.12 148);
+  --amber-ink:      oklch(0.85 0.12 75);
+  --heat-zero:      oklch(0.30 0.008 250);
+  --heat-part:      oklch(0.35 0.008 250);
+
+  --on-accent: var(--bg); /* canvas: .theme-dark .btn-primary { color: var(--bg) } */
+  --destructive-foreground: var(--bg);
+  --nutri-foreground: var(--bg);
+  --gym-foreground: var(--bg);
+
+  --shadow-card-raw: 0 1px 0 oklch(0.27 0.008 250), 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow-hi-raw:   0 12px 32px oklch(0 0 0 / 0.5);
+}
+
+/* Section-scoped accent (spec §3.2) — class lives on <html> (applied by AppLayout via
+   document.documentElement), not a subtree wrapper, so portaled overlays (Dialog/Drawer/
+   Select/DropdownMenu/Toast render under document.body) still inherit it. --primary/--ring
+   are re-declared here so they re-resolve against the section accent instead of the
+   :root-resolved (always-nutri) value — CSS custom properties substitute var() at
+   computed-value time on the declaring element. */
+.section-nutri { --accent: var(--nutri); --accent-soft: var(--nutri-soft); --accent-ink: var(--nutri-ink); --accent-line: var(--nutri-line); --primary: var(--accent); --ring: var(--accent); }
+.section-gym   { --accent: var(--gym);   --accent-soft: var(--gym-soft);   --accent-ink: var(--gym-ink);   --accent-line: var(--gym-line);   --primary: var(--accent); --ring: var(--accent); }
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  /* section accent — resolves per-subtree via .section-* */
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-line: var(--accent-line);
+
+  --color-nutri: var(--nutri);
+  --color-nutri-foreground: var(--nutri-foreground);
+  --color-nutri-soft: var(--nutri-soft);
+  --color-nutri-ink: var(--nutri-ink);
+  --color-nutri-line: var(--nutri-line);
+  --color-gym: var(--gym);
+  --color-gym-foreground: var(--gym-foreground);
+  --color-gym-soft: var(--gym-soft);
+  --color-gym-ink: var(--gym-ink);
+  --color-gym-line: var(--gym-line);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-ink: var(--danger-ink);
+  --color-danger-line: var(--danger-line);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-amber-ink: var(--amber-ink);
+
+  --color-phase-cut: var(--phase-cut);
+  --color-phase-cut-soft: var(--phase-cut-soft);
+  --color-phase-cut-ink: var(--phase-cut-ink);
+  --color-phase-cut-line: var(--phase-cut-line);
+  --color-phase-bulk: var(--phase-bulk);
+  --color-phase-bulk-soft: var(--phase-bulk-soft);
+  --color-phase-bulk-ink: var(--phase-bulk-ink);
+  --color-phase-bulk-line: var(--phase-bulk-line);
+  --color-phase-maint: var(--phase-maint);
+  --color-phase-maint-soft: var(--phase-maint-soft);
+  --color-phase-maint-ink: var(--phase-maint-ink);
+  --color-phase-maint-line: var(--phase-maint-line);
+
+  --color-macro-p: var(--macro-p);
+  --color-macro-c: var(--macro-c);
+  --color-macro-g: var(--macro-g);
+  --color-macro-fib: var(--macro-fib);
+
+  --color-tone-info: var(--tone-info);
+  --color-tone-good: var(--tone-good);
+  --color-tone-warn: var(--tone-warn);
+  --color-excess-neutral: var(--excess-neutral);
+  --color-excess-warn: var(--excess-warn);
+  --color-excess-bad: var(--excess-bad);
+  --color-excess-good: var(--excess-good);
+  --color-heat-zero: var(--heat-zero);
+  --color-heat-part: var(--heat-part);
+
+  --shadow-card: var(--shadow-card-raw);
+  --shadow-hi: var(--shadow-hi-raw);
+}
+
 @theme {
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
+  /* Typography — self-hosted (fontsource), no CDN font requests */
+  --font-sans: 'Rubik Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'JetBrains Mono', monospace;
 
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-
-  --color-nutricion: hsl(var(--nutricion));
-  --color-nutricion-foreground: hsl(var(--nutricion-foreground));
-
-  --color-entreno: hsl(var(--entreno));
-  --color-entreno-foreground: hsl(var(--entreno-foreground));
-
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  /* Radii — canvas scale; shadcn names map onto it (cards md·14, fields sm·10) */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 14px;   /* rounded-lg (cards/dialogs) → canvas md */
+  --radius-xl: 20px;
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -104,65 +360,13 @@
 }
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 142.1 76.2% 36.3%;
-    --nutricion: 142.1 76.2% 36.3%;
-    --nutricion-foreground: 0 0% 100%;
-    --entreno: 0 72.2% 50.6%;
-    --entreno-foreground: 0 0% 100%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 142.1 70.6% 45.3%;
-    --primary-foreground: 144.9 80.4% 10%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 142.4 71.8% 29.2%;
-    --nutricion: 142.1 70.6% 45.3%;
-    --nutricion-foreground: 144.9 80.4% 10%;
-    --entreno: 0 72.2% 58%;
-    --entreno-foreground: 0 0% 100%;
-  }
-
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-      'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    @apply bg-background text-foreground font-sans;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 }
