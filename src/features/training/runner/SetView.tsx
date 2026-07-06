@@ -149,7 +149,7 @@ function round(n: number): number {
  *  more → green (beat it), less → amber (fell short), equal/unknown → neutral. */
 function perfClass(current: number, baseline: number | null): string {
   if (baseline == null) return '';
-  if (current > baseline) return 'text-[hsl(var(--primary))]';
+  if (current > baseline) return 'text-[var(--primary)]';
   if (current < baseline) return 'text-amber-400';
   return '';
 }

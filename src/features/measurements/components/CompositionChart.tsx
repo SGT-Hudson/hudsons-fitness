@@ -150,23 +150,23 @@ export function CompositionChart() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stack} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                     tickFormatter={(d: string) => formatDate(d, 'd MMM', locale)}
                     minTickGap={32}
                   />
                   <YAxis
                     domain={isKg ? ['auto', 'auto'] : [0, 100]}
-                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                     width={48}
                     tickFormatter={(v: number) => (isKg ? `${v}` : `${v}%`)}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
+                      backgroundColor: 'var(--card)',
+                      border: '1px solid var(--border)',
                       borderRadius: 8,
                       fontSize: 12,
                     }}
@@ -190,8 +190,8 @@ export function CompositionChart() {
                     type="monotone"
                     stackId="1"
                     dataKey="fat"
-                    stroke="hsl(var(--destructive))"
-                    fill="hsl(var(--destructive))"
+                    stroke="var(--destructive)"
+                    fill="var(--destructive)"
                     fillOpacity={0.45}
                     isAnimationActive={false}
                   />
@@ -199,8 +199,8 @@ export function CompositionChart() {
                     type="monotone"
                     stackId="1"
                     dataKey="lean"
-                    stroke="hsl(var(--primary))"
-                    fill="hsl(var(--primary))"
+                    stroke="var(--primary)"
+                    fill="var(--primary)"
                     fillOpacity={0.5}
                     isAnimationActive={false}
                   />
@@ -226,21 +226,21 @@ export function CompositionChart() {
                 <TrendChart
                   title={t('charts.composition.trends.bodyFat')}
                   points={fatTrend}
-                  color="hsl(var(--destructive))"
+                  color="var(--destructive)"
                   unit={unit}
                   locale={locale}
                 />
                 <TrendChart
                   title={t('charts.composition.trends.muscle')}
                   points={muscleTrend}
-                  color="hsl(var(--primary))"
+                  color="var(--primary)"
                   unit={unit}
                   locale={locale}
                 />
                 <TrendChart
                   title={t('charts.composition.trends.water')}
                   points={waterTrend}
-                  color="hsl(var(--secondary-foreground))"
+                  color="var(--secondary-foreground)"
                   unit={unit}
                   locale={locale}
                 />

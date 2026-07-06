@@ -57,23 +57,23 @@ export function TrendChart({ title, points, color, unit, locale }: Props) {
         <div className="h-32">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={points} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
                 tickFormatter={(d: string) => formatDate(d, 'd MMM', locale)}
                 minTickGap={28}
               />
               <YAxis
                 domain={yDomain ?? ['auto', 'auto']}
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
                 width={40}
                 tickFormatter={(v: number) => `${v}`}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
+                  backgroundColor: 'var(--card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 8,
                   fontSize: 12,
                 }}

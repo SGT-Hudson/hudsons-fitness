@@ -42,7 +42,7 @@ export function CompletionCard({
         <div className="text-center">
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t('runner.upNext')}</div>
           <div className="text-base font-bold">{nextExerciseName}</div>
-          {nextExercisePlan && <div className="text-sm font-semibold text-[hsl(var(--primary))]">{nextExercisePlan}</div>}
+          {nextExercisePlan && <div className="text-sm font-semibold text-[var(--primary)]">{nextExercisePlan}</div>}
         </div>
       )}
 

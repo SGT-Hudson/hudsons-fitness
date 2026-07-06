@@ -78,7 +78,7 @@ export function ExerciseHistory({ exerciseId, exerciseName }: Props) {
       <TrendChart
         title={t('history.e1rmTrend')}
         points={e1rmTrend}
-        color="hsl(var(--primary))"
+        color="var(--primary)"
         unit="kg"
         locale={locale}
       />
