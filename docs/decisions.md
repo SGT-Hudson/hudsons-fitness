@@ -61,6 +61,11 @@ no change. Existing entries are immutable history and stay as written.
 - D-F8 — F-2 Training Routines & Cyclic Planner: two-layer model, calendar-anchored scheduling, no materialization, one-active-program index, set_active_program as an RPC
 - D-F9 — F-3 guided runner: client-only localStorage persistence (no DB resume / no cross-device), pure reducer state core, PWA wake-lock + in-app alarm, RPE whole-numbers-only, partial-on-leave
 - D-F10 — F-4 muscle heatmap: secondary-mover weight 0.5, coarse-12 taxonomy, pluggable body-art skin (vendored MIT art; MuscleWiki rejected), inline on `/training` (no route), pure `core/muscleVolume.ts`
+- D-F11 — Fine muscle taxonomy (Project A): 22-code model, multi-primary, dictionary table + trigger, data-fine-on-MIT-art
+- D-F12 — R-33 token architecture: canvas `tokens.css` source of truth, two-layer design/shadcn-role tokens, section-scoped `--accent` via `.section-nutri`/`.section-gym`, nutri/gym section rename
+- D-F13 — R-33 typography: self-hosted Rubik Variable + Geist Mono Variable (fontsource, no CDN), canvas type-scale utilities, PWA green `#13702f`
+- D-F14 — R-33 muscle-heatmap ramp: gray→amber→red replaced by token-driven `color-mix` gym-blue ramp
+- D-F15 — R-33 token extensions beyond canvas `tokens.css` (tone/excess/amber-ink/heat tokens), pending tone-core reconciliation
 
 ## D-A1 — Shared crowdsourced `ingredients` library — keep
 
@@ -427,3 +432,35 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **Update (2026-06-05) — runtime taxonomy extended to 24 shadeable codes (Project B1, #158).** Catalog ingestion added two fine codes beyond the (a) enumeration: `neck` (group **back**, `body_region_slug` `neck`, `display_order` 23) and `abductors` (group **legs**, `body_region_slug` `gluteal` — co-shaded with `glutes` under the current MIT art, `display_order` 24); both shadeable (`is_full_body = false`). The runtime model is therefore now **24 shadeable fine codes + `full_body`** (back → 5 codes, legs → 7); `src/core/muscles.ts` and the `muscles` seed both hold 25 rows. No separate `D-xx` was opened for the extension.
 
 **Status:** decided · done (R-26, #155 + the `20260604130000` retag-review fix)
+
+## D-F12 — R-33 token architecture: canvas tokens.css source of truth, two-layer design/shadcn-role tokens, section-scoped accent, nutri/gym rename
+
+**Ruling:** The R-33 canvas `tokens.css` is the single source of truth for the theme. Tokens are organized in two layers: design tokens (oklch palette primitives) and shadcn role tokens (the semantic slots — `--background`, `--primary`, `--border`, etc. — that shadcn components consume), the latter derived from the former. Section identity is renamed `nutricion|entreno` → `nutri|gym` throughout, and section-scoped accents apply via `.section-nutri` / `.section-gym` classes set by `AppLayout`, with `--primary` following whichever `--accent` the active section scope defines. Tailwind utilities are wired to the token layer through `@theme inline` rather than duplicating values.
+
+**Why:** A single canvas-owned token file avoids the drift risk of hand-copied hex values scattered across components (the exact problem the hardcoded-colour sweep this PR was cleaning up). The two-layer split (design tokens → shadcn role tokens) keeps shadcn's own primitive contract intact while still letting the app express its own palette and section identity underneath. Scoping the accent to the section (nutrition vs. training) via a CSS class read at the layout level, rather than plumbing a variant prop through the whole component tree, keeps the accent-follows-section behavior automatic for any component using the role tokens.
+
+**Status:** decided · done (R-33 PR-1/PR-2, 2026-07-06)
+
+## D-F13 — R-33 typography: self-hosted Rubik + Geist Mono, canvas type-scale, PWA green update
+
+**Ruling:** Adopt Rubik Variable (sans) and Geist Mono Variable (mono) as the app's typefaces, self-hosted via the `@fontsource-variable` packages rather than a CDN (`fonts.googleapis.com`, etc.). Apply the canvas Convenciones §02 type-scale as a set of reusable Tailwind utilities. The PWA theme-color / manifest green updates to `#13702f`.
+
+**Why:** The app is a PWA and must work offline-first and without depending on a third-party font CDN being reachable at load time — self-hosting via fontsource removes that runtime dependency and keeps font loading under the same build/caching pipeline as the rest of the bundle. The type-scale utilities centralize what were previously ad hoc font-size/line-height combinations. The green update brings the installed-PWA icon/splash color in line with the new canvas palette instead of the prior ad hoc value.
+
+**Status:** decided · done (R-33 PR-2, 2026-07-06)
+
+## D-F14 — R-33 muscle-heatmap ramp: gray→amber→red replaced by token-driven gym-blue color-mix ramp
+
+**Ruling:** Per the canvas Auditoría decision #2, the F-4 muscle-activity heatmap's gray→amber→red intensity ramp is replaced by a `color-mix(in oklab, var(--gym) pct%, var(--heat-zero))` ramp, driven entirely by CSS custom properties so it resolves correctly in both light and dark mode. `muscleColor()` returns this `color-mix()` string (or `var(--heat-zero)` at zero volume); `NEUTRAL_PART` becomes `var(--heat-part)`.
+
+**Why:** The old ramp hard-coded Tailwind gray/amber/red classes, which do not participate in the token system and read as an alarm/warning gradient (amber→red) for what is really just "how much volume," not a severity signal — a mismatch the canvas review flagged. Tying the ramp to `--gym` (the training-section accent) keeps the heatmap visually consistent with the rest of the section's palette and gives it automatic, correct dark-mode behavior for free, since `color-mix` re-resolves whenever the underlying custom properties change with the `dark` class.
+
+**Status:** decided · done (R-33 PR-2, 2026-07-06)
+
+## D-F15 — R-33 token extensions beyond canvas tokens.css, pending tone-core reconciliation
+
+**Ruling:** A handful of tokens were added beyond what the canvas `tokens.css` defines, needed to cover cases the canvas did not yet specify: `--tone-info` / `--tone-good` / `--tone-warn`, `--excess-neutral` / `--excess-warn` / `--excess-bad` / `--excess-good`, `--amber-ink`, and `--heat-zero` / `--heat-part`. Light-mode values were derived from the canvas's existing tone palette where one already exists there; dark-mode values were invented (no canvas dark equivalent yet exists for these slots) using the same oklch construction approach as the rest of the token file.
+
+**Why:** The hardcoded-colour sweep (this PR) needed semantic slots for macro-excess states, informational/warning/success text, the amber-badge ink color, and the heatmap's zero/non-muscle fills — none of which the canvas spec enumerates yet. Rather than block the sweep on a canvas update, these were added now as the closest reasonable interpretation of the canvas's existing tone conventions, explicitly flagged here as provisional: they are expected to be reconciled (renamed, retuned, or merged) once the R-33 tone core lands upstream in the canvas, and this entry is the marker for that follow-up.
+
+**Status:** decided · pending reconciliation with the R-33 tone core (2026-07-06)

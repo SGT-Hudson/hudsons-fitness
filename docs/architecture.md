@@ -20,6 +20,8 @@ Hudson's Fitness is a bilingual (ES/EN) PWA covering body composition, macros, r
 
 ## Frontend layout
 
+> ⚠ Changing — see R-33
+
 Source lives under `src/` with the path alias `@/*` → `src/*`.
 
 ```
@@ -134,6 +136,8 @@ Stored content (recipe, ingredient, and template names) is never auto-translated
 Locale-aware formatting follows the active language: dates are formatted via `date-fns` with the `es` / `en-GB` locales, and numbers via `Intl.NumberFormat` (decimal comma in Spanish, decimal period in English).
 
 ## Theme model
+
+> ⚠ Changing — see R-33
 
 Theming is owned by `ThemeProvider` in `src/features/theme/ThemeProvider.tsx`. It exposes `theme` ∈ `'light' | 'dark' | 'system'`, resolving `system` via `window.matchMedia('(prefers-color-scheme: dark)')` and toggling the `dark` class on `<html>`. The selected value is persisted **only** to `localStorage` under the key `hf-theme` — never to `profiles`.
 
