@@ -51,11 +51,11 @@ function SubMacroLine({ label, part }: { label: string; part: PartialSub }) {
 }
 
 const TEXT_TONE: Record<MacroTone, string> = {
-  budget: 'text-sky-600 dark:text-sky-400',
-  onTarget: 'text-emerald-600 dark:text-emerald-400',
-  floorMet: 'text-emerald-600 dark:text-emerald-400',
-  slightOver: 'text-amber-600 dark:text-amber-400',
-  surplusHigh: 'text-amber-600 dark:text-amber-400',
+  budget: 'text-tone-info',
+  onTarget: 'text-tone-good',
+  floorMet: 'text-tone-good',
+  slightOver: 'text-tone-warn',
+  surplusHigh: 'text-tone-warn',
   over: 'text-destructive',
   fatLow: 'text-destructive',
   neutral: 'text-muted-foreground',

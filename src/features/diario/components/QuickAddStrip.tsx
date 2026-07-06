@@ -43,12 +43,12 @@ export function QuickAddStrip({ mealType, date, items }: Props) {
               },
             )
           }
-          className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 transition-colors hover:bg-sky-100 disabled:opacity-50 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-300"
+          className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-accent-line bg-accent-soft px-3 py-1 text-xs font-semibold text-accent-ink transition-colors disabled:opacity-50"
           aria-label={t('quickAdd.add', { name: it.name })}
         >
           <Plus className="h-3 w-3" />
           {it.name}
-          <span className="tabular-nums text-sky-500 dark:text-sky-400">
+          <span className="tabular-nums text-accent-ink">
             · {it.kcalPerServing}
           </span>
         </button>
