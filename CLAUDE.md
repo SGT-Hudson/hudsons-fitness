@@ -28,13 +28,14 @@ pnpm preview      # preview ./dist locally
 7. Never commit secrets. Public repo → a committed key persists in history and is irreversible. Client config is public-tier `.env.local`; server secrets live in Supabase Vault.
 
 ## Working preferences
-1. Greenlit work proceeds autonomously; design decisions check in first. While a design is still exploratory (reasoning toward a model, floating ideas), discuss in prose with honest pushback — do not force multiple-choice prompts. Reserve structured option-questions for converged decisions.
-2. On any pick-one question: lead with the recommended option + a one-line reason; if options are genuinely equivalent, say so rather than fake a preference.
-3. No AI/Claude attribution anywhere in commits or PR titles/bodies (no `Co-Authored-By`, no "Generated with…" footer, no AI-process phrasing) — repo is public; plain conventional commits.
-4. Don't paste diffs / before→after file content into chat — state concisely what changed and why.
+Personal preferences (language, autonomy, answer style) live in the user-level
+CLAUDE.md. Repo-level rule that must travel with this **public** repo: **no
+AI/Claude attribution anywhere** — commits, PR titles/bodies, code comments (no
+`Co-Authored-By`, no "Generated with…" footer, no AI-process phrasing); plain
+conventional commits.
 
 ## Session lifecycle
-- The main checkout (`/mnt/d/dev/hudsons-fitness`) is **sacred**: it stays on `develop`, advanced only by `fetch` + fast-forward — never used for feature work. It is the trustworthy baseline for reading real state.
+- The main checkout (`/home/hudson/dev/hudsons-fitness`) is **sacred**: it stays on `develop`, advanced only by `fetch` + fast-forward — never used for feature work. It is the trustworthy baseline for reading real state.
 - All write-work happens in an **ephemeral worktree** created **from WSL** off `origin/develop`, named for the task (`.claude/worktrees/<task>`) on a fresh `claude/<task>` branch. Never create worktrees from Windows `D:/` git (mixing environments produced the ghost worktrees).
 - **Teardown on merge:** once the branch merges, `git worktree remove` it and delete the local branch.
 - Read-only/brainstorm sessions need no worktree — the SessionStart hook keeps `develop` synced; read docs from there.

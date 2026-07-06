@@ -5,7 +5,7 @@
 # the session as additional context.
 set -u
 
-MAIN="/mnt/d/dev/hudsons-fitness"
+MAIN="/home/hudson/dev/hudsons-fitness"
 
 # Best-effort fetch + prune — never block a session on a network failure.
 git -C "$MAIN" fetch --prune --quiet origin 2>/dev/null || true
