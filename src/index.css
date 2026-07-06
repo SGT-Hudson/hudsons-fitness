@@ -211,9 +211,14 @@
   --shadow-hi-raw:   0 12px 32px oklch(0 0 0 / 0.5);
 }
 
-/* Section-scoped accent (spec §3.2) — applied by AppLayout from the route */
-.section-nutri { --accent: var(--nutri); --accent-soft: var(--nutri-soft); --accent-ink: var(--nutri-ink); --accent-line: var(--nutri-line); }
-.section-gym   { --accent: var(--gym);   --accent-soft: var(--gym-soft);   --accent-ink: var(--gym-ink);   --accent-line: var(--gym-line); }
+/* Section-scoped accent (spec §3.2) — class lives on <html> (applied by AppLayout via
+   document.documentElement), not a subtree wrapper, so portaled overlays (Dialog/Drawer/
+   Select/DropdownMenu/Toast render under document.body) still inherit it. --primary/--ring
+   are re-declared here so they re-resolve against the section accent instead of the
+   :root-resolved (always-nutri) value — CSS custom properties substitute var() at
+   computed-value time on the declaring element. */
+.section-nutri { --accent: var(--nutri); --accent-soft: var(--nutri-soft); --accent-ink: var(--nutri-ink); --accent-line: var(--nutri-line); --primary: var(--accent); --ring: var(--accent); }
+.section-gym   { --accent: var(--gym);   --accent-soft: var(--gym-soft);   --accent-ink: var(--gym-ink);   --accent-line: var(--gym-line);   --primary: var(--accent); --ring: var(--accent); }
 
 @theme inline {
   --color-background: var(--background);
