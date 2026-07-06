@@ -58,7 +58,7 @@ function LinkRow({
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-accent"
+      className="flex items-center gap-3 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-muted"
     >
       <IconChip tone={tone}>{icon}</IconChip>
       <span className="flex-1 text-sm font-medium">{label}</span>

@@ -6,7 +6,7 @@ import { AvatarMenu } from './AvatarMenu';
 import { sidebarGroups, SECTION_I18N_KEY, type NavGroup } from './nav-config';
 
 const ACTIVE: Record<NavGroup, string> = {
-  shared: 'bg-accent text-foreground before:bg-foreground',
+  shared: 'bg-accent-soft text-foreground before:bg-foreground',
   nutri: 'bg-nutri/10 text-nutri before:bg-nutri',
   gym: 'bg-gym/10 text-gym before:bg-gym',
 };
@@ -47,7 +47,7 @@ export function AppSidebar() {
                       'before:absolute before:-left-3 before:top-2 before:bottom-2 before:w-0.5 before:rounded-r',
                       isActive
                         ? ACTIVE[group]
-                        : 'hover:bg-accent hover:text-foreground before:bg-transparent',
+                        : 'hover:bg-muted hover:text-foreground before:bg-transparent',
                     )
                   }
                 >

@@ -58,7 +58,7 @@ function FilterChip({
         'rounded-full border px-3 py-1 text-xs transition-colors',
         active
           ? 'border-primary bg-primary text-primary-foreground'
-          : 'border-input bg-background text-muted-foreground hover:bg-accent',
+          : 'border-input bg-background text-muted-foreground hover:bg-muted',
       )}
     >
       {label}
@@ -309,7 +309,7 @@ export function RecetasPage() {
             {paged.map((r) => (
               <li
                 key={r.id}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-accent/40 transition-colors"
+                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <Link to={`/recipes/${r.id}`} className="font-medium hover:underline truncate">
