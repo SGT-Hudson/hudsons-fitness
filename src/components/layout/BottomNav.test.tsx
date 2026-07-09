@@ -40,5 +40,6 @@ describe('BottomNav', () => {
     for (const label of ['Hoy', 'Rutinas', 'Ejercicios', 'Progreso']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
+    expect(screen.queryByRole('link', { name: 'Más' })).not.toBeInTheDocument();
   });
 });
