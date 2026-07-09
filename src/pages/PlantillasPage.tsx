@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { PageShell } from '@/components/layout/PageShell';
 import { useDeleteTemplate, useTemplates } from '@/features/templates/hooks';
 import { formatDate, type Locale } from '@/lib/dates';
 
@@ -22,15 +23,17 @@ export function PlantillasPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-3xl font-bold tracking-tight">{t('list.pageTitle')}</h1>
+    <PageShell
+      title={t('list.pageTitle')}
+      back={true}
+      actions={
         <Button onClick={() => navigate('/templates/new')}>
           <Plus className="h-4 w-4" />
           {t('list.newTemplate')}
         </Button>
-      </div>
-
+      }
+    >
+    <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{t('list.description')}</p>
 
       {templates.isLoading ? (
@@ -110,5 +113,6 @@ export function PlantillasPage() {
         </ul>
       )}
     </div>
+    </PageShell>
   );
 }

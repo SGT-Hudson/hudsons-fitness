@@ -8,11 +8,13 @@ interface BackHeaderProps {
   subtitle?: string;
   /** Explicit back target; omitted → history back. */
   to?: string;
+  /** Custom back handler (e.g. history-back with a fallback route); takes precedence over `to`. */
+  onBack?: () => void;
   actions?: ReactNode;
 }
 
 /** Sub-screen mobile header (canvas BackHeader). No section switch. Hidden at md+. */
-export function BackHeader({ title, subtitle, to, actions }: BackHeaderProps) {
+export function BackHeader({ title, subtitle, to, onBack, actions }: BackHeaderProps) {
   const { t } = useTranslation('nav');
   const navigate = useNavigate();
   return (
@@ -20,7 +22,7 @@ export function BackHeader({ title, subtitle, to, actions }: BackHeaderProps) {
       <button
         type="button"
         aria-label={t('back')}
-        onClick={() => (to ? navigate(to) : navigate(-1))}
+        onClick={() => (onBack ? onBack() : to ? navigate(to) : navigate(-1))}
         className="grid size-9 shrink-0 place-items-center rounded-[11px] border bg-card text-muted-foreground"
       >
         <ArrowLeft className="size-4" />

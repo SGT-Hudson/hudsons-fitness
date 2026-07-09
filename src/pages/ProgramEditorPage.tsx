@@ -1,8 +1,7 @@
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageShell } from '@/components/layout/PageShell';
 import { ProgramBuilder } from '@/features/training/components/ProgramBuilder';
 import { usePrograms, useSaveProgram } from '@/features/training/programs/hooks';
 import { useRoutines } from '@/features/training/routines/hooks';
@@ -29,24 +28,13 @@ export function ProgramEditorPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Button asChild size="icon" variant="ghost" aria-label={t('program.back')}>
-          <Link to="/routine">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {isEdit ? t('program.editTitle') : t('program.newTitle')}
-        </h1>
-      </div>
-
+    <PageShell title={isEdit ? t('program.editTitle') : t('program.newTitle')} back="/routine">
       <ProgramBuilder
         initial={program}
         routines={routines.data ?? []}
         onSubmit={(payload) => saveProgram.mutateAsync(payload)}
         onSaved={() => navigate('/routine')}
       />
-    </div>
+    </PageShell>
   );
 }

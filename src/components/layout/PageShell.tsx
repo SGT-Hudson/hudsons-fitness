@@ -21,8 +21,12 @@ export function PageHeaderV2({ title, subtitle, actions }: PageHeaderV2Props) {
 }
 
 interface PageShellProps extends PageHeaderV2Props {
-  /** Sub-screen: render BackHeader on mobile. String = target route, true = history back. */
-  back?: string | true;
+  /**
+   * Sub-screen: render BackHeader on mobile. String = target route,
+   * true = history back, function = custom back handler (e.g. history back
+   * with a same-section fallback).
+   */
+  back?: string | true | (() => void);
   children: ReactNode;
 }
 
@@ -38,6 +42,7 @@ export function PageShell({ title, subtitle, actions, back, children }: PageShel
           title={title}
           subtitle={subtitle}
           to={typeof back === 'string' ? back : undefined}
+          onBack={typeof back === 'function' ? back : undefined}
           actions={actions}
         />
       ) : (

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SettingsSubpageHeader } from '@/components/layout/SettingsSubpageHeader';
+import { PageShell } from '@/components/layout/PageShell';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { DeleteAccountDialog } from '@/features/account/components/DeleteAccountDialog';
 
@@ -14,8 +14,8 @@ export function SettingsAccountPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   return (
+    <PageShell title={t('account.title')} back="/settings">
     <div className="space-y-6 max-w-2xl">
-      <SettingsSubpageHeader title={t('account.title')} />
       <p className="text-sm text-muted-foreground">{t('account.description')}</p>
       <Card>
         <CardContent className="space-y-4 pt-6">
@@ -35,5 +35,6 @@ export function SettingsAccountPage() {
       </Card>
       <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </div>
+    </PageShell>
   );
 }

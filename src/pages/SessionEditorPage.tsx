@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageShell } from '@/components/layout/PageShell';
 import { SessionEditor } from '@/features/training/components/SessionEditor';
 import { useSaveWorkout, useSession } from '@/features/training/hooks';
 import { supabase } from '@/lib/supabase';
@@ -61,18 +60,7 @@ export function SessionEditorPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Button asChild size="icon" variant="ghost" aria-label={t('editor.back')}>
-          <Link to="/training">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {isEdit ? t('editor.editTitle') : t('editor.newTitle')}
-        </h1>
-      </div>
-
+    <PageShell title={isEdit ? t('editor.editTitle') : t('editor.newTitle')} back="/training">
       <SessionEditor
         initial={session.data ?? null}
         initialExercises={exerciseMap}
@@ -80,6 +68,6 @@ export function SessionEditorPage() {
         onSubmit={(payload) => save.mutateAsync(payload)}
         onSaved={() => navigate('/training')}
       />
-    </div>
+    </PageShell>
   );
 }
