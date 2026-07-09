@@ -5,9 +5,6 @@
 export type MacroKey = 'kcal' | 'proteinG' | 'carbsG' | 'fatG' | 'fiberG';
 export type PhaseType = 'cut' | 'maintenance' | 'bulk';
 
-/** Which protein basis the active target was computed on (D-B1). */
-export type ProteinBasis = 'lean' | 'fallback';
-
 export type MacroTone =
   | 'budget'      // blue  — comfortably in budget (cut under, maintenance under-band)
   | 'onTarget'    // green — kcal within the on-target band

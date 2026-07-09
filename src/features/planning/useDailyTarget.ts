@@ -4,7 +4,8 @@ import { useLatestMeasurement } from '@/features/measurements/hooks';
 import { useLatestTdee } from '@/features/tdee/hooks';
 import { computePhaseTargets } from '@/features/phases/targets';
 import type { Macros } from '@/features/recipes/macros';
-import type { PhaseType, ProteinBasis } from '@/lib/macroStatus';
+import type { PhaseType } from '@/lib/macroStatus';
+import type { ProteinBasis } from '@/lib/macros';
 
 export interface DailyTarget {
   targets?: Macros;

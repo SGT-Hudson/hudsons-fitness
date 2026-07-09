@@ -13,8 +13,8 @@ import {
   type MacroKey,
   type MacroTone,
   type PhaseType,
-  type ProteinBasis,
 } from '@/lib/macroStatus';
+import type { ProteinBasis } from '@/lib/macros';
 
 interface Props {
   totals: Macros;
