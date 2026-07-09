@@ -257,6 +257,14 @@ describe('classify — target guard', () => {
     const r = classify('fat', 60, undefined, 'cut');
     expect(r).toEqual({ tone: 'neutral', excess: 'neutral', remaining: 0, overG: 0 });
   });
+  it('NaN target -> neutral/neutral, remaining 0, overG 0', () => {
+    const r = classify('kcal', 2000, NaN, 'cut');
+    expect(r).toEqual({ tone: 'neutral', excess: 'neutral', remaining: 0, overG: 0 });
+  });
+  it('Infinity target -> neutral/neutral, remaining 0, overG 0', () => {
+    const r = classify('protein', 100, Infinity, 'cut');
+    expect(r).toEqual({ tone: 'neutral', excess: 'neutral', remaining: 0, overG: 0 });
+  });
 });
 
 describe('classify — consumed = 0', () => {

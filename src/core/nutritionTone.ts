@@ -98,7 +98,7 @@ export function classify(
   phase: PhaseType | undefined,
   opts?: { fatFloorG?: number },
 ): ToneStatus {
-  if (target == null || target <= 0) {
+  if (target == null || !Number.isFinite(target) || target <= 0) {
     return { tone: 'neutral', excess: 'neutral', remaining: 0, overG: 0 };
   }
 
