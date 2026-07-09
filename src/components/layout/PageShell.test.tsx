@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import i18n from '@/i18n';
 import { PageShell } from './PageShell';
+
+function Loc() {
+  return <div data-testid="loc">{useLocation().pathname}</div>;
+}
 
 beforeEach(async () => {
   await i18n.changeLanguage('es');
@@ -35,5 +40,28 @@ describe('PageShell', () => {
     );
     expect(screen.getByRole('button', { name: 'Volver' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Cambiar de sección' })).not.toBeInTheDocument();
+  });
+
+  it('back={true} goes back in history without navigating to a route', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/diary', '/settings']} initialIndex={1}>
+        <Routes>
+          <Route
+            path="*"
+            element={
+              <>
+                <PageShell title="Perfil" back={true}>
+                  <p>cuerpo</p>
+                </PageShell>
+                <Loc />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(screen.getByTestId('loc')).toHaveTextContent('/diary');
   });
 });
