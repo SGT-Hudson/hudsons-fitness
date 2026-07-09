@@ -35,6 +35,7 @@ vi.mock('@/pages/ExerciseDetailPage', () => ({ ExerciseDetailPage: () => <div>Ex
 vi.mock('@/pages/ProgresoPage', () => ({ ProgresoPage: () => <div>ProgresoPage</div> }));
 vi.mock('@/pages/ObjetivosPage', () => ({ ObjetivosPage: () => <div>ObjetivosPage</div> }));
 vi.mock('@/pages/SettingsPage', () => ({ SettingsPage: () => <div>SettingsPage</div> }));
+vi.mock('@/pages/MorePage', () => ({ MorePage: () => <div>MorePage</div> }));
 vi.mock('@/pages/settings/SettingsProfilePage', () => ({ SettingsProfilePage: () => <div>SettingsProfilePage</div> }));
 vi.mock('@/pages/settings/SettingsBiometricsPage', () => ({ SettingsBiometricsPage: () => <div>SettingsBiometricsPage</div> }));
 vi.mock('@/pages/settings/SettingsAccountPage', () => ({ SettingsAccountPage: () => <div>SettingsAccountPage</div> }));
@@ -79,5 +80,10 @@ describe('AppRoutes', () => {
   it('redirects the index to /diary', () => {
     render(<MemoryRouter initialEntries={['/']}><AppRoutes /></MemoryRouter>);
     expect(screen.getByText('DiarioPage')).toBeInTheDocument();
+  });
+
+  it('routes /more to the More hub page', () => {
+    render(<MemoryRouter initialEntries={['/more']}><AppRoutes /></MemoryRouter>);
+    expect(screen.getByText('MorePage')).toBeInTheDocument();
   });
 });

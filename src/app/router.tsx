@@ -18,6 +18,7 @@ import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { MorePage } from '@/pages/MorePage';
 import { SettingsProfilePage } from '@/pages/settings/SettingsProfilePage';
 import { SettingsBiometricsPage } from '@/pages/settings/SettingsBiometricsPage';
 import { SettingsAccountPage } from '@/pages/settings/SettingsAccountPage';
@@ -135,6 +136,7 @@ export function AppRoutes() {
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/biometrics" element={<SettingsBiometricsPage />} />
           <Route path="/settings/account" element={<SettingsAccountPage />} />
+          <Route path="/more" element={<MorePage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
