@@ -7,7 +7,7 @@ import { aggregateDayMacros } from '@/features/planning/daySummary';
 import { ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { formatDate, type Locale } from '@/lib/dates';
 import { cn } from '@/lib/utils';
-import type { PhaseType } from '@/lib/macroStatus';
+import type { PhaseType } from '@/core/nutritionTone';
 import type { WeekSlotWithRecipe } from '@/features/planner/api';
 
 interface Props {

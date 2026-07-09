@@ -3,7 +3,7 @@ import { SlotCell, type SlotEntry } from './SlotCell';
 import { DaySummary } from './DaySummary';
 import { aggregateDayMacros } from '@/features/planning/daySummary';
 import { scale, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
-import type { PhaseType } from '@/lib/macroStatus';
+import type { PhaseType } from '@/core/nutritionTone';
 
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 

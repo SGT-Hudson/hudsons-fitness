@@ -40,7 +40,7 @@ describe('MacroBar', () => {
     expect(widths(container)).toEqual(['0%']);
   });
 
-  it('paints a good-tone overshoot with excess-neutral, not the retired excess-good', () => {
+  it('paints a good-tone overshoot with excess-neutral', () => {
     // protein/fibre overshoot past target while tone stays "good": excess is neutral, not a reward colour.
     const { container } = render(<MacroBar consumed={110} target={100} tone="good" excess="neutral" />);
     const excessSeg = container.querySelector('[data-excess="neutral"]');
