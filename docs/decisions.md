@@ -67,6 +67,8 @@ no change. Existing entries are immutable history and stay as written.
 - D-F14 — R-33 muscle-heatmap ramp: gray→amber→red replaced by token-driven `color-mix` gym-blue ramp
 - D-F15 — R-33 token extensions beyond canvas `tokens.css` (tone/excess/amber-ink/heat tokens), pending tone-core reconciliation
 - D-F16 — R-33 wave 0 navigation IA: two section apps with a root-screen switch, `/more` hub, collapsible desktop sidebar
+- D-F17 — R-33 tone core: canvas `nutritionTone.ts` replaces `macroStatus.ts`, canvas thresholds and tone vocabulary win
+- D-F18 — R-33 fat essential floor: `0.6 g/kg` of bodyweight, derived at render, never stored
 
 ## D-A1 — Shared crowdsourced `ingredients` library — keep
 
@@ -464,7 +466,7 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **Why:** The hardcoded-colour sweep (this PR) needed semantic slots for macro-excess states, informational/warning/success text, the amber-badge ink color, and the heatmap's zero/non-muscle fills — none of which the canvas spec enumerates yet. Rather than block the sweep on a canvas update, these were added now as the closest reasonable interpretation of the canvas's existing tone conventions, explicitly flagged here as provisional: they are expected to be reconciled (renamed, retuned, or merged) once the R-33 tone core lands upstream in the canvas, and this entry is the marker for that follow-up.
 
-**Status:** decided · pending reconciliation with the R-33 tone core (2026-07-06)
+**Status:** resolved (D-F17/D-F18, R-33 tone core, 2026-07-09) — nothing upstream to reconcile against: the canvas has no `--tone-*` or `--excess-*` tokens at all, `TONE` and `EXCESS` are hardcoded OKLCH literals in `planificador-tone.jsx`, light-only, and the light values here already match those literals exactly. The tone core landed instead having retired `--tone-info` and `--excess-good` as dead, and brought the previously-unused `--excess-neutral` into use.
 
 ## D-F16 — R-33 wave 0 navigation IA: two section apps with root-screen switch
 
@@ -473,3 +475,19 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **Why:** Slot scarcity ruled out a single unified bar — both Planificador and Recetas need a slot and a 5-tab bar can't fit the full nutri set alongside gym's. Splitting into two section-scoped bars keeps each bar's item count sane and lets each bar hold strict per-section accent discipline (no cross-section accent bleed). It also matches the owner's preferred mental model of nutrition and training as two distinct apps you switch between, not one merged tab set. Full rationale in `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md` §4.
 
 **Status:** decided · in progress (R-33 wave 0, 2026-07-09)
+
+## D-F17 — R-33 tone core: canvas `nutritionTone.ts` replaces `macroStatus.ts`
+
+**Ruling:** The design canvas's thresholds and tone vocabulary win over `src/lib/macroStatus.ts`'s improvised bands, wholesale. Concretely, what a user now sees differently: the `budget` (blue) state is dropped, so under-target in a cut simply reads green; protein under target now warns where it used to be silently grey (amber below −3 %, red below −10 %); carbs in a bulk phase read green rather than grey; maintenance overshoot is amber, not red; the maintenance band tightens from ±5 % to ±3 %; cut kcal moves from absolute margins (+50/+100 kcal) to percentages (+1.5 %/+5 %). Two ports carry deliberate judgement, not a verbatim transcription: `getExcessTone`'s `metric` and `phase` parameters are declared in the canvas but never read there, so they were not ported; and fat's `pct > 0.10 → slightOver` rule is left ungated by phase, because the canvas *code* is authoritative over its own prose, which says the rule applies "en déficit" — the code disagrees with its own comment, and the code wins.
+
+**Why:** The parent spec's source-authority order puts the canvas above the app's improvised bands, and the app is pre-production, so no migration or dual-read period is owed to existing data or users.
+
+**Status:** decided · done (R-33 tone core, 2026-07-09)
+
+## D-F18 — R-33 fat essential floor: `0.6 g/kg` of bodyweight, derived at render
+
+**Ruling:** The fat essential floor is `FAT_FLOOR_G_PER_KG = 0.6`, applied to the user's latest bodyweight measurement and derived at render — never stored (hard invariant 5).
+
+**Why:** The canvas never defines the floor's provenance — it is always injected, and always the literal `48` in its fixtures. The shipped app derived it as 20 % of target kcal ÷ 9, which makes a physiological floor move whenever the user eats less. All three definitions — the canvas fixture, the shipped kcal-derived formula, and the new bodyweight-derived one — coincide near 48 g for an 80 kg athlete on 2180 kcal, and diverge exactly where the energy-based one is wrong: an essential floor should track the body, not the day's target. Consequence: bodyweight is now threaded to the two consumers from `useLatestMeasurement`; when no measurement exists the floor is unknown and no fat-floor rule applies.
+
+**Status:** decided · done (R-33 tone core, 2026-07-09)
