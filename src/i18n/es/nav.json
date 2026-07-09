@@ -12,6 +12,19 @@
     "entreno": "Entreno"
   },
   "switchSection": "Cambiar de sección",
+  "more": "Más",
+  "templates": "Plantillas",
+  "goals": "Objetivos",
+  "back": "Volver",
+  "sidebar": {
+    "collapse": "Contraer menú",
+    "expand": "Expandir menú"
+  },
+  "groups": {
+    "nutricion": "Nutrición",
+    "entreno": "Entrenamiento",
+    "analisis": "Análisis"
+  },
   "account": "Cuenta",
   "settings": "Ajustes",
   "inProgress": {
