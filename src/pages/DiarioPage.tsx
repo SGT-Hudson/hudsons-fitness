@@ -5,6 +5,7 @@ import { CopyPlus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageShell } from '@/components/layout/PageShell';
 import { CopyDayDialog } from '@/features/diario/components/CopyDayDialog';
 import { DateNavigator } from '@/features/diario/components/DateNavigator';
 import { DayTotalsCard } from '@/features/diario/components/DayTotalsCard';
@@ -128,22 +129,23 @@ export function DiarioPage() {
     setDialogOpen(true);
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setCopyOpen(true)}>
-            <CopyPlus className="h-4 w-4" />
-            {t('copyDay.open')}
-          </Button>
-          <Button onClick={() => openNew('breakfast')}>
-            <Plus className="h-4 w-4" />
-            {t('addEntry')}
-          </Button>
-        </div>
-      </div>
+  const headerActions = (
+    <div className="flex flex-wrap gap-2">
+      <Button variant="outline" onClick={() => setCopyOpen(true)}>
+        <CopyPlus className="h-4 w-4" />
+        {t('copyDay.open')}
+      </Button>
+      <Button onClick={() => openNew('breakfast')}>
+        <Plus className="h-4 w-4" />
+        {t('addEntry')}
+      </Button>
+    </div>
+  );
 
+  return (
+    <PageShell title={t('pageTitle')} actions={headerActions}>
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 md:hidden">{headerActions}</div>
       <DateNavigator date={date} onChange={changeDate} />
 
       <DayTotalsCard
@@ -209,5 +211,6 @@ export function DiarioPage() {
         targetDate={date}
       />
     </div>
+    </PageShell>
   );
 }

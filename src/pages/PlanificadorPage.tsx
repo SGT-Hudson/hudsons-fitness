@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { PageShell } from '@/components/layout/PageShell';
 import { ApplyTemplateDialog } from '@/features/planning/components/ApplyTemplateDialog';
 import { CopyMealDialog, type CopyTarget } from '@/features/planning/components/CopyMealDialog';
 import { SaveAsTemplateDialog } from '@/features/planning/components/SaveAsTemplateDialog';
@@ -98,51 +99,51 @@ export function PlanificadorPage() {
     deleteSlot.isPending ||
     saveAs.isPending;
 
+  const headerActions = (
+    <div className="flex flex-wrap gap-2">
+      <Button variant="outline" asChild>
+        <Link to="/templates">
+          <FileBox className="h-4 w-4" />
+          {t('planner.manageTemplates')}
+        </Link>
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => setApplyOpen(true)}
+        disabled={!hasTemplates}
+        title={!hasTemplates ? t('planner.needTemplate') : undefined}
+      >
+        <ArrowLeftRight className="h-4 w-4" />
+        {week.data?.source_template_id ? t('planner.swapTemplate') : t('planner.applyTemplate')}
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => setSaveOpen(true)}
+        disabled={!week.data || week.data.slots.length === 0}
+      >
+        <Save className="h-4 w-4" />
+        {t('planner.saveAsTemplate')}
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => setShoppingOpen(true)}
+        disabled={!week.data || week.data.slots.length === 0}
+      >
+        <ShoppingCart className="h-4 w-4" />
+        {t('shopping.open')}
+      </Button>
+    </div>
+  );
+
   return (
+    <PageShell title={t('planner.pageTitle')} actions={headerActions}>
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('planner.pageTitle')}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t('planner.weekOf', {
-              date: formatDate(weekStart, 'd MMM yyyy', locale),
-            })}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" asChild>
-            <Link to="/templates">
-              <FileBox className="h-4 w-4" />
-              {t('planner.manageTemplates')}
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setApplyOpen(true)}
-            disabled={!hasTemplates}
-            title={!hasTemplates ? t('planner.needTemplate') : undefined}
-          >
-            <ArrowLeftRight className="h-4 w-4" />
-            {week.data?.source_template_id ? t('planner.swapTemplate') : t('planner.applyTemplate')}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setSaveOpen(true)}
-            disabled={!week.data || week.data.slots.length === 0}
-          >
-            <Save className="h-4 w-4" />
-            {t('planner.saveAsTemplate')}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShoppingOpen(true)}
-            disabled={!week.data || week.data.slots.length === 0}
-          >
-            <ShoppingCart className="h-4 w-4" />
-            {t('shopping.open')}
-          </Button>
-        </div>
-      </div>
+      <div className="flex flex-wrap gap-2 md:hidden">{headerActions}</div>
+      <p className="text-sm text-muted-foreground">
+        {t('planner.weekOf', {
+          date: formatDate(weekStart, 'd MMM yyyy', locale),
+        })}
+      </p>
 
       {week.data?.source_template_name && (
         <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
@@ -266,5 +267,6 @@ export function PlanificadorPage() {
         }}
       />
     </div>
+    </PageShell>
   );
 }

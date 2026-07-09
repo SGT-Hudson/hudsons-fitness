@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SettingsSubpageHeader } from '@/components/layout/SettingsSubpageHeader';
+import { PageShell } from '@/components/layout/PageShell';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
 import {
   biometricsFormSchema,
@@ -67,8 +67,8 @@ export function SettingsBiometricsPage() {
   const showRequired = form.formState.isSubmitted && errs.some((e) => e?.message !== 'range');
 
   return (
+    <PageShell title={t('biometrics.title')} back="/settings">
     <div className="space-y-6 max-w-2xl">
-      <SettingsSubpageHeader title={t('biometrics.title')} />
       <p className="text-sm text-muted-foreground">{t('biometrics.description')}</p>
       <Card>
         <CardContent className="pt-6">
@@ -122,5 +122,6 @@ export function SettingsBiometricsPage() {
         </CardContent>
       </Card>
     </div>
+    </PageShell>
   );
 }

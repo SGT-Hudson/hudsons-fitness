@@ -4,6 +4,7 @@ import { Plus, Search } from 'lucide-react';
 import { RecipesTabs } from './RecipesTabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PageShell } from '@/components/layout/PageShell';
 import { IngredientList } from '@/features/ingredients/components/IngredientList';
 import { IngredientDialog } from '@/features/ingredients/components/IngredientDialog';
 import { useLocalIngredientSearchPage } from '@/features/ingredients/hooks';
@@ -38,14 +39,18 @@ export function IngredientesPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <RecipesTabs />
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <PageShell
+      title={t('pageTitle')}
+      back="/recipes"
+      actions={
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
           {t('newIngredient')}
         </Button>
-      </div>
+      }
+    >
+    <div className="space-y-4">
+      <RecipesTabs />
 
       <p className="text-sm text-muted-foreground">{t('description')}</p>
 
@@ -83,5 +88,6 @@ export function IngredientesPage() {
         initial={editing}
       />
     </div>
+    </PageShell>
   );
 }

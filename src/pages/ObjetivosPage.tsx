@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { PageShell } from '@/components/layout/PageShell';
 import {
   Dialog,
   DialogContent,
@@ -152,6 +153,7 @@ export function ObjetivosPage() {
   const phaseBusy = createPhase.isPending || updatePhase.isPending;
 
   return (
+    <PageShell title={t('pageTitle')} back="/progress">
     <div className="space-y-8">
       <ProgressTabs />
 
@@ -362,5 +364,6 @@ export function ObjetivosPage() {
         notesOnly={notesOnly}
       />
     </div>
+    </PageShell>
   );
 }

@@ -5,6 +5,7 @@ import { Plus, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { PageShell } from '@/components/layout/PageShell';
 import { useRoutines, useDeleteRoutine } from '@/features/training/routines/hooks';
 import { usePrograms, useDeleteProgram, useSetActiveProgram } from '@/features/training/programs/hooks';
 import { todayInTZ } from '@/lib/dates';
@@ -34,9 +35,8 @@ export function RoutinePage() {
   }
 
   return (
+    <PageShell title={t('routine.pageTitle')}>
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold tracking-tight">{t('routine.pageTitle')}</h1>
-
       <Tabs defaultValue="routines">
         <TabsList>
           <TabsTrigger value="routines">{t('tabs.routines')}</TabsTrigger>
@@ -178,5 +178,6 @@ export function RoutinePage() {
         </TabsContent>
       </Tabs>
     </div>
+    </PageShell>
   );
 }

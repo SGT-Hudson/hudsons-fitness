@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SettingsSubpageHeader } from '@/components/layout/SettingsSubpageHeader';
+import { PageShell } from '@/components/layout/PageShell';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
 import {
   displayNameFormSchema,
@@ -41,8 +41,8 @@ export function SettingsProfilePage() {
   }
 
   return (
+    <PageShell title={t('profile.title')} back="/settings">
     <div className="space-y-6 max-w-2xl">
-      <SettingsSubpageHeader title={t('profile.title')} />
       <p className="text-sm text-muted-foreground">{t('profile.description')}</p>
       <Card>
         <CardContent className="pt-6">
@@ -64,5 +64,6 @@ export function SettingsProfilePage() {
         </CardContent>
       </Card>
     </div>
+    </PageShell>
   );
 }

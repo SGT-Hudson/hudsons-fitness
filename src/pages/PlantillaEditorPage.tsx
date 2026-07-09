@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageShell } from '@/components/layout/PageShell';
 import { MealTimesEditor } from '@/features/planning/components/MealTimesEditor';
 import { CopyMealDialog, type CopyTarget } from '@/features/planning/components/CopyMealDialog';
 import {
@@ -198,19 +199,15 @@ export function PlantillaEditorPage() {
   }
 
   return (
+    <PageShell title={isNew ? t('editor.newTitle') : t('editor.editTitle')} back="/templates">
     <form onSubmit={handleSubmit(onValid, onInvalid)} className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-3xl font-bold tracking-tight">
-          {isNew ? t('editor.newTitle') : t('editor.editTitle')}
-        </h1>
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={() => navigate('/templates')}>
-            {tCommon('cancel')}
-          </Button>
-          <Button type="submit" disabled={save.isPending}>
-            {save.isPending ? tCommon('loading') : tCommon('save')}
-          </Button>
-        </div>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => navigate('/templates')}>
+          {tCommon('cancel')}
+        </Button>
+        <Button type="submit" disabled={save.isPending}>
+          {save.isPending ? tCommon('loading') : tCommon('save')}
+        </Button>
       </div>
 
       <Card>
@@ -262,6 +259,7 @@ export function PlantillaEditorPage() {
         onConfirm={handleCopyMeal}
       />
     </form>
+    </PageShell>
   );
 }
 

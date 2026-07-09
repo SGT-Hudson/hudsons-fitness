@@ -5,14 +5,22 @@
   "ingredients": "Ingredientes",
   "progress": "Progreso",
   "today": "Hoy",
-  "routine": "Rutina",
+  "routine": "Rutinas",
   "exercises": "Ejercicios",
-  "section": {
-    "nutricion": "Nutrición",
-    "entreno": "Entreno"
-  },
   "switchSection": "Cambiar de sección",
-  "account": "Cuenta",
+  "more": "Más",
+  "templates": "Plantillas",
+  "goals": "Objetivos",
+  "back": "Volver",
+  "sidebar": {
+    "collapse": "Contraer menú",
+    "expand": "Expandir menú"
+  },
+  "groups": {
+    "nutricion": "Nutrición",
+    "entreno": "Entrenamiento",
+    "analisis": "Análisis"
+  },
   "settings": "Ajustes",
   "inProgress": {
     "title": "En progreso",

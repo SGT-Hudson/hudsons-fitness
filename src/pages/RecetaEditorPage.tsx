@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { PageShell } from '@/components/layout/PageShell';
 import {
   emptyEditorState,
   recipeToEditorState,
@@ -63,25 +64,24 @@ export function RecetaEditorPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">
-        {isNew ? t('editor.newTitle') : t('editor.editTitle')}
-      </h1>
-      {/* R-01 (★ model item 5): make the shared-library contract loud at
-          create time. Private content belongs in the per-user note on the
-          reference row (not yet UI-surfaced — coming with the library
-          notes feature), not in the recipe's name/description. */}
-      {isNew && (
-        <p className="text-sm text-muted-foreground">{t('editor.sharedLibraryHint')}</p>
-      )}
-      <RecipeEditorForm
-        initial={initial ?? emptyEditorState()}
-        submitting={save.isPending}
-        error={error}
-        onSubmit={handleSubmit}
-        onCancel={() => navigate('/recipes')}
-        onDuplicate={!isNew && recipeQuery.data ? handleDuplicate : undefined}
-      />
-    </div>
+    <PageShell title={isNew ? t('editor.newTitle') : t('editor.editTitle')} back="/recipes">
+      <div className="space-y-6">
+        {/* R-01 (★ model item 5): make the shared-library contract loud at
+            create time. Private content belongs in the per-user note on the
+            reference row (not yet UI-surfaced — coming with the library
+            notes feature), not in the recipe's name/description. */}
+        {isNew && (
+          <p className="text-sm text-muted-foreground">{t('editor.sharedLibraryHint')}</p>
+        )}
+        <RecipeEditorForm
+          initial={initial ?? emptyEditorState()}
+          submitting={save.isPending}
+          error={error}
+          onSubmit={handleSubmit}
+          onCancel={() => navigate('/recipes')}
+          onDuplicate={!isNew && recipeQuery.data ? handleDuplicate : undefined}
+        />
+      </div>
+    </PageShell>
   );
 }

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PaginationBar } from '@/components/ui/PaginationBar';
+import { PageShell } from '@/components/layout/PageShell';
 import { usePagination } from '@/hooks/usePagination';
 import { ExerciseCard } from '@/features/training/components/ExerciseCard';
 import { ExerciseFilters } from '@/features/training/components/ExerciseFilters';
@@ -63,11 +64,9 @@ export function ExercisesPage() {
   const rows = browse.data?.rows ?? [];
 
   return (
+    <PageShell title={t('browse.title')}>
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">{t('browse.title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('browse.subtitle')}</p>
-      </div>
+      <p className="text-sm text-muted-foreground">{t('browse.subtitle')}</p>
 
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
@@ -115,5 +114,6 @@ export function ExercisesPage() {
         onPageSizeChange={setPageSize}
       />
     </div>
+    </PageShell>
   );
 }

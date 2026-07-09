@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { PageShell } from '@/components/layout/PageShell';
 import {
   RECIPE_MEAL_TYPES,
   toRecipeMealTypes,
@@ -147,8 +148,17 @@ export function RecetasPage() {
     hide.mutate(id);
   }
 
+  const headerActions = (
+    <Button onClick={() => navigate('/recipes/new')}>
+      <Plus className="h-4 w-4" />
+      {t('newRecipe')}
+    </Button>
+  );
+
   return (
+    <PageShell title={t('pageTitle')} actions={headerActions}>
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 md:hidden">{headerActions}</div>
       <RecipesTabs />
       <div className="flex items-center gap-2">
           <div className="inline-flex rounded-md border bg-background p-0.5">
@@ -175,10 +185,6 @@ export function RecetasPage() {
               <List className="h-4 w-4" />
             </button>
           </div>
-          <Button onClick={() => navigate('/recipes/new')}>
-            <Plus className="h-4 w-4" />
-            {t('newRecipe')}
-          </Button>
       </div>
 
       <div className="relative">
@@ -383,5 +389,6 @@ export function RecetasPage() {
         onPageSizeChange={setPageSize}
       />
     </div>
+    </PageShell>
   );
 }

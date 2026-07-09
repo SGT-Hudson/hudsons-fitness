@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageShell } from '@/components/layout/PageShell';
 import { RoutineBuilder } from '@/features/training/components/RoutineBuilder';
 import { useRoutine, useSaveRoutine } from '@/features/training/routines/hooks';
 import { supabase } from '@/lib/supabase';
@@ -51,24 +50,13 @@ export function RoutineEditorPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Button asChild size="icon" variant="ghost" aria-label={t('routine.back')}>
-          <Link to="/routine">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {isEdit ? t('routine.editTitle') : t('routine.newTitle')}
-        </h1>
-      </div>
-
+    <PageShell title={isEdit ? t('routine.editTitle') : t('routine.newTitle')} back="/routine">
       <RoutineBuilder
         initial={routine.data ?? null}
         initialExercises={exerciseMap}
         onSubmit={(payload) => save.mutateAsync(payload)}
         onSaved={() => navigate('/routine')}
       />
-    </div>
+    </PageShell>
   );
 }

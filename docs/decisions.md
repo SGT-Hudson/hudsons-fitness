@@ -66,6 +66,7 @@ no change. Existing entries are immutable history and stay as written.
 - D-F13 — R-33 typography: self-hosted Rubik Variable + Geist Mono Variable (fontsource, no CDN), canvas type-scale utilities, PWA green `#13702f`
 - D-F14 — R-33 muscle-heatmap ramp: gray→amber→red replaced by token-driven `color-mix` gym-blue ramp
 - D-F15 — R-33 token extensions beyond canvas `tokens.css` (tone/excess/amber-ink/heat tokens), pending tone-core reconciliation
+- D-F16 — R-33 wave 0 navigation IA: two section apps with a root-screen switch, `/more` hub, collapsible desktop sidebar
 
 ## D-A1 — Shared crowdsourced `ingredients` library — keep
 
@@ -464,3 +465,11 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **Why:** The hardcoded-colour sweep (this PR) needed semantic slots for macro-excess states, informational/warning/success text, the amber-badge ink color, and the heatmap's zero/non-muscle fills — none of which the canvas spec enumerates yet. Rather than block the sweep on a canvas update, these were added now as the closest reasonable interpretation of the canvas's existing tone conventions, explicitly flagged here as provisional: they are expected to be reconciled (renamed, retuned, or merged) once the R-33 tone core lands upstream in the canvas, and this entry is the marker for that follow-up.
 
 **Status:** decided · pending reconciliation with the R-33 tone core (2026-07-06)
+
+## D-F16 — R-33 wave 0 navigation IA: two section apps with root-screen switch
+
+**Ruling:** Mobile navigation is two per-section apps — nutri: Diario · Planificador · Recetas · Progreso · Más; gym: Hoy · Rutinas · Ejercicios · Progreso — instead of the canvas's unified 5-tab bar. Cross-section travel is an icon-button in the `MobileTopBar` on every root screen (dumbbell ↔ leaf). `/more` hosts Ingredientes / Plantillas / Objetivos / Ajustes on mobile. Desktop uses one collapsible sidebar (grouping Nutrición / Entrenamiento / Análisis) — no switch needed there. Also locked here: bottom-nav anatomy follows the Convenciones §08 spec (19px icons / 9.5px labels / active `--accent-ink`), and `/templates` is nutri-owned in `sectionOf`.
+
+**Why:** Slot scarcity ruled out a single unified bar — both Planificador and Recetas need a slot and a 5-tab bar can't fit the full nutri set alongside gym's. Splitting into two section-scoped bars keeps each bar's item count sane and lets each bar hold strict per-section accent discipline (no cross-section accent bleed). It also matches the owner's preferred mental model of nutrition and training as two distinct apps you switch between, not one merged tab set. Full rationale in `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md` §4.
+
+**Status:** decided · in progress (R-33 wave 0, 2026-07-09)

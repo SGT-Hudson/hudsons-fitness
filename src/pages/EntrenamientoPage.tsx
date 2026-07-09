@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageShell } from '@/components/layout/PageShell';
 import { SessionList } from '@/features/training/components/SessionList';
 import { TodayPlan } from '@/features/training/components/TodayPlan';
 import { MuscleActivityView } from '@/features/training/muscleMap/MuscleActivityView';
@@ -132,18 +133,19 @@ export function EntrenamientoPage() {
     setActiveProgramMutation.mutate({ programId: active.id, anchorDateISO: todayInTZ() });
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('page.title')}</h1>
-        <Button asChild>
-          <Link to="/training/new">
-            <Plus className="h-4 w-4 mr-1" />
-            {t('page.newSession')}
-          </Link>
-        </Button>
-      </div>
+  const headerActions = (
+    <Button asChild>
+      <Link to="/training/new">
+        <Plus className="h-4 w-4 mr-1" />
+        {t('page.newSession')}
+      </Link>
+    </Button>
+  );
 
+  return (
+    <PageShell title={t('page.title')} actions={headerActions}>
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 md:hidden">{headerActions}</div>
       <TodayPlan
         activeProgram={active}
         routinesById={routinesById}
@@ -164,5 +166,6 @@ export function EntrenamientoPage() {
         <SessionList />
       </div>
     </div>
+    </PageShell>
   );
 }
