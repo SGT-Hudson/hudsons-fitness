@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { PageShell } from '@/components/layout/PageShell';
 import { ApplyTemplateDialog } from '@/features/planning/components/ApplyTemplateDialog';
 import { CopyMealDialog, type CopyTarget } from '@/features/planning/components/CopyMealDialog';
 import { SaveAsTemplateDialog } from '@/features/planning/components/SaveAsTemplateDialog';
@@ -99,16 +100,9 @@ export function PlanificadorPage() {
     saveAs.isPending;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('planner.pageTitle')}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t('planner.weekOf', {
-              date: formatDate(weekStart, 'd MMM yyyy', locale),
-            })}
-          </p>
-        </div>
+    <PageShell
+      title={t('planner.pageTitle')}
+      actions={
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" asChild>
             <Link to="/templates">
@@ -142,7 +136,14 @@ export function PlanificadorPage() {
             {t('shopping.open')}
           </Button>
         </div>
-      </div>
+      }
+    >
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        {t('planner.weekOf', {
+          date: formatDate(weekStart, 'd MMM yyyy', locale),
+        })}
+      </p>
 
       {week.data?.source_template_name && (
         <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
@@ -266,5 +267,6 @@ export function PlanificadorPage() {
         }}
       />
     </div>
+    </PageShell>
   );
 }

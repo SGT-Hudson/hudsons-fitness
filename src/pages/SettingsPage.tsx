@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { PageShell } from '@/components/layout/PageShell';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
 import { useTheme, type Theme } from '@/features/theme/ThemeProvider';
@@ -85,16 +86,19 @@ export function SettingsPage() {
   }
 
   if (isLoading || !profile) {
-    return <p className="text-sm text-muted-foreground">{tCommon('loading')}</p>;
+    return (
+      <PageShell title={t('title')} back="/more">
+        <p className="text-sm text-muted-foreground">{tCommon('loading')}</p>
+      </PageShell>
+    );
   }
 
   const name = profile.display_name?.trim() || (user?.email?.split('@')[0] ?? '');
   const initial = (name || 'U').charAt(0).toUpperCase();
 
   return (
+    <PageShell title={t('title')} back="/more">
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-
       <Link
         to="/settings/profile"
         className="flex items-center gap-4 rounded-xl border bg-linear-to-br from-primary/5 to-primary/10 p-4 transition-colors hover:from-primary/10 hover:to-primary/15"
@@ -148,5 +152,6 @@ export function SettingsPage() {
         <LinkRow to="/settings/account" icon={<UserCog className="h-4 w-4" />} tone="rose" label={t('rows.accountAndSession')} />
       </Group>
     </div>
+    </PageShell>
   );
 }

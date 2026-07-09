@@ -29,9 +29,13 @@ describe('AppLayout', () => {
       </MemoryRouter>,
     );
     expect(screen.getByText('diary-content')).toBeInTheDocument();
-    // mobile switcher trigger + desktop sidebar group label both in DOM (CSS toggles visibility)
-    expect(screen.getByRole('button', { name: /Nutrición/ })).toBeInTheDocument();
+    // sidebar group label (desktop) confirms AppSidebar renders
     expect(screen.getByText('Entrenamiento')).toBeInTheDocument();
+    // "Diario" link renders in both the desktop sidebar and the mobile bottom
+    // nav (CSS toggles visibility) — confirms BottomNav renders too.
+    const diaryLinks = screen.getAllByRole('link', { name: 'Diario' });
+    expect(diaryLinks).toHaveLength(2);
+    for (const link of diaryLinks) expect(link).toHaveAttribute('href', '/diary');
   });
 
   it('toggles the section-accent class on <html> (not the layout div) so portaled overlays inherit it', () => {
