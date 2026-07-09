@@ -8,12 +8,12 @@ import { roundMacro, type Macros, type SubMacros } from '@/features/recipes/macr
 import type { PartialSub } from '@/core/subMacros';
 import type { TdeeConfidence } from '@/features/tdee/api';
 import {
-  classifyMacro,
+  classify,
   essentialFatFloorG,
-  type MacroKey,
-  type MacroTone,
+  type Metric,
+  type Tone,
   type PhaseType,
-} from '@/lib/macroStatus';
+} from '@/core/nutritionTone';
 import type { ProteinBasis } from '@/lib/macros';
 
 interface Props {
@@ -25,7 +25,7 @@ interface Props {
   tdeeConfidence?: TdeeConfidence | null;
   /** Active phase type — drives kcal budget vs goal semantics (Theme 1). */
   phaseType?: PhaseType;
-  /** Current bodyweight in kg, for the fat essential floor. Not yet consumed here. */
+  /** Current bodyweight in kg, for the fat essential floor. */
   weightKg?: number;
 }
 
@@ -52,14 +52,12 @@ function SubMacroLine({ label, part }: { label: string; part: PartialSub }) {
   );
 }
 
-const TEXT_TONE: Record<MacroTone, string> = {
-  budget: 'text-tone-info',
+const TEXT_TONE: Record<Tone, string> = {
+  good: 'text-tone-good',
   onTarget: 'text-tone-good',
-  floorMet: 'text-tone-good',
   slightOver: 'text-tone-warn',
-  surplusHigh: 'text-tone-warn',
+  low: 'text-tone-warn',
   over: 'text-destructive',
-  fatLow: 'text-destructive',
   neutral: 'text-muted-foreground',
 };
 
@@ -73,7 +71,7 @@ function MacroBlock({
   fatFloor,
 }: {
   label: string;
-  macroKey: MacroKey;
+  macroKey: Metric;
   consumed: number;
   target?: number;
   phaseType?: PhaseType;
@@ -81,23 +79,23 @@ function MacroBlock({
   fatFloor?: number;
 }) {
   const { t } = useTranslation('diario');
-  const s = classifyMacro(
+  const s = classify(
     macroKey,
     consumed,
     target,
     phaseType,
-    macroKey === 'fatG' && fatFloor != null ? { essentialFatFloorG: fatFloor } : undefined,
+    macroKey === 'fat' && fatFloor != null ? { fatFloorG: fatFloor } : undefined,
   );
   const hasTarget = target != null && target > 0;
 
   let sub: string | null = null;
   if (hasTarget) {
     const n = Math.abs(roundMacro(s.remaining));
-    if (macroKey === 'proteinG') {
-      sub = s.tone === 'floorMet' ? t('totals.floorMet', { n }) : t('totals.remainingG', { n });
-    } else if (macroKey === 'fiberG') {
-      // fiber is informational: only show "met" state, no warning when under
-      sub = s.tone === 'floorMet' ? t('totals.floorMet', { n }) : t('totals.remainingG', { n });
+    if (macroKey === 'protein' || macroKey === 'fiber') {
+      // protein/fiber are floors: show "met" once the floor is reached, no
+      // warning when under (fiber has no ceiling; protein under-target still
+      // paints via TEXT_TONE, not via this caption).
+      sub = s.remaining <= 0 ? t('totals.floorMet', { n }) : t('totals.remainingG', { n });
     } else {
       sub = s.remaining >= 0 ? t('totals.remainingG', { n }) : t('totals.overG', { n });
     }
@@ -128,7 +126,7 @@ function MacroBlock({
               {sub}
             </div>
           )}
-          {s.tone === 'fatLow' && (
+          {macroKey === 'fat' && s.tone === 'over' && (
             <div className="flex items-center gap-1 text-[10px] font-semibold text-destructive">
               <span>{t('totals.fatLow')}</span>
               <button
@@ -154,6 +152,7 @@ export function DayTotalsCard({
   proteinBasis,
   tdeeConfidence,
   phaseType,
+  weightKg,
 }: Props) {
   const { t } = useTranslation('diario');
 
@@ -167,12 +166,12 @@ export function DayTotalsCard({
   const showTdeeBadge =
     !!targets && (tdeeConfidence === 'low' || tdeeConfidence === 'medium');
 
-  const fatFloor = targets ? essentialFatFloorG(targets.kcal) : 0;
+  const fatFloor = weightKg != null ? essentialFatFloorG(weightKg) : undefined;
 
   // kcal hero (phase-aware). Hidden when no target.
-  let hero: { value: number; label: string; tone: MacroTone } | null = null;
+  let hero: { value: number; label: string; tone: Tone } | null = null;
   if (targets) {
-    const k = classifyMacro('kcal', totals.kcal, targets.kcal, phaseType);
+    const k = classify('kcal', totals.kcal, targets.kcal, phaseType);
     const remaining = roundMacro(k.remaining);
     if (phaseType === 'bulk') {
       hero = { value: Math.max(remaining, 0), label: t('totals.heroToGoal'), tone: k.tone };
@@ -223,7 +222,7 @@ export function DayTotalsCard({
         <div className="grid grid-cols-2 gap-4">
           <MacroBlock
             label={t('totals.protein')}
-            macroKey="proteinG"
+            macroKey="protein"
             consumed={totals.proteinG}
             target={targets?.proteinG}
             phaseType={phaseType}
@@ -231,14 +230,14 @@ export function DayTotalsCard({
           />
           <MacroBlock
             label={t('totals.carbs')}
-            macroKey="carbsG"
+            macroKey="carbs"
             consumed={totals.carbsG}
             target={targets?.carbsG}
             phaseType={phaseType}
           />
           <MacroBlock
             label={t('totals.fat')}
-            macroKey="fatG"
+            macroKey="fat"
             consumed={totals.fatG}
             target={targets?.fatG}
             phaseType={phaseType}
@@ -246,7 +245,7 @@ export function DayTotalsCard({
           />
           <MacroBlock
             label={t('totals.fiber')}
-            macroKey="fiberG"
+            macroKey="fiber"
             consumed={totals.fiberG}
             target={targets?.fiberG}
             phaseType={phaseType}

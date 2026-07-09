@@ -7,7 +7,8 @@ const Z = { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0 };
 
 describe('DayTotalsCard', () => {
   it('over-protein renders the met (green) class; protein bar is not destructive', () => {
-    // fat=50 is above the essential floor (round(0.20*2000/9)=44g) to avoid fatLow
+    // No weightKg passed → fat floor is unknown, so fat (well under its
+    // target) stays 'good' and can't accidentally paint destructive here.
     render(
       <DayTotalsCard
         totals={{ ...Z, kcal: 1180, proteinG: 175, fatG: 50 }}
@@ -65,30 +66,72 @@ describe('DayTotalsCard', () => {
     expect(screen.getByText(/2 (missing|sin datos)/i)).toBeInTheDocument();
   });
 
-  it('low-fiber day shows no amber warning — fiber is informational', () => {
+  it('fiber within 90% of target shows no amber warning — still informational near the floor', () => {
+    // 28/30 = 93.3%, at or above the tone core's 90% fiber threshold → good.
     const { container } = render(
       <DayTotalsCard
-        totals={{ ...Z, kcal: 1800, fiberG: 5 }}
+        totals={{ ...Z, kcal: 1800, fiberG: 28 }}
         targets={{ kcal: 2000, proteinG: 165, carbsG: 180, fatG: 60, fiberG: 30 }}
         phaseType="cut"
       />,
     );
-    // Must NOT render any amber or destructive text for fiber
     expect(container.querySelector('.text-tone-warn')).toBeNull();
     // Must NOT show the old "bajo el mínimo" / "below minimum" warning text
     expect(screen.queryByText(/bajo el mínimo|below minimum/i)).toBeNull();
   });
 
-  it('low-fat day shows the "Falta grasa" / "Low fat" aviso', () => {
-    // 2000 kcal → essential fat floor = round(0.20 * 2000 / 9) = 44 g
-    // Give only 10 g fat → below floor → fatLow
+  it('low-fat day shows the "Falta grasa" / "Low fat" aviso when weight puts fat below the essential floor', () => {
+    // weightKg 80 → floor round(0.6 * 80) = 48 g. Give only 10 g fat → below floor → over.
     render(
       <DayTotalsCard
         totals={{ ...Z, kcal: 1800, fatG: 10 }}
         targets={{ kcal: 2000, proteinG: 165, carbsG: 180, fatG: 60, fiberG: 30 }}
         phaseType="cut"
+        weightKg={80}
       />,
     );
     expect(screen.getByText(/falta grasa|low fat/i)).toBeInTheDocument();
+  });
+
+  // --- R-33 tone core: pinned user-visible behaviour changes (spec §1) ---
+
+  it('protein 20% under target renders text-destructive (was silent grey before the tone core)', () => {
+    render(
+      <DayTotalsCard
+        totals={{ ...Z, kcal: 1800, proteinG: 160, carbsG: 180, fatG: 60, fiberG: 28 }}
+        targets={{ kcal: 2180, proteinG: 200, carbsG: 245, fatG: 68, fiberG: 30 }}
+        phaseType="cut"
+      />,
+    );
+    const proteinLabel = screen.getByText(/^protein$|^proteína$/i);
+    const proteinBlock = proteinLabel.closest('div.space-y-1');
+    expect(proteinBlock?.querySelector('.text-destructive')).not.toBeNull();
+  });
+
+  it('carbs in a bulk phase render text-tone-good (were grey before the tone core)', () => {
+    render(
+      <DayTotalsCard
+        totals={{ ...Z, kcal: 2850, proteinG: 172, carbsG: 272, fatG: 60, fiberG: 29 }}
+        targets={{ kcal: 2780, proteinG: 168, carbsG: 245, fatG: 68, fiberG: 30 }}
+        phaseType="bulk"
+      />,
+    );
+    const carbsLabel = screen.getByText(/^carbs$|^carbohidratos$/i);
+    const carbsBlock = carbsLabel.closest('div.space-y-1');
+    expect(carbsBlock?.querySelector('.text-tone-good')).not.toBeNull();
+    expect(carbsBlock?.querySelector('.text-destructive')).toBeNull();
+  });
+
+  it('kcal in maintenance at +5.6% over target renders text-tone-warn (was text-destructive before)', () => {
+    const { container } = render(
+      <DayTotalsCard
+        totals={{ kcal: 2620, proteinG: 172, carbsG: 238, fatG: 60, fiberG: 29 }}
+        targets={{ kcal: 2480, proteinG: 168, carbsG: 245, fatG: 68, fiberG: 30 }}
+        phaseType="maintenance"
+      />,
+    );
+    const hero = container.querySelector('.text-4xl');
+    expect(hero).toHaveClass('text-tone-warn');
+    expect(hero).not.toHaveClass('text-destructive');
   });
 });

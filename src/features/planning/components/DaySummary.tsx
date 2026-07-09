@@ -4,21 +4,19 @@ import { cn } from '@/lib/utils';
 import { roundMacro, type Macros } from '@/features/recipes/macros';
 import { MacroBar } from '@/components/ui/MacroBar';
 import {
-  classifyMacro,
+  classify,
   essentialFatFloorG,
-  type MacroKey,
-  type MacroTone,
+  type Metric,
+  type Tone,
   type PhaseType,
-} from '@/lib/macroStatus';
+} from '@/core/nutritionTone';
 
-const TEXT_TONE: Record<MacroTone, string> = {
-  budget: 'text-tone-info',
+const TEXT_TONE: Record<Tone, string> = {
+  good: 'text-tone-good',
   onTarget: 'text-tone-good',
-  floorMet: 'text-tone-good',
   slightOver: 'text-tone-warn',
-  surplusHigh: 'text-tone-warn',
+  low: 'text-tone-warn',
   over: 'text-destructive',
-  fatLow: 'text-destructive',
   neutral: 'text-muted-foreground',
 };
 
@@ -27,20 +25,20 @@ interface Props {
   targets?: Macros;
   phaseType?: PhaseType;
   className?: string;
-  /** Current bodyweight in kg, for the fat essential floor. Not yet consumed here. */
+  /** Current bodyweight in kg, for the fat essential floor. */
   weightKg?: number;
 }
 
-export function DaySummary({ totals, targets, phaseType, className }: Props) {
+export function DaySummary({ totals, targets, phaseType, className, weightKg }: Props) {
   const { t } = useTranslation('planning');
-  const fatFloor = targets ? essentialFatFloorG(targets.kcal) : 0;
+  const fatFloor = weightKg != null ? essentialFatFloorG(weightKg) : undefined;
 
-  const kcal = classifyMacro('kcal', totals.kcal, targets?.kcal, phaseType);
-  const macroRows: { key: MacroKey; label: string; consumed: number; target?: number }[] = [
-    { key: 'proteinG', label: t('summary.protein'), consumed: totals.proteinG, target: targets?.proteinG },
-    { key: 'carbsG', label: t('summary.carbs'), consumed: totals.carbsG, target: targets?.carbsG },
-    { key: 'fatG', label: t('summary.fat'), consumed: totals.fatG, target: targets?.fatG },
-    { key: 'fiberG', label: t('summary.fiber'), consumed: totals.fiberG, target: targets?.fiberG },
+  const kcal = classify('kcal', totals.kcal, targets?.kcal, phaseType);
+  const macroRows: { key: Metric; label: string; consumed: number; target?: number }[] = [
+    { key: 'protein', label: t('summary.protein'), consumed: totals.proteinG, target: targets?.proteinG },
+    { key: 'carbs', label: t('summary.carbs'), consumed: totals.carbsG, target: targets?.carbsG },
+    { key: 'fat', label: t('summary.fat'), consumed: totals.fatG, target: targets?.fatG },
+    { key: 'fiber', label: t('summary.fiber'), consumed: totals.fiberG, target: targets?.fiberG },
   ];
 
   return (
@@ -60,19 +58,25 @@ export function DaySummary({ totals, targets, phaseType, className }: Props) {
       </div>
 
       {macroRows.map((r) => {
-        const s = classifyMacro(r.key, r.consumed, r.target, phaseType, { essentialFatFloorG: fatFloor });
+        const s = classify(
+          r.key,
+          r.consumed,
+          r.target,
+          phaseType,
+          r.key === 'fat' && fatFloor != null ? { fatFloorG: fatFloor } : undefined,
+        );
         return (
           <div key={r.key} className="space-y-0.5">
             <div className="flex justify-between items-baseline text-[10px] uppercase tracking-wide text-muted-foreground">
               <span>{r.label}</span>
-              <span className={cn('tabular-nums', s.tone === 'fatLow' && 'text-destructive', s.tone === 'floorMet' && 'text-tone-good')}>
+              <span className={cn('tabular-nums', TEXT_TONE[s.tone])}>
                 {roundMacro(r.consumed)}{r.target != null && <> / {roundMacro(r.target)}</>}
               </span>
             </div>
             {r.target != null && (
               <MacroBar consumed={r.consumed} target={r.target} tone={s.tone} excess={s.excess} minFloorG={s.minFloorG} />
             )}
-            {s.tone === 'fatLow' && (
+            {r.key === 'fat' && s.tone === 'over' && (
               <div className="flex items-center gap-1 text-[10px] font-semibold text-destructive">
                 <span>{t('summary.fatLow')}</span>
                 <button
