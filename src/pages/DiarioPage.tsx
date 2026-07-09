@@ -129,23 +129,23 @@ export function DiarioPage() {
     setDialogOpen(true);
   }
 
+  const headerActions = (
+    <div className="flex flex-wrap gap-2">
+      <Button variant="outline" onClick={() => setCopyOpen(true)}>
+        <CopyPlus className="h-4 w-4" />
+        {t('copyDay.open')}
+      </Button>
+      <Button onClick={() => openNew('breakfast')}>
+        <Plus className="h-4 w-4" />
+        {t('addEntry')}
+      </Button>
+    </div>
+  );
+
   return (
-    <PageShell
-      title={t('pageTitle')}
-      actions={
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setCopyOpen(true)}>
-            <CopyPlus className="h-4 w-4" />
-            {t('copyDay.open')}
-          </Button>
-          <Button onClick={() => openNew('breakfast')}>
-            <Plus className="h-4 w-4" />
-            {t('addEntry')}
-          </Button>
-        </div>
-      }
-    >
+    <PageShell title={t('pageTitle')} actions={headerActions}>
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 md:hidden">{headerActions}</div>
       <DateNavigator date={date} onChange={changeDate} />
 
       <DayTotalsCard

@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Dumbbell, Leaf } from 'lucide-react';
@@ -28,18 +27,16 @@ export function SectionSwitchButton() {
 interface MobileTopBarProps {
   title: string;
   subtitle?: string;
-  actions?: ReactNode;
 }
 
 /** Root-screen mobile header (canvas MobileTopBar). Hidden at md+. */
-export function MobileTopBar({ title, subtitle, actions }: MobileTopBarProps) {
+export function MobileTopBar({ title, subtitle }: MobileTopBarProps) {
   return (
     <header className="flex items-center gap-3 border-b bg-card px-5 pb-3 pt-2 md:hidden">
       <div className="flex min-w-0 flex-1 flex-col leading-[1.15]">
         <h1 className="truncate text-title-screen">{title}</h1>
         {subtitle && <span className="tnum text-xs text-text-dim">{subtitle}</span>}
       </div>
-      {actions}
       <SectionSwitchButton />
     </header>
   );

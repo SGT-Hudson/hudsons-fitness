@@ -99,46 +99,46 @@ export function PlanificadorPage() {
     deleteSlot.isPending ||
     saveAs.isPending;
 
+  const headerActions = (
+    <div className="flex flex-wrap gap-2">
+      <Button variant="outline" asChild>
+        <Link to="/templates">
+          <FileBox className="h-4 w-4" />
+          {t('planner.manageTemplates')}
+        </Link>
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => setApplyOpen(true)}
+        disabled={!hasTemplates}
+        title={!hasTemplates ? t('planner.needTemplate') : undefined}
+      >
+        <ArrowLeftRight className="h-4 w-4" />
+        {week.data?.source_template_id ? t('planner.swapTemplate') : t('planner.applyTemplate')}
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => setSaveOpen(true)}
+        disabled={!week.data || week.data.slots.length === 0}
+      >
+        <Save className="h-4 w-4" />
+        {t('planner.saveAsTemplate')}
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => setShoppingOpen(true)}
+        disabled={!week.data || week.data.slots.length === 0}
+      >
+        <ShoppingCart className="h-4 w-4" />
+        {t('shopping.open')}
+      </Button>
+    </div>
+  );
+
   return (
-    <PageShell
-      title={t('planner.pageTitle')}
-      actions={
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" asChild>
-            <Link to="/templates">
-              <FileBox className="h-4 w-4" />
-              {t('planner.manageTemplates')}
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setApplyOpen(true)}
-            disabled={!hasTemplates}
-            title={!hasTemplates ? t('planner.needTemplate') : undefined}
-          >
-            <ArrowLeftRight className="h-4 w-4" />
-            {week.data?.source_template_id ? t('planner.swapTemplate') : t('planner.applyTemplate')}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setSaveOpen(true)}
-            disabled={!week.data || week.data.slots.length === 0}
-          >
-            <Save className="h-4 w-4" />
-            {t('planner.saveAsTemplate')}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShoppingOpen(true)}
-            disabled={!week.data || week.data.slots.length === 0}
-          >
-            <ShoppingCart className="h-4 w-4" />
-            {t('shopping.open')}
-          </Button>
-        </div>
-      }
-    >
+    <PageShell title={t('planner.pageTitle')} actions={headerActions}>
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 md:hidden">{headerActions}</div>
       <p className="text-sm text-muted-foreground">
         {t('planner.weekOf', {
           date: formatDate(weekStart, 'd MMM yyyy', locale),

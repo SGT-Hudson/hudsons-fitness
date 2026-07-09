@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import i18n from '@/i18n';
@@ -30,6 +30,38 @@ describe('PageShell', () => {
     expect(screen.getByText('cuerpo')).toBeInTheDocument();
     // root mode carries the section switch
     expect(screen.getByRole('link', { name: 'Cambiar de sección' })).toBeInTheDocument();
+  });
+
+  it('root mode keeps actions out of the mobile top bar (desktop header only)', () => {
+    renderShell(
+      <PageShell title="Diario" actions={<button type="button">Añadir</button>}>
+        <p>cuerpo</p>
+      </PageShell>,
+    );
+    // Only one button reaches the DOM: PageHeaderV2 (desktop). MobileTopBar no
+    // longer forwards `actions`, so the title survives at 390px (R-33 fix).
+    expect(screen.getAllByRole('button', { name: 'Añadir' })).toHaveLength(1);
+    // The mobile top bar is identified by its section switch (BackHeader has
+    // none); that header must not contain the action button.
+    const mobileHeader = screen.getByRole('link', { name: 'Cambiar de sección' }).closest('header');
+    expect(mobileHeader).not.toBeNull();
+    expect(
+      within(mobileHeader as HTMLElement).queryByRole('button', { name: 'Añadir' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('back mode still forwards actions to BackHeader', () => {
+    renderShell(
+      <PageShell title="Perfil" back="/settings" actions={<button type="button">Añadir</button>}>
+        <p>cuerpo</p>
+      </PageShell>,
+    );
+    // Unlike root mode, back mode forwards `actions` unchanged to both
+    // BackHeader (mobile) and PageHeaderV2 (desktop) — both mounted in jsdom.
+    expect(screen.getAllByRole('button', { name: 'Añadir' })).toHaveLength(2);
+    const backHeader = screen.getByRole('button', { name: 'Volver' }).closest('header');
+    expect(backHeader).not.toBeNull();
+    expect(within(backHeader as HTMLElement).getByRole('button', { name: 'Añadir' })).toBeInTheDocument();
   });
 
   it('back mode renders BackHeader instead of the topbar (no switch)', () => {

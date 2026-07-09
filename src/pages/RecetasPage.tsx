@@ -148,17 +148,17 @@ export function RecetasPage() {
     hide.mutate(id);
   }
 
+  const headerActions = (
+    <Button onClick={() => navigate('/recipes/new')}>
+      <Plus className="h-4 w-4" />
+      {t('newRecipe')}
+    </Button>
+  );
+
   return (
-    <PageShell
-      title={t('pageTitle')}
-      actions={
-        <Button onClick={() => navigate('/recipes/new')}>
-          <Plus className="h-4 w-4" />
-          {t('newRecipe')}
-        </Button>
-      }
-    >
+    <PageShell title={t('pageTitle')} actions={headerActions}>
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 md:hidden">{headerActions}</div>
       <RecipesTabs />
       <div className="flex items-center gap-2">
           <div className="inline-flex rounded-md border bg-background p-0.5">

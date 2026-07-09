@@ -133,19 +133,19 @@ export function EntrenamientoPage() {
     setActiveProgramMutation.mutate({ programId: active.id, anchorDateISO: todayInTZ() });
   }
 
+  const headerActions = (
+    <Button asChild>
+      <Link to="/training/new">
+        <Plus className="h-4 w-4 mr-1" />
+        {t('page.newSession')}
+      </Link>
+    </Button>
+  );
+
   return (
-    <PageShell
-      title={t('page.title')}
-      actions={
-        <Button asChild>
-          <Link to="/training/new">
-            <Plus className="h-4 w-4 mr-1" />
-            {t('page.newSession')}
-          </Link>
-        </Button>
-      }
-    >
+    <PageShell title={t('page.title')} actions={headerActions}>
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 md:hidden">{headerActions}</div>
       <TodayPlan
         activeProgram={active}
         routinesById={routinesById}

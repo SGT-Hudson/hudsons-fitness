@@ -46,7 +46,7 @@ export function PageShell({ title, subtitle, actions, back, children }: PageShel
           actions={actions}
         />
       ) : (
-        <MobileTopBar title={title} subtitle={subtitle} actions={actions} />
+        <MobileTopBar title={title} subtitle={subtitle} />
       )}
       <PageHeaderV2 title={title} subtitle={subtitle} actions={actions} />
       <div className="mx-auto w-full max-w-content px-4 py-5 md:px-6">{children}</div>
