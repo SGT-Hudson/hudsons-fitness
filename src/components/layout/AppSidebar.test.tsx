@@ -89,4 +89,23 @@ describe('AppSidebar', () => {
     expect(aside?.className).toContain('top-0');
     expect(aside?.className).toContain('h-dvh');
   });
+
+  it('collapsed active item keeps its accent styling instead of a stringified className function', () => {
+    localStorage.setItem('hf-sidebar-collapsed', '1');
+    renderSidebar('/diary');
+    const active = screen.getByRole('link', { name: 'Diario' });
+    const inactive = screen.getByRole('link', { name: 'Recetas' });
+    expect(active.className).not.toContain('=>');
+    expect(inactive.className).not.toContain('=>');
+    expect(active.className).toContain('bg-nutri-soft');
+    expect(inactive.className).not.toContain('bg-nutri-soft');
+  });
+
+  it('respects end semantics: /recipes/ingredients activates Ingredientes, not Recetas', () => {
+    renderSidebar('/recipes/ingredients');
+    const recetas = screen.getByRole('link', { name: 'Recetas' });
+    const ingredientes = screen.getByRole('link', { name: 'Ingredientes' });
+    expect(recetas.className).not.toContain('bg-nutri-soft');
+    expect(ingredientes.className).toContain('bg-nutri-soft');
+  });
 });

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useMatch } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,30 +26,33 @@ function SidebarItem({
 }) {
   const { t } = useTranslation('nav');
   const active = accent ? ACTIVE_STYLES[accent] : { row: 'bg-muted text-foreground', bar: '' };
+  const match = useMatch({
+    path: item.route,
+    end: item.route === '/progress' || item.route === '/recipes',
+  });
+  const isActive = match !== null;
   const link = (
     <NavLink
       to={item.route}
       end={item.route === '/progress' || item.route === '/recipes'}
       aria-label={t(item.key)}
-      className={({ isActive }) =>
-        cn(
-          collapsed
-            ? 'grid size-10 place-items-center self-center rounded-[10px]'
-            : 'relative flex h-9 items-center gap-3 rounded-[10px] px-3 text-[13.5px]',
-          isActive
-            ? cn(
-                active.row,
-                'font-medium',
-                !collapsed &&
-                  accent && [
-                    'before:absolute before:-left-2.5 before:top-2 before:bottom-2',
-                    'before:w-[3px] before:rounded-full',
-                    active.bar,
-                  ],
-              )
-            : 'text-muted-foreground hover:bg-muted/60',
-        )
-      }
+      className={cn(
+        collapsed
+          ? 'grid size-10 place-items-center self-center rounded-[10px]'
+          : 'relative flex h-9 items-center gap-3 rounded-[10px] px-3 text-[13.5px]',
+        isActive
+          ? cn(
+              active.row,
+              'font-medium',
+              !collapsed &&
+                accent && [
+                  'before:absolute before:-left-2.5 before:top-2 before:bottom-2',
+                  'before:w-[3px] before:rounded-full',
+                  active.bar,
+                ],
+            )
+          : 'text-muted-foreground hover:bg-muted/60',
+      )}
     >
       <item.icon className="size-[17px] shrink-0" />
       {!collapsed && <span className="truncate">{t(item.key)}</span>}
