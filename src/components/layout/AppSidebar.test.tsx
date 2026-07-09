@@ -57,6 +57,11 @@ describe('AppSidebar', () => {
     expect(screen.queryByText('Diario')).not.toBeInTheDocument();
     expect(screen.queryByText('Nutrición')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Expandir menú' })).toBeInTheDocument();
+    // Verify nav items are still accessible by name in collapsed mode
+    expect(screen.getByRole('link', { name: 'Diario' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Recetas' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Hoy' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Progreso' })).toBeInTheDocument();
   });
 
   it('starts collapsed when hf-sidebar-collapsed=1', () => {

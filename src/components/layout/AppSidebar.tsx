@@ -30,6 +30,7 @@ function SidebarItem({
     <NavLink
       to={item.route}
       end={item.route === '/progress' || item.route === '/recipes'}
+      aria-label={t(item.key)}
       className={({ isActive }) =>
         cn(
           collapsed
