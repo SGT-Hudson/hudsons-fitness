@@ -134,4 +134,20 @@ describe('DayTotalsCard', () => {
     expect(hero).toHaveClass('text-tone-warn');
     expect(hero).not.toHaveClass('text-destructive');
   });
+
+  it('fiber well under 90% of target renders text-tone-warn (was silently informational before the tone core)', () => {
+    // 22/30 = 73.3%, well under the tone core's 90% fiber threshold → slightOver (amber).
+    // Same value as the canvas's MiniWeek day3 fiber (nutritionTone.test.ts integration fixture).
+    render(
+      <DayTotalsCard
+        totals={{ ...Z, kcal: 1800, fiberG: 22 }}
+        targets={{ kcal: 2000, proteinG: 165, carbsG: 180, fatG: 60, fiberG: 30 }}
+        phaseType="cut"
+      />,
+    );
+    const fiberLabel = screen.getByText(/^fiber$|^fibra$/i);
+    const fiberBlock = fiberLabel.closest('div.space-y-1');
+    expect(fiberBlock?.querySelector('.text-tone-warn')).not.toBeNull();
+    expect(fiberBlock?.querySelector('.text-destructive')).toBeNull();
+  });
 });
