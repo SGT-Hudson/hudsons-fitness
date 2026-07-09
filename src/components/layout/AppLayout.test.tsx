@@ -9,6 +9,10 @@ vi.mock('@/features/auth/AuthProvider', () => ({
   useAuth: () => ({ signOut: vi.fn(), user: { email: 'qa@x.dev' } }),
 }));
 
+vi.mock('@/features/phases/hooks', () => ({
+  useActivePhase: () => ({ data: null }),
+}));
+
 beforeEach(async () => {
   await i18n.changeLanguage('es');
 });
