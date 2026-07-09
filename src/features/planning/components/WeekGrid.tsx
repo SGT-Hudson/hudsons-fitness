@@ -7,7 +7,7 @@ import { aggregateDayMacros } from '@/features/planning/daySummary';
 import { ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { formatDate, type Locale } from '@/lib/dates';
 import { cn } from '@/lib/utils';
-import type { PhaseType } from '@/lib/macroStatus';
+import type { PhaseType } from '@/core/nutritionTone';
 import type { WeekSlotWithRecipe } from '@/features/planner/api';
 
 interface Props {
@@ -31,6 +31,7 @@ interface Props {
   busy?: boolean;
   targets?: Macros;
   phaseType?: PhaseType;
+  weightKg?: number;
   onCopyMeal?: (date: string, mealIndex: number) => void;
 }
 
@@ -54,6 +55,7 @@ export function WeekGrid({
   busy,
   targets,
   phaseType,
+  weightKg,
   onCopyMeal,
 }: Props) {
   const { t, i18n } = useTranslation('planning');
@@ -145,6 +147,7 @@ export function WeekGrid({
               totals={dayTotals.get(day.date) ?? ZERO_MACROS}
               targets={targets}
               phaseType={phaseType}
+              weightKg={weightKg}
             />
           </div>
         ))}

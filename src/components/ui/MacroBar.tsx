@@ -1,28 +1,26 @@
 import { cn } from '@/lib/utils';
-import type { MacroTone, ExcessKind } from '@/lib/macroStatus';
+import type { Tone, Excess } from '@/core/nutritionTone';
 
-const BASE_TONE: Record<MacroTone, string> = {
-  budget: 'bg-tone-info',
+const BASE_TONE: Record<Tone, string> = {
+  good: 'bg-tone-good',
   onTarget: 'bg-tone-good',
-  floorMet: 'bg-tone-good',
   slightOver: 'bg-tone-warn',
-  surplusHigh: 'bg-tone-warn',
+  low: 'bg-tone-warn',
   over: 'bg-destructive',
-  fatLow: 'bg-destructive',
   neutral: 'bg-muted-foreground/50',
 };
 
-const EXCESS_TONE: Record<Exclude<ExcessKind, null>, string> = {
-  good: 'bg-excess-good', // exceeding a floor is positive
-  bad: 'bg-excess-bad',   // over budget / carbs / fat
-  tolerance: 'bg-excess-warn', // kcal tolerance / surplus-high
+const EXCESS_TONE: Record<Excess, string> = {
+  neutral: 'bg-excess-neutral',
+  warn: 'bg-excess-warn',
+  bad: 'bg-excess-bad',
 };
 
 interface Props {
   consumed: number;
   target: number;
-  tone: MacroTone;
-  excess: ExcessKind;
+  tone: Tone;
+  excess: Excess;
   /** Fat only: essential floor in grams; renders an amber min-tick. */
   minFloorG?: number;
   className?: string;
@@ -31,8 +29,7 @@ interface Props {
 /**
  * Pure macro progress bar. Not over: a single base-tone fill. Over: the bar
  * normalises to `consumed`, the base tone fills up to the target tick, and the
- * over-target segment uses the excess colour (or the base colour when
- * `excess` is null, e.g. an on-target marginal overshoot).
+ * over-target segment uses the excess colour.
  */
 export function MacroBar({ consumed, target, tone, excess, minFloorG, className }: Props) {
   const valid = Number.isFinite(target) && target > 0;
@@ -49,8 +46,8 @@ export function MacroBar({ consumed, target, tone, excess, minFloorG, className 
       {over && (
         <span
           data-seg
-          data-excess={excess ?? undefined}
-          className={cn('h-full', excess ? EXCESS_TONE[excess] : BASE_TONE[tone])}
+          data-excess={excess}
+          className={cn('h-full', EXCESS_TONE[excess])}
           style={{ width: `${overPct}%` }}
         />
       )}

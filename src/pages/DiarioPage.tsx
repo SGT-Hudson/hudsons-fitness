@@ -9,7 +9,7 @@ import { PageShell } from '@/components/layout/PageShell';
 import { CopyDayDialog } from '@/features/diario/components/CopyDayDialog';
 import { DateNavigator } from '@/features/diario/components/DateNavigator';
 import { DayTotalsCard } from '@/features/diario/components/DayTotalsCard';
-import type { ProteinBasis } from '@/lib/macroStatus';
+import type { ProteinBasis } from '@/lib/macros';
 import { MealLogDialog } from '@/features/diario/components/MealLogDialog';
 import { MealSection } from '@/features/diario/components/MealSection';
 import { useMaterializePlan, useMealLogsForDay, useQuickAddRecipes } from '@/features/diario/hooks';
@@ -159,6 +159,7 @@ export function DiarioPage() {
           | 'maintenance'
           | 'bulk'
           | undefined}
+        weightKg={latestMeasurement.data?.weight_kg ?? undefined}
       />
 
       {logs.isLoading ? (

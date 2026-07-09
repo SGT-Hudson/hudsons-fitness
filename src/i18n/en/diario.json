@@ -42,7 +42,7 @@
     "floorMet": "✓ met +{{n}} g",
     "fiberBelowMin": "{{n}} g below minimum",
     "fatLow": "⚠ Low fat",
-    "fatLowHelp": "You are below the healthy fat minimum (20% of your kcal). Fat is essential for hormones and for absorbing vitamins.",
+    "fatLowHelp": "You are below the healthy fat minimum (0.6 g per kg of bodyweight). Fat is essential for hormones and for absorbing vitamins.",
     "fatLowHelpLabel": "Fat info",
     "consumedOf": "{{consumed}} / {{target}} consumed"
   },

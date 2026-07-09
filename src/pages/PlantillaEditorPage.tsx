@@ -64,7 +64,7 @@ export function PlantillaEditorPage() {
   const mealTimes = watch('meal_times');
   const [slots, setSlots] = useState<TemplateSlotInput[]>([]);
   const recipeMacros = useRecipeMacros(slots.map((s) => s.recipe_id));
-  const { targets, phaseType } = useDailyTarget();
+  const { targets, phaseType, weightKg } = useDailyTarget();
   const [copySource, setCopySource] = useState<{ dayOfWeek: number; mealIndex: number } | null>(null);
 
   // Reference Monday so day-of-week → full localized weekday label (no date involved).
@@ -245,6 +245,7 @@ export function PlantillaEditorPage() {
             recipeMacros={recipeMacros.data}
             targets={targets}
             phaseType={phaseType}
+            weightKg={weightKg}
             onCopyMeal={(dayOfWeek, mealIndex) => setCopySource({ dayOfWeek, mealIndex })}
           />
         </CardContent>
