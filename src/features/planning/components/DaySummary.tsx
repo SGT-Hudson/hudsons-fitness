@@ -27,6 +27,8 @@ interface Props {
   targets?: Macros;
   phaseType?: PhaseType;
   className?: string;
+  /** Current bodyweight in kg, for the fat essential floor. Not yet consumed here. */
+  weightKg?: number;
 }
 
 export function DaySummary({ totals, targets, phaseType, className }: Props) {

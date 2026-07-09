@@ -25,6 +25,8 @@ interface Props {
   tdeeConfidence?: TdeeConfidence | null;
   /** Active phase type — drives kcal budget vs goal semantics (Theme 1). */
   phaseType?: PhaseType;
+  /** Current bodyweight in kg, for the fat essential floor. Not yet consumed here. */
+  weightKg?: number;
 }
 
 /** Secondary "of which" line: sugar / saturated fat, honest about missing data. */

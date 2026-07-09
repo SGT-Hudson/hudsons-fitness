@@ -159,6 +159,7 @@ export function DiarioPage() {
           | 'maintenance'
           | 'bulk'
           | undefined}
+        weightKg={latestMeasurement.data?.weight_kg ?? undefined}
       />
 
       {logs.isLoading ? (

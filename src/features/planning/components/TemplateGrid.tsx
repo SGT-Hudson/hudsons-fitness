@@ -32,6 +32,7 @@ interface Props {
   recipeMacros?: Map<string, Macros>; // per-serving macros by recipe id
   targets?: Macros;
   phaseType?: PhaseType;
+  weightKg?: number;
   onCopyMeal?: (dayOfWeek: number, mealIndex: number) => void;
 }
 
@@ -44,6 +45,7 @@ export function TemplateGrid({
   recipeMacros,
   targets,
   phaseType,
+  weightKg,
   onCopyMeal,
 }: Props) {
   const { t } = useTranslation('planning');
@@ -88,6 +90,7 @@ export function TemplateGrid({
               totals={dayTotals.get(String(dayIdx)) ?? ZERO_MACROS}
               targets={targets}
               phaseType={phaseType}
+              weightKg={weightKg}
             />
           </div>
         ))}

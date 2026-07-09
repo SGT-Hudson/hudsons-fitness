@@ -38,7 +38,7 @@ export function PlanificadorPage() {
   const today = isoDate();
   const weekStart = formatDate(mondayOf(new Date()), 'yyyy-MM-dd', locale);
 
-  const { targets, phaseType } = useDailyTarget();
+  const { targets, phaseType, weightKg } = useDailyTarget();
 
   const week = useActiveWeek(weekStart);
   const templates = useTemplates();
@@ -198,6 +198,7 @@ export function PlanificadorPage() {
             busy={busy}
             targets={targets}
             phaseType={phaseType}
+            weightKg={weightKg}
             onAdd={async (date, mealIndex, mealTime, recipe, servings) => {
               if (!week.data) return;
               const sameSlot = week.data.slots.filter(

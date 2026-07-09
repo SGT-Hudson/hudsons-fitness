@@ -11,6 +11,7 @@ export interface DailyTarget {
   targets?: Macros;
   phaseType?: PhaseType;
   proteinBasis: ProteinBasis;
+  weightKg?: number;
 }
 
 /** The user's current daily macro target (phase + latest weight), shared by
@@ -36,5 +37,6 @@ export function useDailyTarget(): DailyTarget {
     targets,
     phaseType: activePhase.data?.phase_type as PhaseType | undefined,
     proteinBasis: latestMeasurement.data?.body_fat_pct != null ? 'lean' : 'fallback',
+    weightKg: latestMeasurement.data?.weight_kg ?? undefined,
   };
 }
