@@ -42,7 +42,7 @@
     "floorMet": "✓ cubierto +{{n}} g",
     "fiberBelowMin": "{{n}} g bajo el mínimo",
     "fatLow": "⚠ Falta grasa",
-    "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (20% de tus kcal). La grasa es esencial para las hormonas y para absorber vitaminas.",
+    "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (0,6 g por kg de peso corporal). La grasa es esencial para las hormonas y para absorber vitaminas.",
     "fatLowHelpLabel": "Ayuda sobre grasa",
     "consumedOf": "{{consumed}} / {{target}} consumidas"
   },

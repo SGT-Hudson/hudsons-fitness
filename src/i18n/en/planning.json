@@ -110,7 +110,7 @@
     "fatLow": "⚠ Low fat",
     "fatLowLabel": "Why low fat",
     "fatLowHelpLabel": "Fat info",
-    "fatLowHelp": "You are below the healthy fat minimum (20% of your kcal). Fat is essential for hormones and for absorbing vitamins.",
+    "fatLowHelp": "You are below the healthy fat minimum (0.6 g per kg of bodyweight). Fat is essential for hormones and for absorbing vitamins.",
     "totalRow": "Total",
     "emptyDay": "No meals yet"
   },
