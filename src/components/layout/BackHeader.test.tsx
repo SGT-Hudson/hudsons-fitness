@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -40,5 +40,35 @@ describe('BackHeader', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Volver' }));
     expect(screen.getByTestId('loc')).toHaveTextContent('/exercises');
+  });
+
+  it('with `onBack`, invokes the handler', async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    render(
+      <MemoryRouter initialEntries={['/settings']}>
+        <Routes>
+          <Route path="*" element={<BackHeader title="Perfil" onBack={onBack} />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('heading', { name: 'Perfil' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefers `onBack` over `to`', async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    render(
+      <MemoryRouter initialEntries={['/settings/profile']}>
+        <Routes>
+          <Route path="*" element={<><BackHeader title="Perfil" onBack={onBack} to="/settings" /><Loc /></>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('loc')).toHaveTextContent('/settings/profile');
   });
 });

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -63,5 +63,26 @@ describe('PageShell', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Volver' }));
     expect(screen.getByTestId('loc')).toHaveTextContent('/diary');
+  });
+
+  it('back={function} invokes the handler', async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    render(
+      <MemoryRouter initialEntries={['/settings']}>
+        <Routes>
+          <Route
+            path="*"
+            element={
+              <PageShell title="Perfil" back={onBack}>
+                <p>cuerpo</p>
+              </PageShell>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 });
