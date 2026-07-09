@@ -7,10 +7,6 @@
   "today": "Today",
   "routine": "Routines",
   "exercises": "Exercises",
-  "section": {
-    "nutricion": "Nutrition",
-    "entreno": "Training"
-  },
   "switchSection": "Switch section",
   "more": "More",
   "templates": "Templates",
@@ -25,7 +21,6 @@
     "entreno": "Training",
     "analisis": "Analysis"
   },
-  "account": "Account",
   "settings": "Settings",
   "inProgress": {
     "title": "In progress",

@@ -86,12 +86,3 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
   { key: 'entreno', accent: 'gym', items: [ITEM.today, ITEM.routine, ITEM.exercises] },
   { key: 'analisis', accent: null, items: [ITEM.progress, ITEM.goals] },
 ];
-
-/**
- * i18n `nav.section.*` keys are unchanged by the identity rename; map the
- * internal Section value to its stable translation key.
- */
-export const SECTION_I18N_KEY: Record<Section, string> = {
-  nutri: 'nutricion',
-  gym: 'entreno',
-};

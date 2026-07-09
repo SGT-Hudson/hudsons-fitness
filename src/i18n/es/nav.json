@@ -7,10 +7,6 @@
   "today": "Hoy",
   "routine": "Rutinas",
   "exercises": "Ejercicios",
-  "section": {
-    "nutricion": "Nutrición",
-    "entreno": "Entreno"
-  },
   "switchSection": "Cambiar de sección",
   "more": "Más",
   "templates": "Plantillas",
@@ -25,7 +21,6 @@
     "entreno": "Entrenamiento",
     "analisis": "Análisis"
   },
-  "account": "Cuenta",
   "settings": "Ajustes",
   "inProgress": {
     "title": "En progreso",
