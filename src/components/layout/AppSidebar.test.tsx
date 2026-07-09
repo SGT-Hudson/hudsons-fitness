@@ -22,7 +22,7 @@ describe('AppSidebar', () => {
     );
     expect(screen.getByRole('link', { name: 'Progreso' })).toBeInTheDocument();
     expect(screen.getByText('Nutrición')).toBeInTheDocument();
-    expect(screen.getByText('Entreno')).toBeInTheDocument();
+    expect(screen.getByText('Entrenamiento')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Diario' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Hoy' })).toBeInTheDocument();
   });

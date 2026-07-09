@@ -27,7 +27,7 @@ describe('AppLayout', () => {
     expect(screen.getByText('diary-content')).toBeInTheDocument();
     // mobile switcher trigger + desktop sidebar group label both in DOM (CSS toggles visibility)
     expect(screen.getByRole('button', { name: /Nutrición/ })).toBeInTheDocument();
-    expect(screen.getByText('Entreno')).toBeInTheDocument();
+    expect(screen.getByText('Entrenamiento')).toBeInTheDocument();
   });
 
   it('toggles the section-accent class on <html> (not the layout div) so portaled overlays inherit it', () => {
