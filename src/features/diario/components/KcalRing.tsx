@@ -53,7 +53,6 @@ export function KcalRing({ consumed, target, phase, size = 118, stroke = 11, cla
         width={size}
         height={size}
         style={{ transform: 'rotate(-90deg)' }}
-        role="img"
         aria-hidden="true"
       >
         <circle cx={center} cy={center} r={r} fill="none" stroke="var(--bg-sunken)" strokeWidth={stroke} />

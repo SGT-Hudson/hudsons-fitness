@@ -12,7 +12,7 @@ const TEXT_TONE: Record<Tone, string> = {
   slightOver: 'text-tone-warn',
   low: 'text-tone-warn',
   over: 'text-destructive',
-  neutral: 'text-foreground',
+  neutral: 'text-muted-foreground',
 };
 
 interface Props {
