@@ -1,20 +1,13 @@
 import { useTranslation } from 'react-i18next';
-import { HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MacroBar } from '@/components/ui/MacroBar';
 import { KcalRing } from './KcalRing';
+import { MacroGrid } from './MacroGrid';
 import { roundMacro, type Macros, type SubMacros } from '@/features/recipes/macros';
 import type { PartialSub } from '@/core/subMacros';
 import type { TdeeConfidence } from '@/features/tdee/api';
-import {
-  classify,
-  essentialFatFloorG,
-  type Metric,
-  type Tone,
-  type PhaseType,
-} from '@/core/nutritionTone';
+import { classify, essentialFatFloorG, type Tone, type PhaseType } from '@/core/nutritionTone';
 import type { ProteinBasis } from '@/lib/macros';
 
 interface Props {
@@ -63,90 +56,6 @@ const TEXT_TONE: Record<Tone, string> = {
   over: 'text-destructive',
   neutral: 'text-muted-foreground',
 };
-
-function MacroBlock({
-  label,
-  macroKey,
-  consumed,
-  target,
-  phaseType,
-  note,
-  fatFloor,
-}: {
-  label: string;
-  macroKey: Metric;
-  consumed: number;
-  target?: number;
-  phaseType?: PhaseType;
-  note?: string;
-  fatFloor?: number;
-}) {
-  const { t } = useTranslation('diario');
-  const s = classify(
-    macroKey,
-    consumed,
-    target,
-    phaseType,
-    macroKey === 'fat' && fatFloor != null ? { fatFloorG: fatFloor } : undefined,
-  );
-  const hasTarget = target != null && target > 0;
-
-  let sub: string | null = null;
-  if (hasTarget) {
-    const n = Math.abs(roundMacro(s.remaining));
-    if (macroKey === 'protein' || macroKey === 'fiber') {
-      // protein/fiber are floors: show "met" once the floor is reached, no
-      // warning when under (fiber has no ceiling; protein under-target still
-      // paints via TEXT_TONE, not via this caption).
-      sub = s.remaining <= 0 ? t('totals.floorMet', { n }) : t('totals.remainingG', { n });
-    } else {
-      sub = s.remaining >= 0 ? t('totals.remainingG', { n }) : t('totals.overG', { n });
-    }
-  }
-
-  return (
-    <div className="space-y-1">
-      <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className="text-2xl font-semibold tabular-nums leading-tight">
-        {roundMacro(consumed)}
-        {hasTarget && (
-          <span className="text-sm font-normal text-muted-foreground">/{roundMacro(target!)}</span>
-        )}
-        <span className="text-sm font-normal text-muted-foreground ml-1">g</span>
-      </div>
-      {note && <div className="text-[11px] text-muted-foreground leading-tight">{note}</div>}
-      {hasTarget && (
-        <>
-          <MacroBar
-            consumed={consumed}
-            target={target!}
-            tone={s.tone}
-            excess={s.excess}
-            minFloorG={s.minFloorG}
-          />
-          {sub && (
-            <div className={cn('text-[11px] leading-tight tabular-nums', TEXT_TONE[s.tone])}>
-              {sub}
-            </div>
-          )}
-          {macroKey === 'fat' && s.tone === 'over' && (
-            <div className="flex items-center gap-1 text-[10px] font-semibold text-destructive">
-              <span>{t('totals.fatLow')}</span>
-              <button
-                type="button"
-                aria-label={t('totals.fatLowHelpLabel')}
-                title={t('totals.fatLowHelp')}
-                className="opacity-80"
-              >
-                <HelpCircle className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
 
 export function DayTotalsCard({
   totals,
@@ -215,38 +124,18 @@ export function DayTotalsCard({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <MacroBlock
-            label={t('totals.protein')}
-            macroKey="protein"
-            consumed={totals.proteinG}
-            target={targets?.proteinG}
-            phaseType={phaseType}
-            note={proteinNote}
-          />
-          <MacroBlock
-            label={t('totals.carbs')}
-            macroKey="carbs"
-            consumed={totals.carbsG}
-            target={targets?.carbsG}
-            phaseType={phaseType}
-          />
-          <MacroBlock
-            label={t('totals.fat')}
-            macroKey="fat"
-            consumed={totals.fatG}
-            target={targets?.fatG}
-            phaseType={phaseType}
-            fatFloor={fatFloor}
-          />
-          <MacroBlock
-            label={t('totals.fiber')}
-            macroKey="fiber"
-            consumed={totals.fiberG}
-            target={targets?.fiberG}
-            phaseType={phaseType}
-          />
-        </div>
+        <MacroGrid
+          collapsible
+          items={[
+            { metric: 'protein', consumed: totals.proteinG, target: targets?.proteinG, unit: 'g', phase: phaseType },
+            { metric: 'carbs', consumed: totals.carbsG, target: targets?.carbsG, unit: 'g', phase: phaseType },
+            { metric: 'fat', consumed: totals.fatG, target: targets?.fatG, unit: 'g', floorG: fatFloor, phase: phaseType },
+            { metric: 'fiber', consumed: totals.fiberG, target: targets?.fiberG, unit: 'g', phase: phaseType },
+          ]}
+        />
+        {proteinNote && (
+          <p className="mt-2 text-[11px] text-muted-foreground leading-tight">{proteinNote}</p>
+        )}
 
         {subTotals && (
           <div className="mt-4 pt-4 border-t space-y-1.5">

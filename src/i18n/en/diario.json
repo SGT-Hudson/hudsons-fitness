@@ -39,13 +39,11 @@
     "heroOver": "kcal over",
     "ringOf": "of {{target}} kcal",
     "planToday": "today's plan: {{n}} kcal",
-    "remainingG": "{{n}} g left",
-    "overG": "+{{n}} g over",
-    "floorMet": "✓ met +{{n}} g",
-    "fiberBelowMin": "{{n}} g below minimum",
-    "fatLow": "⚠ Low fat",
-    "fatLowHelp": "You are below the healthy fat minimum (0.6 g per kg of bodyweight). Fat is essential for hormones and for absorbing vitamins.",
-    "fatLowHelpLabel": "Fat info"
+    "macroCaptionOver": "+{{n}} g over target",
+    "macroCaptionShort": "{{n}} g short of target",
+    "macroCaptionOnTarget": "right on target",
+    "macroCaptionMargin": "{{n}} g to spare",
+    "macrosToggle": "Macros"
   },
   "entry": {
     "edit": "Edit entry",
