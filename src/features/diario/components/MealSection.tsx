@@ -33,25 +33,31 @@ export function MealSection({
       : null;
 
   return (
-    <Card>
-      <div className="flex items-center justify-between px-4 py-2 border-b">
-        <div className="flex items-baseline gap-2">
-          <h2 className="font-semibold">{t(`mealType.${mealType}`)}</h2>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {subtotal != null ? `${subtotal} kcal` : t('mealSection.empty')}
-          </span>
-        </div>
+    <Card className="overflow-hidden">
+      <div className="flex items-center gap-2 px-3.5 py-2.5">
+        <h2 className="text-[13.5px] font-semibold">{t(`mealType.${mealType}`)}</h2>
+        <div className="flex-1" />
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {subtotal != null ? (
+            <>
+              <span className="font-medium text-foreground">{subtotal}</span> kcal
+            </>
+          ) : (
+            t('mealSection.empty')
+          )}
+        </span>
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={() => onAdd(mealType)}
           aria-label={t('addToMeal')}
+          className="h-[26px] w-[26px] shrink-0 rounded-[8px] bg-accent-soft text-accent-ink hover:bg-accent-soft/80 hover:text-accent-ink"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-[13px] w-[13px]" />
         </Button>
       </div>
       {items.length > 0 && (
-        <ul className="divide-y">
+        <ul className="divide-y border-t">
           {items.map((log) => (
             <MealLogEntry key={log.id} log={log} onEdit={onEdit} />
           ))}

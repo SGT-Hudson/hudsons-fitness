@@ -47,7 +47,8 @@
   },
   "entry": {
     "edit": "Edit entry",
-    "fromPlan": "From plan"
+    "fromPlan": "From plan",
+    "planShort": "Plan"
   },
   "tabs": {
     "recipe": "Recipe",
