@@ -113,6 +113,11 @@
     "deleteConfirm": "¿Borrar esta entrada del diario?"
   },
   "mealSection": { "empty": "— sin registros" },
+  "projBar": {
+    "added": "+{{n}} g",
+    "over": "↑ {{n}} g de más",
+    "target": "obj {{n}}"
+  },
   "copyDay": {
     "open": "Copiar un día",
     "title": "Copiar un día",

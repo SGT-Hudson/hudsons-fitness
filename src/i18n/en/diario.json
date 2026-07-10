@@ -113,6 +113,11 @@
     "deleteConfirm": "Delete this diary entry?"
   },
   "mealSection": { "empty": "— nothing logged" },
+  "projBar": {
+    "added": "+{{n}} g",
+    "over": "↑ {{n}} g over",
+    "target": "target {{n}}"
+  },
   "copyDay": {
     "open": "Copy a day",
     "title": "Copy a day",
