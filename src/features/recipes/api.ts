@@ -1,7 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
 import type { Ingredient } from '@/features/ingredients/api';
-import { computeRecipeMacros, computeRecipeSub, type RecipeRowMacrosInput } from './macros';
+import {
+  computeRecipeMacros,
+  computeRecipeSub,
+  type Macros,
+  type RecipeRowMacrosInput,
+} from './macros';
 import { recipeLabels, type RecipeLabels } from './labels';
 
 export type Recipe = Tables<'recipes'>;
@@ -22,6 +27,11 @@ export interface RecipeListItem {
   // U-3: per-serving nutrition labels (goal filters + warning badges), computed
   // in-memory from the joined ingredient macros via the shared core.
   labels: RecipeLabels;
+  // R-33 wave 2 PR-B task 1: the per-serving macros computeRecipeMacros
+  // already produces (above `labels` is derived from it) — kept here so the
+  // diario ración-projection step can read a recipe's contribution off this
+  // already-fetched list with zero extra network cost.
+  perServing: Macros;
 }
 
 // Ingredient macro shape pulled per row for U-3 label computation.
@@ -82,10 +92,8 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
       })
       .filter((x): x is RecipeRowMacrosInput => x !== null);
     const opts = { servings: Number(r.recipe.servings) || 1, rows: macroRows };
-    const labels = recipeLabels(
-      computeRecipeMacros(opts).perServing,
-      computeRecipeSub(opts).perServing,
-    );
+    const perServing = computeRecipeMacros(opts).perServing;
+    const labels = recipeLabels(perServing, computeRecipeSub(opts).perServing);
     out.push({
       id: r.recipe.id,
       name: r.recipe.name,
@@ -95,6 +103,7 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
       ingredient_count: ri.length,
       meal_types: r.recipe.meal_types ?? [],
       labels,
+      perServing,
     });
   }
   out.sort((a, b) => b.updated_at.localeCompare(a.updated_at));

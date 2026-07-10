@@ -4,6 +4,7 @@ import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRecipes } from '@/features/recipes/hooks';
+import type { Macros } from '@/features/recipes/macros';
 import { cn } from '@/lib/utils';
 
 export interface RecipeOption {
@@ -11,6 +12,13 @@ export interface RecipeOption {
   name: string;
   servings: number;
   ingredient_count: number;
+  // R-33 wave 2 PR-B task 1: per-serving macros, carried straight from
+  // RecipeListItem (already computed by listRecipes) so the diario
+  // ración-projection step can use it with zero extra network cost.
+  // Optional: call sites that pre-fill a RecipeOption from data without
+  // joined ingredient macros (e.g. editing an existing meal log / plan slot)
+  // have nothing to put here and simply omit it.
+  perServing?: Macros;
 }
 
 interface Props {
@@ -103,6 +111,7 @@ export function RecipeAutocomplete({ selected, onSelect, onClear }: Props) {
                       name: r.name,
                       servings: r.servings,
                       ingredient_count: r.ingredient_count,
+                      perServing: r.perServing,
                     });
                     setOpen(false);
                     setQuery('');
