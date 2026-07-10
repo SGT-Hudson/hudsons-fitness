@@ -63,7 +63,12 @@ export function MealSection({
           ))}
         </ul>
       )}
-      <QuickAddStrip mealType={mealType} date={date} items={quickAddItems} />
+      <QuickAddStrip
+        mealType={mealType}
+        date={date}
+        items={quickAddItems}
+        onAddRecipe={() => onAdd(mealType)}
+      />
     </Card>
   );
 }

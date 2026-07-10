@@ -97,7 +97,9 @@
   "quickAdd": {
     "add": "Add {{name}}",
     "added": "{{name}} added",
-    "undo": "Undo"
+    "undo": "Undo",
+    "recommendations": "Recommendations",
+    "addRecipe": "Add recipe"
   },
   "errors": {
     "pickRecipe": "Pick a recipe.",
