@@ -83,7 +83,10 @@
 
 ---
 
-### Task 6: Full-screen navigate-only search + docs
+### Task 6: Full-screen navigate-only search + docs — DEFERRED (D-F24)
+
+> **Deferred to the R-33 Ingredientes wave (§6.6)** by user decision on 2026-07-11: the search navigates to entity pages, but ingredients have no detail page until that wave, so building a degraded ingredient→list version now and reworking it later is wasted motion. Logging is fully served by `AddToDaySheet` (Tasks 1-5), so nothing is blocked. D-F22/D-F23 were recorded in `docs/decisions.md`; D-F24 records the deferral. PR-B ships as Tasks 1-5.
+
 
 **Files:** create `src/features/diario/components/QuickSearchOverlay.tsx` (or a route) (+ test); `src/app/router.tsx` if a route is cleaner; `docs/decisions.md` (D-F22–D-F24).
 

@@ -515,3 +515,27 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **Why:** `daily_nutrition_history` is populated nightly, so it never carries a row for the real-world today; the live diario total is the only truthful source for the today bar. The canvas hardcodes the cut-phase coloring rule, which its own implementation note flags as a TODO — so the phase-aware helpers (already shared with the Planificador) are the target, not the canvas's single-phase shortcut.
 
 **Status:** decided · done (R-33 wave 2, 2026-07-10)
+
+## D-F22 — R-33 Diario add-flow is a vaul Drawer (`AddToDaySheet`), replacing `MealLogDialog`
+
+**Ruling:** Food logging goes through `AddToDaySheet` — a bottom-sheet on mobile / docked panel on web (vaul `Drawer` on mobile, `Dialog` at md+, mirroring the `ExerciseInfoButton` pattern), with an explore step (meal-slot selector, Recientes/Recetas/Alimentos tabs, live-balance footer) and a ración step (½-step stepper, macro-projection bars, over-state, create CTA). The Radix `MealLogDialog` is removed. Edit opens the sheet straight into the ración step; delete is preserved.
+
+**Why:** the R-33 design replaces the flat form with a slot-aware, projection-driven flow; the shared vaul Drawer is the repo's sanctioned sheet primitive (prefer shadcn over hand-rolled Radix).
+
+**Status:** decided · done (R-33 wave 2 PR-B, 2026-07-11)
+
+## D-F23 — Ración macro projection is pure client-side math (no RPC/new fetch)
+
+**Ruling:** The ración step projects day totals as `base + thisServingContribution` per macro using only data already in hand — today's `totals` (`sumMacros∘computeMealLogMacros`), the phase `targets`, and per-kind pure helpers (`ingredientMacros`, recipe `perServing`/`computeRecipeMacros`, custom typed numbers). Recipe per-serving macros are surfaced on `RecipeListItem`/`RecipeOption` from the data `listRecipes` already fetches (zero network cost). In edit mode the base subtracts the edited entry (`subtractMacros`, clamped ≥0) so it never double-counts, and the contribution derives from the entry's joined data (no reliance on the absent `RecipeOption.perServing`).
+
+**Why:** `meal_logs` writes are single-table and macros are recomputed on read; the projection is arithmetic over existing rows, so no RPC/fetch/`.select()` is warranted (keeps the R-32 escape-hatch surface at zero).
+
+**Status:** decided · done (R-33 wave 2 PR-B, 2026-07-11)
+
+## D-F24 — Full-screen navigate-only search deferred to the Ingredientes wave
+
+**Ruling:** The canvas's full-screen "navigate-only" quick search (searches, then opens the entity page, never logs) is **deferred** out of the Diario wave. Recipes have a detail/editor route (`/recipes/:id`) but there is **no ingredient/food detail page** — that page is built in the R-33 Ingredientes wave (§6.6). The search lands there, so it can navigate both entity kinds to real pages instead of shipping a degraded ingredient→list jump now.
+
+**Why:** half the search's value (jumping to an ingredient's page) has no destination until the Ingredientes wave exists; building a degraded version first, then reworking it, is wasted motion. Logging is fully served by `AddToDaySheet`, so nothing is blocked by the deferral.
+
+**Status:** decided · deferred to R-33 Ingredientes wave (2026-07-11)
