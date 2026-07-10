@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MacroBar } from '@/components/ui/MacroBar';
+import { KcalRing } from './KcalRing';
 import { roundMacro, type Macros, type SubMacros } from '@/features/recipes/macros';
 import type { PartialSub } from '@/core/subMacros';
 import type { TdeeConfidence } from '@/features/tdee/api';
@@ -27,6 +28,8 @@ interface Props {
   phaseType?: PhaseType;
   /** Current bodyweight in kg, for the fat essential floor. */
   weightKg?: number;
+  /** Sum of kcal from today's `from_plan` meal-log entries (D-F19 footnote). */
+  planKcal?: number;
 }
 
 /** Secondary "of which" line: sugar / saturated fat, honest about missing data. */
@@ -153,6 +156,7 @@ export function DayTotalsCard({
   tdeeConfidence,
   phaseType,
   weightKg,
+  planKcal,
 }: Props) {
   const { t } = useTranslation('diario');
 
@@ -189,26 +193,18 @@ export function DayTotalsCard({
       </CardHeader>
       <CardContent>
         {hero && (
-          <div className="text-center pb-4 mb-4 border-b">
-            <div
-              className={cn(
-                'text-4xl font-bold tabular-nums leading-none tracking-tight',
-                TEXT_TONE[hero.tone],
-              )}
-            >
-              {hero.value}
+          <div className="flex flex-col items-center gap-2 pb-4 mb-4 border-b">
+            <KcalRing consumed={roundMacro(totals.kcal)} target={roundMacro(targets!.kcal)} phase={phaseType} />
+            <div className={cn('text-xs uppercase tracking-wide tabular-nums', TEXT_TONE[hero.tone])}>
+              {hero.value} {hero.label}
             </div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wide mt-1.5">
-              {hero.label}
-            </div>
-            <div className="text-[11px] text-muted-foreground mt-1.5 tabular-nums">
-              {t('totals.consumedOf', {
-                consumed: roundMacro(totals.kcal),
-                target: roundMacro(targets!.kcal),
-              })}
-            </div>
+            {!!planKcal && planKcal > 0 && (
+              <div className="text-[11px] text-muted-foreground tabular-nums">
+                {t('totals.planToday', { n: roundMacro(planKcal) })}
+              </div>
+            )}
             {showTdeeBadge && (
-              <div className="mt-2">
+              <div className="mt-1">
                 <Badge variant="warning">
                   {tdeeConfidence === 'low'
                     ? t('totals.tdeeConfidenceLow')

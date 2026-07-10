@@ -26,7 +26,7 @@ describe('DayTotalsCard', () => {
     expect(destructiveBars).toHaveLength(0);
   });
 
-  it('cut kcal under target shows the remaining hero, not red', () => {
+  it('cut kcal under target shows the ring (consumed) and the remaining footnote, not red', () => {
     render(
       <DayTotalsCard
         totals={{ ...Z, kcal: 1180 }}
@@ -35,7 +35,9 @@ describe('DayTotalsCard', () => {
         phaseType="cut"
       />,
     );
-    expect(screen.getByText('820')).toBeInTheDocument();
+    // Ring center shows consumed; the footnote below it shows the remaining amount.
+    expect(screen.getByText('1180')).toBeInTheDocument();
+    expect(screen.getByText(/820/)).toBeInTheDocument();
   });
 
   it('no targets → hint, no hero', () => {
@@ -130,9 +132,22 @@ describe('DayTotalsCard', () => {
         phaseType="maintenance"
       />,
     );
-    const hero = container.querySelector('.text-4xl');
-    expect(hero).toHaveClass('text-tone-warn');
-    expect(hero).not.toHaveClass('text-destructive');
+    const ringValue = container.querySelector('[data-testid="kcal-ring-value"]');
+    expect(ringValue).toHaveClass('text-tone-warn');
+    expect(ringValue).not.toHaveClass('text-destructive');
+  });
+
+  it('plan-of-today footnote shows only when planKcal is positive', () => {
+    const props = {
+      totals: { ...Z, kcal: 1180 },
+      targets: { kcal: 2000, proteinG: 165, carbsG: 180, fatG: 60, fiberG: 30 },
+      phaseType: 'cut' as const,
+    };
+    const { rerender } = render(<DayTotalsCard {...props} planKcal={640} />);
+    expect(screen.getByText(/plan de hoy|today's plan/i)).toBeInTheDocument();
+
+    rerender(<DayTotalsCard {...props} planKcal={0} />);
+    expect(screen.queryByText(/plan de hoy|today's plan/i)).toBeNull();
   });
 
   it('fiber well under 90% of target renders text-tone-warn (was silently informational before the tone core)', () => {

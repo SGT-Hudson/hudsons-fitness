@@ -90,6 +90,16 @@ export function DiarioPage() {
     [logs.data],
   );
 
+  // D-F19 ring footnote: kcal contributed by today's plan-materialized
+  // entries (from_plan=true), already counted inside `totals.kcal` above.
+  const planKcal = useMemo(
+    () =>
+      (logs.data ?? [])
+        .filter((l) => l.from_plan)
+        .reduce((sum, l) => sum + computeMealLogMacros(l).kcal, 0),
+    [logs.data],
+  );
+
   const targets = useMemo(() => {
     if (!activePhase.data || !latestMeasurement.data?.weight_kg) return undefined;
     return (
@@ -160,6 +170,7 @@ export function DiarioPage() {
           | 'bulk'
           | undefined}
         weightKg={latestMeasurement.data?.weight_kg ?? undefined}
+        planKcal={planKcal}
       />
 
       {logs.isLoading ? (

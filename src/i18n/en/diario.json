@@ -37,14 +37,15 @@
     "heroRemaining": "kcal left",
     "heroToGoal": "kcal to goal",
     "heroOver": "kcal over",
+    "ringOf": "of {{target}} kcal",
+    "planToday": "today's plan: {{n}} kcal",
     "remainingG": "{{n}} g left",
     "overG": "+{{n}} g over",
     "floorMet": "✓ met +{{n}} g",
     "fiberBelowMin": "{{n}} g below minimum",
     "fatLow": "⚠ Low fat",
     "fatLowHelp": "You are below the healthy fat minimum (0.6 g per kg of bodyweight). Fat is essential for hormones and for absorbing vitamins.",
-    "fatLowHelpLabel": "Fat info",
-    "consumedOf": "{{consumed}} / {{target}} consumed"
+    "fatLowHelpLabel": "Fat info"
   },
   "entry": {
     "edit": "Edit entry",

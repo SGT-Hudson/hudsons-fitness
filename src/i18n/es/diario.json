@@ -37,14 +37,15 @@
     "heroRemaining": "kcal restantes",
     "heroToGoal": "kcal para el objetivo",
     "heroOver": "kcal de más",
+    "ringOf": "de {{target}} kcal",
+    "planToday": "plan de hoy: {{n}} kcal",
     "remainingG": "faltan {{n}} g",
     "overG": "+{{n}} g de más",
     "floorMet": "✓ cubierto +{{n}} g",
     "fiberBelowMin": "{{n}} g bajo el mínimo",
     "fatLow": "⚠ Falta grasa",
     "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (0,6 g por kg de peso corporal). La grasa es esencial para las hormonas y para absorber vitaminas.",
-    "fatLowHelpLabel": "Ayuda sobre grasa",
-    "consumedOf": "{{consumed}} / {{target}} consumidas"
+    "fatLowHelpLabel": "Ayuda sobre grasa"
   },
   "entry": {
     "edit": "Editar entrada",
