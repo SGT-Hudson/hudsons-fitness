@@ -522,6 +522,8 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **Why:** the R-33 design replaces the flat form with a slot-aware, projection-driven flow; the shared vaul Drawer is the repo's sanctioned sheet primitive (prefer shadcn over hand-rolled Radix).
 
+**Note:** the old dialog's free-text **notes** field is dropped from the add-flow (the R-33 canvas has no notes field). Existing `meal_logs.notes` values are preserved (create writes `null`; edit omits `notes`, never nulling an existing one) — they're just not editable through the new sheet. Re-add later if a notes affordance is wanted.
+
 **Status:** decided · done (R-33 wave 2 PR-B, 2026-07-11)
 
 ## D-F23 — Ración macro projection is pure client-side math (no RPC/new fetch)

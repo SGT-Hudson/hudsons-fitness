@@ -88,8 +88,8 @@ function initialQty(selection: AddSheetSelection, editing: MealLogWithJoins | nu
 
 /** ½-step-and-up stepper config per selection kind — recipe servings step in
  * quarters (0.25); a loose ingredient steps by whole units or 5 g at a time
- * (no existing convention for a gram +/- stepper in this codebase — chosen
- * for sensible one-tap granularity, see task-4-report.md). */
+ * (no existing convention for a gram +/- stepper — 5 g chosen for sensible
+ * one-tap granularity). */
 function stepperConfig(selection: AddSheetSelection): { min: number; step: number } | null {
   if (selection.kind === 'recipe') return { min: 0.25, step: 0.25 };
   if (selection.kind === 'ingredient') {
