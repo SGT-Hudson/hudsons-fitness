@@ -140,5 +140,32 @@
     "quantityInvalid": "La cantidad debe ser mayor que 0.",
     "customNameRequired": "Pon un nombre.",
     "customKcalRequired": "Las calorías son obligatorias."
+  },
+  "addSheet": {
+    "title": "Añadir a hoy",
+    "subtitle": "{{date}} · {{phase}}",
+    "subtitleNoPhase": "{{date}}",
+    "close": "Cerrar",
+    "slotLabel": "Elegir franja",
+    "slotEmpty": "vacío",
+    "searchPlaceholder": "Buscar receta, alimento…",
+    "tabs": {
+      "recent": "Recientes",
+      "recipes": "Recetas",
+      "foods": "Alimentos"
+    },
+    "emptyRecent": "Aún no tienes comidas recientes.",
+    "emptyRecipes": "No tienes recetas.",
+    "emptyFoodsPrompt": "Escribe para buscar alimentos.",
+    "emptyFoodsNoResults": "Sin coincidencias.",
+    "oneServing": "1 ración",
+    "nServings": "{{n}} raciones",
+    "balance": "Balance de hoy",
+    "balanceTarget": "obj {{n}}",
+    "balanceRemaining": "kcal restantes",
+    "balanceConsumed": "{{n}} consumidas",
+    "backToExplore": "Volver a explorar",
+    "racionPlaceholder": "La hoja de ración se construye en la siguiente tarea.",
+    "addCta": "Añadir"
   }
 }

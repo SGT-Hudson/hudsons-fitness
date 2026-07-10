@@ -140,5 +140,32 @@
     "quantityInvalid": "Quantity must be greater than 0.",
     "customNameRequired": "Add a name.",
     "customKcalRequired": "Calories are required."
+  },
+  "addSheet": {
+    "title": "Add to today",
+    "subtitle": "{{date}} · {{phase}}",
+    "subtitleNoPhase": "{{date}}",
+    "close": "Close",
+    "slotLabel": "Pick a slot",
+    "slotEmpty": "empty",
+    "searchPlaceholder": "Search recipe, food…",
+    "tabs": {
+      "recent": "Recent",
+      "recipes": "Recipes",
+      "foods": "Foods"
+    },
+    "emptyRecent": "No recent meals yet.",
+    "emptyRecipes": "You have no recipes.",
+    "emptyFoodsPrompt": "Type to search foods.",
+    "emptyFoodsNoResults": "No matches.",
+    "oneServing": "1 serving",
+    "nServings": "{{n}} servings",
+    "balance": "Today's balance",
+    "balanceTarget": "target {{n}}",
+    "balanceRemaining": "kcal left",
+    "balanceConsumed": "{{n}} consumed",
+    "backToExplore": "Back to explore",
+    "racionPlaceholder": "The ración step is built in the next task.",
+    "addCta": "Add"
   }
 }
