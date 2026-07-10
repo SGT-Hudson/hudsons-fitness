@@ -45,6 +45,20 @@
     "macroCaptionMargin": "{{n}} g to spare",
     "macrosToggle": "Macros"
   },
+  "weekly": {
+    "title": "Week",
+    "summary": "avg {{avg}} · target {{target}}",
+    "target": "target {{target}}",
+    "weekday": {
+      "mon": "M",
+      "tue": "T",
+      "wed": "W",
+      "thu": "T",
+      "fri": "F",
+      "sat": "S",
+      "sun": "S"
+    }
+  },
   "entry": {
     "edit": "Edit entry",
     "fromPlan": "From plan",

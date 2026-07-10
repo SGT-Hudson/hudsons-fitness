@@ -45,6 +45,20 @@
     "macroCaptionMargin": "{{n}} g de margen",
     "macrosToggle": "Macros"
   },
+  "weekly": {
+    "title": "Semana",
+    "summary": "media {{avg}} · obj {{target}}",
+    "target": "obj {{target}}",
+    "weekday": {
+      "mon": "L",
+      "tue": "M",
+      "wed": "X",
+      "thu": "J",
+      "fri": "V",
+      "sat": "S",
+      "sun": "D"
+    }
+  },
   "entry": {
     "edit": "Editar entrada",
     "fromPlan": "Del plan",
