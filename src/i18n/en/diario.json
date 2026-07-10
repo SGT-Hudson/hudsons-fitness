@@ -113,6 +113,11 @@
     "deleteConfirm": "Delete this diary entry?"
   },
   "mealSection": { "empty": "— nothing logged" },
+  "projBar": {
+    "added": "+{{n}} g",
+    "over": "↑ {{n}} g over",
+    "target": "target {{n}}"
+  },
   "copyDay": {
     "open": "Copy a day",
     "title": "Copy a day",
@@ -135,5 +140,45 @@
     "quantityInvalid": "Quantity must be greater than 0.",
     "customNameRequired": "Add a name.",
     "customKcalRequired": "Calories are required."
+  },
+  "addSheet": {
+    "title": "Add to today",
+    "editTitle": "Edit entry",
+    "subtitle": "{{date}} · {{phase}}",
+    "subtitleNoPhase": "{{date}}",
+    "close": "Close",
+    "slotLabel": "Pick a slot",
+    "slotEmpty": "empty",
+    "searchPlaceholder": "Search recipe, food…",
+    "tabs": {
+      "recent": "Recent",
+      "recipes": "Recipes",
+      "foods": "Foods"
+    },
+    "emptyRecent": "No recent meals yet.",
+    "emptyRecipes": "You have no recipes.",
+    "emptyFoodsPrompt": "Type to search foods.",
+    "emptyFoodsNoResults": "No matches.",
+    "oneServing": "1 serving",
+    "nServings": "{{n}} servings",
+    "balance": "Today's balance",
+    "balanceTarget": "target {{n}}",
+    "balanceRemaining": "kcal left",
+    "balanceConsumed": "{{n}} consumed",
+    "backToExplore": "Back to explore",
+    "toMeal": "→ {{meal}}",
+    "unitServing": "serving",
+    "unitServings": "servings",
+    "decreaseQty": "Decrease quantity",
+    "increaseQty": "Increase quantity",
+    "projRemaining": "{{n}} kcal left",
+    "projOver": "{{n}} kcal over",
+    "overAlert": "This serving puts you over today's target.",
+    "macroBalanceLabel": "Today's balance after adding",
+    "customCta": "Create custom entry",
+    "customTitle": "Custom entry",
+    "addCta": "Add to {{meal}}",
+    "saveCta": "Save changes",
+    "deleteCta": "Delete"
   }
 }

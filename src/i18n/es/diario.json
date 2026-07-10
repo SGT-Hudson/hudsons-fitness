@@ -113,6 +113,11 @@
     "deleteConfirm": "¿Borrar esta entrada del diario?"
   },
   "mealSection": { "empty": "— sin registros" },
+  "projBar": {
+    "added": "+{{n}} g",
+    "over": "↑ {{n}} g de más",
+    "target": "obj {{n}}"
+  },
   "copyDay": {
     "open": "Copiar un día",
     "title": "Copiar un día",
@@ -135,5 +140,45 @@
     "quantityInvalid": "La cantidad debe ser mayor que 0.",
     "customNameRequired": "Pon un nombre.",
     "customKcalRequired": "Las calorías son obligatorias."
+  },
+  "addSheet": {
+    "title": "Añadir a hoy",
+    "editTitle": "Editar entrada",
+    "subtitle": "{{date}} · {{phase}}",
+    "subtitleNoPhase": "{{date}}",
+    "close": "Cerrar",
+    "slotLabel": "Elegir franja",
+    "slotEmpty": "vacío",
+    "searchPlaceholder": "Buscar receta, alimento…",
+    "tabs": {
+      "recent": "Recientes",
+      "recipes": "Recetas",
+      "foods": "Alimentos"
+    },
+    "emptyRecent": "Aún no tienes comidas recientes.",
+    "emptyRecipes": "No tienes recetas.",
+    "emptyFoodsPrompt": "Escribe para buscar alimentos.",
+    "emptyFoodsNoResults": "Sin coincidencias.",
+    "oneServing": "1 ración",
+    "nServings": "{{n}} raciones",
+    "balance": "Balance de hoy",
+    "balanceTarget": "obj {{n}}",
+    "balanceRemaining": "kcal restantes",
+    "balanceConsumed": "{{n}} consumidas",
+    "backToExplore": "Volver a explorar",
+    "toMeal": "→ {{meal}}",
+    "unitServing": "ración",
+    "unitServings": "raciones",
+    "decreaseQty": "Reducir cantidad",
+    "increaseQty": "Aumentar cantidad",
+    "projRemaining": "quedan {{n}} kcal",
+    "projOver": "te pasas {{n}} kcal",
+    "overAlert": "Esta ración te lleva por encima del objetivo de hoy.",
+    "macroBalanceLabel": "Balance del día tras añadir",
+    "customCta": "Crear alimento personalizado",
+    "customTitle": "Alimento personalizado",
+    "addCta": "Añadir a {{meal}}",
+    "saveCta": "Guardar cambios",
+    "deleteCta": "Eliminar"
   }
 }
