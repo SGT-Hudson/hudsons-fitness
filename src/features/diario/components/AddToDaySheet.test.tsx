@@ -1,6 +1,6 @@
 import '@/i18n';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import i18n from '@/i18n';
 
 // Component-test env has no Supabase (Tier-2, R-16) — '@/features/ingredients/api'
@@ -13,7 +13,11 @@ const useMediaQuery = vi.fn((_query: string) => false); // mobile (Drawer) by de
 vi.mock('@/hooks/use-media-query', () => ({ useMediaQuery: (q: string) => useMediaQuery(q) }));
 
 const useQuickAddRecipes = vi.fn();
-vi.mock('../hooks', () => ({ useQuickAddRecipes: () => useQuickAddRecipes() }));
+const useCreateMealLog = vi.fn();
+vi.mock('../hooks', () => ({
+  useQuickAddRecipes: () => useQuickAddRecipes(),
+  useCreateMealLog: () => useCreateMealLog(),
+}));
 
 const useRecipes = vi.fn();
 vi.mock('@/features/recipes/hooks', () => ({ useRecipes: () => useRecipes() }));
@@ -29,7 +33,13 @@ const Z = { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0 };
 
 const RECIPES = [
   { id: 'r1', name: 'Tortilla francesa', servings: 2, ingredient_count: 3, perServing: { ...Z, kcal: 250 } },
-  { id: 'r2', name: 'Ensalada César', servings: 1, ingredient_count: 5, perServing: { ...Z, kcal: 320 } },
+  {
+    id: 'r2',
+    name: 'Ensalada César',
+    servings: 1,
+    ingredient_count: 5,
+    perServing: { kcal: 320, proteinG: 20, carbsG: 10, fatG: 18, fiberG: 4 },
+  },
 ];
 
 // Distinct from any recipe in RECIPES, and with no matching library recipe —
@@ -43,11 +53,13 @@ const INGREDIENTS = [
     name_en: 'Apple',
     brand: null,
     unit_type: 'g',
-    kcal_per_unit: 0.52,
-    protein_g_per_unit: 0.003,
-    carbs_g_per_unit: 0.14,
-    fat_g_per_unit: 0.002,
-    fiber_g_per_unit: 0.024,
+    // Per-100g convention: 100 g of this fixture ≈ 52 kcal / 1 g protein /
+    // 14 g carbs / 0.2 g fat — real enough to drive exact projection math.
+    kcal_per_unit: 52,
+    protein_g_per_unit: 1,
+    carbs_g_per_unit: 14,
+    fat_g_per_unit: 0.2,
+    fiber_g_per_unit: 2.4,
     sugar_g_per_unit: null,
     saturated_fat_g_per_unit: null,
     source: 'system',
@@ -74,11 +86,15 @@ function renderSheet(overrides: Partial<Parameters<typeof AddToDaySheet>[0]> = {
   );
 }
 
+let mutateAsync: ReturnType<typeof vi.fn>;
+
 beforeEach(async () => {
   useMediaQuery.mockReturnValue(false);
   useQuickAddRecipes.mockReturnValue({ data: QUICK_ADD, isLoading: false });
   useRecipes.mockReturnValue({ data: RECIPES, isLoading: false });
   useLocalIngredientSearch.mockReturnValue({ data: INGREDIENTS, isLoading: false });
+  mutateAsync = vi.fn().mockResolvedValue({ id: 'log1' });
+  useCreateMealLog.mockReturnValue({ mutateAsync, isPending: false });
   await i18n.changeLanguage('es');
 });
 
@@ -113,16 +129,16 @@ describe('AddToDaySheet', () => {
     expect(screen.getByText('Manzana')).toBeInTheDocument();
   });
 
-  it('selecting a result row advances to the ración step and surfaces the selection; back returns to explore', () => {
+  it('selecting a result row advances to the ración step with a live CTA; back returns to explore', () => {
     renderSheet();
     fireEvent.mouseDown(screen.getByRole('tab', { name: 'Recetas' }));
     fireEvent.click(screen.getByText('Ensalada César'));
 
-    // Explore chrome (search box, tabs) is gone; the placeholder shows the pick.
+    // Explore chrome (search box, tabs) is gone; the ración step shows the pick.
     expect(screen.queryByPlaceholderText('Buscar receta, alimento…')).not.toBeInTheDocument();
     expect(screen.getByText('Ensalada César')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Volver a explorar' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Añadir' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Añadir a Desayuno' })).toBeEnabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Volver a explorar' }));
     expect(screen.getByPlaceholderText('Buscar receta, alimento…')).toBeInTheDocument();
@@ -149,5 +165,115 @@ describe('AddToDaySheet', () => {
     expect(screen.getAllByText('Añadir a hoy')).toHaveLength(2);
     // Radix Dialog renders its own close button; the sheet must not double it up.
     expect(screen.getAllByRole('button', { name: /close|cerrar/i })).toHaveLength(1);
+  });
+
+  describe('ración step', () => {
+    const totals = { kcal: 1200, proteinG: 80, carbsG: 120, fatG: 40, fiberG: 10 };
+    const targets = { kcal: 2000, proteinG: 140, carbsG: 200, fatG: 70, fiberG: 30 };
+
+    it('projects a recipe selection at the default 1-serving qty and creates it with the recipe source', () => {
+      renderSheet({ totals, targets });
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'Recetas' }));
+      fireEvent.click(screen.getByText('Ensalada César'));
+
+      // added = perServing × 1 serving; projected kcal = 1200 + 320.
+      expect(screen.getByText('1520')).toBeInTheDocument();
+      expect(screen.getByText('quedan 480 kcal')).toBeInTheDocument();
+      expect(screen.getByText('+20 g')).toBeInTheDocument(); // protein
+      expect(screen.getByText('+10 g')).toBeInTheDocument(); // carbs
+      expect(screen.getByText('+18 g')).toBeInTheDocument(); // fat
+
+      fireEvent.click(screen.getByRole('button', { name: 'Añadir a Desayuno' }));
+
+      expect(mutateAsync).toHaveBeenCalledWith({
+        loggedOn: '2026-05-18',
+        mealType: 'breakfast',
+        source: { kind: 'recipe', recipeId: 'r2', servings: 1 },
+        notes: null,
+      });
+    });
+
+    it('bumping the recipe servings stepper by a quarter re-projects the macros and CTA source', () => {
+      renderSheet({ totals, targets });
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'Recetas' }));
+      fireEvent.click(screen.getByText('Ensalada César'));
+
+      fireEvent.click(screen.getByRole('button', { name: 'Aumentar cantidad' }));
+
+      // qty 1.25 → added kcal = 320 * 1.25 = 400; projected = 1600.
+      expect(screen.getByText('1600')).toBeInTheDocument();
+      expect(screen.getByText('+25 g')).toBeInTheDocument(); // protein: 20 * 1.25
+
+      fireEvent.click(screen.getByRole('button', { name: 'Añadir a Desayuno' }));
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ source: { kind: 'recipe', recipeId: 'r2', servings: 1.25 } }),
+      );
+    });
+
+    it('projects an ingredient selection at the default 100 g qty and creates it with the ingredient source', () => {
+      renderSheet({ totals, targets });
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'Alimentos' }));
+      fireEvent.click(screen.getByText('Manzana'));
+
+      // 100 g of the fixture: kcal 52, protein 1, carbs 14, fat 0.2.
+      expect(screen.getByText('1252')).toBeInTheDocument();
+      expect(screen.getByText('+1 g')).toBeInTheDocument();
+      expect(screen.getByText('+14 g')).toBeInTheDocument();
+      expect(screen.getByText('+0.2 g')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Añadir a Desayuno' }));
+
+      expect(mutateAsync).toHaveBeenCalledWith({
+        loggedOn: '2026-05-18',
+        mealType: 'breakfast',
+        source: { kind: 'ingredient', ingredientId: 'i1', quantity: 100 },
+        notes: null,
+      });
+    });
+
+    it('shows the amber over-state alert once the projected kcal exceeds the target', () => {
+      renderSheet({ totals: { ...totals, kcal: 1900 }, targets });
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'Recetas' }));
+      fireEvent.click(screen.getByText('Ensalada César')); // +320 → projected 2220 > 2000
+
+      expect(screen.getByText('te pasas 220 kcal')).toBeInTheDocument();
+      expect(screen.getByText(/por encima del objetivo/)).toBeInTheDocument();
+    });
+
+    it('the custom entry path blocks submission until name/kcal are filled, then projects and creates with the custom source', async () => {
+      renderSheet({ totals, targets });
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'Alimentos' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Crear alimento personalizado' }));
+
+      fireEvent.click(screen.getByRole('button', { name: /^Añadir a /i }));
+      // zodResolver validates asynchronously — the error message lands a tick later.
+      await screen.findByText('Pon un nombre.');
+      expect(mutateAsync).not.toHaveBeenCalled();
+
+      fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Batido casero' } });
+      fireEvent.change(screen.getByLabelText('Kcal'), { target: { value: '250' } });
+      fireEvent.change(screen.getByLabelText('Proteína (g)'), { target: { value: '30' } });
+
+      // Live projection from the typed numbers, before any submit.
+      expect(screen.getByText('1450')).toBeInTheDocument(); // 1200 + 250
+      expect(screen.getByText('+30 g')).toBeInTheDocument(); // protein
+
+      fireEvent.click(screen.getByRole('button', { name: /^Añadir a /i }));
+
+      await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({
+        loggedOn: '2026-05-18',
+        mealType: 'breakfast',
+        source: {
+          kind: 'custom',
+          name: 'Batido casero',
+          kcal: 250,
+          proteinG: 30,
+          carbsG: null,
+          fatG: null,
+          fiberG: null,
+        },
+        notes: null,
+      }));
+    });
   });
 });

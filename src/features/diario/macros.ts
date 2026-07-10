@@ -17,7 +17,10 @@ export const ZERO_MACROS: Macros = {
   fiberG: 0,
 };
 
-function ingredientMacros(
+// Exported so the diario ración step (Task 4, R-33 wave 2) can project a
+// loose ingredient's contribution the same way computeMealLogMacros does
+// internally — same pure math, no fetch.
+export function ingredientMacros(
   ingredient: {
     unit_type: string;
     kcal_per_unit: number;

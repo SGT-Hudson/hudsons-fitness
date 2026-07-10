@@ -31,6 +31,7 @@ import { MEAL_TYPE_ORDER } from '../api';
 import {
   firstMealLogError,
   mealLogFormSchema,
+  parseOptionalNumber,
   type MealLogFormValues,
 } from '../schema';
 
@@ -43,13 +44,6 @@ interface Props {
 }
 
 type Source = 'recipe' | 'ingredient' | 'custom';
-
-function parseOptional(v: string): number | null {
-  const t = v.trim();
-  if (t === '') return null;
-  const n = Number(t);
-  return Number.isFinite(n) ? n : null;
-}
 
 function defaults(mealType: MealType, source: Source): MealLogFormValues {
   return {
@@ -177,10 +171,10 @@ export function MealLogDialog({
         } else {
           patch.custom_name = v.customName.trim();
           patch.custom_kcal = Number(v.customKcal);
-          patch.custom_protein_g = parseOptional(v.customProtein);
-          patch.custom_carbs_g = parseOptional(v.customCarbs);
-          patch.custom_fat_g = parseOptional(v.customFat);
-          patch.custom_fiber_g = parseOptional(v.customFiber);
+          patch.custom_protein_g = parseOptionalNumber(v.customProtein);
+          patch.custom_carbs_g = parseOptionalNumber(v.customCarbs);
+          patch.custom_fat_g = parseOptionalNumber(v.customFat);
+          patch.custom_fiber_g = parseOptionalNumber(v.customFiber);
         }
         await update.mutateAsync({ id: editing.id, patch });
       } else if (v.source === 'recipe') {
@@ -209,10 +203,10 @@ export function MealLogDialog({
             kind: 'custom',
             name: v.customName.trim(),
             kcal: Number(v.customKcal),
-            proteinG: parseOptional(v.customProtein),
-            carbsG: parseOptional(v.customCarbs),
-            fatG: parseOptional(v.customFat),
-            fiberG: parseOptional(v.customFiber),
+            proteinG: parseOptionalNumber(v.customProtein),
+            carbsG: parseOptionalNumber(v.customCarbs),
+            fatG: parseOptionalNumber(v.customFat),
+            fiberG: parseOptionalNumber(v.customFiber),
           },
           notes: v.notes.trim() === '' ? null : v.notes.trim(),
         });

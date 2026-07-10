@@ -165,7 +165,17 @@
     "balanceRemaining": "kcal restantes",
     "balanceConsumed": "{{n}} consumidas",
     "backToExplore": "Volver a explorar",
-    "racionPlaceholder": "La hoja de ración se construye en la siguiente tarea.",
-    "addCta": "Añadir"
+    "toMeal": "→ {{meal}}",
+    "unitServing": "ración",
+    "unitServings": "raciones",
+    "decreaseQty": "Reducir cantidad",
+    "increaseQty": "Aumentar cantidad",
+    "projRemaining": "quedan {{n}} kcal",
+    "projOver": "te pasas {{n}} kcal",
+    "overAlert": "Esta ración te lleva por encima del objetivo de hoy.",
+    "macroBalanceLabel": "Balance del día tras añadir",
+    "customCta": "Crear alimento personalizado",
+    "customTitle": "Alimento personalizado",
+    "addCta": "Añadir a {{meal}}"
   }
 }

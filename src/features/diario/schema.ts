@@ -44,6 +44,19 @@ function num(v: string): number {
   return Number.isFinite(n) ? n : NaN;
 }
 
+/**
+ * Optional custom-macro `<input>` value → number | null. Shared by
+ * MealLogDialog (create/edit) and the diario ración step's custom-entry path
+ * (Task 4, R-33 wave 2) so both submit paths parse `customProtein`/`customCarbs`/
+ * `customFat`/`customFiber` identically: blank or non-finite → null.
+ */
+export function parseOptionalNumber(v: string): number | null {
+  const t = v.trim();
+  if (t === '') return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
 export const mealLogFormSchema = z
   .object({
     mealType,

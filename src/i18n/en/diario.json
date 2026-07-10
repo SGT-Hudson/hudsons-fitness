@@ -165,7 +165,17 @@
     "balanceRemaining": "kcal left",
     "balanceConsumed": "{{n}} consumed",
     "backToExplore": "Back to explore",
-    "racionPlaceholder": "The ración step is built in the next task.",
-    "addCta": "Add"
+    "toMeal": "→ {{meal}}",
+    "unitServing": "serving",
+    "unitServings": "servings",
+    "decreaseQty": "Decrease quantity",
+    "increaseQty": "Increase quantity",
+    "projRemaining": "{{n}} kcal left",
+    "projOver": "{{n}} kcal over",
+    "overAlert": "This serving puts you over today's target.",
+    "macroBalanceLabel": "Today's balance after adding",
+    "customCta": "Create custom entry",
+    "customTitle": "Custom entry",
+    "addCta": "Add to {{meal}}"
   }
 }

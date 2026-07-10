@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -17,17 +17,20 @@ import type { MealType } from '../api';
 import type { RecipeOption } from './RecipeAutocomplete';
 import { MealSlotSelector, type MealSubtotals } from './MealSlotSelector';
 import { AddResultRow } from './AddResultRow';
+import { RacionStep } from './RacionStep';
 
 export type AddSheetStep = 'explore' | 'racion';
 type AddSheetTab = 'recientes' | 'recetas' | 'alimentos';
 
 /**
- * What the explore step hands off to the ración step (Task 4): either a full
- * recipe (with per-serving macros when available) or a loose ingredient.
+ * What the explore step hands off to the ración step (Task 4): a full recipe
+ * (with per-serving macros when available), a loose ingredient, or the
+ * custom-entry path (typed macros, no library item behind it).
  */
 export type AddSheetSelection =
   | { kind: 'recipe'; recipe: RecipeOption }
-  | { kind: 'ingredient'; ingredient: Ingredient };
+  | { kind: 'ingredient'; ingredient: Ingredient }
+  | { kind: 'custom' };
 
 interface Props {
   open: boolean;
@@ -72,10 +75,10 @@ function servingsLabel(servings: number, t: TFn): string {
  * this composition was chosen over a single responsive vaul `direction`).
  *
  * Owns a two-step flow: `explore` (this file) lets the user pick a meal slot
- * and search/browse recientes · recetas · alimentos; picking a result sets
- * the selection and advances to `racion`, whose real UI (quantity stepper,
- * live macro projection, create mutation) is Task 4 — this file only renders
- * a placeholder there so the seam is visible and testable.
+ * and search/browse recientes · recetas · alimentos; picking a result (or the
+ * "crear personalizado" affordance) sets the selection and advances to
+ * `racion`, whose UI (quantity stepper, live macro projection, create
+ * mutation) is `RacionStep`.
  */
 export function AddToDaySheet({
   open,
@@ -199,12 +202,10 @@ export function AddToDaySheet({
     setStep('racion');
   }
 
-  const selectedName =
-    selection?.kind === 'recipe'
-      ? selection.recipe.name
-      : selection
-        ? ingredientDisplayName(selection.ingredient, lang)
-        : '';
+  function selectCustom() {
+    setSelection({ kind: 'custom' });
+    setStep('racion');
+  }
 
   const dateSubline = formatDate(loggedOn, 'EEE d MMM', locale);
   const subline = phaseLabel
@@ -315,8 +316,15 @@ export function AddToDaySheet({
           <TabsContent value="recetas" className="mt-0">
             {renderList(recetasItems, t('addSheet.emptyRecipes'))}
           </TabsContent>
-          <TabsContent value="alimentos" className="mt-0">
+          <TabsContent value="alimentos" className="mt-0 space-y-3">
             {renderList(alimentosItems, alimentosEmptyMessage)}
+            <button
+              type="button"
+              onClick={selectCustom}
+              className="w-full rounded-[10px] border border-dashed border-border px-2.5 py-2 text-center text-[12px] font-medium text-muted-foreground hover:bg-muted"
+            >
+              {t('addSheet.customCta')}
+            </button>
           </TabsContent>
         </div>
       </Tabs>
@@ -361,26 +369,21 @@ export function AddToDaySheet({
     </>
   );
 
-  // Task 4 replaces this body with the real quantity stepper + macro
-  // projection bars + create-mutation wiring; this placeholder only proves
-  // the step transition and carries the selection forward.
   const racionBody = selection && (
-    <div className="flex flex-1 flex-col px-4.5 py-4">
-      <button
-        type="button"
-        onClick={() => setStep('explore')}
-        className="mb-3 inline-flex items-center gap-1.5 self-start text-[12.5px] text-muted-foreground"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        {t('addSheet.backToExplore')}
-      </button>
-      <p className="text-sm font-semibold">{selectedName}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{t('addSheet.racionPlaceholder')}</p>
-      <div className="flex-1" />
-      <Button type="button" disabled className="mt-4 w-full">
-        {t('addSheet.addCta')}
-      </Button>
-    </div>
+    <RacionStep
+      selection={selection}
+      mealType={mealType}
+      loggedOn={loggedOn}
+      totals={totals}
+      targets={targets}
+      lang={lang}
+      onBack={() => setStep('explore')}
+      onDone={() => {
+        setStep('explore');
+        setSelection(null);
+        onOpenChange(false);
+      }}
+    />
   );
 
   const body = step === 'explore' ? exploreBody : racionBody;
