@@ -59,6 +59,19 @@
       "sun": "S"
     }
   },
+  "hero": {
+    "remainingLabel": "Left today",
+    "consumed": "consumed",
+    "target": "target",
+    "tdeeLine": "TDEE {{n}} kcal · adaptive average"
+  },
+  "body": {
+    "title": "Body",
+    "lastMeasured": "last {{date}}",
+    "rateUnit": "kg / wk",
+    "register": "Log measurement",
+    "empty": "No measurements yet"
+  },
   "entry": {
     "edit": "Edit entry",
     "fromPlan": "From plan",

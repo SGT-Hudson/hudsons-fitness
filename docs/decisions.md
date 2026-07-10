@@ -491,3 +491,27 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **Why:** The canvas never defines the floor's provenance — it is always injected, and always the literal `48` in its fixtures. The shipped app derived it as 20 % of target kcal ÷ 9, which makes a physiological floor move whenever the user eats less. All three definitions — the canvas fixture, the shipped kcal-derived formula, and the new bodyweight-derived one — coincide near 48 g for an 80 kg athlete on 2180 kcal, and diverge exactly where the energy-based one is wrong: an essential floor should track the body, not the day's target. Consequence: bodyweight is now threaded to the two consumers from `useLatestMeasurement`; when no measurement exists the floor is unknown and no fat-floor rule applies.
 
 **Status:** decided · done (R-33 tone core, 2026-07-09)
+
+## D-F19 — R-33 Diario kcal ring is single-arc (consumed / phase-target), not the canvas double-arc
+
+**Ruling:** The Diario kcal ring is **single-arc: consumed / phase-target**, colored by `getKcalStatus(consumed, target, phase)`, with a "plan de hoy: {X} kcal" footnote derived free from the sum of today's `from_plan` meal logs. The canvas's "planificado (faint) vs registrado (solid)" double-arc is not adopted and not deferred — it is incompatible with this app's data model.
+
+**Why:** This app materializes plan meals into `meal_logs` (`from_plan=true`) that already count as consumed, so a planned-vs-eaten split has no clean data source for *today*: the faint "planned" arc would sit hidden behind the solid "eaten" arc except in the degenerate case where the user deletes plan meals. Per spec §6.2's authorized fallback, the single-arc ring is the faithful render of the data we actually have. A true planned/eaten split would need a net-new "eaten" flag (out of scope; noted for the roadmap).
+
+**Status:** decided · done (R-33 wave 2, 2026-07-10)
+
+## D-F20 — R-33 Diario macros are tiles + progressive disclosure, not the canvas inline bars
+
+**Ruling:** Macro display follows spec §6.2 text — a 2×2 `MacroTile` grid, **collapsible (closed by default) on mobile** and **always-visible in the web right rail** — rather than the canvas `DiarioMobile`'s four inline bars beside the ring. Both breakpoints reuse one `MacroTile` / `MacroGrid` (`collapsible` prop toggles the disclosure).
+
+**Why:** The canvas canonical render shows 4 inline bars and leaves its own `MacrosDisclosure` (collapsible 2×2 tiles) defined but unwired, while spec §6.2 explicitly calls for "macro tiles … + progressive disclosure." The spec text wins over the canvas's unfinished render; a single shared tile keeps mobile and web visually identical and avoids a second macro component.
+
+**Status:** decided · done (R-33 wave 2, 2026-07-10)
+
+## D-F21 — R-33 weekly kcal chart data = `daily_nutrition_history` (past) + live today, phase-aware
+
+**Ruling:** The web-rail weekly kcal chart's 7-day series is the Progreso `daily_nutrition_history` rows for the six past days plus the current day's live running total spliced into the canonical-today slot (`useWeeklyKcal`). Bar tone is phase-aware via `getKcalStatus`/`getExcessTone`; today's bar is always accent, regardless of tone. No new query string — it reuses the existing Progreso history fetch.
+
+**Why:** `daily_nutrition_history` is populated nightly, so it never carries a row for the real-world today; the live diario total is the only truthful source for the today bar. The canvas hardcodes the cut-phase coloring rule, which its own implementation note flags as a TODO — so the phase-aware helpers (already shared with the Planificador) are the target, not the canvas's single-phase shortcut.
+
+**Status:** decided · done (R-33 wave 2, 2026-07-10)

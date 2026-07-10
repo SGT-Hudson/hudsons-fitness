@@ -59,6 +59,19 @@
       "sun": "D"
     }
   },
+  "hero": {
+    "remainingLabel": "Restantes hoy",
+    "consumed": "consumidas",
+    "target": "objetivo",
+    "tdeeLine": "TDEE {{n}} kcal · promedio adaptativo"
+  },
+  "body": {
+    "title": "Cuerpo",
+    "lastMeasured": "última {{date}}",
+    "rateUnit": "kg / sem",
+    "register": "Registrar medición",
+    "empty": "Aún sin mediciones"
+  },
   "entry": {
     "edit": "Editar entrada",
     "fromPlan": "Del plan",
