@@ -37,18 +37,45 @@
     "heroRemaining": "kcal restantes",
     "heroToGoal": "kcal para el objetivo",
     "heroOver": "kcal de más",
-    "remainingG": "faltan {{n}} g",
-    "overG": "+{{n}} g de más",
-    "floorMet": "✓ cubierto +{{n}} g",
-    "fiberBelowMin": "{{n}} g bajo el mínimo",
-    "fatLow": "⚠ Falta grasa",
-    "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (0,6 g por kg de peso corporal). La grasa es esencial para las hormonas y para absorber vitaminas.",
-    "fatLowHelpLabel": "Ayuda sobre grasa",
-    "consumedOf": "{{consumed}} / {{target}} consumidas"
+    "ringOf": "de {{target}} kcal",
+    "planToday": "plan de hoy: {{n}} kcal",
+    "macroCaptionOver": "+{{n}} g sobre el objetivo",
+    "macroCaptionShort": "te faltan {{n}} g",
+    "macroCaptionOnTarget": "justo en el objetivo",
+    "macroCaptionMargin": "{{n}} g de margen",
+    "macrosToggle": "Macros"
+  },
+  "weekly": {
+    "title": "Semana",
+    "summary": "media {{avg}} · obj {{target}}",
+    "target": "obj {{target}}",
+    "weekday": {
+      "mon": "L",
+      "tue": "M",
+      "wed": "X",
+      "thu": "J",
+      "fri": "V",
+      "sat": "S",
+      "sun": "D"
+    }
+  },
+  "hero": {
+    "remainingLabel": "Restantes hoy",
+    "consumed": "consumidas",
+    "target": "objetivo",
+    "tdeeLine": "TDEE {{n}} kcal · promedio adaptativo"
+  },
+  "body": {
+    "title": "Cuerpo",
+    "lastMeasured": "última {{date}}",
+    "rateUnit": "kg / sem",
+    "register": "Registrar medición",
+    "empty": "Aún sin mediciones"
   },
   "entry": {
     "edit": "Editar entrada",
-    "fromPlan": "Del plan"
+    "fromPlan": "Del plan",
+    "planShort": "Plan"
   },
   "tabs": {
     "recipe": "Receta",
@@ -97,7 +124,9 @@
   "quickAdd": {
     "add": "Añadir {{name}}",
     "added": "{{name}} añadido",
-    "undo": "Deshacer"
+    "undo": "Deshacer",
+    "recommendations": "Recomendaciones",
+    "addRecipe": "Añadir receta"
   },
   "errors": {
     "pickRecipe": "Selecciona una receta.",

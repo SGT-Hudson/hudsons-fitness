@@ -37,18 +37,45 @@
     "heroRemaining": "kcal left",
     "heroToGoal": "kcal to goal",
     "heroOver": "kcal over",
-    "remainingG": "{{n}} g left",
-    "overG": "+{{n}} g over",
-    "floorMet": "✓ met +{{n}} g",
-    "fiberBelowMin": "{{n}} g below minimum",
-    "fatLow": "⚠ Low fat",
-    "fatLowHelp": "You are below the healthy fat minimum (0.6 g per kg of bodyweight). Fat is essential for hormones and for absorbing vitamins.",
-    "fatLowHelpLabel": "Fat info",
-    "consumedOf": "{{consumed}} / {{target}} consumed"
+    "ringOf": "of {{target}} kcal",
+    "planToday": "today's plan: {{n}} kcal",
+    "macroCaptionOver": "+{{n}} g over target",
+    "macroCaptionShort": "{{n}} g short of target",
+    "macroCaptionOnTarget": "right on target",
+    "macroCaptionMargin": "{{n}} g to spare",
+    "macrosToggle": "Macros"
+  },
+  "weekly": {
+    "title": "Week",
+    "summary": "avg {{avg}} · target {{target}}",
+    "target": "target {{target}}",
+    "weekday": {
+      "mon": "M",
+      "tue": "T",
+      "wed": "W",
+      "thu": "T",
+      "fri": "F",
+      "sat": "S",
+      "sun": "S"
+    }
+  },
+  "hero": {
+    "remainingLabel": "Left today",
+    "consumed": "consumed",
+    "target": "target",
+    "tdeeLine": "TDEE {{n}} kcal · adaptive average"
+  },
+  "body": {
+    "title": "Body",
+    "lastMeasured": "last {{date}}",
+    "rateUnit": "kg / wk",
+    "register": "Log measurement",
+    "empty": "No measurements yet"
   },
   "entry": {
     "edit": "Edit entry",
-    "fromPlan": "From plan"
+    "fromPlan": "From plan",
+    "planShort": "Plan"
   },
   "tabs": {
     "recipe": "Recipe",
@@ -97,7 +124,9 @@
   "quickAdd": {
     "add": "Add {{name}}",
     "added": "{{name}} added",
-    "undo": "Undo"
+    "undo": "Undo",
+    "recommendations": "Recommendations",
+    "addRecipe": "Add recipe"
   },
   "errors": {
     "pickRecipe": "Pick a recipe.",

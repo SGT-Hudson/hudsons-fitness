@@ -6,16 +6,27 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageShell } from '@/components/layout/PageShell';
+import { BodyQuickMeasureCard } from '@/features/diario/components/BodyQuickMeasureCard';
 import { CopyDayDialog } from '@/features/diario/components/CopyDayDialog';
 import { DateNavigator } from '@/features/diario/components/DateNavigator';
 import { DayTotalsCard } from '@/features/diario/components/DayTotalsCard';
+import { KcalHero } from '@/features/diario/components/KcalHero';
+import { MacroGrid, type MacroGridItem } from '@/features/diario/components/MacroGrid';
+import { WeeklyKcalChart } from '@/features/diario/components/WeeklyKcalChart';
 import type { ProteinBasis } from '@/lib/macros';
 import { MealLogDialog } from '@/features/diario/components/MealLogDialog';
 import { MealSection } from '@/features/diario/components/MealSection';
-import { useMaterializePlan, useMealLogsForDay, useQuickAddRecipes } from '@/features/diario/hooks';
+import {
+  useMaterializePlan,
+  useMealLogsForDay,
+  useQuickAddRecipes,
+  useWeeklyKcal,
+} from '@/features/diario/hooks';
 import { computeMealLogMacros, computeMealLogSub, sumMacros, sumSub } from '@/features/diario/macros';
 import { MEAL_TYPE_ORDER, type MealLogWithJoins, type MealType } from '@/features/diario/api';
-import { useLatestMeasurement } from '@/features/measurements/hooks';
+import { useLatestMeasurement, useSmoothedMeasurements } from '@/features/measurements/hooks';
+import { smoothedRatePerWeek } from '@/features/measurements/trend';
+import { essentialFatFloorG, type PhaseType } from '@/core/nutritionTone';
 import { useActivePhase } from '@/features/phases/hooks';
 import { computePhaseTargets } from '@/features/phases/targets';
 import { useLatestTdee } from '@/features/tdee/hooks';
@@ -28,6 +39,7 @@ function isValidDate(s: string): boolean {
 
 export function DiarioPage() {
   const { t } = useTranslation('diario');
+  const { t: tPhases } = useTranslation('objetivos');
   const navigate = useNavigate();
   const params = useParams<{ date?: string }>();
   const today = isoDate();
@@ -40,6 +52,7 @@ export function DiarioPage() {
 
   const logs = useMealLogsForDay(date);
   const latestMeasurement = useLatestMeasurement();
+  const smoothed = useSmoothedMeasurements('30d');
   const activePhase = useActivePhase();
   const latestTdee = useLatestTdee();
   const materialize = useMaterializePlan();
@@ -90,6 +103,16 @@ export function DiarioPage() {
     [logs.data],
   );
 
+  // D-F19 ring footnote: kcal contributed by today's plan-materialized
+  // entries (from_plan=true), already counted inside `totals.kcal` above.
+  const planKcal = useMemo(
+    () =>
+      (logs.data ?? [])
+        .filter((l) => l.from_plan)
+        .reduce((sum, l) => sum + computeMealLogMacros(l).kcal, 0),
+    [logs.data],
+  );
+
   const targets = useMemo(() => {
     if (!activePhase.data || !latestMeasurement.data?.weight_kg) return undefined;
     return (
@@ -116,6 +139,35 @@ export function DiarioPage() {
     activePhase.data?.kcal_mode === 'tdee_delta'
       ? tdeeConfidenceBand(latestTdee.data)
       : null;
+
+  const phaseType = activePhase.data?.phase_type as PhaseType | undefined;
+  const phaseLabel = phaseType ? tPhases(`phases.type.${phaseType}`) : undefined;
+
+  const fatFloor =
+    latestMeasurement.data?.weight_kg != null
+      ? essentialFatFloorG(latestMeasurement.data.weight_kg)
+      : undefined;
+
+  // Shared macro-tile config: the mobile ring card builds this internally; the
+  // web rail's static (always-open) grid reuses the same four items.
+  const macroItems: MacroGridItem[] = [
+    { metric: 'protein', consumed: totals.proteinG, target: targets?.proteinG, unit: 'g', phase: phaseType },
+    { metric: 'carbs', consumed: totals.carbsG, target: targets?.carbsG, unit: 'g', phase: phaseType },
+    { metric: 'fat', consumed: totals.fatG, target: targets?.fatG, unit: 'g', floorG: fatFloor, phase: phaseType },
+    { metric: 'fiber', consumed: totals.fiberG, target: targets?.fiberG, unit: 'g', phase: phaseType },
+  ];
+
+  // Web-rail weekly chart (md+ only): 7-day kcal series ending on the selected
+  // date, with today's live running total spliced in (see useWeeklyKcal).
+  const weeklyKcal = useWeeklyKcal(date, totals.kcal);
+
+  // Web-rail body card: smoothed kg/week rate over the last 30 days.
+  const weeklyRate = useMemo(() => {
+    const points = (smoothed.data ?? [])
+      .filter((m) => m.measured_on)
+      .map((m) => ({ measuredOn: m.measured_on as string, ma5: m.weight_kg_5day_avg }));
+    return smoothedRatePerWeek(points);
+  }, [smoothed.data]);
 
   function openNew(mealType: MealType) {
     setEditing(null);
@@ -148,52 +200,92 @@ export function DiarioPage() {
       <div className="flex flex-wrap gap-2 md:hidden">{headerActions}</div>
       <DateNavigator date={date} onChange={changeDate} />
 
-      <DayTotalsCard
-        totals={totals}
-        subTotals={subTotals}
-        targets={targets}
-        proteinBasis={proteinBasis}
-        tdeeConfidence={tdeeConfidence}
-        phaseType={activePhase.data?.phase_type as
-          | 'cut'
-          | 'maintenance'
-          | 'bulk'
-          | undefined}
-        weightKg={latestMeasurement.data?.weight_kg ?? undefined}
-      />
+      {/* Mobile-primary summary. The ring hero + collapsible macros live here;
+          on md+ the web right rail owns them instead, so this card is hidden
+          there to avoid a duplicated kcal hero / macro grid. */}
+      <div className="md:hidden">
+        <DayTotalsCard
+          totals={totals}
+          subTotals={subTotals}
+          targets={targets}
+          proteinBasis={proteinBasis}
+          tdeeConfidence={tdeeConfidence}
+          phaseType={phaseType}
+          weightKg={latestMeasurement.data?.weight_kg ?? undefined}
+          planKcal={planKcal}
+        />
+      </div>
 
-      {logs.isLoading ? (
-        <div className="space-y-4">
-          {[0, 1, 2].map((i) => (
-            <Card key={i}>
-              <CardContent className="py-4 space-y-3">
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {MEAL_TYPE_ORDER.map((mt) => {
-            const items = grouped.get(mt) ?? [];
-            // 'other' is a fallback bucket — only show it when it has entries.
-            if (mt === 'other' && items.length === 0) return null;
-            return (
-              <MealSection
-                key={mt}
-                mealType={mt}
-                date={date}
-                items={items}
-                quickAddItems={quickAddItems}
-                onAdd={openNew}
-                onEdit={openEdit}
+      <div className="md:grid md:grid-cols-[1fr_380px] md:items-start md:gap-4">
+        {/* Meals — shown at both breakpoints (left column on md+). */}
+        {logs.isLoading ? (
+          <div className="space-y-4">
+            {[0, 1, 2].map((i) => (
+              <Card key={i}>
+                <CardContent className="py-4 space-y-3">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {MEAL_TYPE_ORDER.map((mt) => {
+              const items = grouped.get(mt) ?? [];
+              // 'other' is a fallback bucket — only show it when it has entries.
+              if (mt === 'other' && items.length === 0) return null;
+              return (
+                <MealSection
+                  key={mt}
+                  mealType={mt}
+                  date={date}
+                  items={items}
+                  quickAddItems={quickAddItems}
+                  onAdd={openNew}
+                  onEdit={openEdit}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* Web right rail — md+ only. Hero + static macro grid + weekly chart
+            gate on a phase target (mirrors DayTotalsCard's fallback); the body
+            card always shows. */}
+        <aside className="hidden md:flex md:flex-col md:gap-3">
+          {targets ? (
+            <>
+              <KcalHero
+                consumed={totals.kcal}
+                target={targets.kcal}
+                phaseType={phaseType}
+                phaseLabel={phaseLabel}
+                tdeeKcal={latestTdee.data?.estimated_tdee_kcal ?? null}
+                tdeeConfidence={tdeeConfidence}
               />
-            );
-          })}
-        </div>
-      )}
+              <MacroGrid collapsible={false} items={macroItems} />
+              {weeklyKcal.data && (
+                <WeeklyKcalChart
+                  days={weeklyKcal.data}
+                  target={targets.kcal}
+                  phase={phaseType}
+                />
+              )}
+            </>
+          ) : (
+            <div className="rounded-[14px] border bg-card p-5 text-xs text-muted-foreground">
+              {t('totals.targetsHint')}
+            </div>
+          )}
+          <BodyQuickMeasureCard
+            latest={latestMeasurement.data}
+            rate={weeklyRate}
+            phaseType={phaseType}
+          />
+        </aside>
+      </div>
 
       <MealLogDialog
         open={dialogOpen}
