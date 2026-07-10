@@ -7,20 +7,48 @@
 // duplicated kcal hero across breakpoints). PageShell mounts a dual header, so
 // page-level copy uses getAllBy*.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n';
+import type { MealLogWithJoins } from '@/features/diario/api';
 
 const state = vi.hoisted(() => ({
   activePhase: null as null | Record<string, unknown>,
+  logs: [] as MealLogWithJoins[],
+  createAsync: vi.fn(),
+  updateAsync: vi.fn(),
+  deleteAsync: vi.fn(),
 }));
 
-// The page's static import tree reaches supabase.ts (via MealLogDialog →
-// RecipeAutocomplete), which throws at import when the test env has no Supabase
-// keys. Stub the client so the tree loads; the data hooks below are mocked, so
-// nothing actually queries it.
+// AddToDaySheet uses useMediaQuery (window.matchMedia is unpolyfilled in jsdom).
+// Stub it to mobile (false) so the sheet renders as the vaul Drawer.
+vi.stubGlobal('matchMedia', (q: string) => ({
+  matches: false,
+  media: q,
+  onchange: null,
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  addListener: vi.fn(),
+  removeListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+}));
+
+// The page's static import tree reaches supabase.ts (via the add-sheet's
+// ingredient/recipe helpers), which throws at import when the test env has no
+// Supabase keys. Stub the client so the tree loads; the data hooks below are
+// mocked, so nothing actually queries it.
 vi.mock('@/lib/supabase', () => ({ supabase: {} as never }));
+
+// The add-sheet's library/search hooks — kept off the real client (return
+// empty). The sheet is always mounted (open toggles content), so these run
+// even before a trigger opens it.
+vi.mock('@/features/recipes/hooks', () => ({
+  useRecipes: () => ({ data: [], isLoading: false }),
+}));
+vi.mock('@/features/ingredients/hooks', () => ({
+  useLocalIngredientSearch: () => ({ data: [], isLoading: false }),
+}));
 
 vi.mock('@/features/auth/AuthProvider', () => ({
   useAuth: () => ({ user: { id: 'u1', email: 'qa@x.dev' } }),
@@ -50,10 +78,13 @@ vi.mock('@/features/measurements/hooks', async (importActual) => ({
 
 vi.mock('@/features/diario/hooks', async (importActual) => ({
   ...(await importActual<typeof import('@/features/diario/hooks')>()),
-  useMealLogsForDay: () => ({ data: [], isLoading: false, isError: false }),
+  useMealLogsForDay: () => ({ data: state.logs, isLoading: false, isError: false }),
   useQuickAddRecipes: () => ({ data: [] }),
   useMaterializePlan: () => ({ mutate: vi.fn() }),
   useWeeklyKcal: () => ({ data: undefined }),
+  useCreateMealLog: () => ({ mutateAsync: state.createAsync, isPending: false }),
+  useUpdateMealLog: () => ({ mutateAsync: state.updateAsync, isPending: false }),
+  useDeleteMealLog: () => ({ mutateAsync: state.deleteAsync, isPending: false }),
 }));
 
 import { DiarioPage } from './DiarioPage';
@@ -69,9 +100,41 @@ function renderPage() {
   );
 }
 
+function makeCustomLog(overrides: Partial<MealLogWithJoins> = {}): MealLogWithJoins {
+  return {
+    id: 'log-1',
+    user_id: 'u1',
+    logged_on: '2026-05-18',
+    meal_type: 'breakfast',
+    notes: null,
+    from_plan: false,
+    recipe_id: null,
+    ingredient_id: null,
+    servings: null,
+    quantity: null,
+    custom_name: 'Avena con plátano',
+    custom_kcal: 318,
+    custom_protein_g: 11,
+    custom_carbs_g: 58,
+    custom_fat_g: 5,
+    custom_fiber_g: 4,
+    custom_sugar_g: null,
+    custom_saturated_fat_g: null,
+    plan_week_slot_id: null,
+    created_at: '2026-05-18T08:00:00Z',
+    recipe: null,
+    ingredient: null,
+    ...overrides,
+  } as MealLogWithJoins;
+}
+
 beforeEach(async () => {
   await i18n.changeLanguage('es');
   state.activePhase = { phase_type: 'cut', kcal_mode: 'absolute' };
+  state.logs = [];
+  state.createAsync = vi.fn().mockResolvedValue({ id: 'new' });
+  state.updateAsync = vi.fn().mockResolvedValue({ id: 'log-1' });
+  state.deleteAsync = vi.fn().mockResolvedValue(undefined);
 });
 
 describe('DiarioPage responsive layout', () => {
@@ -113,5 +176,46 @@ describe('DiarioPage responsive layout', () => {
     expect(screen.queryByTestId('kcal-hero-remaining')).toBeNull();
     // The hint copy shows in both the mobile card and the rail fallback.
     expect(screen.getAllByText(/objetivos diarios/i).length).toBeGreaterThan(0);
+  });
+});
+
+describe('DiarioPage add-flow triggers', () => {
+  function slotGroup() {
+    return screen.getByRole('radiogroup', { name: 'Elegir franja' });
+  }
+
+  it('the header "Añadir comida" button opens the sheet at the first empty slot', () => {
+    renderPage();
+    // PageShell dual-mounts the header → two buttons; either opens the sheet.
+    fireEvent.click(screen.getAllByRole('button', { name: /^añadir comida$/i })[0]);
+    expect(
+      within(slotGroup()).getByRole('radio', { name: /Desayuno/ }),
+    ).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('a meal-card + opens the sheet locked to that meal slot', () => {
+    renderPage();
+    // Order: breakfast, lunch, snack, dinner ('other' hidden when empty).
+    const adds = screen.getAllByRole('button', { name: /añadir a esta comida/i });
+    fireEvent.click(adds[1]); // lunch
+    expect(
+      within(slotGroup()).getByRole('radio', { name: /Comida/ }),
+    ).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('editing an entry opens the sheet in edit mode and updates via useUpdateMealLog', async () => {
+    state.logs = [makeCustomLog()];
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /editar entrada/i }));
+    // The edit title (not "Añadir a hoy") confirms edit mode.
+    expect(screen.getAllByText('Editar entrada').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() =>
+      expect(state.updateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'log-1' }),
+      ),
+    );
   });
 });

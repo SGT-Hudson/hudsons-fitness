@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Minus, Plus, Apple, UtensilsCrossed, Pencil } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Trash2, Apple, UtensilsCrossed, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,8 +10,9 @@ import { cn } from '@/lib/utils';
 import { roundMacro, scale, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { ingredientDisplayName } from '@/features/ingredients/api';
 import { ingredientMacros } from '../macros';
-import { useCreateMealLog } from '../hooks';
-import type { CreateMealLogInput, MealType } from '../api';
+import { useCreateMealLog, useUpdateMealLog, useDeleteMealLog } from '../hooks';
+import type { CreateMealLogInput, MealLogWithJoins, MealType } from '../api';
+import type { TablesUpdate } from '@/types/database';
 import {
   firstMealLogError,
   mealLogFormSchema,
@@ -30,8 +31,14 @@ interface Props {
   /** UI locale, for decimal-comma vs decimal-point qty display. */
   lang: 'es' | 'en';
   onBack: () => void;
-  /** Called once the log is created — the caller closes the sheet. */
+  /** Called once the log is created/updated/deleted — the caller closes the sheet. */
   onDone: () => void;
+  /**
+   * Edit mode (task 5): the existing entry being edited. When set, the step is
+   * locked to this entry's kind, the quantity/custom fields pre-fill from it,
+   * the CTA updates instead of creating, and a delete affordance appears.
+   */
+  editing?: MealLogWithJoins | null;
 }
 
 function customDefaults(mealType: MealType): MealLogFormValues {
@@ -50,6 +57,33 @@ function customDefaults(mealType: MealType): MealLogFormValues {
     customFiber: '',
     notes: '',
   };
+}
+
+// Seed the custom form from an existing custom entry when editing (task 5).
+function customEditDefaults(log: MealLogWithJoins, mealType: MealType): MealLogFormValues {
+  return {
+    ...customDefaults(mealType),
+    customName: log.custom_name ?? '',
+    customKcal: log.custom_kcal == null ? '' : String(log.custom_kcal),
+    customProtein: log.custom_protein_g == null ? '' : String(log.custom_protein_g),
+    customCarbs: log.custom_carbs_g == null ? '' : String(log.custom_carbs_g),
+    customFat: log.custom_fat_g == null ? '' : String(log.custom_fat_g),
+    customFiber: log.custom_fiber_g == null ? '' : String(log.custom_fiber_g),
+  };
+}
+
+// The edit step's initial quantity: recipe servings, ingredient grams/units, or
+// the create-flow default (1 serving / 100 g / 1 unit) when not editing.
+function initialQty(selection: AddSheetSelection, editing: MealLogWithJoins | null | undefined): number {
+  if (editing) {
+    if (editing.recipe_id) return Number(editing.servings ?? 1);
+    if (editing.ingredient_id) return Number(editing.quantity ?? 0);
+  }
+  return selection.kind === 'ingredient'
+    ? selection.ingredient.unit_type === 'unit'
+      ? 1
+      : 100
+    : 1;
 }
 
 /** ½-step-and-up stepper config per selection kind — recipe servings step in
@@ -161,19 +195,24 @@ export function RacionStep({
   lang,
   onBack,
   onDone,
+  editing,
 }: Props) {
   const { t } = useTranslation('diario');
   const create = useCreateMealLog();
+  const update = useUpdateMealLog();
+  const del = useDeleteMealLog();
+  const isEdit = !!editing;
   const mealLabel = t(`mealType.${mealType}`);
 
   const stepCfg = stepperConfig(selection);
-  const [qty, setQty] = useState(() =>
-    selection.kind === 'ingredient' ? (selection.ingredient.unit_type === 'unit' ? 1 : 100) : 1,
-  );
+  const [qty, setQty] = useState(() => initialQty(selection, editing));
 
   const customForm = useForm<MealLogFormValues>({
     resolver: zodResolver(mealLogFormSchema),
-    defaultValues: customDefaults(mealType),
+    defaultValues:
+      editing && selection.kind === 'custom'
+        ? customEditDefaults(editing, mealType)
+        : customDefaults(mealType),
   });
   const [customError, setCustomError] = useState<string | null>(null);
   const customValues = customForm.watch();
@@ -213,6 +252,20 @@ export function RacionStep({
     }
   }
 
+  // Edit mode: patch only the editable fields (qty / custom macros) plus the
+  // meal slot (the header selector may have moved it). `notes` is left out on
+  // purpose — the add-flow has no notes field, so omitting it preserves any
+  // note the entry already carries rather than nulling it.
+  async function submitUpdate(patch: TablesUpdate<'meal_logs'>) {
+    if (!editing) return;
+    try {
+      await update.mutateAsync({ id: editing.id, patch });
+      onDone();
+    } catch {
+      // onError already toasted — stay on the sheet so the user can retry.
+    }
+  }
+
   function handleAdd() {
     if (selection.kind === 'recipe') {
       void submit({ kind: 'recipe', recipeId: selection.recipe.id, servings: qty });
@@ -242,16 +295,70 @@ export function RacionStep({
     )();
   }
 
+  function handleSave() {
+    if (selection.kind === 'recipe') {
+      void submitUpdate({ meal_type: mealType, servings: qty });
+      return;
+    }
+    if (selection.kind === 'ingredient') {
+      void submitUpdate({ meal_type: mealType, quantity: qty });
+      return;
+    }
+    void customForm.handleSubmit(
+      (v) => {
+        setCustomError(null);
+        void submitUpdate({
+          meal_type: mealType,
+          custom_name: v.customName.trim(),
+          custom_kcal: Number(v.customKcal),
+          custom_protein_g: parseOptionalNumber(v.customProtein),
+          custom_carbs_g: parseOptionalNumber(v.customCarbs),
+          custom_fat_g: parseOptionalNumber(v.customFat),
+          custom_fiber_g: parseOptionalNumber(v.customFiber),
+        });
+      },
+      (errors) => {
+        const code = firstMealLogError(errors as Record<string, { message?: string } | undefined>);
+        setCustomError(code ? t(`errors.${code}`) : null);
+      },
+    )();
+  }
+
+  async function handleDelete() {
+    if (!editing) return;
+    if (!window.confirm(t('dialog.deleteConfirm'))) return;
+    try {
+      await del.mutateAsync(editing.id);
+      onDone();
+    } catch {
+      // onError already toasted.
+    }
+  }
+
+  const pending = create.isPending || update.isPending || del.isPending;
+
   return (
     <div className="flex flex-1 flex-col overflow-y-auto px-4.5 py-4">
-      <button
-        type="button"
-        onClick={onBack}
-        className="mb-3 inline-flex items-center gap-1.5 self-start text-[12.5px] text-muted-foreground"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        {t('addSheet.backToExplore')}
-      </button>
+      {isEdit ? (
+        <button
+          type="button"
+          onClick={() => void handleDelete()}
+          disabled={pending}
+          className="mb-3 inline-flex items-center gap-1.5 self-start text-[12.5px] text-destructive disabled:opacity-50"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {t('addSheet.deleteCta')}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-3 inline-flex items-center gap-1.5 self-start text-[12.5px] text-muted-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {t('addSheet.backToExplore')}
+        </button>
+      )}
 
       <div className="flex items-center gap-2.5">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -417,8 +524,13 @@ export function RacionStep({
       {customError && <p className="mt-2 text-[12.5px] text-destructive">{customError}</p>}
 
       <div className="flex-1" />
-      <Button type="button" onClick={handleAdd} disabled={create.isPending} className="mt-4 w-full">
-        {t('addSheet.addCta', { meal: mealLabel })}
+      <Button
+        type="button"
+        onClick={isEdit ? handleSave : handleAdd}
+        disabled={pending}
+        className="mt-4 w-full"
+      >
+        {isEdit ? t('addSheet.saveCta') : t('addSheet.addCta', { meal: mealLabel })}
       </Button>
     </div>
   );

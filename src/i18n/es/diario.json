@@ -143,6 +143,7 @@
   },
   "addSheet": {
     "title": "Añadir a hoy",
+    "editTitle": "Editar entrada",
     "subtitle": "{{date}} · {{phase}}",
     "subtitleNoPhase": "{{date}}",
     "close": "Cerrar",
@@ -176,6 +177,8 @@
     "macroBalanceLabel": "Balance del día tras añadir",
     "customCta": "Crear alimento personalizado",
     "customTitle": "Alimento personalizado",
-    "addCta": "Añadir a {{meal}}"
+    "addCta": "Añadir a {{meal}}",
+    "saveCta": "Guardar cambios",
+    "deleteCta": "Eliminar"
   }
 }

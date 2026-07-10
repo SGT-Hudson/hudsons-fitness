@@ -14,7 +14,12 @@ import { KcalHero } from '@/features/diario/components/KcalHero';
 import { MacroGrid, type MacroGridItem } from '@/features/diario/components/MacroGrid';
 import { WeeklyKcalChart } from '@/features/diario/components/WeeklyKcalChart';
 import type { ProteinBasis } from '@/lib/macros';
-import { MealLogDialog } from '@/features/diario/components/MealLogDialog';
+import { roundMacro } from '@/features/recipes/macros';
+import { AddToDaySheet } from '@/features/diario/components/AddToDaySheet';
+import {
+  ADD_SHEET_MEAL_TYPES,
+  type MealSubtotals,
+} from '@/features/diario/components/MealSlotSelector';
 import { MealSection } from '@/features/diario/components/MealSection';
 import {
   useMaterializePlan,
@@ -92,6 +97,26 @@ export function DiarioPage() {
     }
     return map;
   }, [logs.data]);
+
+  // Per-slot kcal subtotal for the add-sheet's meal-slot selector, built from
+  // the SAME helpers as the meal cards' subtotal so the two always match.
+  const mealSubtotals = useMemo<MealSubtotals>(() => {
+    const out: MealSubtotals = {};
+    for (const mt of ADD_SHEET_MEAL_TYPES) {
+      const items = grouped.get(mt) ?? [];
+      if (items.length > 0) {
+        out[mt] = roundMacro(sumMacros(items.map(computeMealLogMacros)).kcal);
+      }
+    }
+    return out;
+  }, [grouped]);
+
+  // Header "Añadir comida" default slot: the first still-empty real meal, so
+  // the sheet lands on a sensible slot instead of a hardcoded breakfast.
+  const defaultAddSlot: MealType = useMemo(
+    () => ADD_SHEET_MEAL_TYPES.find((mt) => (grouped.get(mt)?.length ?? 0) === 0) ?? 'breakfast',
+    [grouped],
+  );
 
   const totals = useMemo(
     () => sumMacros((logs.data ?? []).map((l) => computeMealLogMacros(l))),
@@ -187,7 +212,7 @@ export function DiarioPage() {
         <CopyPlus className="h-4 w-4" />
         {t('copyDay.open')}
       </Button>
-      <Button onClick={() => openNew('breakfast')}>
+      <Button onClick={() => openNew(defaultAddSlot)}>
         <Plus className="h-4 w-4" />
         {t('addEntry')}
       </Button>
@@ -287,7 +312,7 @@ export function DiarioPage() {
         </aside>
       </div>
 
-      <MealLogDialog
+      <AddToDaySheet
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
@@ -295,6 +320,10 @@ export function DiarioPage() {
         }}
         loggedOn={date}
         initialMealType={dialogMealType}
+        mealSubtotals={mealSubtotals}
+        totals={totals}
+        targets={targets}
+        phaseLabel={phaseLabel}
         editing={editing}
       />
 

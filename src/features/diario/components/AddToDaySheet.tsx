@@ -8,12 +8,13 @@ import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { formatDate, type Locale } from '@/lib/dates';
-import { roundMacro, type Macros } from '@/features/recipes/macros';
+import { roundMacro, computeRecipeMacros, type Macros } from '@/features/recipes/macros';
 import { useRecipes } from '@/features/recipes/hooks';
 import { useLocalIngredientSearch } from '@/features/ingredients/hooks';
 import { ingredientDisplayName, type Ingredient } from '@/features/ingredients/api';
 import { useQuickAddRecipes } from '../hooks';
-import type { MealType } from '../api';
+import { computeMealLogMacros, subtractMacros } from '../macros';
+import type { MealLogWithJoins, MealType } from '../api';
 import type { RecipeOption } from './RecipeAutocomplete';
 import { MealSlotSelector, type MealSubtotals } from './MealSlotSelector';
 import { AddResultRow } from './AddResultRow';
@@ -43,6 +44,47 @@ interface Props {
   targets?: Macros;
   /** Active phase label for the header subline (e.g. "Definición"). Omitted when there's no active phase. */
   phaseLabel?: string;
+  /**
+   * Edit mode (task 5): the existing entry to edit. When set, the sheet opens
+   * straight into the ración step locked to this entry's kind, pre-filled with
+   * its quantity/macros, and confirming updates (or deleting removes) it.
+   */
+  editing?: MealLogWithJoins | null;
+}
+
+/**
+ * Turn a logged entry into the ración step's selection. The per-serving /
+ * per-unit macros come straight off the entry's already-joined data (no fetch,
+ * no reliance on RecipeOption.perServing, which is absent on an edit): a logged
+ * recipe carries its full ingredient tree → computeRecipeMacros; a logged
+ * ingredient carries the ingredient row → ingredientMacros (inside RacionStep);
+ * custom → the entry's typed macros.
+ */
+function editSelection(log: MealLogWithJoins): AddSheetSelection {
+  if (log.recipe_id && log.recipe) {
+    const { perServing } = computeRecipeMacros({
+      servings: log.recipe.servings,
+      rows: log.recipe.recipe_ingredients.map((ri) => ({
+        ingredient: ri.ingredient,
+        quantity: Number(ri.quantity),
+        perServing: ri.per_serving,
+      })),
+    });
+    return {
+      kind: 'recipe',
+      recipe: {
+        id: log.recipe.id,
+        name: log.recipe.name,
+        servings: log.recipe.servings,
+        ingredient_count: log.recipe.recipe_ingredients.length,
+        perServing,
+      },
+    };
+  }
+  if (log.ingredient_id && log.ingredient) {
+    return { kind: 'ingredient', ingredient: log.ingredient };
+  }
+  return { kind: 'custom' };
 }
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
@@ -89,6 +131,7 @@ export function AddToDaySheet({
   totals,
   targets,
   phaseLabel,
+  editing,
 }: Props) {
   const { t, i18n } = useTranslation('diario');
   const { t: tIngredientes } = useTranslation('ingredientes');
@@ -104,15 +147,23 @@ export function AddToDaySheet({
   const debouncedQuery = useDebouncedValue(query, 200);
 
   // Reset all transient state whenever the sheet (re)opens — a stale step /
-  // tab / query from a previous open would otherwise leak through.
+  // tab / query from a previous open would otherwise leak through. Edit mode
+  // skips explore entirely: it opens straight into the ración step locked to
+  // the entry's kind, at the entry's own meal slot.
   useEffect(() => {
     if (!open) return;
+    if (editing) {
+      setStep('racion');
+      setMealType((editing.meal_type as MealType) ?? 'breakfast');
+      setSelection(editSelection(editing));
+      return;
+    }
     setStep('explore');
     setMealType(initialMealType);
     setTab('recientes');
     setQuery('');
     setSelection(null);
-  }, [open, initialMealType]);
+  }, [open, initialMealType, editing]);
 
   const quickAdd = useQuickAddRecipes();
   const recipes = useRecipes();
@@ -207,6 +258,7 @@ export function AddToDaySheet({
     setStep('racion');
   }
 
+  const sheetTitle = editing ? t('addSheet.editTitle') : t('addSheet.title');
   const dateSubline = formatDate(loggedOn, 'EEE d MMM', locale);
   const subline = phaseLabel
     ? t('addSheet.subtitle', { date: dateSubline, phase: phaseLabel })
@@ -222,7 +274,7 @@ export function AddToDaySheet({
       <div className="shrink-0 space-y-3 px-4.5 pb-3 pt-1">
         <div className="flex items-start gap-2.5">
           <div className="min-w-0 flex-1">
-            <h2 className="text-[18px] font-semibold">{t('addSheet.title')}</h2>
+            <h2 className="text-[18px] font-semibold">{sheetTitle}</h2>
             <span className="tabular-nums text-[11.5px] text-muted-foreground">{subline}</span>
           </div>
           {showClose && (
@@ -369,14 +421,20 @@ export function AddToDaySheet({
     </>
   );
 
+  // In edit mode `totals` already includes the entry being edited, so the
+  // ración-step projection base must subtract that entry's current macros —
+  // otherwise the edited entry double-counts against itself.
+  const racionBase = editing ? subtractMacros(totals, computeMealLogMacros(editing)) : totals;
+
   const racionBody = selection && (
     <RacionStep
       selection={selection}
       mealType={mealType}
       loggedOn={loggedOn}
-      totals={totals}
+      totals={racionBase}
       targets={targets}
       lang={lang}
+      editing={editing}
       onBack={() => setStep('explore')}
       onDone={() => {
         setStep('explore');
@@ -392,7 +450,7 @@ export function AddToDaySheet({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="inset-y-0 left-auto right-0 flex h-full max-h-full w-full max-w-md translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-l p-0 sm:rounded-none">
-          <DialogTitle className="sr-only">{t('addSheet.title')}</DialogTitle>
+          <DialogTitle className="sr-only">{sheetTitle}</DialogTitle>
           {renderHeader(false)}
           {body}
         </DialogContent>
@@ -403,7 +461,7 @@ export function AddToDaySheet({
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="h-[88vh] max-h-[88vh] gap-0 p-0">
-        <DrawerTitle className="sr-only">{t('addSheet.title')}</DrawerTitle>
+        <DrawerTitle className="sr-only">{sheetTitle}</DrawerTitle>
         {renderHeader(true)}
         {body}
       </DrawerContent>
