@@ -20,8 +20,10 @@
     "sourceRecipes": "Se copiarán:",
     "selectAll": "Todos",
     "willOverwrite": "se sobrescribirá",
-    "summaryReplace": "Copiar a {{count}} días, reemplazando lo que haya.",
-    "summaryAppend": "Copiar a {{count}} días, junto a lo que ya haya.",
+    "summaryReplace_one": "Copiar a 1 día, reemplazando lo que haya.",
+    "summaryReplace_other": "Copiar a {{count}} días, reemplazando lo que haya.",
+    "summaryAppend_one": "Copiar a 1 día, junto a lo que ya haya.",
+    "summaryAppend_other": "Copiar a {{count}} días, junto a lo que ya haya.",
     "pickDays": "Elige al menos un día.",
     "confirm": "Copiar"
   },
@@ -162,11 +164,13 @@
   },
   "peek": {
     "title": "Receta del plan",
-    "servings": "{{count}} raciones",
+    "servings_one": "{{count}} ración",
+    "servings_other": "{{count}} raciones",
     "ingredients": "Ingredientes",
     "instructions": "Elaboración",
     "perServing": "Por ración",
-    "planned": "Planificado: {{count}} ración(es)",
+    "planned_one": "Planificado: {{count}} ración",
+    "planned_other": "Planificado: {{count}} raciones",
     "open": "Abrir receta",
     "edit": "Editar",
     "missing": "No se pudo cargar la receta."

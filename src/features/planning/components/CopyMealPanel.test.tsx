@@ -126,4 +126,26 @@ describe('CopyMealPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /añadir junto/i }));
     expect(onModeChange).toHaveBeenCalledWith('append');
   });
+
+  // R-33 wave 3 QA fix: "Copiar a 1 días" read as a plural for a single
+  // selected day. summaryReplace/summaryAppend now carry i18next _one/_other
+  // forms, keyed off `selected.size` passed as `count`.
+  it('uses the singular summary form for exactly one selected day, in both replace and append mode', () => {
+    const { unmount } = setup({ mode: 'replace', selected: new Set(['2026-05-26']) });
+    expect(screen.getByText('Copiar a 1 día, reemplazando lo que haya.')).toBeInTheDocument();
+    unmount();
+
+    setup({ mode: 'append', selected: new Set(['2026-05-26']) });
+    expect(screen.getByText('Copiar a 1 día, junto a lo que ya haya.')).toBeInTheDocument();
+  });
+
+  it('uses the plural summary form for two or more selected days, in both replace and append mode', () => {
+    const twoDays = new Set(['2026-05-26', '2026-05-27']);
+    const { unmount } = setup({ mode: 'replace', selected: twoDays });
+    expect(screen.getByText('Copiar a 2 días, reemplazando lo que haya.')).toBeInTheDocument();
+    unmount();
+
+    setup({ mode: 'append', selected: twoDays });
+    expect(screen.getByText('Copiar a 2 días, junto a lo que ya haya.')).toBeInTheDocument();
+  });
 });

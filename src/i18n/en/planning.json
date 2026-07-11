@@ -20,8 +20,10 @@
     "sourceRecipes": "Copying:",
     "selectAll": "All",
     "willOverwrite": "will be overwritten",
-    "summaryReplace": "Copy to {{count}} days, replacing what's there.",
-    "summaryAppend": "Copy to {{count}} days, alongside what's there.",
+    "summaryReplace_one": "Copy to 1 day, replacing what's there.",
+    "summaryReplace_other": "Copy to {{count}} days, replacing what's there.",
+    "summaryAppend_one": "Copy to 1 day, alongside what's there.",
+    "summaryAppend_other": "Copy to {{count}} days, alongside what's there.",
     "pickDays": "Pick at least one day.",
     "confirm": "Copy"
   },
@@ -162,11 +164,13 @@
   },
   "peek": {
     "title": "Recipe in the plan",
-    "servings": "{{count}} servings",
+    "servings_one": "{{count}} serving",
+    "servings_other": "{{count}} servings",
     "ingredients": "Ingredients",
     "instructions": "Method",
     "perServing": "Per serving",
-    "planned": "Planned: {{count}} serving(s)",
+    "planned_one": "Planned: {{count}} serving",
+    "planned_other": "Planned: {{count}} servings",
     "open": "Open recipe",
     "edit": "Edit",
     "missing": "The recipe could not be loaded."

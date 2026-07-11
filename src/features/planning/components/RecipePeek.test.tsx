@@ -97,4 +97,23 @@ describe('RecipePeek', () => {
     expect(screen.getByText('No se pudo cargar la receta.')).toBeInTheDocument();
     expect(document.body.querySelector('[data-slot="skeleton"], .animate-pulse')).toBeNull();
   });
+
+  // R-33 wave 3 QA fix: `peek.servings`/`peek.planned` used a single
+  // `{{count}}` string for every count — now i18next _one/_other forms.
+  it('uses the singular form for the recipe yield (4 servings — plural) and the planned badge (1 — singular)', () => {
+    renderPeek(); // recipe.servings = 4, planned `servings` prop = 2
+    expect(screen.getByText('4 raciones')).toBeInTheDocument();
+    expect(screen.getByText('Planificado: 2 raciones')).toBeInTheDocument();
+  });
+
+  it('uses the singular form when both the recipe yield and the planned amount are 1', () => {
+    recipeQuery = { data: { ...recipe, servings: 1 }, isLoading: false };
+    render(
+      <MemoryRouter>
+        <RecipePeek open onOpenChange={() => {}} recipeId="r1" contextLabel="Comida · Jue 30" servings={1} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('1 ración')).toBeInTheDocument();
+    expect(screen.getByText('Planificado: 1 ración')).toBeInTheDocument();
+  });
 });
