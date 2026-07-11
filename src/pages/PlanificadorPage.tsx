@@ -206,37 +206,39 @@ export function PlanificadorPage() {
     ? t('planner.swapTemplate')
     : t('planner.applyTemplate');
 
-  // Desktop header meta: week label + phase chip + the two week metrics.
+  // Desktop header meta: week label + phase chip. The two week metrics live in
+  // the body (above the grid) — in the header they made the row too long to fit
+  // any realistic desktop width.
   const headerMeta = (
     <div className="flex items-center gap-3.5">
       <span className="h-5 w-px bg-border" aria-hidden="true" />
-      <span className="tnum text-[13.5px] font-medium">{weekLabel}</span>
+      <span className="tnum whitespace-nowrap text-[13.5px] font-medium">{weekLabel}</span>
       {phaseType && <PhaseChip phase={phaseType} />}
-      {targets && (
-        <>
-          <span className="h-5 w-px bg-border" aria-hidden="true" />
-          <span className="flex items-baseline gap-1.5 text-[12.5px]">
-            <span className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
-              {t('planner.avgKcal')}
-            </span>
-            <span className="tnum font-semibold">{avgKcal}</span>
-            <span className="tnum text-[11.5px] text-text-dim">
-              / {roundMacro(targets.kcal)} kcal
-            </span>
+    </div>
+  );
+
+  // Week metrics (desktop only — the mobile stack has its own summary card).
+  const weekMetrics = targets && (
+    <div className="ml-auto hidden items-center gap-3.5 md:flex">
+      <span className="flex items-baseline gap-1.5 text-[12.5px]">
+        <span className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
+          {t('planner.avgKcal')}
+        </span>
+        <span className="tnum font-semibold text-foreground">{avgKcal}</span>
+        <span className="tnum text-[11.5px] text-text-dim">/ {roundMacro(targets.kcal)} kcal</span>
+      </span>
+      <span className="h-5 w-px bg-border" aria-hidden="true" />
+      <span className="flex items-baseline gap-1.5 text-[12.5px]">
+        <span className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
+          {t('planner.proteinAvg')}
+        </span>
+        <span className="tnum font-semibold text-foreground">{avgProteinG} g</span>
+        {proteinPct != null && (
+          <span className="tnum text-[11.5px] text-text-dim">
+            {t('planner.proteinPct', { pct: proteinPct })}
           </span>
-          <span className="flex items-baseline gap-1.5 text-[12.5px]">
-            <span className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
-              {t('planner.proteinAvg')}
-            </span>
-            <span className="tnum font-semibold">{avgProteinG} g</span>
-            {proteinPct != null && (
-              <span className="tnum text-[11.5px] text-text-dim">
-                {t('planner.proteinPct', { pct: proteinPct })}
-              </span>
-            )}
-          </span>
-        </>
-      )}
+        )}
+      </span>
     </div>
   );
 
@@ -289,15 +291,21 @@ export function PlanificadorPage() {
           </Button>
         </div>
 
-        {week.data?.source_template_name && (
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span>{t('planner.basedOn', { name: week.data.source_template_name })}</span>
-            {week.data.has_diverged && (
-              <Badge variant="warning" className="gap-1">
-                <Sparkles className="h-3 w-3" />
-                {t('planner.diverged')}
-              </Badge>
+        {/* Source template + the two week metrics: one line above the grid. */}
+        {(week.data?.source_template_name || (weekMetrics && hasSlots)) && (
+          <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2 text-sm text-muted-foreground">
+            {week.data?.source_template_name && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>{t('planner.basedOn', { name: week.data.source_template_name })}</span>
+                {week.data.has_diverged && (
+                  <Badge variant="warning" className="gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    {t('planner.diverged')}
+                  </Badge>
+                )}
+              </div>
             )}
+            {hasSlots && weekMetrics}
           </div>
         )}
 
