@@ -66,7 +66,7 @@ export function CopyMealDialog({
       title={t('copyMeal.title')}
       variant="centered"
     >
-      <div className="space-y-4 p-4 md:p-6">
+      <div className="space-y-4">
         <h2 className="text-base font-semibold">{t('copyMeal.title')}</h2>
         <CopyMealPanel
           sourceLabel={sourceLabel}

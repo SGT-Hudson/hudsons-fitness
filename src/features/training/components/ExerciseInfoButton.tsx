@@ -74,7 +74,6 @@ export function ExerciseInfoButton({ exercise, exerciseId }: Props) {
         onOpenChange={setOpen}
         title={t('exerciseDetail.title')}
         variant="centered"
-        className="h-auto max-h-[85vh] overflow-y-auto p-4 md:max-h-none md:overflow-visible md:p-6"
       >
         {body}
       </ResponsiveDialog>
