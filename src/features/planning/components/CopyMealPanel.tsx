@@ -1,0 +1,157 @@
+import { useTranslation } from 'react-i18next';
+import { Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+export type CopyMode = 'replace' | 'append';
+
+/** A copy destination: a day cell in the grid. */
+export interface CopyTarget {
+  key: string;
+  label: string;
+  sublabel?: string;
+  willOverwrite: boolean;
+}
+
+interface Props {
+  sourceLabel: string;
+  /** The source meal's recipe names, recapped so the user knows what travels. */
+  entryNames: string[];
+  targets: CopyTarget[];
+  mode: CopyMode;
+  onModeChange: (mode: CopyMode) => void;
+  selected: Set<string>;
+  onToggle: (key: string) => void;
+  busy?: boolean;
+  onConfirm: (selectedKeys: string[], mode: CopyMode) => void | Promise<void>;
+}
+
+const MODES: { mode: CopyMode; key: string }[] = [
+  { mode: 'replace', key: 'copyMeal.modeReplace' },
+  { mode: 'append', key: 'copyMeal.modeAppend' },
+];
+
+/**
+ * The copy-meal canvas: source recap, replace/append segmented control, the
+ * 7-cell day grid, a mode-aware summary line and the CTA. Pure — the dialog
+ * shell (`CopyMealDialog`) owns `mode` and `selected`, so this same surface
+ * can be reused standalone.
+ *
+ * The `willOverwrite` badge only ever renders in `replace` mode: append never
+ * deletes anything, so warning about an overwrite there would be a lie.
+ */
+export function CopyMealPanel({
+  sourceLabel,
+  entryNames,
+  targets,
+  mode,
+  onModeChange,
+  selected,
+  onToggle,
+  busy,
+  onConfirm,
+}: Props) {
+  const { t } = useTranslation('planning');
+  const { t: tCommon } = useTranslation('common');
+
+  function confirm() {
+    // Preserve target order in the emitted keys.
+    void onConfirm(
+      targets.filter((tg) => selected.has(tg.key)).map((tg) => tg.key),
+      mode,
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <p className="text-sm font-semibold">{sourceLabel}</p>
+        {entryNames.length > 0 && (
+          <div className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground">
+            <span>{t('copyMeal.sourceRecipes')}</span>
+            <ul className="flex flex-wrap items-center gap-x-1.5">
+              {entryNames.map((name, i) => (
+                <li key={name} className="flex items-center gap-1.5">
+                  {i > 0 && <span aria-hidden="true">·</span>}
+                  <span>{name}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <div
+        role="group"
+        aria-label={t('copyMeal.title')}
+        className="flex gap-1 rounded-lg border border-border bg-muted p-1"
+      >
+        {MODES.map(({ mode: m, key }) => (
+          <button
+            key={m}
+            type="button"
+            aria-pressed={mode === m}
+            onClick={() => onModeChange(m)}
+            className={cn(
+              'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+              mode === m
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {t(key)}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {targets.map((tg) => {
+          const on = selected.has(tg.key);
+          const showBadge = mode === 'replace' && tg.willOverwrite;
+          return (
+            <button
+              key={tg.key}
+              type="button"
+              role="checkbox"
+              aria-checked={on}
+              aria-label={tg.sublabel ? `${tg.label} ${tg.sublabel}` : tg.label}
+              onClick={() => onToggle(tg.key)}
+              className={cn(
+                'relative flex flex-col items-center gap-0.5 rounded-lg border px-2 py-2.5 text-xs',
+                on ? 'border-accent-line bg-accent-soft' : 'border-border bg-card',
+              )}
+            >
+              {on && (
+                <Check
+                  className="absolute right-1 top-1 h-3 w-3 text-accent-ink"
+                  aria-hidden="true"
+                />
+              )}
+              <span className="font-medium">{tg.label}</span>
+              {tg.sublabel && (
+                <span className="tnum text-[10px] text-muted-foreground">{tg.sublabel}</span>
+              )}
+              {showBadge && (
+                <span className="rounded-full border border-transparent bg-amber-soft px-1.5 py-0.5 text-[10px] text-amber-ink">
+                  {t('copyMeal.willOverwrite')}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="tnum text-xs text-muted-foreground">
+        {selected.size === 0
+          ? t('copyMeal.pickDays')
+          : t(mode === 'replace' ? 'copyMeal.summaryReplace' : 'copyMeal.summaryAppend', {
+              count: selected.size,
+            })}
+      </p>
+
+      <Button type="button" className="w-full" disabled={busy || selected.size === 0} onClick={confirm}>
+        {busy ? tCommon('loading') : t('copyMeal.confirm')}
+      </Button>
+    </div>
+  );
+}

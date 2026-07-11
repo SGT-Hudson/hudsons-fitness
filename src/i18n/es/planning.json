@@ -15,10 +15,13 @@
   },
   "copyMeal": {
     "title": "Copiar comida a otros días",
-    "entryCount": "{{count}} recetas",
-    "selectAll": "Seleccionar todos",
+    "modeReplace": "Reemplazar",
+    "modeAppend": "Añadir junto",
+    "sourceRecipes": "Se copiarán:",
     "willOverwrite": "se sobrescribirá",
-    "selectedCount": "{{count}} días seleccionados",
+    "summaryReplace": "Copiar a {{count}} días, reemplazando lo que haya.",
+    "summaryAppend": "Copiar a {{count}} días, junto a lo que ya haya.",
+    "pickDays": "Elige al menos un día.",
     "confirm": "Copiar"
   },
   "picker": {
