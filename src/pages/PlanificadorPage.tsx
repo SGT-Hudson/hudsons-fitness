@@ -39,7 +39,7 @@ import {
   useUpdateWeekSlot,
 } from '@/features/planner/hooks';
 import { useTemplates } from '@/features/templates/hooks';
-import type { GridSlot } from '@/features/templates/filledGrid';
+import type { PreviewSlot } from '@/features/planning/templatePreview';
 import type { TemplatePhase } from '@/features/templates/api';
 import { useDailyTarget } from '@/features/planning/useDailyTarget';
 import { roundMacro, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
@@ -108,13 +108,15 @@ export function PlanificadorPage() {
   );
 
   const slots = week.data?.slots ?? [];
-  const weekMealTimes = week.data?.meal_times ?? [];
   // Save-as-template preview: the RPC's day_of_week is "position within the
   // Monday-based week", exactly what `weekDates` already encodes — no new date
-  // math, just look each slot's date up in it.
-  const templateSlots: GridSlot[] = slots.map((s) => ({
+  // math, just look each slot's date up in it. Each slot's own meal_time comes
+  // along: the dialog derives the preview's meal times from Monday's, as the
+  // RPC does, rather than from the week's (source template's) meal_times.
+  const templateSlots: PreviewSlot[] = slots.map((s) => ({
     day_of_week: weekDates.indexOf(s.date),
     meal_index: s.meal_index,
+    meal_time: s.meal_time,
   }));
   const dayTotals = aggregateDayMacros(slots.map((s) => ({ key: s.date, macros: s.macros })));
   const perDay: Macros[] = weekDates.map((d) => dayTotals.get(d) ?? ZERO_MACROS);
@@ -508,7 +510,6 @@ export function PlanificadorPage() {
           open={saveOpen}
           onOpenChange={setSaveOpen}
           weekStart={weekStart}
-          mealTimes={weekMealTimes}
           slots={templateSlots}
           activePhase={phaseType ?? null}
           onSave={handleSaveAs}

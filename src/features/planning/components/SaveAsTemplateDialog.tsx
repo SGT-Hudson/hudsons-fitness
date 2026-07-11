@@ -8,22 +8,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhasePicker } from '@/components/ui/PhasePicker';
 import { TemplateCard, type TemplateCardItem } from '@/features/templates/components/TemplateCard';
-import { toFilledGrid, type GridSlot } from '@/features/templates/filledGrid';
+import { toFilledGrid } from '@/features/templates/filledGrid';
 import type { TemplatePhase } from '@/features/templates/api';
 import {
   saveAsTemplateFormSchema,
   type SaveAsTemplateFormValues,
 } from '../schema';
+import { previewMealTimes, type PreviewSlot } from '../templatePreview';
 import { formatDate, type Locale } from '@/lib/dates';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   weekStart: string;
-  /** The week's meal times — feeds both the preview's slot count and its dot-grid width. */
-  mealTimes: string[];
-  /** The week's slots, already reduced to `{ day_of_week, meal_index }` — feeds `toFilledGrid`. */
-  slots: GridSlot[];
+  /**
+   * The week's slots, reduced to `{ day_of_week, meal_index, meal_time }`. The
+   * preview's meal times are derived from them exactly as the RPC does — the
+   * week's own `meal_times` (the source template's) would misreport the card.
+   */
+  slots: PreviewSlot[];
   /**
    * The user's currently active phase (from `useDailyTarget`), offered as the
    * picker's default — a sensible starting point, not a value baked into the
@@ -38,7 +41,6 @@ export function SaveAsTemplateDialog({
   open,
   onOpenChange,
   weekStart,
-  mealTimes,
   slots,
   activePhase,
   onSave,
@@ -85,6 +87,9 @@ export function SaveAsTemplateDialog({
   const nameError = errors.name ? t('save.errors.nameRequired') : null;
 
   const name = watch('name');
+  // What `save_week_as_template` will actually store as the template's
+  // default_meal_times — the preview promises exactly the card it will create.
+  const mealTimes = previewMealTimes(slots);
   const filled = toFilledGrid(slots, mealTimes.length);
   // Not a real template yet — `id` is only ever used for its own detail link,
   // which is meaningless on a preview that isn't saved (hence `pointer-events-none`

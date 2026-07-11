@@ -4,11 +4,12 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { SaveAsTemplateDialog } from './SaveAsTemplateDialog';
-import type { GridSlot } from '@/features/templates/filledGrid';
+import type { PreviewSlot } from '../templatePreview';
 
-const slots: GridSlot[] = [
-  { day_of_week: 0, meal_index: 0 },
-  { day_of_week: 2, meal_index: 1 },
+const slots: PreviewSlot[] = [
+  { day_of_week: 0, meal_index: 0, meal_time: '08:00:00' },
+  { day_of_week: 0, meal_index: 1, meal_time: '13:00:00' },
+  { day_of_week: 2, meal_index: 1, meal_time: '13:00:00' },
 ];
 
 beforeAll(() => {
@@ -36,7 +37,6 @@ function renderDialog(over: Partial<Parameters<typeof SaveAsTemplateDialog>[0]> 
     open: true,
     onOpenChange: vi.fn(),
     weekStart: '2026-06-01',
-    mealTimes: ['08:00:00', '13:00:00'],
     slots,
     activePhase: null,
     onSave: vi.fn().mockResolvedValue(undefined),
@@ -98,6 +98,42 @@ describe('SaveAsTemplateDialog', () => {
 
     expect(preview.querySelector('[data-phase-strip="cut"]')).toBeInTheDocument();
     expect(within(preview).getByText('Corte')).toBeInTheDocument();
+  });
+
+  // The preview must promise exactly what `save_week_as_template` will create:
+  // its default_meal_times come from MONDAY's distinct slot times, never from
+  // the (possibly deleted, possibly wider) source template's.
+  it("draws the preview grid from Monday's meal times", () => {
+    renderDialog();
+    const preview = screen.getByTestId('save-template-preview');
+    expect(preview.querySelectorAll('[data-dot]').length).toBe(14); // 7 days × 2 meals
+    expect(within(preview).getByText(/2 comidas\/día/)).toBeInTheDocument();
+  });
+
+  // source_template_id is ON DELETE SET NULL — the week keeps its slots but
+  // reports no template meal times. The preview must still show Monday's grid.
+  it('still previews a full grid when the source template was deleted', () => {
+    renderDialog({
+      slots: [
+        { day_of_week: 0, meal_index: 0, meal_time: '07:30:00' },
+        { day_of_week: 0, meal_index: 1, meal_time: '12:15:00' },
+        { day_of_week: 0, meal_index: 2, meal_time: '20:00:00' },
+        { day_of_week: 4, meal_index: 1, meal_time: '12:15:00' },
+      ],
+    });
+    const preview = screen.getByTestId('save-template-preview');
+    expect(preview.querySelectorAll('[data-dot]').length).toBe(21); // 7 days × 3 meals
+    expect(preview.querySelectorAll('[data-dot="on"]').length).toBe(4);
+    expect(within(preview).getByText(/3 comidas\/día/)).toBeInTheDocument();
+  });
+
+  // Monday planned with fewer meals than the source template offered: the RPC
+  // derives 1 meal, so a 4-row preview would be a lie.
+  it("shrinks the preview to Monday's real meal count", () => {
+    renderDialog({ slots: [{ day_of_week: 0, meal_index: 0, meal_time: '08:00:00' }] });
+    const preview = screen.getByTestId('save-template-preview');
+    expect(preview.querySelectorAll('[data-dot]').length).toBe(7); // 7 days × 1 meal
+    expect(within(preview).getByText(/1 comida\/día/)).toBeInTheDocument();
   });
 
   // vaul draws no close affordance of its own, so the mobile branch would be
