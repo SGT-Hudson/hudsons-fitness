@@ -1,4 +1,9 @@
 {
+  "phase": {
+    "none": "Sin fase",
+    "noneHint": "Sirve para cualquier fase",
+    "pick": "Fase de la plantilla"
+  },
   "days": {
     "mon": "Lun",
     "tue": "Mar",
@@ -64,11 +69,15 @@
   "list": {
     "pageTitle": "Plantillas",
     "newTemplate": "Nueva plantilla",
+    "newTemplateHint": "desde cero",
     "description": "Las plantillas son menús reutilizables que aplicas a tu semana activa. Define el calendario una vez, varía después.",
     "empty": "Aún no tienes plantillas. Crea la primera y se podrá aplicar al planificador.",
+    "emptyFilter": "Ninguna plantilla con esta fase.",
     "deleteConfirm": "¿Borrar la plantilla \"{{name}}\"? Las semanas activas que vinieran de ella no se ven afectadas.",
-    "autoBadge": "Auto",
-    "autoBadgeTooltip": "Generada automáticamente al cerrar una semana divergente",
+    "filterLabel": "Filtrar por fase",
+    "filterAll": "Todas",
+    "saved_one": "{{count}} guardada",
+    "saved_other": "{{count}} guardadas",
     "slots_one": "{{count}} hueco",
     "slots_other": "{{count}} huecos",
     "slots": "{{count}} huecos",
@@ -127,9 +136,9 @@
     "title": "Aplicar plantilla",
     "subtitle": "Se aplicará desde {{date}} en adelante. Los días anteriores no se tocan.",
     "template": "Plantilla",
-    "placeholder": "Elige una plantilla…",
     "noTemplates": "No tienes plantillas todavía.",
     "submit": "Aplicar",
+    "willFillLabel": "Días que se rellenarán",
     "errors": {
       "pickTemplate": "Elige una plantilla."
     }
@@ -139,6 +148,7 @@
     "subtitle": "Snapshot de los huecos actuales. Podrás reutilizarla en cualquier semana.",
     "name": "Nombre",
     "defaultName": "Plantilla — semana del {{date}}",
+    "previewLabel": "Así se verá en tu biblioteca",
     "errors": {
       "nameRequired": "Pon un nombre a la plantilla."
     }
@@ -198,5 +208,9 @@
     "addExtraPlaceholder": "Añadir artículo (p. ej. café)…",
     "addExtra": "Añadir artículo",
     "removeExtra": "Quitar"
+  },
+  "weekStrip": {
+    "willFill": "Se rellena",
+    "untouched": "Sin cambios"
   }
 }

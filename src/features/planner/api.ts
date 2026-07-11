@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
 import { computeRecipeMacros, type Macros } from '@/features/recipes/macros';
 import type { AppendRow } from '@/features/planning/appendMeal';
+import type { TemplatePhase } from '@/features/templates/api';
 import type { ShoppingSlotInput } from './shopping';
 
 export type PlanWeek = Tables<'meal_plan_weeks'>;
@@ -248,10 +249,15 @@ export async function applyTemplateToWeek(
   return data as string;
 }
 
-export async function saveWeekAsTemplate(weekId: string, name: string): Promise<string> {
+export async function saveWeekAsTemplate(
+  weekId: string,
+  name: string,
+  phaseType: TemplatePhase | null,
+): Promise<string> {
   const { data, error } = await supabase.rpc('save_week_as_template', {
     p_week_id: weekId,
     p_name: name,
+    p_phase_type: phaseType,
   });
   if (error) throw error;
   return data as string;

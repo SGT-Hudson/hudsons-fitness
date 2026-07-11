@@ -198,6 +198,11 @@ export function PlantillaEditorPage() {
           servings: s.servings,
           display_order: i,
         })),
+        // `save_template` writes `p_phase_type` unconditionally, so null is a
+        // write of null, not "leave alone" — carry the stored phase through
+        // untouched until the editor grows its own picker. A new template has
+        // no stored phase, so it is created untagged (never the active phase).
+        phaseType: templateQuery.data?.phase_type ?? null,
       });
       navigate(isNew ? `/templates/${newId}` : '/templates', { replace: true });
     } catch (err) {

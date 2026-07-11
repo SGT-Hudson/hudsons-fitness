@@ -3,7 +3,8 @@ import { Flame, TrendingUp, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PhaseType } from '@/core/nutritionTone';
 
-const CHIP_TONE: Record<PhaseType, string> = {
+/** Phase → soft-fill/ink/line token classes. Shared with PhasePicker. */
+export const CHIP_TONE: Record<PhaseType, string> = {
   cut: 'bg-phase-cut-soft text-phase-cut-ink border-phase-cut-line',
   bulk: 'bg-phase-bulk-soft text-phase-bulk-ink border-phase-bulk-line',
   maintenance: 'bg-phase-maint-soft text-phase-maint-ink border-phase-maint-line',
