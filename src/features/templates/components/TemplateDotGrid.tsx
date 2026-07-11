@@ -18,7 +18,7 @@ interface Props {
 export function TemplateDotGrid({ mealCount, filled, phase, className }: Props) {
   const onTone = phase ? PHASE_DOT[phase] : 'bg-muted-foreground/50';
   return (
-    <div className={cn('grid grid-cols-7 gap-1', className)}>
+    <div className={cn('grid w-fit grid-cols-7 gap-1', className)}>
       {Array.from({ length: mealCount }, (_, mealIndex) =>
         Array.from({ length: 7 }, (_, day) => {
           const on = filled[day]?.[mealIndex] ?? false;

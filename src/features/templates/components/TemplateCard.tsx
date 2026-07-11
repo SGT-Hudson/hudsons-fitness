@@ -79,13 +79,13 @@ export function TemplateCard(props: Props) {
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-2">
           {props.interactive === false ? (
-            <span className="min-w-0 truncate text-sm font-semibold leading-tight">
+            <span className="min-w-0 line-clamp-2 text-sm font-semibold leading-tight">
               {template.name}
             </span>
           ) : (
             <Link
               to={`/templates/${props.template.id}`}
-              className="min-w-0 truncate text-sm font-semibold leading-tight hover:underline"
+              className="min-w-0 line-clamp-2 text-sm font-semibold leading-tight hover:underline"
             >
               {template.name}
             </Link>
@@ -95,13 +95,13 @@ export function TemplateCard(props: Props) {
 
         <TemplateDotGrid mealCount={mealCount} filled={filled} phase={phase} className="py-1" />
 
-        <div className="mt-auto flex items-center justify-between gap-2 border-t pt-2.5">
+        <div className="mt-auto flex items-start justify-between gap-2 border-t pt-2.5">
           <div className="min-w-0 text-[11px] text-muted-foreground">
-            <div className="tnum truncate">
+            <div className="tnum">
               {t('list.slots', { count: template.slot_count })}
               {mealCount > 0 && <> · {t('list.meals', { count: mealCount })}</>}
             </div>
-            <div className="tnum truncate">
+            <div className="tnum">
               {t('list.updated', {
                 date: formatDate(template.updated_at, 'd MMM yyyy', locale),
               })}
