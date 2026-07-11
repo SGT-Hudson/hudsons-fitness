@@ -11,7 +11,9 @@ import { cleanup } from '@testing-library/react';
 // every drawer/dialog built on it) calls it during render. Default to "no match"
 // — i.e. the mobile branch — which is also the mobile-first default the app
 // assumes. Tests that need the desktop branch override this themselves.
-if (!window.matchMedia) {
+// Guarded on `window` itself: this setup file also loads for the Tier-1
+// (`*.test.ts`) suites, which run in Node with no DOM at all.
+if (typeof window !== 'undefined' && !window.matchMedia) {
   window.matchMedia = ((query: string) => ({
     matches: false,
     media: query,
