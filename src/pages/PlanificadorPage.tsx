@@ -39,6 +39,8 @@ import {
   useUpdateWeekSlot,
 } from '@/features/planner/hooks';
 import { useTemplates } from '@/features/templates/hooks';
+import type { GridSlot } from '@/features/templates/filledGrid';
+import type { TemplatePhase } from '@/features/templates/api';
 import { useDailyTarget } from '@/features/planning/useDailyTarget';
 import { roundMacro, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { formatDate, isoDate, mondayOf, type Locale } from '@/lib/dates';
@@ -106,6 +108,14 @@ export function PlanificadorPage() {
   );
 
   const slots = week.data?.slots ?? [];
+  const weekMealTimes = week.data?.meal_times ?? [];
+  // Save-as-template preview: the RPC's day_of_week is "position within the
+  // Monday-based week", exactly what `weekDates` already encodes — no new date
+  // math, just look each slot's date up in it.
+  const templateSlots: GridSlot[] = slots.map((s) => ({
+    day_of_week: weekDates.indexOf(s.date),
+    meal_index: s.meal_index,
+  }));
   const dayTotals = aggregateDayMacros(slots.map((s) => ({ key: s.date, macros: s.macros })));
   const perDay: Macros[] = weekDates.map((d) => dayTotals.get(d) ?? ZERO_MACROS);
   const { avgKcal, avgProteinG, proteinPct } = weekAverages(perDay, targets);
@@ -180,10 +190,9 @@ export function PlanificadorPage() {
     await apply.mutateAsync({ templateId, targetDate: today });
   }
 
-  async function handleSaveAs(name: string) {
+  async function handleSaveAs(name: string, phaseType: TemplatePhase | null) {
     if (!week.data) return;
-    // Task 6 gives the save dialog a phase picker; until then always save with no phase.
-    await saveAs.mutateAsync({ weekId: week.data.id, name, phaseType: null });
+    await saveAs.mutateAsync({ weekId: week.data.id, name, phaseType });
   }
 
   async function handleAdd(
@@ -499,6 +508,9 @@ export function PlanificadorPage() {
           open={saveOpen}
           onOpenChange={setSaveOpen}
           weekStart={weekStart}
+          mealTimes={weekMealTimes}
+          slots={templateSlots}
+          activePhase={phaseType ?? null}
           onSave={handleSaveAs}
           busy={saveAs.isPending}
         />

@@ -148,6 +148,7 @@
     "subtitle": "Snapshot the current slots. Reuse it on any week later.",
     "name": "Name",
     "defaultName": "Template — week of {{date}}",
+    "previewLabel": "How it'll look in your library",
     "errors": {
       "nameRequired": "Give the template a name."
     }

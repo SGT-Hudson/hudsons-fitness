@@ -148,6 +148,7 @@
     "subtitle": "Snapshot de los huecos actuales. Podrás reutilizarla en cualquier semana.",
     "name": "Nombre",
     "defaultName": "Plantilla — semana del {{date}}",
+    "previewLabel": "Así se verá en tu biblioteca",
     "errors": {
       "nameRequired": "Pon un nombre a la plantilla."
     }

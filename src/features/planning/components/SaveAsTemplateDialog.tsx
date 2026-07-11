@@ -2,17 +2,14 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ui/ResponsiveDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PhasePicker } from '@/components/ui/PhasePicker';
+import { TemplateCard, type TemplateCardItem } from '@/features/templates/components/TemplateCard';
+import { toFilledGrid, type GridSlot } from '@/features/templates/filledGrid';
+import type { TemplatePhase } from '@/features/templates/api';
 import {
   saveAsTemplateFormSchema,
   type SaveAsTemplateFormValues,
@@ -23,7 +20,17 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   weekStart: string;
-  onSave: (name: string) => Promise<void>;
+  /** The week's meal times — feeds both the preview's slot count and its dot-grid width. */
+  mealTimes: string[];
+  /** The week's slots, already reduced to `{ day_of_week, meal_index }` — feeds `toFilledGrid`. */
+  slots: GridSlot[];
+  /**
+   * The user's currently active phase (from `useDailyTarget`), offered as the
+   * picker's default — a sensible starting point, not a value baked into the
+   * data. The user is free to change it, including clearing it to "sin fase".
+   */
+  activePhase: TemplatePhase | null;
+  onSave: (name: string, phaseType: TemplatePhase | null) => Promise<void>;
   busy?: boolean;
 }
 
@@ -31,6 +38,9 @@ export function SaveAsTemplateDialog({
   open,
   onOpenChange,
   weekStart,
+  mealTimes,
+  slots,
+  activePhase,
   onSave,
   busy,
 }: Props) {
@@ -38,10 +48,12 @@ export function SaveAsTemplateDialog({
   const { t: tCommon } = useTranslation('common');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
   const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<TemplatePhase | null>(activePhase);
   const {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<SaveAsTemplateFormValues>({
     resolver: zodResolver(saveAsTemplateFormSchema),
@@ -54,14 +66,15 @@ export function SaveAsTemplateDialog({
         date: formatDate(weekStart, 'd MMM yyyy', locale),
       });
       reset({ name: suggestion });
+      setPhase(activePhase);
       setError(null);
     }
-  }, [open, weekStart, t, locale, reset]);
+  }, [open, weekStart, t, locale, reset, activePhase]);
 
   async function onValid(values: SaveAsTemplateFormValues) {
     setError(null);
     try {
-      await onSave(values.name.trim());
+      await onSave(values.name.trim(), phase);
       onOpenChange(false);
     } catch (err) {
       setError((err as Error).message);
@@ -71,31 +84,76 @@ export function SaveAsTemplateDialog({
   // Parity: prior code showed t('save.errors.nameRequired') on blank name.
   const nameError = errors.name ? t('save.errors.nameRequired') : null;
 
+  const name = watch('name');
+  const filled = toFilledGrid(slots, mealTimes.length);
+  // Not a real template yet — `id` is only ever used for its own detail link,
+  // which is meaningless on a preview that isn't saved (hence `pointer-events-none`
+  // below) and `onDelete` is unreachable for the same reason.
+  const previewTemplate: TemplateCardItem = {
+    id: '',
+    name: name?.trim() || t('save.name'),
+    phase_type: phase,
+    default_meal_times: mealTimes,
+    slot_count: slots.length,
+    updated_at: new Date().toISOString(),
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('save.title')}</DialogTitle>
-          <DialogDescription>{t('save.subtitle')}</DialogDescription>
-        </DialogHeader>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t('save.title')}
+      variant="centered"
+    >
+      {({ isMobile }) => (
         <form onSubmit={handleSubmit(onValid)} className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold">{t('save.title')}</h2>
+            <p className="text-sm text-muted-foreground">{t('save.subtitle')}</p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="save-tpl-name">{t('save.name')}</Label>
             <Input id="save-tpl-name" {...register('name')} />
           </div>
+
+          <div className="space-y-2">
+            <Label>{t('phase.pick')}</Label>
+            <PhasePicker value={phase} onChange={setPhase} />
+          </div>
+
           {(nameError || error) && (
             <p className="text-sm text-destructive">{nameError ?? error}</p>
           )}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+
+          <div className="space-y-2">
+            <Label>{t('save.previewLabel')}</Label>
+            {/* A preview of the card being created, not an interactive one —
+                it isn't saved yet, so its Link/edit/delete affordances have
+                nowhere real to go. */}
+            <div data-testid="save-template-preview" aria-hidden="true" className="pointer-events-none">
+              <TemplateCard template={previewTemplate} filled={filled} onDelete={() => {}} />
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={busy}>
+            {busy ? tCommon('loading') : tCommon('save')}
+          </Button>
+
+          {/* Desktop's DialogContent draws its own X; vaul's drawer draws none,
+              so mobile would otherwise only be dismissible by dragging it. */}
+          {isMobile && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => onOpenChange(false)}
+            >
               {tCommon('cancel')}
             </Button>
-            <Button type="submit" disabled={busy}>
-              {busy ? tCommon('loading') : tCommon('save')}
-            </Button>
-          </DialogFooter>
+          )}
         </form>
-      </DialogContent>
-    </Dialog>
+      )}
+    </ResponsiveDialog>
   );
 }
