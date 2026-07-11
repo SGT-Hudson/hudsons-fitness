@@ -18,6 +18,7 @@
     "modeReplace": "Replace",
     "modeAppend": "Add alongside",
     "sourceRecipes": "Copying:",
+    "selectAll": "All",
     "willOverwrite": "will be overwritten",
     "summaryReplace": "Copy to {{count}} days, replacing what's there.",
     "summaryAppend": "Copy to {{count}} days, alongside what's there.",

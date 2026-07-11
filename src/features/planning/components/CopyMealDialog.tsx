@@ -56,6 +56,13 @@ export function CopyMealDialog({
     });
   }
 
+  /** Tri-state: anything short of "every day" selects them all; all → clear. */
+  function toggleAll() {
+    setSelected((prev) =>
+      prev.size === targets.length ? new Set() : new Set(targets.map((tg) => tg.key)),
+    );
+  }
+
   async function confirm(keys: string[], m: CopyMode) {
     await onConfirm(keys, m);
     onOpenChange(false);
@@ -79,6 +86,7 @@ export function CopyMealDialog({
             onModeChange={setMode}
             selected={selected}
             onToggle={toggle}
+            onToggleAll={toggleAll}
             busy={busy}
             onConfirm={confirm}
             allowAppend={allowAppend}

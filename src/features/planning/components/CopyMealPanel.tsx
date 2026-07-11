@@ -22,6 +22,8 @@ interface Props {
   onModeChange: (mode: CopyMode) => void;
   selected: Set<string>;
   onToggle: (key: string) => void;
+  /** Select every day at once, or clear them all when every day is already on. */
+  onToggleAll: () => void;
   busy?: boolean;
   onConfirm: (selectedKeys: string[], mode: CopyMode) => void | Promise<void>;
   /**
@@ -56,6 +58,7 @@ export function CopyMealPanel({
   onModeChange,
   selected,
   onToggle,
+  onToggleAll,
   busy,
   onConfirm,
   allowAppend = false,
@@ -63,6 +66,8 @@ export function CopyMealPanel({
   const { t } = useTranslation('planning');
   const { t: tCommon } = useTranslation('common');
   const effectiveMode: CopyMode = allowAppend ? mode : 'replace';
+  const allSelected = targets.length > 0 && selected.size === targets.length;
+  const someSelected = selected.size > 0 && !allSelected;
 
   function confirm() {
     // Preserve target order in the emitted keys.
@@ -116,41 +121,74 @@ export function CopyMealPanel({
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-        {targets.map((tg) => {
-          const on = selected.has(tg.key);
-          const showBadge = effectiveMode === 'replace' && tg.willOverwrite;
-          return (
-            <button
-              key={tg.key}
-              type="button"
-              role="checkbox"
-              aria-checked={on}
-              aria-label={tg.sublabel ? `${tg.label} ${tg.sublabel}` : tg.label}
-              onClick={() => onToggle(tg.key)}
+      <div className="space-y-2">
+        <div className="flex justify-end">
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={allSelected ? 'true' : someSelected ? 'mixed' : 'false'}
+            aria-label={t('copyMeal.selectAll')}
+            onClick={onToggleAll}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
+              allSelected || someSelected
+                ? 'border-accent-line bg-accent-soft text-accent-ink'
+                : 'border-border bg-card text-muted-foreground',
+            )}
+          >
+            <span
               className={cn(
-                'relative flex flex-col items-center gap-0.5 rounded-lg border px-2 py-2.5 text-xs',
-                on ? 'border-accent-line bg-accent-soft' : 'border-border bg-card',
+                'flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border',
+                allSelected || someSelected
+                  ? 'border-accent-line bg-card'
+                  : 'border-muted-foreground/50',
               )}
             >
-              {on && (
-                <Check
-                  className="absolute right-1 top-1 h-3 w-3 text-accent-ink"
-                  aria-hidden="true"
-                />
+              {allSelected && <Check className="h-2.5 w-2.5 text-accent-ink" aria-hidden="true" />}
+              {someSelected && (
+                <span className="h-0.5 w-1.5 rounded-full bg-accent-ink" aria-hidden="true" />
               )}
-              <span className="font-medium">{tg.label}</span>
-              {tg.sublabel && (
-                <span className="tnum text-[10px] text-muted-foreground">{tg.sublabel}</span>
-              )}
-              {showBadge && (
-                <span className="rounded-full border border-transparent bg-amber-soft px-1.5 py-0.5 text-[10px] text-amber-ink">
-                  {t('copyMeal.willOverwrite')}
-                </span>
-              )}
-            </button>
-          );
-        })}
+            </span>
+            {t('copyMeal.selectAll')}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {targets.map((tg) => {
+            const on = selected.has(tg.key);
+            const showBadge = effectiveMode === 'replace' && tg.willOverwrite;
+            return (
+              <button
+                key={tg.key}
+                type="button"
+                role="checkbox"
+                aria-checked={on}
+                aria-label={tg.sublabel ? `${tg.label} ${tg.sublabel}` : tg.label}
+                onClick={() => onToggle(tg.key)}
+                className={cn(
+                  'relative flex flex-col items-center gap-0.5 rounded-lg border px-2 py-2.5 text-xs',
+                  on ? 'border-accent-line bg-accent-soft' : 'border-border bg-card',
+                )}
+              >
+                {on && (
+                  <Check
+                    className="absolute right-1 top-1 h-3 w-3 text-accent-ink"
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="font-medium">{tg.label}</span>
+                {tg.sublabel && (
+                  <span className="tnum text-[10px] text-muted-foreground">{tg.sublabel}</span>
+                )}
+                {showBadge && (
+                  <span className="rounded-full border border-transparent bg-amber-soft px-1.5 py-0.5 text-[10px] text-amber-ink">
+                    {t('copyMeal.willOverwrite')}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <p className="tnum text-xs text-muted-foreground">

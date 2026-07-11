@@ -18,6 +18,7 @@
     "modeReplace": "Reemplazar",
     "modeAppend": "Añadir junto",
     "sourceRecipes": "Se copiarán:",
+    "selectAll": "Todos",
     "willOverwrite": "se sobrescribirá",
     "summaryReplace": "Copiar a {{count}} días, reemplazando lo que haya.",
     "summaryAppend": "Copiar a {{count}} días, junto a lo que ya haya.",

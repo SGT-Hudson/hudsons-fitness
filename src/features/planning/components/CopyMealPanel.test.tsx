@@ -24,6 +24,7 @@ function setup(over: Partial<Parameters<typeof CopyMealPanel>[0]> = {}) {
     onModeChange: noop,
     selected: new Set<string>(),
     onToggle: noop,
+    onToggleAll: noop,
     onConfirm: noop,
     allowAppend: true,
     ...over,
@@ -60,6 +61,37 @@ describe('CopyMealPanel', () => {
     setup({ onToggle });
     await userEvent.click(screen.getByRole('checkbox', { name: /Martes/ }));
     expect(onToggle).toHaveBeenCalledWith('2026-05-26');
+  });
+
+  it('offers a tri-state select-all: unchecked with none picked', () => {
+    setup({ selected: new Set() });
+    expect(screen.getByRole('checkbox', { name: /todos/i })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+  });
+
+  it('offers a tri-state select-all: mixed with some picked', () => {
+    setup({ selected: new Set(['2026-05-26']) });
+    expect(screen.getByRole('checkbox', { name: /todos/i })).toHaveAttribute(
+      'aria-checked',
+      'mixed',
+    );
+  });
+
+  it('offers a tri-state select-all: checked with every day picked', () => {
+    setup({ selected: new Set(['2026-05-26', '2026-05-27']) });
+    expect(screen.getByRole('checkbox', { name: /todos/i })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
+  it('bubbles the select-all click to the caller', async () => {
+    const onToggleAll = vi.fn();
+    setup({ onToggleAll });
+    await userEvent.click(screen.getByRole('checkbox', { name: /todos/i }));
+    expect(onToggleAll).toHaveBeenCalledTimes(1);
   });
 
   it('disables the CTA until at least one day is picked, and confirms with the mode', async () => {

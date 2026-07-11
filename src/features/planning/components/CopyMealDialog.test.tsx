@@ -95,6 +95,39 @@ describe('CopyMealDialog', () => {
     expect(screen.getByRole('button', { name: /añadir junto/i })).toBeInTheDocument();
   });
 
+  it('selects every day at once, then clears them', async () => {
+    const user = userEvent.setup();
+    renderDialog();
+    const all = () => screen.getByRole('checkbox', { name: /todos/i });
+
+    await user.click(all());
+    expect(screen.getByRole('checkbox', { name: /Martes/ })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('checkbox', { name: /Miércoles/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(all()).toHaveAttribute('aria-checked', 'true');
+
+    await user.click(all());
+    expect(screen.getByRole('checkbox', { name: /Martes/ })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(all()).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('select-all with a partial selection selects the rest, and confirms them all', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    renderDialog({ onConfirm });
+
+    await user.click(screen.getByRole('checkbox', { name: /Martes/ }));
+    await user.click(screen.getByRole('checkbox', { name: /todos/i }));
+    await user.click(screen.getByRole('button', { name: /^copiar/i }));
+
+    expect(onConfirm).toHaveBeenCalledWith(['tue', 'wed'], 'replace');
+  });
+
   // vaul draws no close affordance of its own, so the mobile branch would be
   // dismissible only by dragging it without an explicit control.
   it('offers a Cancel control on mobile that closes the dialog', async () => {
