@@ -1,11 +1,12 @@
+import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SlotCell, type SlotEntry } from './SlotCell';
-import { DaySummary } from './DaySummary';
-import { aggregateDayMacros } from '@/features/planning/daySummary';
+import { DayHeaderCard } from './DayHeaderCard';
+import { PlannerMealCell, type PlannerCellEntry } from './PlannerMealCell';
+import { mealLabelKey } from '@/features/planning/weekSummary';
+import { templateWeekDates, templateDayTotals } from '@/features/templates/templateWeek';
 import { scale, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
+import { formatDate, type Locale } from '@/lib/dates';
 import type { PhaseType } from '@/core/nutritionTone';
-
-const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 export interface TemplateSlotInput {
   rowId: string;
@@ -20,14 +21,13 @@ export interface TemplateSlotInput {
 interface Props {
   mealTimes: string[];
   slots: TemplateSlotInput[];
-  onAdd: (
-    day_of_week: number,
-    meal_index: number,
-    recipeId: string,
-    recipeName: string,
-    servings: number,
-  ) => void;
-  onUpdate: (rowId: string, recipeId: string, recipeName: string, servings: number) => void;
+  /** An empty cell's add affordance — the page opens its one picker on that slot. */
+  onAddRequest: (dayOfWeek: number, mealIndex: number) => void;
+  /** A recipe bullet — the page opens its one picker on that entry. */
+  onOpenEntry: (entry: PlannerCellEntry, dayOfWeek: number, mealIndex: number) => void;
+  // Kept on the public surface for the page's slot-removal flow — this grid
+  // has no inline delete affordance of its own (PlannerMealCell doesn't either);
+  // removal is driven by whatever the page opens `onOpenEntry` into.
   onRemove: (rowId: string) => void;
   recipeMacros?: Map<string, Macros>; // per-serving macros by recipe id
   targets?: Macros;
@@ -36,88 +36,99 @@ interface Props {
   onCopyMeal?: (dayOfWeek: number, mealIndex: number) => void;
 }
 
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function toEntry(s: TemplateSlotInput, recipeMacros: Map<string, Macros>): PlannerCellEntry {
+  return {
+    id: s.rowId,
+    recipe_id: s.recipe_id,
+    recipe_name: s.recipe_name,
+    servings: s.servings,
+    macros: scale(recipeMacros.get(s.recipe_id) ?? ZERO_MACROS, s.servings),
+  };
+}
+
+/**
+ * The web template grid (R-33 wave 4): the same `92px + 7` matrix as the
+ * planner's `WeekGrid`, projected onto `day_of_week` (0-6, 0 = Monday) instead
+ * of real dates — a template has no dates of its own. The reference week's
+ * dates (`templateWeekDates`) are presentational only, purely to drive
+ * `DayHeaderCard`'s full localized weekday label; they never reach the DB.
+ * No "today" outline and no past-day dimming — a template has no today.
+ */
 export function TemplateGrid({
   mealTimes,
   slots,
-  onAdd,
-  onUpdate,
-  onRemove,
+  onAddRequest,
+  onOpenEntry,
   recipeMacros,
   targets,
   phaseType,
   weightKg,
   onCopyMeal,
 }: Props) {
-  const { t } = useTranslation('planning');
+  const { t, i18n } = useTranslation('planning');
+  const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
 
-  const dayTotals = aggregateDayMacros(
-    slots.map((s) => ({
-      key: String(s.day_of_week),
-      macros: scale(recipeMacros?.get(s.recipe_id) ?? ZERO_MACROS, s.servings),
-    })),
-  );
+  const macrosMap = recipeMacros ?? new Map<string, Macros>();
+  const weekDates = templateWeekDates(new Date());
+  const dayTotals = templateDayTotals(slots, macrosMap);
 
-  function entriesFor(day: number, meal: number): SlotEntry[] {
+  function entriesFor(dayOfWeek: number, mealIndex: number): PlannerCellEntry[] {
     return slots
-      .filter((s) => s.day_of_week === day && s.meal_index === meal)
+      .filter((s) => s.day_of_week === dayOfWeek && s.meal_index === mealIndex)
       .sort((a, b) => a.display_order - b.display_order)
-      .map((s) => ({
-        id: s.rowId,
-        recipe_id: s.recipe_id,
-        recipe_name: s.recipe_name,
-        servings: s.servings,
-      }));
+      .map((s) => toEntry(s, macrosMap));
+  }
+
+  function mealLabel(mealIndex: number): string {
+    const { key, params } = mealLabelKey(mealIndex);
+    return t(key, params ?? {});
   }
 
   return (
-    <div className="overflow-x-auto -mx-2 px-2">
+    <div className="-mx-2 overflow-x-auto px-2">
       <div
-        className="grid gap-2 min-w-max"
-        style={{ gridTemplateColumns: `64px repeat(7, minmax(150px, 1fr))` }}
+        className="grid min-w-max gap-1.5"
+        style={{ gridTemplateColumns: '92px repeat(7, minmax(150px, 1fr))' }}
       >
+        {/* Day headers */}
         <div />
-        {DAY_KEYS.map((dk) => (
-          <div key={dk} className="text-sm font-semibold text-center pb-1">
-            {t(`days.${dk}`)}
-          </div>
+        {weekDates.map((dateIso, dayOfWeek) => (
+          <DayHeaderCard
+            key={`h-${dayOfWeek}`}
+            label={capitalize(formatDate(dateIso, 'EEEE', locale))}
+            isToday={false}
+            totals={dayTotals.get(dayOfWeek) ?? ZERO_MACROS}
+            targets={targets}
+            phaseType={phaseType}
+            weightKg={weightKg}
+          />
         ))}
-        <div className="text-xs text-muted-foreground self-start pt-2 pr-2 text-right font-semibold uppercase tracking-wide">
-          {t('summary.totalRow')}
-        </div>
-        {DAY_KEYS.map((_, dayIdx) => (
-          <div key={`total-${dayIdx}`} className="rounded-md border bg-card p-2">
-            <DaySummary
-              totals={dayTotals.get(String(dayIdx)) ?? ZERO_MACROS}
-              targets={targets}
-              phaseType={phaseType}
-              weightKg={weightKg}
-            />
-          </div>
-        ))}
-        {mealTimes.map((time, mealIdx) => (
-          <>
-            <div
-              key={`time-${mealIdx}`}
-              className="text-xs text-muted-foreground tabular-nums self-center pr-2 text-right"
-            >
-              {time}
+
+        {/* Meal rows */}
+        {mealTimes.map((time, mealIndex) => (
+          <Fragment key={`row-${mealIndex}`}>
+            <div className="flex flex-col justify-center px-2">
+              <span className="text-[11px] font-medium uppercase tracking-[0.05em] text-muted-foreground">
+                {mealLabel(mealIndex)}
+              </span>
+              <span className="tnum mt-0.5 text-[10px] text-text-dim opacity-70">
+                {time.slice(0, 5)}
+              </span>
             </div>
-            {DAY_KEYS.map((_, dayIdx) => (
-              <SlotCell
-                key={`slot-${mealIdx}-${dayIdx}`}
-                entries={entriesFor(dayIdx, mealIdx)}
-                onAdd={(recipeId, recipeName, servings) =>
-                  onAdd(dayIdx, mealIdx, recipeId, recipeName, servings)
-                }
-                onUpdate={(rowId, recipeId, recipeName, servings) =>
-                  onUpdate(rowId, recipeId, recipeName, servings)
-                }
-                onRemove={(rowId) => onRemove(rowId)}
-                onCopy={onCopyMeal ? () => onCopyMeal(dayIdx, mealIdx) : undefined}
-                copyLabel={t('slot.copy')}
+            {weekDates.map((_, dayOfWeek) => (
+              <PlannerMealCell
+                key={`${dayOfWeek}-${mealIndex}`}
+                entries={entriesFor(dayOfWeek, mealIndex)}
+                onAddRequest={() => onAddRequest(dayOfWeek, mealIndex)}
+                onOpenEntry={(entry) => onOpenEntry(entry, dayOfWeek, mealIndex)}
+                onCopy={onCopyMeal ? () => onCopyMeal(dayOfWeek, mealIndex) : undefined}
               />
             ))}
-          </>
+          </Fragment>
         ))}
       </div>
     </div>

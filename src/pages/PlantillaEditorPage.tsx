@@ -3,7 +3,6 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,9 +18,12 @@ import {
   TemplateGrid,
   type TemplateSlotInput,
 } from '@/features/planning/components/TemplateGrid';
+import { RecipePickerDialog } from '@/features/planning/components/RecipePickerDialog';
+import type { PlannerCellEntry } from '@/features/planning/components/PlannerMealCell';
 import { templateMealTargets } from '@/features/planning/copyTargets';
 import { copyTemplateMeal } from '@/features/templates/copyMeal';
-import { formatDate, mondayOf, type Locale } from '@/lib/dates';
+import { templateWeekDates } from '@/features/templates/templateWeek';
+import { formatDate, type Locale } from '@/lib/dates';
 import { useSaveTemplate, useTemplate, useRecipeMacros } from '@/features/templates/hooks';
 import { useDailyTarget } from '@/features/planning/useDailyTarget';
 import {
@@ -36,7 +38,7 @@ function newRowId() {
   return `tslot-${Date.now()}-${rowIdCounter}`;
 }
 
-function capitalizeTpl(s: string): string {
+function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
@@ -71,10 +73,21 @@ export function PlantillaEditorPage() {
   const { targets, phaseType, weightKg } = useDailyTarget();
   const [copySource, setCopySource] = useState<{ dayOfWeek: number; mealIndex: number } | null>(null);
 
-  // Reference Monday so day-of-week → full localized weekday label (no date involved).
-  const refMonday = mondayOf(new Date());
-  const dayLabel = (dow: number) =>
-    capitalizeTpl(formatDate(addDays(refMonday, dow), 'EEEE', locale));
+  // A grid-and-picker-only presentational bridge (Task 2, R-33 wave 4): the
+  // reference Monday's dates exist only to derive a full localized weekday
+  // label from a `day_of_week` index — they never reach the DB.
+  const weekDates = templateWeekDates(new Date());
+  const dayLabel = (dow: number) => capitalize(formatDate(weekDates[dow], 'EEEE', locale));
+
+  // One picker dialog for the whole grid (mirrors TemplateGrid dropping its
+  // per-cell dialogs, wave 3-style) — a placeholder bridge until the next task
+  // mounts the shared AddRecipeDrawer here the way PlanificadorPage does for
+  // the planner. `editing` carries the slot being replaced, if any.
+  const [slotTarget, setSlotTarget] = useState<{
+    dayOfWeek: number;
+    mealIndex: number;
+    editing?: TemplateSlotInput;
+  } | null>(null);
 
   const copyTargets: CopyTarget[] = copySource
     ? templateMealTargets(slots, copySource.dayOfWeek, copySource.mealIndex).map((tg) => ({
@@ -173,6 +186,15 @@ export function PlantillaEditorPage() {
     setSlots((s) => s.filter((x) => x.rowId !== rowId));
   }
 
+  /** TemplateGrid's `onOpenEntry`: find the slot behind the clicked bullet. */
+  function openEditSlot(entry: PlannerCellEntry, dayOfWeek: number, mealIndex: number) {
+    setSlotTarget({
+      dayOfWeek,
+      mealIndex,
+      editing: slots.find((s) => s.rowId === entry.id),
+    });
+  }
+
   // One localized message, original precedence (name → times) — D-C2 parity.
   const validationCode = firstTemplateError(
     errors as Record<string, { message?: string } | undefined>,
@@ -251,8 +273,8 @@ export function PlantillaEditorPage() {
           <TemplateGrid
             mealTimes={mealTimes}
             slots={slots}
-            onAdd={addSlot}
-            onUpdate={updateSlot}
+            onAddRequest={(dayOfWeek, mealIndex) => setSlotTarget({ dayOfWeek, mealIndex })}
+            onOpenEntry={openEditSlot}
             onRemove={removeSlot}
             recipeMacros={recipeMacros.data}
             targets={targets}
@@ -270,6 +292,41 @@ export function PlantillaEditorPage() {
         entryNames={copyEntries.map((s) => s.recipe_name)}
         targets={copyTargets}
         onConfirm={handleCopyMeal}
+      />
+
+      {/* TODO(next task): replace this bridge with the shared AddRecipeDrawer,
+          mounted here the way PlanificadorPage mounts it for the planner —
+          this keeps add/edit/remove working in the interim with no per-cell
+          dialogs (28 → 1), reusing RecipePickerDialog untouched. */}
+      <RecipePickerDialog
+        open={!!slotTarget}
+        onOpenChange={(o) => !o && setSlotTarget(null)}
+        initialRecipe={
+          slotTarget?.editing
+            ? {
+                id: slotTarget.editing.recipe_id,
+                name: slotTarget.editing.recipe_name,
+                servings: slotTarget.editing.servings,
+              }
+            : null
+        }
+        onSave={(recipeId, recipeName, servings) => {
+          if (!slotTarget) return;
+          if (slotTarget.editing) {
+            updateSlot(slotTarget.editing.rowId, recipeId, recipeName, servings);
+          } else {
+            addSlot(slotTarget.dayOfWeek, slotTarget.mealIndex, recipeId, recipeName, servings);
+          }
+          setSlotTarget(null);
+        }}
+        onDelete={
+          slotTarget?.editing
+            ? () => {
+                removeSlot(slotTarget.editing!.rowId);
+                setSlotTarget(null);
+              }
+            : undefined
+        }
       />
     </form>
     </PageShell>
