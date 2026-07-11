@@ -52,7 +52,11 @@ export function WeekStrip({ days, selectedDate, onSelect, target, phase, classNa
   return (
     <div className={cn('grid grid-cols-7 gap-1.5', className)}>
       {days.map((d) => {
-        const tone = classify('kcal', d.kcal, target, phase).tone;
+        // A day with nothing planned has no signal to report: `classify` would
+        // paint an empty cut day green (its band only guards the upper side).
+        // Same "no data ≠ good" call as DayHeaderCard — kept out of the shared
+        // tone core, which is presentation-agnostic.
+        const tone: Tone = d.kcal === 0 ? 'neutral' : classify('kcal', d.kcal, target, phase).tone;
         const selected = d.date === selectedDate;
         const date = parseISO(d.date);
         return (

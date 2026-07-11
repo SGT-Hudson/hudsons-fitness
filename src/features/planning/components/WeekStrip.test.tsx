@@ -49,6 +49,24 @@ describe('WeekStrip', () => {
     );
   });
 
+  it('renders a day with nothing planned as neutral, never good', () => {
+    // classify('kcal', 0, 2180, 'cut') is `good` — the cut band only guards the
+    // upper side — so an unplanned day would otherwise show a green stripe.
+    const withEmptyThursday = days.map((d) => (d.date === '2026-05-28' ? { ...d, kcal: 0 } : d));
+    const { container } = render(
+      <WeekStrip
+        days={withEmptyThursday}
+        target={2180}
+        phase="cut"
+        selectedDate="2026-05-26"
+        onSelect={noop}
+      />,
+    );
+    const stripe = container.querySelector('[data-day="2026-05-28"] [data-stripe]');
+    expect(stripe?.className).toContain('bg-muted-foreground/50');
+    expect(stripe?.className).not.toContain('bg-tone-good');
+  });
+
   it('exposes each day as a button whose accessible name carries the date', () => {
     render(
       <WeekStrip days={days} target={2180} phase="cut" selectedDate="2026-05-26" onSelect={noop} />,

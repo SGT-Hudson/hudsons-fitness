@@ -32,6 +32,18 @@ describe('DayMacroChip', () => {
     expect(container.querySelector('[data-tick="min"]')).not.toBeNull();
   });
 
+  it('renders neutral on demand, ignoring the classifier and the fat floor', () => {
+    const { container } = render(
+      <DayMacroChip metric="fat" consumed={0} target={68} phase="cut" floorG={48} neutral />,
+    );
+    const chip = container.querySelector('[data-macro="fat"]');
+    expect(chip?.className).toContain('bg-muted');
+    expect(chip?.className).not.toContain('border-destructive');
+    expect(container.querySelector('[data-tick="min"]')).toBeNull();
+    // The target readout survives — only the tone is suppressed.
+    expect(screen.getByText('68')).toBeInTheDocument();
+  });
+
   it('stays neutral with no target', () => {
     const { container } = render(<DayMacroChip metric="fiber" consumed={12} />);
     expect(container.querySelector('[data-seg]')).toBeNull();

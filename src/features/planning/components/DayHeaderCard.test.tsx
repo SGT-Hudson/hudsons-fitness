@@ -63,6 +63,42 @@ describe('DayHeaderCard', () => {
     expect(presentContainer.querySelector('[data-day-header]')?.className).not.toContain('opacity-60');
   });
 
+  it('renders a day with nothing planned as neutral — never good — in a cut', () => {
+    // classify('kcal', 0, 2180, 'cut') is `good` (the cut band only guards the
+    // upper side), so an unplanned day would otherwise read as "perfect": green
+    // stripe, green 0, green −2180 — while its macro chips scream red/amber.
+    const { container } = render(
+      <DayHeaderCard
+        dateIso="2026-05-28"
+        isToday={false}
+        totals={ZERO_MACROS}
+        targets={targets}
+        phaseType="cut"
+        weightKg={80}
+      />,
+    );
+
+    const stripe = container.querySelector('[data-stripe]');
+    expect(stripe?.className).toContain('bg-muted-foreground/50');
+    expect(stripe?.className).not.toContain('bg-tone-good');
+
+    // The kcal hero (the chips render their own "0" too) and the delta.
+    const hero = screen.getAllByText('0').find((el) => el.className.includes('text-[19px]'));
+    expect(hero?.className).toContain('text-muted-foreground');
+    expect(hero?.className).not.toContain('text-tone-good');
+    expect(screen.getByText('-2180').className).toContain('text-muted-foreground');
+
+    for (const metric of ['protein', 'carbs', 'fat', 'fiber']) {
+      const chip = container.querySelector(`[data-macro="${metric}"]`);
+      expect(chip?.className).toContain('bg-muted');
+      expect(chip?.className).not.toContain('border-destructive');
+      expect(chip?.className).not.toContain('bg-tone-good');
+    }
+    // No fat-floor alarm on a day you simply have not planned yet.
+    expect(container.querySelector('[data-tick="min"]')).toBeNull();
+    expect(screen.queryByText(/falta grasa/i)).not.toBeInTheDocument();
+  });
+
   it('outlines only the fat chip when weightKg drives fat below its essential floor', () => {
     const floorTargets: Macros = { kcal: 2000, proteinG: 150, carbsG: 200, fatG: 70, fiberG: 30 };
     const floorTotals: Macros = { kcal: 2000, proteinG: 150, carbsG: 200, fatG: 30, fiberG: 30 };

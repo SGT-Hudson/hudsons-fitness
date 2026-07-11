@@ -4,8 +4,17 @@ import { cn } from '@/lib/utils';
 import { MacroBar } from '@/components/ui/MacroBar';
 import { DayMacroChip } from './DayMacroChip';
 import { roundMacro, type Macros } from '@/features/recipes/macros';
-import { classify, essentialFatFloorG, type PhaseType, type Tone } from '@/core/nutritionTone';
+import {
+  classify,
+  essentialFatFloorG,
+  type PhaseType,
+  type Tone,
+  type ToneStatus,
+} from '@/core/nutritionTone';
 import { formatDate, type Locale } from '@/lib/dates';
+
+/** "No data" is not a tone — see `nothingPlanned` below. */
+const NO_DATA: ToneStatus = { tone: 'neutral', excess: 'neutral', remaining: 0, overG: 0 };
 
 const BG_TONE: Record<Tone, string> = {
   good: 'bg-tone-good',
@@ -58,7 +67,19 @@ export function DayHeaderCard({
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
   const date = parseISO(dateIso);
 
-  const kcal = classify('kcal', totals.kcal, targets?.kcal, phaseType);
+  // A day with nothing planned carries no signal: `classify` would call it
+  // `good` in a cut (the cut band only guards the upper side) and `low` in a
+  // bulk, so an empty day would read as "perfect" — green stripe, green 0,
+  // green −2180 — next to a jumble of red/amber macro chips. "No data" is a
+  // presentation decision, not a tone: it stays out of the shared tone core.
+  const nothingPlanned =
+    totals.kcal === 0 &&
+    totals.proteinG === 0 &&
+    totals.carbsG === 0 &&
+    totals.fatG === 0 &&
+    totals.fiberG === 0;
+
+  const kcal = nothingPlanned ? NO_DATA : classify('kcal', totals.kcal, targets?.kcal, phaseType);
   const hasKcalTarget = targets != null && targets.kcal > 0;
   const delta = hasKcalTarget ? Math.round(totals.kcal - targets!.kcal) : null;
   const fatFloor = weightKg != null ? essentialFatFloorG(weightKg) : undefined;
@@ -119,10 +140,10 @@ export function DayHeaderCard({
       </div>
 
       <div className="grid grid-cols-2 gap-[3px]">
-        <DayMacroChip metric="protein" consumed={totals.proteinG} target={targets?.proteinG} phase={phaseType} />
-        <DayMacroChip metric="carbs" consumed={totals.carbsG} target={targets?.carbsG} phase={phaseType} />
-        <DayMacroChip metric="fat" consumed={totals.fatG} target={targets?.fatG} phase={phaseType} floorG={fatFloor} />
-        <DayMacroChip metric="fiber" consumed={totals.fiberG} target={targets?.fiberG} phase={phaseType} />
+        <DayMacroChip metric="protein" consumed={totals.proteinG} target={targets?.proteinG} phase={phaseType} neutral={nothingPlanned} />
+        <DayMacroChip metric="carbs" consumed={totals.carbsG} target={targets?.carbsG} phase={phaseType} neutral={nothingPlanned} />
+        <DayMacroChip metric="fat" consumed={totals.fatG} target={targets?.fatG} phase={phaseType} floorG={fatFloor} neutral={nothingPlanned} />
+        <DayMacroChip metric="fiber" consumed={totals.fiberG} target={targets?.fiberG} phase={phaseType} neutral={nothingPlanned} />
       </div>
     </div>
   );

@@ -2,10 +2,13 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { MacroBar } from '@/components/ui/MacroBar';
 import { roundMacro } from '@/features/recipes/macros';
-import { classify, type PhaseType, type Tone } from '@/core/nutritionTone';
+import { classify, type PhaseType, type Tone, type ToneStatus } from '@/core/nutritionTone';
 
 /** kcal has the day-header hero, not a chip. */
 export type ChipMetric = 'protein' | 'carbs' | 'fat' | 'fiber';
+
+/** "No data" is not a tone — see the `neutral` prop. */
+const NO_DATA: ToneStatus = { tone: 'neutral', excess: 'neutral', remaining: 0, overG: 0 };
 
 // Per-component tone maps — this codebase's convention (see MacroBar, MacroTile).
 const TEXT_TONE: Record<Tone, string> = {
@@ -42,6 +45,12 @@ interface Props {
   phase?: PhaseType;
   /** Fat only: essential floor in grams — draws the bar tick and outlines the chip below it. */
   floorG?: number;
+  /**
+   * Force the "no data" presentation: no tone, no floor alarm. The caller owns
+   * this decision — `classify` has no notion of an unplanned day (a 0 g cut day
+   * classifies as `good`).
+   */
+  neutral?: boolean;
   className?: string;
 }
 
@@ -50,17 +59,27 @@ interface Props {
  * day header. The bar (renormalisation, excess segment, floor tick) is
  * `MacroBar` as-is — no duplicated segment math.
  */
-export function DayMacroChip({ metric, consumed, target, phase, floorG, className }: Props) {
+export function DayMacroChip({
+  metric,
+  consumed,
+  target,
+  phase,
+  floorG,
+  neutral,
+  className,
+}: Props) {
   const { t } = useTranslation('planning');
-  const s = classify(
-    metric,
-    consumed,
-    target,
-    phase,
-    metric === 'fat' && floorG != null ? { fatFloorG: floorG } : undefined,
-  );
+  const s = neutral
+    ? NO_DATA
+    : classify(
+        metric,
+        consumed,
+        target,
+        phase,
+        metric === 'fat' && floorG != null ? { fatFloorG: floorG } : undefined,
+      );
   const hasTarget = target != null && target > 0;
-  const fatBelowFloor = metric === 'fat' && floorG != null && consumed < floorG;
+  const fatBelowFloor = !neutral && metric === 'fat' && floorG != null && consumed < floorG;
 
   return (
     <div
