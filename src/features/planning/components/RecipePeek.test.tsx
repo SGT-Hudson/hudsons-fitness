@@ -90,4 +90,11 @@ describe('RecipePeek', () => {
     renderPeek();
     expect(document.body.querySelector('[data-slot="skeleton"], .animate-pulse')).not.toBeNull();
   });
+
+  it('shows a failure message — not endless skeletons — when the fetch settles with no recipe', () => {
+    recipeQuery = { data: undefined, isLoading: false };
+    renderPeek();
+    expect(screen.getByText('No se pudo cargar la receta.')).toBeInTheDocument();
+    expect(document.body.querySelector('[data-slot="skeleton"], .animate-pulse')).toBeNull();
+  });
 });

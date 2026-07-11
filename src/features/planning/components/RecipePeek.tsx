@@ -87,7 +87,7 @@ export function RecipePeek({
           {renderHeader(isMobile)}
 
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4.5 pb-4">
-            {isLoading || !recipe || !perServing ? (
+            {isLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-5 w-1/2" />
                 <Skeleton className="h-20 w-full" />
@@ -95,6 +95,12 @@ export function RecipePeek({
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-4 w-2/3" />
               </div>
+            ) : !recipe || !perServing ? (
+              // Settled with nothing to show — a failed fetch, or a recipe that
+              // vanished. Skeletons here would spin forever.
+              <p className="py-6 text-center text-[13px] text-muted-foreground">
+                {t('peek.missing')}
+              </p>
             ) : (
               <>
                 <div className="tnum flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
