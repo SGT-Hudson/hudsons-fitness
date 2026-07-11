@@ -4,8 +4,25 @@
 // stays in Node and never loads this (it's a setupFile, but jest-dom's
 // matchers are inert without a DOM and the cleanup is a no-op there).
 import '@testing-library/jest-dom/vitest';
-import { afterEach } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
+
+// jsdom implements no matchMedia, and `useMediaQuery` (ResponsiveDialog, and so
+// every drawer/dialog built on it) calls it during render. Default to "no match"
+// — i.e. the mobile branch — which is also the mobile-first default the app
+// assumes. Tests that need the desktop branch override this themselves.
+if (!window.matchMedia) {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as unknown as typeof window.matchMedia;
+}
 
 afterEach(() => {
   cleanup();

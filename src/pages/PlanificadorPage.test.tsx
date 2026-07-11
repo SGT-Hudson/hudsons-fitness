@@ -297,7 +297,7 @@ describe('PlanificadorPage — mobile day selection', () => {
     // The copy dialog offers every day EXCEPT its source. Thursday is the
     // selected day, so it must be the one missing from the targets — asserting
     // on the source label alone would pass even if the source were still today.
-    expect(await screen.findByRole('checkbox', { name: 'Martes' })).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: 'Jueves' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('checkbox', { name: /^Martes/ })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /^Jueves/ })).not.toBeInTheDocument();
   });
 });
