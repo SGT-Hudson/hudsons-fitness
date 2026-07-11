@@ -14,8 +14,6 @@
     "sun": "Dom"
   },
   "slot": {
-    "add": "Añadir receta",
-    "remove": "Quitar",
     "copy": "Copiar comida a otros días"
   },
   "copyMeal": {
@@ -31,17 +29,6 @@
     "summaryAppend_other": "Copiar a {{count}} días, junto a lo que ya haya.",
     "pickDays": "Elige al menos un día.",
     "confirm": "Copiar"
-  },
-  "picker": {
-    "addTitle": "Añadir receta",
-    "editTitle": "Editar receta",
-    "subtitle": "Elige la receta y las raciones para este hueco.",
-    "recipe": "Receta",
-    "servings": "Raciones",
-    "errors": {
-      "pickRecipe": "Elige una receta.",
-      "servings": "Las raciones deben ser mayores que 0."
-    }
   },
   "addRecipe": {
     "title": "Añadir receta",
@@ -155,13 +142,8 @@
   },
   "summary": {
     "kcalUnit": "Kcal",
-    "protein": "Prot",
-    "carbs": "Carbs",
-    "fat": "Grasa",
-    "fiber": "Fibra",
     "fatLow": "⚠ Falta grasa",
     "fatLowLabel": "Por qué falta grasa",
-    "fatLowHelpLabel": "Ayuda sobre grasa",
     "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (0,6 g por kg de peso corporal). La grasa es esencial para las hormonas y para absorber vitaminas.",
     "totalRow": "Total",
     "emptyDay": "Día sin comidas todavía",

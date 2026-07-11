@@ -14,8 +14,6 @@
     "sun": "Sun"
   },
   "slot": {
-    "add": "Add recipe",
-    "remove": "Remove",
     "copy": "Copy meal to other days"
   },
   "copyMeal": {
@@ -31,17 +29,6 @@
     "summaryAppend_other": "Copy to {{count}} days, alongside what's there.",
     "pickDays": "Pick at least one day.",
     "confirm": "Copy"
-  },
-  "picker": {
-    "addTitle": "Add recipe",
-    "editTitle": "Edit recipe",
-    "subtitle": "Pick a recipe and servings for this slot.",
-    "recipe": "Recipe",
-    "servings": "Servings",
-    "errors": {
-      "pickRecipe": "Pick a recipe.",
-      "servings": "Servings must be greater than 0."
-    }
   },
   "addRecipe": {
     "title": "Add recipe",
@@ -155,13 +142,8 @@
   },
   "summary": {
     "kcalUnit": "Kcal",
-    "protein": "Protein",
-    "carbs": "Carbs",
-    "fat": "Fat",
-    "fiber": "Fiber",
     "fatLow": "⚠ Low fat",
     "fatLowLabel": "Why low fat",
-    "fatLowHelpLabel": "Fat info",
     "fatLowHelp": "You are below the healthy fat minimum (0.6 g per kg of bodyweight). Fat is essential for hormones and for absorbing vitamins.",
     "totalRow": "Total",
     "emptyDay": "No meals yet",
