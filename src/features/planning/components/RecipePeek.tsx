@@ -16,6 +16,11 @@ interface Props {
   contextLabel: string;
   /** Servings planned for this slot — distinct from the recipe's own `servings` (its yield). */
   servings: number;
+  /**
+   * Edit this plan slot (recipe / servings / remove). The caller closes the peek
+   * and opens its add drawer in edit mode. Omitted → no edit affordance.
+   */
+  onEdit?: () => void;
 }
 
 /**
@@ -27,7 +32,14 @@ interface Props {
  * Fetches via `useRecipe` (unchanged — no new `.select()`) and derives
  * per-serving macros the same way `AddToDaySheet`'s `editSelection` does.
  */
-export function RecipePeek({ open, onOpenChange, recipeId, contextLabel, servings }: Props) {
+export function RecipePeek({
+  open,
+  onOpenChange,
+  recipeId,
+  contextLabel,
+  servings,
+  onEdit,
+}: Props) {
   const { t, i18n } = useTranslation('planning');
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const { data: recipe, isLoading } = useRecipe(recipeId);
@@ -157,10 +169,15 @@ export function RecipePeek({ open, onOpenChange, recipeId, contextLabel, serving
             )}
           </div>
 
-          <div className="shrink-0 border-t border-border px-4.5 py-3">
-            <Button asChild variant="outline" className="w-full">
+          <div className="flex shrink-0 gap-2 border-t border-border px-4.5 py-3">
+            <Button asChild variant="outline" className="flex-1">
               <Link to={`/recipes/${recipeId}`}>{t('peek.open')}</Link>
             </Button>
+            {onEdit && (
+              <Button type="button" className="flex-1" onClick={onEdit}>
+                {t('peek.edit')}
+              </Button>
+            )}
           </div>
         </>
       )}

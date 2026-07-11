@@ -167,6 +167,7 @@
     "perServing": "Per serving",
     "planned": "Planned: {{count}} serving(s)",
     "open": "Open recipe",
+    "edit": "Edit",
     "missing": "The recipe could not be loaded."
   },
   "shopping": {

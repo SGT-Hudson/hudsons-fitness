@@ -16,19 +16,15 @@ interface Props {
   slots: WeekSlotWithRecipe[];
   mealTimes: string[];
   todayIso: string;
-  onAdd: (
+  /** A cell's add affordance — the page opens its one add drawer on that slot. */
+  onAddRequest: (date: string, mealIndex: number, mealTime: string | null) => void;
+  /** A recipe bullet — the page opens its one recipe peek on that entry. */
+  onOpenEntry: (
+    entry: PlannerCellEntry,
     date: string,
     mealIndex: number,
     mealTime: string | null,
-    recipe: { id: string; name: string },
-    servings: number,
-  ) => void | Promise<void>;
-  onUpdate: (
-    slotId: string,
-    recipe: { id: string; name: string },
-    servings: number,
-  ) => void | Promise<void>;
-  onRemove: (slotId: string) => void | Promise<void>;
+  ) => void;
   busy?: boolean;
   targets?: Macros;
   phaseType?: PhaseType;
@@ -61,9 +57,8 @@ export function WeekGrid({
   slots,
   mealTimes,
   todayIso,
-  onAdd,
-  onUpdate,
-  onRemove,
+  onAddRequest,
+  onOpenEntry,
   busy,
   targets,
   phaseType,
@@ -153,19 +148,10 @@ export function WeekGrid({
                 entries={entriesFor(day.date, row)}
                 busy={busy}
                 className={cn(day.isToday && 'border-text-dim', day.isPast && 'opacity-60')}
-                onAdd={(recipeId, recipeName, servings) =>
-                  onAdd(
-                    day.date,
-                    row.mealIndex,
-                    row.mealTime,
-                    { id: recipeId, name: recipeName },
-                    servings,
-                  )
+                onAddRequest={() => onAddRequest(day.date, row.mealIndex, row.mealTime)}
+                onOpenEntry={(entry) =>
+                  onOpenEntry(entry, day.date, row.mealIndex, row.mealTime)
                 }
-                onUpdate={(slotId, recipeId, recipeName, servings) =>
-                  onUpdate(slotId, { id: recipeId, name: recipeName }, servings)
-                }
-                onRemove={(slotId) => onRemove(slotId)}
                 onCopy={onCopyMeal ? () => onCopyMeal(day.date, row.mealIndex) : undefined}
               />
             ))}

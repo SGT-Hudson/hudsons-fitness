@@ -167,6 +167,7 @@
     "perServing": "Por ración",
     "planned": "Planificado: {{count}} ración(es)",
     "open": "Abrir receta",
+    "edit": "Editar",
     "missing": "No se pudo cargar la receta."
   },
   "shopping": {
