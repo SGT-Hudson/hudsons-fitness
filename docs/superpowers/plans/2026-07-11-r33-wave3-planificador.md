@@ -2246,6 +2246,15 @@ export function PlanificadorPage() {
   const copyMeal = useCopyWeekMeal();
   const [copySource, setCopySource] = useState<{ date: string; mealIndex: number } | null>(null);
 
+  // Mobile add/edit goes through the existing RecipePickerDialog until PR-B's
+  // add drawer + recipe peek replace it. Without this the mobile list would have
+  // no way to add a meal — the web grid's cell picker is desktop-only.
+  const [mobilePick, setMobilePick] = useState<{
+    mealIndex: number;
+    mealTime: string | null;
+    entry: PlannerCellEntry | null;
+  } | null>(null);
+
   const weekDates = Array.from({ length: 7 }, (_, i) =>
     formatDate(addDays(parseISO(weekStart), i), 'yyyy-MM-dd', locale),
   );
@@ -2502,12 +2511,17 @@ export function PlanificadorPage() {
                 <TodayPlanList
                   meals={todayMeals}
                   busy={busy}
-                  onAddMeal={() => {
-                    /* PR-B: opens the add-recipe drawer. Until then the cell picker in the grid owns adding. */
-                  }}
+                  onAddMeal={(mealIndex, mealTime) =>
+                    setMobilePick({ mealIndex, mealTime, entry: null })
+                  }
                   onCopyMeal={(mealIndex) => setCopySource({ date: today, mealIndex })}
-                  onOpenEntry={() => {
-                    /* PR-B: opens the recipe peek. */
+                  onOpenEntry={(entry) => {
+                    const row = todayMeals.find((m) => m.entries.some((e) => e.id === entry.id));
+                    setMobilePick({
+                      mealIndex: row?.mealIndex ?? 0,
+                      mealTime: row?.mealTime ?? null,
+                      entry,
+                    });
                   }}
                 />
 
@@ -2565,6 +2579,45 @@ export function PlanificadorPage() {
           busy={saveAs.isPending}
         />
         <ShoppingListDialog open={shoppingOpen} onOpenChange={setShoppingOpen} weekStart={weekStart} />
+        <RecipePickerDialog
+          open={!!mobilePick}
+          onOpenChange={(o) => !o && setMobilePick(null)}
+          initialRecipe={
+            mobilePick?.entry
+              ? {
+                  id: mobilePick.entry.recipe_id,
+                  name: mobilePick.entry.recipe_name,
+                  servings: mobilePick.entry.servings,
+                }
+              : null
+          }
+          busy={busy}
+          onSave={async (recipeId, recipeName, servings) => {
+            if (!mobilePick) return;
+            if (mobilePick.entry) {
+              await updateSlot.mutateAsync({
+                id: mobilePick.entry.id,
+                patch: { recipe_id: recipeId, servings },
+              });
+            } else {
+              await handleAdd(
+                today,
+                mobilePick.mealIndex,
+                mobilePick.mealTime,
+                { id: recipeId, name: recipeName },
+                servings,
+              );
+            }
+          }}
+          onDelete={
+            mobilePick?.entry
+              ? async () => {
+                  await deleteSlot.mutateAsync(mobilePick.entry!.id);
+                  setMobilePick(null);
+                }
+              : undefined
+          }
+        />
         <CopyMealDialog
           open={!!copySource}
           onOpenChange={(o) => !o && setCopySource(null)}
@@ -2588,11 +2641,15 @@ export function PlanificadorPage() {
 }
 ```
 
-**Note on the two empty callbacks:** `onAddMeal` / `onOpenEntry` are inert in
-PR-A — the mobile add and peek surfaces are PR-B's deliverables. Do **not**
-invent an interim mobile add dialog; the grid's cell picker still covers adding
-on desktop, and PR-B lands immediately after. If a reviewer objects to the dead
-callbacks, that is the answer.
+**Imports to add** in `PlanificadorPage.tsx`: `RecipePickerDialog` from
+`@/features/planning/components/RecipePickerDialog` and the `PlannerCellEntry`
+type from `@/features/planning/components/PlannerMealCell`.
+
+**Why the page mounts `RecipePickerDialog`:** PR-B replaces the planner's add
+and peek surfaces with the drawer and the docked recipe panel, but `develop`
+must stay functional in between. Without this dialog the mobile list would have
+no way to add or edit a meal at all (the grid's cell picker is desktop-only).
+Reuse the existing dialog verbatim — do not build an interim mobile drawer.
 
 - [ ] **Step 5: Run the page test**
 
