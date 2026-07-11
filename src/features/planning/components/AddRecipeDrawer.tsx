@@ -55,6 +55,12 @@ interface Props {
   phaseType?: PhaseType;
   busy?: boolean;
   /**
+   * Overrides the date-derived "día · comida · hora" chip — for a slot with no
+   * calendar date, e.g. a template weekday. Absent → the chip is built from
+   * `target.date` exactly as today.
+   */
+  destinationLabel?: string;
+  /**
    * The caller owns the mutation AND the close — it is the only one that knows
    * whether the write actually landed (a failed mutation must keep the drawer
    * open with the user's pick intact).
@@ -111,6 +117,7 @@ export function AddRecipeDrawer({
   targets,
   phaseType,
   busy,
+  destinationLabel: destinationLabelOverride,
   onAdd,
   onUpdate,
   onRemove,
@@ -158,14 +165,15 @@ export function AddRecipeDrawer({
   }, [recipes.data, query, mealTypeFilter]);
 
   const { key: mealKey, params: mealParams } = mealLabelKey(target.mealIndex);
-  const destination = {
+  const dateDerivedDestination = {
     day: formatDate(target.date, 'EEE d', locale),
     meal: t(mealKey, mealParams ?? {}),
     time: target.mealTime?.slice(0, 5) ?? '',
   };
-  const destinationLabel = target.mealTime
-    ? t('addRecipe.destination', destination)
-    : t('addRecipe.destinationNoTime', destination);
+  const dateDerivedLabel = target.mealTime
+    ? t('addRecipe.destination', dateDerivedDestination)
+    : t('addRecipe.destinationNoTime', dateDerivedDestination);
+  const destinationLabel = destinationLabelOverride ?? dateDerivedLabel;
 
   const title = editing ? t('addRecipe.editTitle') : t('addRecipe.title');
 

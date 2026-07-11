@@ -169,4 +169,25 @@ describe('AddRecipeDrawer', () => {
     );
     expect(screen.getByRole('button', { name: /quitar|eliminar/i })).toBeInTheDocument();
   });
+
+  it('replaces the date-derived destino chip with an explicit destinationLabel when given one', () => {
+    render(
+      <AddRecipeDrawer open onOpenChange={noop} target={targetDay} targets={macroTargets}
+        destinationLabel="Lunes · Comida" onAdd={noop} onUpdate={noop} onRemove={noop} />,
+    );
+    const destination = screen.getByTestId('destination');
+    expect(destination).toHaveTextContent('Lunes · Comida');
+    // The date-derived chip (weekday-of-date + time) must not leak through.
+    expect(destination).not.toHaveTextContent('14:00');
+  });
+
+  it('falls back to the date-derived destino chip when no destinationLabel is given', () => {
+    render(
+      <AddRecipeDrawer open onOpenChange={noop} target={targetDay} targets={macroTargets}
+        onAdd={noop} onUpdate={noop} onRemove={noop} />,
+    );
+    const destination = screen.getByTestId('destination');
+    expect(destination).toHaveTextContent(/Comida/);
+    expect(destination).toHaveTextContent('14:00');
+  });
 });
