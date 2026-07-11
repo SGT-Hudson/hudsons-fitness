@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Json, Tables } from '@/types/database';
+import type { GridSlot } from './filledGrid';
 
 export type Template = Tables<'meal_plan_templates'>;
 export type TemplateSlot = Tables<'meal_plan_template_slots'>;
@@ -16,6 +17,8 @@ export interface TemplateListItem {
   updated_at: string;
   slot_count: number;
   phase_type: TemplatePhase | null;
+  /** Slot positions only — feeds the library card's week dot-grid. */
+  slots: GridSlot[];
 }
 
 export interface TemplateSlotWithRecipe {
@@ -42,20 +45,24 @@ export async function listTemplates(userId: string): Promise<TemplateListItem[]>
   const { data, error } = await supabase
     .from('meal_plan_templates')
     .select(
-      'id, name, is_auto_generated, default_meal_times, updated_at, phase_type, meal_plan_template_slots(id)',
+      'id, name, is_auto_generated, default_meal_times, updated_at, phase_type, meal_plan_template_slots(id, day_of_week, meal_index)',
     )
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((t) => ({
-    id: t.id,
-    name: t.name,
-    is_auto_generated: t.is_auto_generated,
-    default_meal_times: (t.default_meal_times as string[]) ?? [],
-    updated_at: t.updated_at,
-    slot_count: t.meal_plan_template_slots?.length ?? 0,
-    phase_type: (t.phase_type as TemplatePhase | null) ?? null,
-  }));
+  return (data ?? []).map((t) => {
+    const slots = t.meal_plan_template_slots ?? [];
+    return {
+      id: t.id,
+      name: t.name,
+      is_auto_generated: t.is_auto_generated,
+      default_meal_times: (t.default_meal_times as string[]) ?? [],
+      updated_at: t.updated_at,
+      slot_count: slots.length,
+      phase_type: (t.phase_type as TemplatePhase | null) ?? null,
+      slots: slots.map((s) => ({ day_of_week: s.day_of_week, meal_index: s.meal_index })),
+    };
+  });
 }
 
 interface RawTemplate {
