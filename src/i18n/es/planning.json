@@ -4,15 +4,6 @@
     "noneHint": "Sirve para cualquier fase",
     "pick": "Fase de la plantilla"
   },
-  "days": {
-    "mon": "Lun",
-    "tue": "Mar",
-    "wed": "Mié",
-    "thu": "Jue",
-    "fri": "Vie",
-    "sat": "Sáb",
-    "sun": "Dom"
-  },
   "slot": {
     "copy": "Copiar comida a otros días"
   },
@@ -145,7 +136,6 @@
     "fatLow": "⚠ Falta grasa",
     "fatLowLabel": "Por qué falta grasa",
     "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (0,6 g por kg de peso corporal). La grasa es esencial para las hormonas y para absorber vitaminas.",
-    "totalRow": "Total",
     "emptyDay": "Día sin comidas todavía",
     "letter": { "protein": "P", "carbs": "C", "fat": "G", "fiber": "F" }
   },

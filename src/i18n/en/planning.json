@@ -4,15 +4,6 @@
     "noneHint": "Works for any phase",
     "pick": "Template phase"
   },
-  "days": {
-    "mon": "Mon",
-    "tue": "Tue",
-    "wed": "Wed",
-    "thu": "Thu",
-    "fri": "Fri",
-    "sat": "Sat",
-    "sun": "Sun"
-  },
   "slot": {
     "copy": "Copy meal to other days"
   },
@@ -145,7 +136,6 @@
     "fatLow": "⚠ Low fat",
     "fatLowLabel": "Why low fat",
     "fatLowHelp": "You are below the healthy fat minimum (0.6 g per kg of bodyweight). Fat is essential for hormones and for absorbing vitamins.",
-    "totalRow": "Total",
     "emptyDay": "No meals yet",
     "letter": { "protein": "P", "carbs": "C", "fat": "F", "fiber": "Fb" }
   },
