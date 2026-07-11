@@ -25,6 +25,7 @@ function setup(over: Partial<Parameters<typeof CopyMealPanel>[0]> = {}) {
     selected: new Set<string>(),
     onToggle: noop,
     onConfirm: noop,
+    allowAppend: true,
     ...over,
   };
   return { props, ...render(<CopyMealPanel {...props} />) };
@@ -70,5 +71,27 @@ describe('CopyMealPanel', () => {
     setup({ onConfirm, selected: new Set(['2026-05-27']), mode: 'append' });
     await userEvent.click(screen.getByRole('button', { name: /^copiar/i }));
     expect(onConfirm).toHaveBeenCalledWith(['2026-05-27'], 'append');
+  });
+
+  it('without allowAppend, hides the mode toggle and always confirms replace even if the mode prop says append', async () => {
+    const onConfirm = vi.fn();
+    setup({
+      allowAppend: undefined,
+      mode: 'append',
+      onConfirm,
+      selected: new Set(['2026-05-26']),
+    });
+    expect(screen.queryByRole('button', { name: /añadir junto/i })).toBeNull();
+    expect(screen.queryByRole('group')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: /^copiar/i }));
+    expect(onConfirm).toHaveBeenCalledWith(['2026-05-26'], 'replace');
+  });
+
+  it('with allowAppend, shows the mode toggle and lets it switch to append', async () => {
+    const onModeChange = vi.fn();
+    setup({ allowAppend: true, onModeChange });
+    expect(screen.getByRole('button', { name: /añadir junto/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /añadir junto/i }));
+    expect(onModeChange).toHaveBeenCalledWith('append');
   });
 });

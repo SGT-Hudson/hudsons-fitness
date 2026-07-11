@@ -494,6 +494,7 @@ export function PlanificadorPage() {
           entryNames={copyEntries.map((s) => s.recipe_name)}
           targets={copyTargets}
           busy={copyMeal.isPending}
+          allowAppend
           onConfirm={async (keys, /* mode wired in the next task */ _mode) => {
             if (!copySource || !week.data) return;
             await copyMeal.mutateAsync({

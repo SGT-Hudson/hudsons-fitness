@@ -33,6 +33,7 @@ function renderDialog(over: Partial<Parameters<typeof CopyMealDialog>[0]> = {}) 
     entryNames: ['Tortilla francesa'],
     targets,
     onConfirm: vi.fn(),
+    allowAppend: true,
     ...over,
   };
   return { props, ...render(<CopyMealDialog {...props} />) };
@@ -71,5 +72,22 @@ describe('CopyMealDialog', () => {
 
     expect(onConfirm).toHaveBeenCalledWith(['tue'], 'append');
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('without allowAppend, hides the mode toggle and confirms with replace', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    renderDialog({ onConfirm, allowAppend: undefined });
+
+    expect(screen.queryByRole('button', { name: /añadir junto/i })).toBeNull();
+    await user.click(screen.getByRole('checkbox', { name: /Martes/ }));
+    await user.click(screen.getByRole('button', { name: /^copiar/i }));
+
+    expect(onConfirm).toHaveBeenCalledWith(['tue'], 'replace');
+  });
+
+  it('with allowAppend, shows the mode toggle', () => {
+    renderDialog({ allowAppend: true });
+    expect(screen.getByRole('button', { name: /añadir junto/i })).toBeInTheDocument();
   });
 });

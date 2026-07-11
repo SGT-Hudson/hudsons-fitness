@@ -24,6 +24,14 @@ interface Props {
   onToggle: (key: string) => void;
   busy?: boolean;
   onConfirm: (selectedKeys: string[], mode: CopyMode) => void | Promise<void>;
+  /**
+   * Whether the replace/append mode toggle is offered at all. Defaults to
+   * `false`: a caller with no append data path (e.g. the template editor)
+   * must not show a control that silently replaces when the user picks
+   * "append" — a lying toggle is worse than no toggle. When falsy, the mode
+   * is forced to `'replace'` regardless of the `mode` prop.
+   */
+  allowAppend?: boolean;
 }
 
 const MODES: { mode: CopyMode; key: string }[] = [
@@ -50,15 +58,17 @@ export function CopyMealPanel({
   onToggle,
   busy,
   onConfirm,
+  allowAppend = false,
 }: Props) {
   const { t } = useTranslation('planning');
   const { t: tCommon } = useTranslation('common');
+  const effectiveMode: CopyMode = allowAppend ? mode : 'replace';
 
   function confirm() {
     // Preserve target order in the emitted keys.
     void onConfirm(
       targets.filter((tg) => selected.has(tg.key)).map((tg) => tg.key),
-      mode,
+      effectiveMode,
     );
   }
 
@@ -81,33 +91,35 @@ export function CopyMealPanel({
         )}
       </div>
 
-      <div
-        role="group"
-        aria-label={t('copyMeal.title')}
-        className="flex gap-1 rounded-lg border border-border bg-muted p-1"
-      >
-        {MODES.map(({ mode: m, key }) => (
-          <button
-            key={m}
-            type="button"
-            aria-pressed={mode === m}
-            onClick={() => onModeChange(m)}
-            className={cn(
-              'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-              mode === m
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {t(key)}
-          </button>
-        ))}
-      </div>
+      {allowAppend && (
+        <div
+          role="group"
+          aria-label={t('copyMeal.title')}
+          className="flex gap-1 rounded-lg border border-border bg-muted p-1"
+        >
+          {MODES.map(({ mode: m, key }) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={effectiveMode === m}
+              onClick={() => onModeChange(m)}
+              className={cn(
+                'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                effectiveMode === m
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {t(key)}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
         {targets.map((tg) => {
           const on = selected.has(tg.key);
-          const showBadge = mode === 'replace' && tg.willOverwrite;
+          const showBadge = effectiveMode === 'replace' && tg.willOverwrite;
           return (
             <button
               key={tg.key}
@@ -144,7 +156,7 @@ export function CopyMealPanel({
       <p className="tnum text-xs text-muted-foreground">
         {selected.size === 0
           ? t('copyMeal.pickDays')
-          : t(mode === 'replace' ? 'copyMeal.summaryReplace' : 'copyMeal.summaryAppend', {
+          : t(effectiveMode === 'replace' ? 'copyMeal.summaryReplace' : 'copyMeal.summaryAppend', {
               count: selected.size,
             })}
       </p>

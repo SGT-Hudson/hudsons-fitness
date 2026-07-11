@@ -13,6 +13,8 @@ interface Props {
   targets: CopyTarget[];
   busy?: boolean;
   onConfirm: (selectedKeys: string[], mode: CopyMode) => void | Promise<void>;
+  /** Forwarded to `CopyMealPanel` — see its doc comment. Defaults to `false`. */
+  allowAppend?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ export function CopyMealDialog({
   targets,
   busy,
   onConfirm,
+  allowAppend,
 }: Props) {
   const { t } = useTranslation('planning');
   const [mode, setMode] = useState<CopyMode>('replace');
@@ -75,6 +78,7 @@ export function CopyMealDialog({
           onToggle={toggle}
           busy={busy}
           onConfirm={confirm}
+          allowAppend={allowAppend}
         />
       </div>
     </ResponsiveDialog>
