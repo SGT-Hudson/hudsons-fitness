@@ -42,15 +42,19 @@ function capitalize(s: string): string {
  * reach another day of the week from a phone.
  *
  * Today keeps its accent tint; the selected day takes a neutral ring, so a day
- * that is both still reads as selected. Column widths and gap match
- * `WeeklyKcalChart` so each day sits over its bar.
+ * that is both still reads as selected. Columns, gap AND horizontal inset match
+ * `WeeklyKcalChart`'s bar grid so each day sits centred over its bar: the chart
+ * is nested inside `WeekSummaryCard`, so its bars start one card border (1px)
+ * plus one card padding (`p-3.5` = 14px) in from the content edge, while the
+ * strip is a full-width page-level sibling — without the same 15px inset the
+ * two 7-column grids drift apart by up to a third of a column across the week.
  */
 export function WeekStrip({ days, selectedDate, onSelect, target, phase, className }: Props) {
   const { i18n } = useTranslation('planning');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
 
   return (
-    <div className={cn('grid grid-cols-7 gap-1.5', className)}>
+    <div className={cn('grid grid-cols-7 gap-1.5 px-[15px]', className)}>
       {days.map((d) => {
         // A day with nothing planned has no signal to report: `classify` would
         // paint an empty cut day green (its band only guards the upper side).

@@ -25,6 +25,12 @@ interface Props {
   phase?: PhaseType;
   /** The planner embeds this chart inside its own card, which supplies the heading. */
   showHeader?: boolean;
+  /**
+   * The planner stacks its own week strip (same columns, same letters) directly
+   * above the chart, which makes this row a duplicate there. Diario, where the
+   * chart stands alone, keeps it.
+   */
+  showWeekdays?: boolean;
   className?: string;
 }
 
@@ -57,6 +63,7 @@ export function WeeklyKcalChart({
   target,
   phase = 'cut',
   showHeader = true,
+  showWeekdays = true,
   className,
 }: Props) {
   const { t } = useTranslation('diario');
@@ -112,19 +119,21 @@ export function WeeklyKcalChart({
         </div>
       </div>
 
-      <div className="mt-1 grid grid-cols-7 gap-1.5">
-        {days.map((d) => (
-          <span
-            key={d.date}
-            className={cn(
-              'text-center text-[9.5px]',
-              d.isToday ? 'font-semibold text-foreground' : 'text-text-dim',
-            )}
-          >
-            {t(`weekly.weekday.${WEEKDAY_KEYS[weekdayIndex(d.date)]}`)}
-          </span>
-        ))}
-      </div>
+      {showWeekdays && (
+        <div className="mt-1 grid grid-cols-7 gap-1.5">
+          {days.map((d) => (
+            <span
+              key={d.date}
+              className={cn(
+                'text-center text-[9.5px]',
+                d.isToday ? 'font-semibold text-foreground' : 'text-text-dim',
+              )}
+            >
+              {t(`weekly.weekday.${WEEKDAY_KEYS[weekdayIndex(d.date)]}`)}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
