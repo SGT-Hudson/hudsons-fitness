@@ -79,3 +79,32 @@ describe('TemplateCard', () => {
     expect(screen.queryByText(/auto/i)).toBeNull();
   });
 });
+
+// The save-as-template preview draws a card that does not exist yet: its link,
+// edit and delete affordances have nowhere to go. Hiding them from the mouse
+// (pointer-events-none) still leaves them in the tab order — Enter on the name
+// would navigate away mid-dialog — so the variant must not render them at all.
+describe('TemplateCard, non-interactive', () => {
+  function renderPreview(over: Partial<typeof base> = {}) {
+    return render(
+      <MemoryRouter>
+        <TemplateCard template={{ ...base, ...over }} filled={filled} interactive={false} />
+      </MemoryRouter>,
+    );
+  }
+
+  it('renders nothing focusable — no links, no buttons', () => {
+    const { container } = renderPreview();
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(container.querySelectorAll('a, button, [tabindex]')).toHaveLength(0);
+  });
+
+  it('still shows the name, the phase chip, the dot grid and the counts', () => {
+    const { container } = renderPreview();
+    expect(screen.getByText('Semana base')).toBeInTheDocument();
+    expect(screen.getByText('Corte')).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-dot]').length).toBe(14);
+    expect(screen.getByText(/2 comidas\/día/)).toBeInTheDocument();
+  });
+});

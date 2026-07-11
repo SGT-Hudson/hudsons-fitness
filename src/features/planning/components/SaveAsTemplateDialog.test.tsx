@@ -136,6 +136,18 @@ describe('SaveAsTemplateDialog', () => {
     expect(within(preview).getByText(/1 comida\/día/)).toBeInTheDocument();
   });
 
+  // The preview is a picture, not a card you can act on: an aria-hidden +
+  // pointer-events-none wrapper still left its Link/edit/delete in the tab
+  // order (Enter navigated away from the planner), and focusable content inside
+  // an aria-hidden subtree is an axe violation. Nothing focusable is rendered.
+  it('renders the preview card with no reachable controls', () => {
+    renderDialog();
+    const preview = screen.getByTestId('save-template-preview');
+    expect(preview.querySelectorAll('a, button, [tabindex]')).toHaveLength(0);
+    expect(preview.closest('[aria-hidden="true"]')).toBeNull();
+    expect(within(preview).queryByRole('link')).toBeNull();
+  });
+
   // vaul draws no close affordance of its own, so the mobile branch would be
   // dismissible only by dragging it without an explicit control.
   it('offers a Cancel control on mobile that closes the dialog', async () => {

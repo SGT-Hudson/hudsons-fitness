@@ -22,13 +22,28 @@ export type TemplateCardItem = Pick<
   'id' | 'name' | 'phase_type' | 'default_meal_times' | 'slot_count' | 'updated_at'
 >;
 
-interface Props {
-  template: TemplateCardItem;
+/** The same card for a template that does not exist yet — hence no `id`. */
+export type TemplateCardPreviewItem = Omit<TemplateCardItem, 'id'>;
+
+interface BaseProps {
   /** `filled[dayOfWeek][mealIndex]` — build it with `toFilledGrid`. */
   filled: boolean[][];
-  onDelete: () => void;
   className?: string;
 }
+
+interface InteractiveProps extends BaseProps {
+  template: TemplateCardItem;
+  interactive?: true;
+  onDelete: () => void;
+}
+
+interface PreviewProps extends BaseProps {
+  template: TemplateCardPreviewItem;
+  interactive: false;
+  onDelete?: never;
+}
+
+type Props = InteractiveProps | PreviewProps;
 
 /**
  * Library card (canvas `TemplateCardPhase`): a phase-coloured top strip, the
@@ -37,8 +52,15 @@ interface Props {
  *
  * `phase_type` is nullable and null is first-class: an untagged template renders
  * with no chip and no tint — never with the user's active phase.
+ *
+ * `interactive={false}` draws the same card as a picture (the save-as-template
+ * preview): the name is plain text and the edit/delete row is gone. The card
+ * has no template to link to or delete yet, and a dead control that is still
+ * keyboard-reachable is worse than no control — `pointer-events-none` stops the
+ * mouse but not Tab + Enter.
  */
-export function TemplateCard({ template, filled, onDelete, className }: Props) {
+export function TemplateCard(props: Props) {
+  const { template, filled, className } = props;
   const { t, i18n } = useTranslation('planning');
   const { t: tCommon } = useTranslation('common');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
@@ -47,7 +69,7 @@ export function TemplateCard({ template, filled, onDelete, className }: Props) {
 
   return (
     <Card
-      data-template-card={template.id}
+      data-template-card={props.interactive === false ? undefined : props.template.id}
       className={cn('flex h-full flex-col overflow-hidden transition-shadow hover:shadow-md', className)}
     >
       <div
@@ -56,12 +78,18 @@ export function TemplateCard({ template, filled, onDelete, className }: Props) {
       />
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-2">
-          <Link
-            to={`/templates/${template.id}`}
-            className="min-w-0 truncate text-sm font-semibold leading-tight hover:underline"
-          >
-            {template.name}
-          </Link>
+          {props.interactive === false ? (
+            <span className="min-w-0 truncate text-sm font-semibold leading-tight">
+              {template.name}
+            </span>
+          ) : (
+            <Link
+              to={`/templates/${props.template.id}`}
+              className="min-w-0 truncate text-sm font-semibold leading-tight hover:underline"
+            >
+              {template.name}
+            </Link>
+          )}
           {phase && <PhaseChip phase={phase} />}
         </div>
 
@@ -79,21 +107,23 @@ export function TemplateCard({ template, filled, onDelete, className }: Props) {
               })}
             </div>
           </div>
-          <div className="flex shrink-0 gap-0.5">
-            <Button asChild variant="ghost" size="icon" aria-label={tCommon('edit')}>
-              <Link to={`/templates/${template.id}`}>
-                <Pencil className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={tCommon('delete')}
-              onClick={onDelete}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          {props.interactive !== false && (
+            <div className="flex shrink-0 gap-0.5">
+              <Button asChild variant="ghost" size="icon" aria-label={tCommon('edit')}>
+                <Link to={`/templates/${props.template.id}`}>
+                  <Pencil className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={tCommon('delete')}
+                onClick={props.onDelete}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </Card>

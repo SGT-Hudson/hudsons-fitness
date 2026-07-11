@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhasePicker } from '@/components/ui/PhasePicker';
-import { TemplateCard, type TemplateCardItem } from '@/features/templates/components/TemplateCard';
+import {
+  TemplateCard,
+  type TemplateCardPreviewItem,
+} from '@/features/templates/components/TemplateCard';
 import { toFilledGrid } from '@/features/templates/filledGrid';
 import type { TemplatePhase } from '@/features/templates/api';
 import {
@@ -91,11 +94,9 @@ export function SaveAsTemplateDialog({
   // default_meal_times — the preview promises exactly the card it will create.
   const mealTimes = previewMealTimes(slots);
   const filled = toFilledGrid(slots, mealTimes.length);
-  // Not a real template yet — `id` is only ever used for its own detail link,
-  // which is meaningless on a preview that isn't saved (hence `pointer-events-none`
-  // below) and `onDelete` is unreachable for the same reason.
-  const previewTemplate: TemplateCardItem = {
-    id: '',
+  // Not a real template yet: no id, and the card is drawn non-interactively —
+  // it has nothing to link to, edit or delete.
+  const previewTemplate: TemplateCardPreviewItem = {
     name: name?.trim() || t('save.name'),
     phase_type: phase,
     default_meal_times: mealTimes,
@@ -133,11 +134,11 @@ export function SaveAsTemplateDialog({
 
           <div className="space-y-2">
             <Label>{t('save.previewLabel')}</Label>
-            {/* A preview of the card being created, not an interactive one —
-                it isn't saved yet, so its Link/edit/delete affordances have
-                nowhere real to go. */}
-            <div data-testid="save-template-preview" aria-hidden="true" className="pointer-events-none">
-              <TemplateCard template={previewTemplate} filled={filled} onDelete={() => {}} />
+            {/* A picture of the card being created: `interactive={false}` keeps
+                its dead Link/edit/delete out of the DOM entirely, so there is
+                nothing to hide from the mouse, the tab order or the a11y tree. */}
+            <div data-testid="save-template-preview">
+              <TemplateCard template={previewTemplate} filled={filled} interactive={false} />
             </div>
           </div>
 
