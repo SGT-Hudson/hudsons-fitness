@@ -1,11 +1,11 @@
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DayHeaderCard } from './DayHeaderCard';
 import { PlannerMealCell, type PlannerCellEntry } from './PlannerMealCell';
 import { mealLabelKey } from '@/features/planning/weekSummary';
-import { templateWeekDates, templateDayTotals } from '@/features/templates/templateWeek';
+import { templateWeekdayLabels, templateDayTotals } from '@/features/templates/templateWeek';
 import { scale, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
-import { formatDate, type Locale } from '@/lib/dates';
+import type { Locale } from '@/lib/dates';
 import type { PhaseType } from '@/core/nutritionTone';
 
 export interface TemplateSlotInput {
@@ -25,19 +25,11 @@ interface Props {
   onAddRequest: (dayOfWeek: number, mealIndex: number) => void;
   /** A recipe bullet — the page opens its one picker on that entry. */
   onOpenEntry: (entry: PlannerCellEntry, dayOfWeek: number, mealIndex: number) => void;
-  // Kept on the public surface for the page's slot-removal flow — this grid
-  // has no inline delete affordance of its own (PlannerMealCell doesn't either);
-  // removal is driven by whatever the page opens `onOpenEntry` into.
-  onRemove: (rowId: string) => void;
   recipeMacros?: Map<string, Macros>; // per-serving macros by recipe id
   targets?: Macros;
   phaseType?: PhaseType;
   weightKg?: number;
   onCopyMeal?: (dayOfWeek: number, mealIndex: number) => void;
-}
-
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function toEntry(s: TemplateSlotInput, recipeMacros: Map<string, Macros>): PlannerCellEntry {
@@ -53,9 +45,9 @@ function toEntry(s: TemplateSlotInput, recipeMacros: Map<string, Macros>): Plann
 /**
  * The web template grid (R-33 wave 4): the same `92px + 7` matrix as the
  * planner's `WeekGrid`, projected onto `day_of_week` (0-6, 0 = Monday) instead
- * of real dates — a template has no dates of its own. The reference week's
- * dates (`templateWeekDates`) are presentational only, purely to drive
- * `DayHeaderCard`'s full localized weekday label; they never reach the DB.
+ * of real dates — a template has no dates of its own. `templateWeekdayLabels`
+ * derives the 7 weekday names presentationally, purely to drive
+ * `DayHeaderCard`'s label; no date ever reaches the DB.
  * No "today" outline and no past-day dimming — a template has no today.
  */
 export function TemplateGrid({
@@ -73,7 +65,7 @@ export function TemplateGrid({
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
 
   const macrosMap = recipeMacros ?? new Map<string, Macros>();
-  const weekDates = templateWeekDates(new Date());
+  const dayLabels = useMemo(() => templateWeekdayLabels(locale), [locale]);
   const dayTotals = templateDayTotals(slots, macrosMap);
 
   function entriesFor(dayOfWeek: number, mealIndex: number): PlannerCellEntry[] {
@@ -96,10 +88,10 @@ export function TemplateGrid({
       >
         {/* Day headers */}
         <div />
-        {weekDates.map((dateIso, dayOfWeek) => (
+        {dayLabels.map((label, dayOfWeek) => (
           <DayHeaderCard
             key={`h-${dayOfWeek}`}
-            label={capitalize(formatDate(dateIso, 'EEEE', locale))}
+            label={label}
             isToday={false}
             totals={dayTotals.get(dayOfWeek) ?? ZERO_MACROS}
             targets={targets}
@@ -119,7 +111,7 @@ export function TemplateGrid({
                 {time.slice(0, 5)}
               </span>
             </div>
-            {weekDates.map((_, dayOfWeek) => (
+            {dayLabels.map((_, dayOfWeek) => (
               <PlannerMealCell
                 key={`${dayOfWeek}-${mealIndex}`}
                 entries={entriesFor(dayOfWeek, mealIndex)}

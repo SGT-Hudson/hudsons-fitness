@@ -30,7 +30,6 @@ describe('TemplateGrid — matrix', () => {
         slots={[]}
         onAddRequest={noop}
         onOpenEntry={noop}
-        onRemove={noop}
       />,
     );
     const headers = container.querySelectorAll('[data-day-header]');
@@ -46,7 +45,6 @@ describe('TemplateGrid — matrix', () => {
         slots={[]}
         onAddRequest={noop}
         onOpenEntry={noop}
-        onRemove={noop}
       />,
     );
     expect(screen.getByText('Desayuno')).toBeInTheDocument();
@@ -62,7 +60,6 @@ describe('TemplateGrid — matrix', () => {
         slots={[slot({ day_of_week: 2, meal_index: 0, recipe_name: 'Tortilla' })]}
         onAddRequest={noop}
         onOpenEntry={noop}
-        onRemove={noop}
       />,
     );
     expect(screen.getByText('Tortilla')).toBeInTheDocument();
@@ -81,7 +78,6 @@ describe('TemplateGrid — matrix', () => {
         phaseType="cut"
         onAddRequest={noop}
         onOpenEntry={noop}
-        onRemove={noop}
       />,
     );
     const headers = container.querySelectorAll('[data-day-header]');
@@ -96,7 +92,6 @@ describe('TemplateGrid — matrix', () => {
         targets={{ kcal: 2000, proteinG: 150, carbsG: 200, fatG: 65, fiberG: 30 }}
         onAddRequest={noop}
         onOpenEntry={noop}
-        onRemove={noop}
       />,
     );
     expect(container.querySelector('[data-day-header].border-text-dim')).toBeNull();
@@ -115,7 +110,6 @@ describe('TemplateGrid — cell intents', () => {
         slots={[]}
         onAddRequest={onAddRequest}
         onOpenEntry={noop}
-        onRemove={noop}
       />,
     );
     // First cell of the matrix: Monday, breakfast (08:00).
@@ -132,7 +126,6 @@ describe('TemplateGrid — cell intents', () => {
         slots={[slot({ day_of_week: 3, meal_index: 1, recipe_name: 'Tortilla' })]}
         onAddRequest={noop}
         onOpenEntry={onOpenEntry}
-        onRemove={noop}
       />,
     );
     await userEvent.click(screen.getByRole('button', { name: /tortilla/i }));
@@ -151,7 +144,6 @@ describe('TemplateGrid — cell intents', () => {
         slots={[slot({ day_of_week: 1, meal_index: 0, recipe_name: 'Tortilla' })]}
         onAddRequest={noop}
         onOpenEntry={noop}
-        onRemove={noop}
         onCopyMeal={onCopyMeal}
       />,
     );

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { templateWeekDates, dayOfWeekFor, templateDayTotals } from './templateWeek';
+import {
+  templateWeekDates,
+  templateWeekdayLabels,
+  dayOfWeekFor,
+  templateDayTotals,
+} from './templateWeek';
 import { ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 
 describe('templateWeekDates', () => {
@@ -21,6 +26,32 @@ describe('templateWeekDates', () => {
     const fromMonday = templateWeekDates(new Date('2026-07-06T00:00:00'));
     const fromSunday = templateWeekDates(new Date('2026-07-12T23:00:00'));
     expect(fromMonday).toEqual(fromSunday);
+  });
+});
+
+describe('templateWeekdayLabels', () => {
+  it('returns Monday…Sunday, capitalized, independent of the real reference week', () => {
+    expect(templateWeekdayLabels('es')).toEqual([
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+      'Domingo',
+    ]);
+  });
+
+  it('localizes into English', () => {
+    expect(templateWeekdayLabels('en')).toEqual([
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ]);
   });
 });
 

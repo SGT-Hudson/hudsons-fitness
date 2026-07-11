@@ -399,7 +399,6 @@ export function PlantillaEditorPage() {
               slots={slots}
               onAddRequest={openAdd}
               onOpenEntry={openEdit}
-              onRemove={removeSlot}
               recipeMacros={recipeMacros.data}
               targets={targets}
               phaseType={phaseType}

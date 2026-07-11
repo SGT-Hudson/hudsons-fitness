@@ -62,8 +62,15 @@ export function TemplateDayList({
       onAddMeal={(mealIndex) => onAddRequest(mealIndex)}
       onCopyMeal={onCopyMeal}
       onOpenEntry={(entry) => {
+        // `entry` only ever reaches here via a row `TodayPlanList` rendered
+        // from `meals` itself, so its row always exists — defaulting to
+        // breakfast on a lookup miss would silently edit the wrong meal
+        // instead of surfacing the broken invariant.
         const row = meals.find((m) => m.entries.some((e) => e.id === entry.id));
-        onOpenEntry(entry, row?.mealIndex ?? 0);
+        if (!row) {
+          throw new Error(`TemplateDayList: no meal row found for entry "${entry.id}"`);
+        }
+        onOpenEntry(entry, row.mealIndex);
       }}
     />
   );

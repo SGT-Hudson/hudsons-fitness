@@ -5,13 +5,30 @@
 // dates never reach the DB and no slot ever stores one (R-33 wave 4).
 
 import { addDays } from 'date-fns';
-import { isoDate, mondayOf } from '@/lib/dates';
+import { formatDate, isoDate, mondayOf, type Locale } from '@/lib/dates';
 import { add, scale, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 
 /** The 7 ISO dates of `reference`'s Monday-based week, index = day_of_week. */
 export function templateWeekDates(reference: Date): string[] {
   const monday = mondayOf(reference);
   return Array.from({ length: 7 }, (_, i) => isoDate(addDays(monday, i)));
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Any Monday produces the same 7 weekday names — a fixed one avoids tying a
+// label-only lookup to wall-clock "today" (2024-01-01 is a Monday).
+const LABEL_MONDAY = new Date(2024, 0, 1);
+
+/**
+ * The 7 weekday names (Monday…Sunday) in `locale`, index = day_of_week.
+ * Presentation-only, independent of any real reference week — the single
+ * source of a template's day headers (`TemplateGrid`, the editor page).
+ */
+export function templateWeekdayLabels(locale: Locale): string[] {
+  return templateWeekDates(LABEL_MONDAY).map((d) => capitalize(formatDate(d, 'EEEE', locale)));
 }
 
 /** `day_of_week` for an ISO date within the week `templateWeekDates` produced. */
