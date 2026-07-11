@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Copy, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { RecipePickerDialog } from './RecipePickerDialog';
 import { add, roundMacro, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 
 export interface PlannerCellEntry {
@@ -16,14 +14,10 @@ export interface PlannerCellEntry {
 
 interface Props {
   entries: PlannerCellEntry[];
-  onAdd: (recipeId: string, recipeName: string, servings: number) => void | Promise<void>;
-  onUpdate: (
-    entryId: string,
-    recipeId: string,
-    recipeName: string,
-    servings: number,
-  ) => void | Promise<void>;
-  onRemove: (entryId: string) => void | Promise<void>;
+  /** "añadir comida" / "añadir" — the page opens its one add drawer on this cell. */
+  onAddRequest: () => void;
+  /** A recipe bullet — the page opens its one recipe peek on this entry. */
+  onOpenEntry: (entry: PlannerCellEntry) => void;
   onCopy?: () => void;
   busy?: boolean;
   className?: string;
@@ -31,33 +25,22 @@ interface Props {
 
 /**
  * One (day × meal) cell of the web grid: recipe bullets, a copy affordance, an
- * inline add link and a kcal·P·C·G footer; dashed + sunken when empty. Editing
- * and deleting still go through `RecipePickerDialog` — PR-B swaps that for the
- * add drawer and the recipe peek.
+ * inline add link and a kcal·P·C·G footer; dashed + sunken when empty. Purely
+ * presentational: adding and opening an entry are raised to the page, which owns
+ * the single add drawer and the single recipe peek (28 cells used to mount 28
+ * picker dialogs of their own).
  */
 export function PlannerMealCell({
   entries,
-  onAdd,
-  onUpdate,
-  onRemove,
+  onAddRequest,
+  onOpenEntry,
   onCopy,
   busy,
   className,
 }: Props) {
   const { t } = useTranslation('planning');
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [editing, setEditing] = useState<PlannerCellEntry | null>(null);
   const empty = entries.length === 0;
   const cell = entries.reduce<Macros>((acc, e) => add(acc, e.macros), ZERO_MACROS);
-
-  function openAdd() {
-    setEditing(null);
-    setPickerOpen(true);
-  }
-  function openEdit(entry: PlannerCellEntry) {
-    setEditing(entry);
-    setPickerOpen(true);
-  }
 
   return (
     <div
@@ -71,7 +54,7 @@ export function PlannerMealCell({
       {empty ? (
         <button
           type="button"
-          onClick={openAdd}
+          onClick={onAddRequest}
           disabled={busy}
           className="flex h-full min-h-12 items-center justify-center gap-1 text-[11px] text-text-dim hover:text-foreground"
         >
@@ -98,7 +81,7 @@ export function PlannerMealCell({
               <button
                 key={e.id}
                 type="button"
-                onClick={() => openEdit(e)}
+                onClick={() => onOpenEntry(e)}
                 className="flex items-baseline gap-1.5 text-left text-[11.5px] leading-tight hover:underline"
               >
                 <span aria-hidden="true" className="shrink-0 text-[9px] text-text-dim">
@@ -114,7 +97,7 @@ export function PlannerMealCell({
 
           <button
             type="button"
-            onClick={openAdd}
+            onClick={onAddRequest}
             disabled={busy}
             className="-ml-1 mt-0.5 inline-flex items-center gap-1 self-start rounded px-1 py-0.5 text-[10.5px] text-text-dim hover:text-foreground"
           >
@@ -139,29 +122,6 @@ export function PlannerMealCell({
           </div>
         </>
       )}
-
-      <RecipePickerDialog
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
-        initialRecipe={
-          editing
-            ? { id: editing.recipe_id, name: editing.recipe_name, servings: editing.servings }
-            : null
-        }
-        busy={busy}
-        onSave={async (recipeId, recipeName, servings) => {
-          if (editing) await onUpdate(editing.id, recipeId, recipeName, servings);
-          else await onAdd(recipeId, recipeName, servings);
-        }}
-        onDelete={
-          editing
-            ? async () => {
-                await onRemove(editing.id);
-                setPickerOpen(false);
-              }
-            : undefined
-        }
-      />
     </div>
   );
 }

@@ -10,7 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageShell } from '@/components/layout/PageShell';
 import { MealTimesEditor } from '@/features/planning/components/MealTimesEditor';
-import { CopyMealDialog, type CopyTarget } from '@/features/planning/components/CopyMealDialog';
+import {
+  CopyMealDialog,
+  type CopyMode,
+  type CopyTarget,
+} from '@/features/planning/components/CopyMealDialog';
 import {
   TemplateGrid,
   type TemplateSlotInput,
@@ -90,7 +94,10 @@ export function PlantillaEditorPage() {
     ? `${mealTimes[copySource.mealIndex] ?? ''} · ${dayLabel(copySource.dayOfWeek)}`.trim()
     : '';
 
-  function handleCopyMeal(keys: string[]) {
+  // Templates have no append mode yet (`copyTemplateMeal` only replaces) — the
+  // mode arg is accepted so this compiles against the restyled dialog, and
+  // ignored until a future task extends templates the same way weeks were.
+  function handleCopyMeal(keys: string[], _mode: CopyMode) {
     if (!copySource) return;
     setSlots((s) =>
       copyTemplateMeal(s, copySource.dayOfWeek, copySource.mealIndex, keys.map(Number), newRowId),
@@ -255,7 +262,7 @@ export function PlantillaEditorPage() {
         open={!!copySource}
         onOpenChange={(o) => !o && setCopySource(null)}
         sourceLabel={copySourceLabel}
-        entryCount={copyEntries.length}
+        entryNames={copyEntries.map((s) => s.recipe_name)}
         targets={copyTargets}
         onConfirm={handleCopyMeal}
       />

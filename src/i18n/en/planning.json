@@ -15,10 +15,16 @@
   },
   "copyMeal": {
     "title": "Copy meal to other days",
-    "entryCount": "{{count}} recipes",
-    "selectAll": "Select all",
+    "modeReplace": "Replace",
+    "modeAppend": "Add alongside",
+    "sourceRecipes": "Copying:",
+    "selectAll": "All",
     "willOverwrite": "will be overwritten",
-    "selectedCount": "{{count}} days selected",
+    "summaryReplace_one": "Copy to 1 day, replacing what's there.",
+    "summaryReplace_other": "Copy to {{count}} days, replacing what's there.",
+    "summaryAppend_one": "Copy to 1 day, alongside what's there.",
+    "summaryAppend_other": "Copy to {{count}} days, alongside what's there.",
+    "pickDays": "Pick at least one day.",
     "confirm": "Copy"
   },
   "picker": {
@@ -31,6 +37,29 @@
       "pickRecipe": "Pick a recipe.",
       "servings": "Servings must be greater than 0."
     }
+  },
+  "addRecipe": {
+    "title": "Add recipe",
+    "editTitle": "Edit recipe",
+    "destination": "{{day}} · {{meal}} · {{time}}",
+    "destinationNoTime": "{{day}} · {{meal}}",
+    "close": "Close",
+    "search": "Search recipe…",
+    "searchLabel": "Search recipe",
+    "filterLabel": "Filter by meal type",
+    "filterAll": "All",
+    "noResults": "No recipe matches.",
+    "empty": "You have no recipes yet. Create one to start planning.",
+    "servings": "Servings",
+    "less": "Fewer servings",
+    "more": "More servings",
+    "perServing": "per serving",
+    "projected": "Projected",
+    "remaining": "{{n}} left",
+    "over": "+{{n}} over",
+    "confirmAdd": "Add to meal",
+    "confirmSave": "Save",
+    "remove": "Remove from plan"
   },
   "list": {
     "pageTitle": "Templates",
@@ -132,6 +161,19 @@
     "addFirst": "add meal",
     "addMore": "add",
     "kcal": "kcal"
+  },
+  "peek": {
+    "title": "Recipe in the plan",
+    "servings_one": "{{count}} serving",
+    "servings_other": "{{count}} servings",
+    "ingredients": "Ingredients",
+    "instructions": "Method",
+    "perServing": "Per serving",
+    "planned_one": "Planned: {{count}} serving",
+    "planned_other": "Planned: {{count}} servings",
+    "open": "Open recipe",
+    "edit": "Edit",
+    "missing": "The recipe could not be loaded."
   },
   "shopping": {
     "open": "Shopping list",

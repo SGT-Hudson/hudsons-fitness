@@ -13,18 +13,25 @@ import { ApplyTemplateDialog } from '@/features/planning/components/ApplyTemplat
 import { CopyMealDialog, type CopyTarget } from '@/features/planning/components/CopyMealDialog';
 import { SaveAsTemplateDialog } from '@/features/planning/components/SaveAsTemplateDialog';
 import { ShoppingListDialog } from '@/features/planning/components/ShoppingListDialog';
-import { RecipePickerDialog } from '@/features/planning/components/RecipePickerDialog';
+import {
+  AddRecipeDrawer,
+  type AddRecipeEditing,
+  type AddRecipeTarget,
+} from '@/features/planning/components/AddRecipeDrawer';
+import { RecipePeek } from '@/features/planning/components/RecipePeek';
 import { WeekGrid } from '@/features/planning/components/WeekGrid';
 import { WeekStrip } from '@/features/planning/components/WeekStrip';
 import { WeekSummaryCard } from '@/features/planning/components/WeekSummaryCard';
 import { TodayPlanList, type TodayMeal } from '@/features/planning/components/TodayPlanList';
 import type { PlannerCellEntry } from '@/features/planning/components/PlannerMealCell';
+import { appendMealRows } from '@/features/planning/appendMeal';
 import { weekMealTargets } from '@/features/planning/copyTargets';
-import { isoWeekNumber, weekAverages } from '@/features/planning/weekSummary';
+import { isoWeekNumber, mealLabelKey, weekAverages } from '@/features/planning/weekSummary';
 import { aggregateDayMacros } from '@/features/planning/daySummary';
 import {
   useActiveWeek,
   useAddWeekSlot,
+  useAppendWeekMeal,
   useApplyTemplateToWeek,
   useCopyWeekMeal,
   useDeleteWeekSlot,
@@ -66,17 +73,33 @@ export function PlanificadorPage() {
   const [selectedDate, setSelectedDate] = useState(today);
 
   const copyMeal = useCopyWeekMeal();
+  const appendMeal = useAppendWeekMeal();
   const [copySource, setCopySource] = useState<{ date: string; mealIndex: number } | null>(null);
 
-  // Mobile add/edit goes through the existing RecipePickerDialog until PR-B's
-  // add drawer + recipe peek replace it. Without this the mobile list would have
-  // no way to add a meal — the web grid's cell picker is desktop-only.
-  const [mobilePick, setMobilePick] = useState<{
+  // The three PR-B surfaces are mounted ONCE, here — not per cell. The grid and
+  // the mobile list only raise intents; the page owns which slot they land on.
+  //
+  // `addTarget`/`peek` hold the surface's CONTENT and `addOpen`/`peekOpen` hold
+  // its visibility — deliberately two separate pieces of state. Closing only
+  // flips the `*Open` boolean; the content is left alone, so the drawer/peek
+  // keeps rendering its last payload while vaul/Radix plays the exit
+  // transition. Nulling the content in the same tick as the close would
+  // remove the component's props out from under it mid-animation (or, before
+  // this split, unmount it outright). A fresh open always sets both the new
+  // content AND `*Open = true` together, so the next slot's content can never
+  // flash the previous slot's payload.
+  const [addTarget, setAddTarget] = useState<{
+    target: AddRecipeTarget;
+    editing?: AddRecipeEditing;
+  } | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [peek, setPeek] = useState<{
+    entry: PlannerCellEntry;
+    date: string;
     mealIndex: number;
     mealTime: string | null;
-    entry: PlannerCellEntry | null;
   } | null>(null);
-  const pickedEntry = mobilePick?.entry ?? null;
+  const [peekOpen, setPeekOpen] = useState(false);
 
   const weekDates = Array.from({ length: 7 }, (_, i) =>
     formatDate(addDays(parseISO(weekStart), i), 'yyyy-MM-dd', locale),
@@ -183,6 +206,55 @@ export function PlanificadorPage() {
       servings,
       display_order: sameSlot.length,
     });
+  }
+
+  /** Open the add drawer on a fresh slot. */
+  function openAdd(date: string, mealIndex: number, mealTime: string | null) {
+    setAddTarget({
+      target: { date, mealIndex, mealTime, dayTotals: dayTotals.get(date) ?? ZERO_MACROS },
+    });
+    setAddOpen(true);
+  }
+
+  /**
+   * Open the add drawer on an EXISTING entry. `dayTotals` stays the day's full
+   * totals — the drawer subtracts `editing.macros` itself (`projectDay`'s
+   * `replacing`), so pre-subtracting here would double-count the swap.
+   */
+  function openEdit(entry: PlannerCellEntry, date: string, mealIndex: number, mealTime: string | null) {
+    setAddTarget({
+      target: { date, mealIndex, mealTime, dayTotals: dayTotals.get(date) ?? ZERO_MACROS },
+      editing: {
+        id: entry.id,
+        recipe_id: entry.recipe_id,
+        recipe_name: entry.recipe_name,
+        servings: entry.servings,
+        macros: entry.macros,
+      },
+    });
+    setAddOpen(true);
+  }
+
+  /** Open the recipe peek on a planned entry. */
+  function openPeek(
+    entry: PlannerCellEntry,
+    date: string,
+    mealIndex: number,
+    mealTime: string | null,
+  ) {
+    setPeek({ entry, date, mealIndex, mealTime });
+    setPeekOpen(true);
+  }
+
+  /** The plan context a peeked recipe was opened from: "mar 26 · Desayuno · 08:00". */
+  function slotLabel(date: string, mealIndex: number, mealTime: string | null): string {
+    const { key, params } = mealLabelKey(mealIndex);
+    const parts = {
+      day: formatDate(date, 'EEE d', locale),
+      meal: t(key, params ?? {}),
+      time: mealTime?.slice(0, 5) ?? '',
+    };
+    return mealTime ? t('addRecipe.destination', parts) : t('addRecipe.destinationNoTime', parts);
   }
 
   const hasTemplates = (templates.data ?? []).length > 0;
@@ -370,17 +442,11 @@ export function PlanificadorPage() {
                 <TodayPlanList
                   meals={dayMeals}
                   busy={busy}
-                  onAddMeal={(mealIndex, mealTime) =>
-                    setMobilePick({ mealIndex, mealTime, entry: null })
-                  }
+                  onAddMeal={(mealIndex, mealTime) => openAdd(selectedDate, mealIndex, mealTime)}
                   onCopyMeal={(mealIndex) => setCopySource({ date: selectedDate, mealIndex })}
                   onOpenEntry={(entry) => {
                     const row = dayMeals.find((m) => m.entries.some((e) => e.id === entry.id));
-                    setMobilePick({
-                      mealIndex: row?.mealIndex ?? 0,
-                      mealTime: row?.mealTime ?? null,
-                      entry,
-                    });
+                    openPeek(entry, selectedDate, row?.mealIndex ?? 0, row?.mealTime ?? null);
                   }}
                 />
 
@@ -402,7 +468,7 @@ export function PlanificadorPage() {
               </div>
 
               {/* Web: the full week grid. */}
-              <div className="hidden md:block">
+              <div data-web-grid className="hidden md:block">
                 <WeekGrid
                   weekStart={week.data.week_start}
                   slots={week.data.slots}
@@ -412,16 +478,8 @@ export function PlanificadorPage() {
                   targets={targets}
                   phaseType={phaseType}
                   weightKg={weightKg}
-                  onAdd={handleAdd}
-                  onUpdate={async (slotId, recipe, servings) => {
-                    await updateSlot.mutateAsync({
-                      id: slotId,
-                      patch: { recipe_id: recipe.id, servings },
-                    });
-                  }}
-                  onRemove={async (slotId) => {
-                    await deleteSlot.mutateAsync(slotId);
-                  }}
+                  onAddRequest={openAdd}
+                  onOpenEntry={openPeek}
                   onCopyMeal={(date, mealIndex) => setCopySource({ date, mealIndex })}
                 />
               </div>
@@ -448,54 +506,70 @@ export function PlanificadorPage() {
           onOpenChange={setShoppingOpen}
           weekStart={weekStart}
         />
-        <RecipePickerDialog
-          open={!!mobilePick}
-          onOpenChange={(o) => !o && setMobilePick(null)}
-          initialRecipe={
-            pickedEntry
-              ? {
-                  id: pickedEntry.recipe_id,
-                  name: pickedEntry.recipe_name,
-                  servings: pickedEntry.servings,
-                }
-              : null
-          }
-          busy={busy}
-          onSave={async (recipeId, recipeName, servings) => {
-            if (!mobilePick) return;
-            if (pickedEntry) {
+        {addTarget && (
+          <AddRecipeDrawer
+            open={addOpen}
+            onOpenChange={setAddOpen}
+            target={addTarget.target}
+            editing={addTarget.editing}
+            targets={targets}
+            phaseType={phaseType}
+            busy={busy}
+            onAdd={async (recipeId, recipeName, servings) => {
+              const { date, mealIndex, mealTime } = addTarget.target;
+              await handleAdd(date, mealIndex, mealTime, { id: recipeId, name: recipeName }, servings);
+              setAddOpen(false);
+            }}
+            onUpdate={async (entryId, recipeId, _recipeName, servings) => {
               await updateSlot.mutateAsync({
-                id: pickedEntry.id,
+                id: entryId,
                 patch: { recipe_id: recipeId, servings },
               });
-            } else {
-              await handleAdd(
-                selectedDate,
-                mobilePick.mealIndex,
-                mobilePick.mealTime,
-                { id: recipeId, name: recipeName },
-                servings,
-              );
-            }
-          }}
-          onDelete={
-            pickedEntry
-              ? async () => {
-                  await deleteSlot.mutateAsync(pickedEntry.id);
-                  setMobilePick(null);
-                }
-              : undefined
-          }
-        />
+              setAddOpen(false);
+            }}
+            onRemove={async (entryId) => {
+              await deleteSlot.mutateAsync(entryId);
+              setAddOpen(false);
+            }}
+          />
+        )}
+        {peek && (
+          <RecipePeek
+            open={peekOpen}
+            onOpenChange={setPeekOpen}
+            recipeId={peek.entry.recipe_id}
+            contextLabel={slotLabel(peek.date, peek.mealIndex, peek.mealTime)}
+            servings={peek.entry.servings}
+            onEdit={() => {
+              openEdit(peek.entry, peek.date, peek.mealIndex, peek.mealTime);
+              setPeekOpen(false);
+            }}
+          />
+        )}
         <CopyMealDialog
           open={!!copySource}
           onOpenChange={(o) => !o && setCopySource(null)}
           sourceLabel={copySourceLabel}
-          entryCount={copyEntries.length}
+          entryNames={copyEntries.map((s) => s.recipe_name)}
           targets={copyTargets}
-          busy={copyMeal.isPending}
-          onConfirm={async (keys) => {
+          busy={copyMeal.isPending || appendMeal.isPending}
+          allowAppend
+          onConfirm={async (keys, mode) => {
             if (!copySource || !week.data) return;
+            // Append inserts alongside (one plain insert of built rows); replace
+            // still goes through the RPC, which deletes the target meal first.
+            if (mode === 'append') {
+              await appendMeal.mutateAsync(
+                appendMealRows({
+                  planWeekId: week.data.id,
+                  slots: week.data.slots,
+                  sourceDate: copySource.date,
+                  mealIndex: copySource.mealIndex,
+                  targetDates: keys,
+                }),
+              );
+              return;
+            }
             await copyMeal.mutateAsync({
               plan_week_id: week.data.id,
               source_date: copySource.date,

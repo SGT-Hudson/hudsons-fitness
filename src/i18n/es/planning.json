@@ -15,10 +15,16 @@
   },
   "copyMeal": {
     "title": "Copiar comida a otros días",
-    "entryCount": "{{count}} recetas",
-    "selectAll": "Seleccionar todos",
+    "modeReplace": "Reemplazar",
+    "modeAppend": "Añadir junto",
+    "sourceRecipes": "Se copiarán:",
+    "selectAll": "Todos",
     "willOverwrite": "se sobrescribirá",
-    "selectedCount": "{{count}} días seleccionados",
+    "summaryReplace_one": "Copiar a 1 día, reemplazando lo que haya.",
+    "summaryReplace_other": "Copiar a {{count}} días, reemplazando lo que haya.",
+    "summaryAppend_one": "Copiar a 1 día, junto a lo que ya haya.",
+    "summaryAppend_other": "Copiar a {{count}} días, junto a lo que ya haya.",
+    "pickDays": "Elige al menos un día.",
     "confirm": "Copiar"
   },
   "picker": {
@@ -31,6 +37,29 @@
       "pickRecipe": "Elige una receta.",
       "servings": "Las raciones deben ser mayores que 0."
     }
+  },
+  "addRecipe": {
+    "title": "Añadir receta",
+    "editTitle": "Editar receta",
+    "destination": "{{day}} · {{meal}} · {{time}}",
+    "destinationNoTime": "{{day}} · {{meal}}",
+    "close": "Cerrar",
+    "search": "Buscar receta…",
+    "searchLabel": "Buscar receta",
+    "filterLabel": "Filtrar por tipo de comida",
+    "filterAll": "Todas",
+    "noResults": "Ninguna receta coincide.",
+    "empty": "Aún no tienes recetas. Crea la primera para poder planificar.",
+    "servings": "Raciones",
+    "less": "Menos raciones",
+    "more": "Más raciones",
+    "perServing": "por ración",
+    "projected": "Proyectado",
+    "remaining": "quedan {{n}}",
+    "over": "+{{n}} pasado",
+    "confirmAdd": "Añadir a la comida",
+    "confirmSave": "Guardar",
+    "remove": "Quitar del plan"
   },
   "list": {
     "pageTitle": "Plantillas",
@@ -132,6 +161,19 @@
     "addFirst": "añadir comida",
     "addMore": "añadir",
     "kcal": "kcal"
+  },
+  "peek": {
+    "title": "Receta del plan",
+    "servings_one": "{{count}} ración",
+    "servings_other": "{{count}} raciones",
+    "ingredients": "Ingredientes",
+    "instructions": "Elaboración",
+    "perServing": "Por ración",
+    "planned_one": "Planificado: {{count}} ración",
+    "planned_other": "Planificado: {{count}} raciones",
+    "open": "Abrir receta",
+    "edit": "Editar",
+    "missing": "No se pudo cargar la receta."
   },
   "shopping": {
     "open": "Lista de la compra",

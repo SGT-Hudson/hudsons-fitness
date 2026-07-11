@@ -1,5 +1,5 @@
-import '@/i18n';
-import { describe, it, expect, vi } from 'vitest';
+import i18n from '@/i18n';
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CopyMealDialog, type CopyTarget } from './CopyMealDialog';
@@ -7,53 +7,142 @@ import { CopyMealDialog, type CopyTarget } from './CopyMealDialog';
 const targets: CopyTarget[] = [
   { key: 'tue', label: 'Martes', sublabel: '27 may', willOverwrite: true },
   { key: 'wed', label: 'Miércoles', sublabel: '28 may', willOverwrite: false },
-  { key: 'thu', label: 'Jueves', sublabel: '29 may', willOverwrite: false },
 ];
 
-function setup(onConfirm = vi.fn()) {
-  render(
-    <CopyMealDialog
-      open
-      onOpenChange={() => {}}
-      sourceLabel="Desayuno (08:00) · lunes"
-      entryCount={2}
-      targets={targets}
-      onConfirm={onConfirm}
-    />,
-  );
-  return onConfirm;
+beforeAll(() => {
+  void i18n.changeLanguage('es');
+});
+
+// jsdom has no matchMedia; ResponsiveDialog needs one. Drive the breakpoint.
+function setViewport(isDesktop: boolean) {
+  window.matchMedia = vi.fn().mockImplementation((q: string) => ({
+    matches: isDesktop,
+    media: q,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as unknown as typeof window.matchMedia;
+}
+
+beforeEach(() => {
+  setViewport(true);
+});
+
+function renderDialog(over: Partial<Parameters<typeof CopyMealDialog>[0]> = {}) {
+  const props = {
+    open: true,
+    onOpenChange: vi.fn(),
+    sourceLabel: 'Desayuno (08:00) · lunes',
+    entryNames: ['Tortilla francesa'],
+    targets,
+    onConfirm: vi.fn(),
+    allowAppend: true,
+    ...over,
+  };
+  return { props, ...render(<CopyMealDialog {...props} />) };
 }
 
 describe('CopyMealDialog', () => {
-  it('starts with nothing selected and confirm disabled', () => {
-    setup();
-    const confirm = screen.getByRole('button', { name: /copiar|copy/i });
-    expect(confirm).toBeDisabled();
-    targets.forEach((t) => {
-      expect(screen.getByRole('checkbox', { name: new RegExp(t.label) })).toHaveAttribute('aria-checked', 'false');
-    });
+  it('renders the panel inside the dialog shell', () => {
+    renderDialog();
+    expect(screen.getByText('Desayuno (08:00) · lunes')).toBeInTheDocument();
+    expect(screen.getByText('Tortilla francesa')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Martes/ })).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('shows the overwrite badge only on occupied targets', () => {
-    setup();
-    expect(screen.getAllByText(/sobrescrib|overwritten/i)).toHaveLength(1);
-  });
-
-  it('select-all checks every day and confirm returns all keys', async () => {
+  it('resets its selection when reopened', async () => {
     const user = userEvent.setup();
-    const onConfirm = setup();
-    await user.click(screen.getByRole('checkbox', { name: /seleccionar todos|select all/i }));
-    await user.click(screen.getByRole('button', { name: /copiar|copy/i }));
-    expect(onConfirm).toHaveBeenCalledWith(['tue', 'wed', 'thu']);
+    const { props, rerender } = renderDialog();
+
+    await user.click(screen.getByRole('checkbox', { name: /Martes/ }));
+    expect(screen.getByRole('checkbox', { name: /Martes/ })).toHaveAttribute('aria-checked', 'true');
+
+    rerender(<CopyMealDialog {...props} open={false} />);
+    rerender(<CopyMealDialog {...props} open />);
+
+    expect(screen.getByRole('checkbox', { name: /Martes/ })).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('toggling one day enables confirm and returns just that key', async () => {
+  it('hands the selected keys and mode to onConfirm, then closes', async () => {
     const user = userEvent.setup();
-    const onConfirm = setup();
-    await user.click(screen.getByRole('checkbox', { name: /Miércoles/ }));
-    const confirm = screen.getByRole('button', { name: /copiar|copy/i });
-    expect(confirm).toBeEnabled();
-    await user.click(confirm);
-    expect(onConfirm).toHaveBeenCalledWith(['wed']);
+    const onConfirm = vi.fn();
+    const onOpenChange = vi.fn();
+    renderDialog({ onConfirm, onOpenChange });
+
+    await user.click(screen.getByRole('checkbox', { name: /Martes/ }));
+    await user.click(screen.getByRole('button', { name: /añadir junto/i }));
+    await user.click(screen.getByRole('button', { name: /^copiar/i }));
+
+    expect(onConfirm).toHaveBeenCalledWith(['tue'], 'append');
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('without allowAppend, hides the mode toggle and confirms with replace', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    renderDialog({ onConfirm, allowAppend: undefined });
+
+    expect(screen.queryByRole('button', { name: /añadir junto/i })).toBeNull();
+    await user.click(screen.getByRole('checkbox', { name: /Martes/ }));
+    await user.click(screen.getByRole('button', { name: /^copiar/i }));
+
+    expect(onConfirm).toHaveBeenCalledWith(['tue'], 'replace');
+  });
+
+  it('with allowAppend, shows the mode toggle', () => {
+    renderDialog({ allowAppend: true });
+    expect(screen.getByRole('button', { name: /añadir junto/i })).toBeInTheDocument();
+  });
+
+  it('selects every day at once, then clears them', async () => {
+    const user = userEvent.setup();
+    renderDialog();
+    const all = () => screen.getByRole('checkbox', { name: /todos/i });
+
+    await user.click(all());
+    expect(screen.getByRole('checkbox', { name: /Martes/ })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('checkbox', { name: /Miércoles/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(all()).toHaveAttribute('aria-checked', 'true');
+
+    await user.click(all());
+    expect(screen.getByRole('checkbox', { name: /Martes/ })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(all()).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('select-all with a partial selection selects the rest, and confirms them all', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    renderDialog({ onConfirm });
+
+    await user.click(screen.getByRole('checkbox', { name: /Martes/ }));
+    await user.click(screen.getByRole('checkbox', { name: /todos/i }));
+    await user.click(screen.getByRole('button', { name: /^copiar/i }));
+
+    expect(onConfirm).toHaveBeenCalledWith(['tue', 'wed'], 'replace');
+  });
+
+  // vaul draws no close affordance of its own, so the mobile branch would be
+  // dismissible only by dragging it without an explicit control.
+  it('offers a Cancel control on mobile that closes the dialog', async () => {
+    setViewport(false);
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    renderDialog({ onOpenChange });
+
+    await user.click(screen.getByRole('button', { name: /cancelar/i }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('leaves the Cancel control to radix on desktop', () => {
+    renderDialog();
+    // The desktop DialogContent draws its own X — a second control would be noise.
+    expect(screen.queryByRole('button', { name: /cancelar/i })).toBeNull();
   });
 });

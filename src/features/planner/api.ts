@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
 import { computeRecipeMacros, type Macros } from '@/features/recipes/macros';
+import type { AppendRow } from '@/features/planning/appendMeal';
 import type { ShoppingSlotInput } from './shopping';
 
 export type PlanWeek = Tables<'meal_plan_weeks'>;
@@ -305,5 +306,17 @@ export async function copyWeekMeal(input: {
     p_meal_index: input.meal_index,
     p_target_dates: input.target_dates,
   });
+  if (error) throw error;
+}
+
+/**
+ * Append (rather than replace) a meal onto other days: a single-table,
+ * single-statement multi-row insert — atomic, so no RPC is needed (hard
+ * invariant 3 governs mutations spanning more than one table). Replace still
+ * goes through the `copy_week_meal` RPC, which deletes before it inserts.
+ */
+export async function appendWeekMeal(rows: AppendRow[]): Promise<void> {
+  if (rows.length === 0) return;
+  const { error } = await supabase.from('meal_plan_week_slots').insert(rows);
   if (error) throw error;
 }
