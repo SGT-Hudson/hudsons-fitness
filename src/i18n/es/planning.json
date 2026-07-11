@@ -32,6 +32,27 @@
       "servings": "Las raciones deben ser mayores que 0."
     }
   },
+  "addRecipe": {
+    "title": "Añadir receta",
+    "editTitle": "Editar receta",
+    "destination": "{{day}} · {{meal}} · {{time}}",
+    "destinationNoTime": "{{day}} · {{meal}}",
+    "close": "Cerrar",
+    "search": "Buscar receta…",
+    "searchLabel": "Buscar receta",
+    "noResults": "Ninguna receta coincide.",
+    "empty": "Aún no tienes recetas. Crea la primera para poder planificar.",
+    "servings": "Raciones",
+    "less": "Menos raciones",
+    "more": "Más raciones",
+    "perServing": "por ración",
+    "projected": "Proyectado",
+    "remaining": "quedan {{n}}",
+    "over": "+{{n}} pasado",
+    "confirmAdd": "Añadir a la comida",
+    "confirmSave": "Guardar",
+    "remove": "Quitar del plan"
+  },
   "list": {
     "pageTitle": "Plantillas",
     "newTemplate": "Nueva plantilla",

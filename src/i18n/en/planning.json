@@ -32,6 +32,27 @@
       "servings": "Servings must be greater than 0."
     }
   },
+  "addRecipe": {
+    "title": "Add recipe",
+    "editTitle": "Edit recipe",
+    "destination": "{{day}} · {{meal}} · {{time}}",
+    "destinationNoTime": "{{day}} · {{meal}}",
+    "close": "Close",
+    "search": "Search recipe…",
+    "searchLabel": "Search recipe",
+    "noResults": "No recipe matches.",
+    "empty": "You have no recipes yet. Create one to start planning.",
+    "servings": "Servings",
+    "less": "Fewer servings",
+    "more": "More servings",
+    "perServing": "per serving",
+    "projected": "Projected",
+    "remaining": "{{n}} left",
+    "over": "+{{n}} over",
+    "confirmAdd": "Add to meal",
+    "confirmSave": "Save",
+    "remove": "Remove from plan"
+  },
   "list": {
     "pageTitle": "Templates",
     "newTemplate": "New template",
