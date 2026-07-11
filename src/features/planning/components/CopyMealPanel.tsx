@@ -85,8 +85,10 @@ export function CopyMealPanel({
           <div className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground">
             <span>{t('copyMeal.sourceRecipes')}</span>
             <ul className="flex flex-wrap items-center gap-x-1.5">
+              {/* Keyed by index, not name: append makes "the same recipe twice in
+                  one meal" legal, and names would then collide. */}
               {entryNames.map((name, i) => (
-                <li key={name} className="flex items-center gap-1.5">
+                <li key={i} className="flex items-center gap-1.5">
                   {i > 0 && <span aria-hidden="true">·</span>}
                   <span>{name}</span>
                 </li>
