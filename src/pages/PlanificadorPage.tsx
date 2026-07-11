@@ -98,9 +98,12 @@ export function PlanificadorPage() {
   // template got deleted keeps its slots but reports meal_times: []; deriving
   // orphans from today alone would leave today with zero rows (no way to add
   // a meal) whenever today itself happens to have no slots. Entries are still
-  // filtered down to today's date, and — unlike WeekGrid — grouped by
-  // meal_index alone (this list only ever shows one day, so it doesn't need
-  // WeekGrid's extra meal_time key to keep several days aligned).
+  // filtered down to today's date, and — like WeekGrid's entriesFor — matched
+  // on BOTH meal_index and meal_time: a divergent week can carry two rows
+  // sharing a meal_index but differing in meal_time (per-day custom template
+  // times + apply_template_to_week's partial rewrite leaves pre-target-date
+  // days on the old template), so meal_index alone would double-render
+  // today's slot under both rows.
   const mealTimes = week.data?.meal_times ?? [];
   const todaySlots = slots.filter((s) => s.date === today);
   const weekOrphans = new Map<string, { mealIndex: number; mealTime: string | null }>();
@@ -117,7 +120,7 @@ export function PlanificadorPage() {
   ].map((row) => ({
     ...row,
     entries: todaySlots
-      .filter((s) => s.meal_index === row.mealIndex)
+      .filter((s) => s.meal_index === row.mealIndex && (s.meal_time ?? '') === (row.mealTime ?? ''))
       .sort((a, b) => a.display_order - b.display_order)
       .map((s) => ({
         id: s.id,

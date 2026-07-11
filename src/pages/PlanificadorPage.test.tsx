@@ -47,10 +47,47 @@ const week: ActiveWeek = {
   ],
 };
 
+// Divergent week: today carries an orphan slot at (meal_index: 2, meal_time:
+// '10:00'); another day carries an orphan slot with the SAME meal_index but a
+// DIFFERENT meal_time ('16:00') — reachable via per-day custom template times
+// + apply_template_to_week's partial rewrite. This unions into two distinct
+// (meal_index, meal_time) rows that both have meal_index 2, so a fix that
+// filters entries by meal_index alone renders today's single slot under both.
+const divergentWeek: ActiveWeek = {
+  ...week,
+  slots: [
+    ...week.slots,
+    {
+      id: 's2',
+      date: '2026-05-26',
+      meal_index: 2,
+      meal_time: '10:00',
+      recipe_id: 'r2',
+      recipe_name: 'Tortilla de espinacas',
+      servings: 1,
+      display_order: 0,
+      macros: { ...ZERO_MACROS, kcal: 220, proteinG: 18, carbsG: 4, fatG: 15 },
+    },
+    {
+      id: 's3',
+      date: '2026-05-27',
+      meal_index: 2,
+      meal_time: '16:00',
+      recipe_id: 'r3',
+      recipe_name: 'Batido de proteína',
+      servings: 1,
+      display_order: 0,
+      macros: { ...ZERO_MACROS, kcal: 180, proteinG: 25, carbsG: 8, fatG: 3 },
+    },
+  ],
+};
+
+let activeWeekData: ActiveWeek = week;
+
 const noopMutation = { mutateAsync: vi.fn(), isPending: false };
 
 vi.mock('@/features/planner/hooks', () => ({
-  useActiveWeek: () => ({ data: week, isLoading: false }),
+  useActiveWeek: () => ({ data: activeWeekData, isLoading: false }),
   useAddWeekSlot: () => ({ mutateAsync: addWeekSlotMutate, isPending: false }),
   useUpdateWeekSlot: () => ({ mutateAsync: updateWeekSlotMutate, isPending: false }),
   useDeleteWeekSlot: () => noopMutation,
@@ -95,6 +132,7 @@ beforeAll(() => {
 beforeEach(() => {
   updateWeekSlotMutate.mockClear();
   addWeekSlotMutate.mockClear();
+  activeWeekData = week;
 });
 
 describe('PlanificadorPage', () => {
@@ -153,5 +191,19 @@ describe('PlanificadorPage', () => {
       patch: { recipe_id: 'r1', servings: 1 },
     });
     expect(addWeekSlotMutate).not.toHaveBeenCalled();
+  });
+
+  it('does not duplicate a today slot across two rows sharing a meal_index but differing meal_time', () => {
+    activeWeekData = divergentWeek;
+    const { container } = renderPage();
+    const mobileToday = container.querySelector('[data-mobile-stack="today"]') as HTMLElement;
+    const scope = within(mobileToday);
+
+    // today's orphan slot (meal_index 2, meal_time 10:00) must render exactly
+    // once, not once per row that shares its meal_index.
+    expect(scope.getAllByText('Tortilla de espinacas')).toHaveLength(1);
+    // the other day's orphan slot (meal_index 2, meal_time 16:00) must not
+    // leak into today's list at all — it belongs to 2026-05-27, not today.
+    expect(scope.queryByText('Batido de proteína')).not.toBeInTheDocument();
   });
 });
