@@ -40,6 +40,8 @@
     "close": "Cerrar",
     "search": "Buscar receta…",
     "searchLabel": "Buscar receta",
+    "filterLabel": "Filtrar por tipo de comida",
+    "filterAll": "Todas",
     "noResults": "Ninguna receta coincide.",
     "empty": "Aún no tienes recetas. Crea la primera para poder planificar.",
     "servings": "Raciones",

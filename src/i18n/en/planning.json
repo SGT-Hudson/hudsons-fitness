@@ -40,6 +40,8 @@
     "close": "Close",
     "search": "Search recipe…",
     "searchLabel": "Search recipe",
+    "filterLabel": "Filter by meal type",
+    "filterAll": "All",
     "noResults": "No recipe matches.",
     "empty": "You have no recipes yet. Create one to start planning.",
     "servings": "Servings",

@@ -12,6 +12,7 @@ import { roundMacro, scale, type Macros } from '@/features/recipes/macros';
 import { classify, type PhaseType, type Tone } from '@/core/nutritionTone';
 import { formatDate, type Locale } from '@/lib/dates';
 import { cn } from '@/lib/utils';
+import { RECIPE_MEAL_TYPES, type RecipeMealType } from '@/features/recipes/mealTypes';
 import { projectDay } from '../addRecipe';
 import { mealLabelKey } from '../weekSummary';
 
@@ -85,12 +86,12 @@ function editingPick(editing: AddRecipeEditing): PickedRecipe {
 }
 
 /**
- * Half a serving is the only fraction the planner needs (a batch split in two);
- * from one serving up, the stepper moves in whole servings. Floor: 0.5.
+ * Half-serving increments across the whole range — floor 0.5 — matching the
+ * Diario's ración stepper (`RacionStep`'s `roundToStep`): 0.5, 1, 1.5, 2, 2.5…
  */
 function stepServings(v: number, dir: 1 | -1): number {
-  const next = dir > 0 ? (v < 1 ? v + 0.5 : v + 1) : v <= 1 ? v - 0.5 : v - 1;
-  return Math.max(0.5, Math.round(next * 100) / 100);
+  const step = 0.5;
+  return Math.max(step, Math.round((v + dir * step) * 100) / 100);
 }
 
 /**
@@ -115,29 +116,46 @@ export function AddRecipeDrawer({
   onRemove,
 }: Props) {
   const { t, i18n } = useTranslation('planning');
+  const { t: tRecetas } = useTranslation('recetas');
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
   const recipes = useRecipes();
 
   const [query, setQuery] = useState('');
+  const [mealTypeFilter, setMealTypeFilter] = useState<RecipeMealType | null>(null);
   const [picked, setPicked] = useState<PickedRecipe | null>(() =>
     editing ? editingPick(editing) : null,
   );
   const [servings, setServings] = useState(() => editing?.servings ?? 1);
 
-  // Reset the transient state on every (re)open — a stale query/pick from the
-  // previous slot would otherwise leak into this one.
+  // Reset the transient state on every (re)open — a stale query/pick/filter
+  // from the previous slot would otherwise leak into this one.
   useEffect(() => {
     if (!open) return;
     setQuery('');
+    setMealTypeFilter(null);
     setPicked(editing ? editingPick(editing) : null);
     setServings(editing?.servings ?? 1);
   }, [open, editing]);
 
+  // Chips: only the meal types the user's recipes actually carry, in the
+  // library's canonical order — "Todas" plus whichever of these are in play.
+  const mealTypeOptions = useMemo(() => {
+    const present = new Set<string>();
+    for (const r of recipes.data ?? []) {
+      for (const m of r.meal_types) present.add(m);
+    }
+    return RECIPE_MEAL_TYPES.filter((k) => present.has(k));
+  }, [recipes.data]);
+
   const results = useMemo(() => {
     const q = normalizeText(query);
     const all = recipes.data ?? [];
-    return q === '' ? all : all.filter((r) => normalizeText(r.name).includes(q));
-  }, [recipes.data, query]);
+    return all.filter((r) => {
+      if (mealTypeFilter && !r.meal_types.includes(mealTypeFilter)) return false;
+      if (q !== '' && !normalizeText(r.name).includes(q)) return false;
+      return true;
+    });
+  }, [recipes.data, query, mealTypeFilter]);
 
   const { key: mealKey, params: mealParams } = mealLabelKey(target.mealIndex);
   const destination = {
@@ -178,7 +196,12 @@ export function AddRecipeDrawer({
       <div className="flex shrink-0 items-start gap-2.5 px-4.5 pb-3 pt-1">
         <div className="min-w-0 flex-1">
           <h2 className="text-[18px] font-semibold">{title}</h2>
-          <span className="tnum text-[11.5px] text-muted-foreground">{destinationLabel}</span>
+          <span
+            data-testid="destination"
+            className="tnum text-[11.5px] text-muted-foreground"
+          >
+            {destinationLabel}
+          </span>
         </div>
         {showClose && (
           <Button
@@ -218,6 +241,48 @@ export function AddRecipeDrawer({
               />
             </div>
           </div>
+
+          {mealTypeOptions.length > 0 && (
+            <div className="shrink-0 px-4.5 pb-2">
+              <div
+                role="radiogroup"
+                aria-label={t('addRecipe.filterLabel')}
+                className="flex flex-wrap gap-1.5"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={mealTypeFilter === null}
+                  onClick={() => setMealTypeFilter(null)}
+                  className={cn(
+                    'rounded-full border px-2.5 py-1 text-[11px] font-medium',
+                    mealTypeFilter === null
+                      ? 'border-accent-line bg-accent-soft'
+                      : 'border-border bg-card text-muted-foreground',
+                  )}
+                >
+                  {t('addRecipe.filterAll')}
+                </button>
+                {mealTypeOptions.map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="radio"
+                    aria-checked={mealTypeFilter === key}
+                    onClick={() => setMealTypeFilter(key)}
+                    className={cn(
+                      'rounded-full border px-2.5 py-1 text-[11px] font-medium',
+                      mealTypeFilter === key
+                        ? 'border-accent-line bg-accent-soft'
+                        : 'border-border bg-card text-muted-foreground',
+                    )}
+                  >
+                    {tRecetas(`mealTypes.${key}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4.5 pb-3">
             {results.length === 0 && (

@@ -1,6 +1,6 @@
 import i18n from '@/i18n';
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AddRecipeDrawer } from './AddRecipeDrawer';
 import { type Macros } from '@/features/recipes/macros';
@@ -46,9 +46,11 @@ describe('AddRecipeDrawer', () => {
       <AddRecipeDrawer open onOpenChange={noop} target={targetDay} targets={macroTargets}
         onAdd={noop} onUpdate={noop} onRemove={noop} />,
     );
-    // Meal 1 = "Comida", at 14:00.
-    expect(screen.getByText(/Comida/)).toBeInTheDocument();
-    expect(screen.getByText(/14:00/)).toBeInTheDocument();
+    // Meal 1 = "Comida", at 14:00. Scoped to the destination line — a meal-type
+    // filter chip also reads "Comida" (lunch), so an unscoped query would collide.
+    const destination = screen.getByTestId('destination');
+    expect(destination).toHaveTextContent(/Comida/);
+    expect(destination).toHaveTextContent(/14:00/);
   });
 
   it('filters the recipe list by the search box', async () => {
@@ -78,9 +80,11 @@ describe('AddRecipeDrawer', () => {
     const p = document.body.querySelector('[data-metric="protein"]');
     expect(p).not.toBeNull();
 
+    // The stepper moves in half-serving increments across the whole range
+    // (matches the Diario's ración stepper): 1 -> 1.5, not 1 -> 2.
     await user.click(screen.getByRole('button', { name: /más|increase|\+/i }));
-    // 2 servings: 1500 + 800 = 2300.
-    expect(screen.getByTestId('projected-kcal')).toHaveTextContent('2300');
+    // 1.5 servings: 1500 + 600 = 2100.
+    expect(screen.getByTestId('projected-kcal')).toHaveTextContent('2100');
   });
 
   it('adds the picked recipe with its servings', async () => {
@@ -115,6 +119,40 @@ describe('AddRecipeDrawer', () => {
     expect(screen.getByTestId('projected-kcal')).toHaveTextContent('1900');
     await user.click(screen.getByRole('button', { name: /guardar|añadir a/i }));
     expect(onUpdate).toHaveBeenCalledWith('e1', 'r1', 'Lentejas estofadas', 1);
+  });
+
+  it('filters the recipe list by meal-type chips, composing with the search box', async () => {
+    const user = userEvent.setup();
+    render(
+      <AddRecipeDrawer open onOpenChange={noop} target={targetDay} targets={macroTargets}
+        onAdd={noop} onUpdate={noop} onRemove={noop} />,
+    );
+    // Both recipes visible with no filter applied.
+    expect(screen.getByText('Lentejas estofadas')).toBeInTheDocument();
+    expect(screen.getByText('Tortilla francesa')).toBeInTheDocument();
+
+    // Scoped to the chip group by role — avoids colliding with the "Comida"
+    // destino chip text asserted in the destination test above.
+    const group = screen.getByRole('radiogroup', { name: /tipo de comida/i });
+    expect(within(group).getByRole('radio', { name: 'Todas' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+
+    // r2 (Tortilla francesa) carries meal_types: ['dinner'] -> "Cena".
+    await user.click(within(group).getByRole('radio', { name: 'Cena' }));
+    expect(screen.getByText('Tortilla francesa')).toBeInTheDocument();
+    expect(screen.queryByText('Lentejas estofadas')).toBeNull();
+
+    // Chips compose (AND) with the search box.
+    await user.type(screen.getByRole('searchbox'), 'lentej');
+    expect(screen.queryByText('Tortilla francesa')).toBeNull();
+    expect(screen.queryByText('Lentejas estofadas')).toBeNull();
+
+    // "Todas" clears the meal-type facet; the search term still narrows it.
+    await user.click(within(group).getByRole('radio', { name: 'Todas' }));
+    expect(screen.getByText('Lentejas estofadas')).toBeInTheDocument();
+    expect(screen.queryByText('Tortilla francesa')).toBeNull();
   });
 
   it('offers delete only in edit mode', () => {
