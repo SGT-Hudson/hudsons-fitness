@@ -25,7 +25,7 @@ alter table public.meal_plan_templates
 -- ----------------------------------------------------------------------------
 drop function if exists public.save_template(uuid, text, boolean, text[], jsonb, jsonb);
 
-create function public.save_template(
+create or replace function public.save_template(
   p_template_id uuid, p_name text, p_same_schedule_all_days boolean,
   p_default_meal_times text[], p_slots jsonb,
   p_day_times jsonb default '[]'::jsonb,
@@ -107,7 +107,7 @@ grant execute on function
 -- ----------------------------------------------------------------------------
 drop function if exists public.save_week_as_template(uuid, text);
 
-create function public.save_week_as_template(
+create or replace function public.save_week_as_template(
   p_week_id uuid, p_name text, p_phase_type text default null
 )
 returns uuid
