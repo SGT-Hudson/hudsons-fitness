@@ -3,10 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import { ResponsiveDialog } from '@/components/ui/ResponsiveDialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import { formatDate, type Locale } from '@/lib/dates';
 import { roundMacro, computeRecipeMacros, type Macros } from '@/features/recipes/macros';
 import { useRecipes } from '@/features/recipes/hooks';
@@ -135,7 +133,6 @@ export function AddToDaySheet({
 }: Props) {
   const { t, i18n } = useTranslation('diario');
   const { t: tIngredientes } = useTranslation('ingredientes');
-  const isDesktop = useMediaQuery('(min-width: 768px)');
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
 
@@ -446,25 +443,14 @@ export function AddToDaySheet({
 
   const body = step === 'explore' ? exploreBody : racionBody;
 
-  if (isDesktop) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="inset-y-0 left-auto right-0 flex h-full max-h-full w-full max-w-md translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-l p-0 sm:rounded-none">
-          <DialogTitle className="sr-only">{sheetTitle}</DialogTitle>
-          {renderHeader(false)}
-          {body}
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-[88vh] max-h-[88vh] gap-0 p-0">
-        <DrawerTitle className="sr-only">{sheetTitle}</DrawerTitle>
-        {renderHeader(true)}
-        {body}
-      </DrawerContent>
-    </Drawer>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange} title={sheetTitle} variant="panel">
+      {({ isMobile }) => (
+        <>
+          {renderHeader(isMobile)}
+          {body}
+        </>
+      )}
+    </ResponsiveDialog>
   );
 }
