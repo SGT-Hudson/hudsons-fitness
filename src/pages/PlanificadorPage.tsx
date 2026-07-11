@@ -91,19 +91,29 @@ export function PlanificadorPage() {
 
   const todayTotals = dayTotals.get(today) ?? ZERO_MACROS;
 
-  // Mobile "today" list: one block per configured meal time, plus any orphan
-  // meal_index the week diverged into — same row model as WeekGrid.
+  // Mobile "today" list: one block per configured meal time, plus orphan
+  // (meal_index, meal_time) rows unioned across the WHOLE week's slots — like
+  // WeekGrid — not just today's. meal_times comes only from the source
+  // template, and source_template_id is ON DELETE SET NULL, so a week whose
+  // template got deleted keeps its slots but reports meal_times: []; deriving
+  // orphans from today alone would leave today with zero rows (no way to add
+  // a meal) whenever today itself happens to have no slots. Entries are still
+  // filtered down to today's date, and — unlike WeekGrid — grouped by
+  // meal_index alone (this list only ever shows one day, so it doesn't need
+  // WeekGrid's extra meal_time key to keep several days aligned).
   const mealTimes = week.data?.meal_times ?? [];
   const todaySlots = slots.filter((s) => s.date === today);
+  const weekOrphans = new Map<string, { mealIndex: number; mealTime: string | null }>();
+  for (const s of slots) {
+    if (s.meal_index < mealTimes.length) continue;
+    const key = `${s.meal_index}|${s.meal_time ?? ''}`;
+    if (!weekOrphans.has(key)) weekOrphans.set(key, { mealIndex: s.meal_index, mealTime: s.meal_time });
+  }
   const todayMeals: TodayMeal[] = [
-    ...mealTimes.map((time, i) => ({ mealIndex: i, mealTime: time as string | null })),
-    ...Array.from(
-      new Map(
-        todaySlots
-          .filter((s) => s.meal_index >= mealTimes.length)
-          .map((s) => [s.meal_index, { mealIndex: s.meal_index, mealTime: s.meal_time }]),
-      ).values(),
-    ).sort((a, b) => a.mealIndex - b.mealIndex),
+    ...mealTimes.map((time, i) => ({ mealIndex: i, mealTime: time })),
+    ...Array.from(weekOrphans.values()).sort(
+      (a, b) => a.mealIndex - b.mealIndex || (a.mealTime ?? '').localeCompare(b.mealTime ?? ''),
+    ),
   ].map((row) => ({
     ...row,
     entries: todaySlots
@@ -255,7 +265,7 @@ export function PlanificadorPage() {
       <div className="space-y-4">
         {/* Mobile header block: week label + phase chip + the shopping-list button
             (the desktop header carries all three). */}
-        <div className="flex items-center gap-2 md:hidden">
+        <div data-mobile-stack="header" className="flex items-center gap-2 md:hidden">
           <span className="tnum text-[11.5px] text-text-dim">{weekLabel}</span>
           {phaseType && <PhaseChip phase={phaseType} className="ml-auto" />}
           <Button
@@ -314,7 +324,7 @@ export function PlanificadorPage() {
           week.data && (
             <>
               {/* Mobile: strip + summary chart + today's plan. */}
-              <div className="space-y-3 md:hidden">
+              <div data-mobile-stack="today" className="space-y-3 md:hidden">
                 <WeekStrip days={chartDays} target={targets?.kcal} phase={phaseType} />
                 <WeekSummaryCard days={chartDays} targets={targets} phase={phaseType} />
 

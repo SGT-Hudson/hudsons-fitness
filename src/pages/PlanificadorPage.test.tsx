@@ -1,6 +1,7 @@
 import i18n from '@/i18n';
-import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import { render, screen, within, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PlanificadorPage } from './PlanificadorPage';
@@ -8,8 +9,21 @@ import { ZERO_MACROS } from '@/features/recipes/macros';
 import type { ActiveWeek } from '@/features/planner/api';
 
 // Freeze "today" so the week is deterministic: Tue 2026-05-26 (week of Mon 05-25).
-vi.useFakeTimers();
+// shouldAdvanceTime lets userEvent's internal scheduling progress while the
+// system clock stays pinned, matching MeasurementDialog/PhaseDialog's pattern.
+vi.useFakeTimers({ shouldAdvanceTime: true });
 vi.setSystemTime(new Date('2026-05-26T09:00:00'));
+
+afterAll(() => {
+  vi.useRealTimers();
+});
+
+// Distinct spies (not the shared noopMutation) so the update-vs-add wiring is
+// actually verifiable — see the "updates the existing entry" test below.
+const { updateWeekSlotMutate, addWeekSlotMutate } = vi.hoisted(() => ({
+  updateWeekSlotMutate: vi.fn().mockResolvedValue(undefined),
+  addWeekSlotMutate: vi.fn().mockResolvedValue(undefined),
+}));
 
 const week: ActiveWeek = {
   id: 'w1',
@@ -37,8 +51,8 @@ const noopMutation = { mutateAsync: vi.fn(), isPending: false };
 
 vi.mock('@/features/planner/hooks', () => ({
   useActiveWeek: () => ({ data: week, isLoading: false }),
-  useAddWeekSlot: () => noopMutation,
-  useUpdateWeekSlot: () => noopMutation,
+  useAddWeekSlot: () => ({ mutateAsync: addWeekSlotMutate, isPending: false }),
+  useUpdateWeekSlot: () => ({ mutateAsync: updateWeekSlotMutate, isPending: false }),
   useDeleteWeekSlot: () => noopMutation,
   useCopyWeekMeal: () => noopMutation,
   useApplyTemplateToWeek: () => noopMutation,
@@ -78,6 +92,11 @@ beforeAll(() => {
   void i18n.changeLanguage('es');
 });
 
+beforeEach(() => {
+  updateWeekSlotMutate.mockClear();
+  addWeekSlotMutate.mockClear();
+});
+
 describe('PlanificadorPage', () => {
   it('renders the page title (twice — PageShell mounts both headers by design)', () => {
     renderPage();
@@ -100,5 +119,39 @@ describe('PlanificadorPage', () => {
     renderPage();
     expect(screen.getAllByRole('button', { name: /lista de la compra/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('button', { name: /guardar como plantilla/i }).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders the mobile shopping-cart button inside the mobile header stack (not just the desktop header)', () => {
+    const { container } = renderPage();
+    const mobileHeader = container.querySelector('[data-mobile-stack="header"]');
+    expect(mobileHeader).not.toBeNull();
+    expect(
+      within(mobileHeader as HTMLElement).getByRole('button', { name: /lista de la compra/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the mobile apply/save actions inside the mobile today stack (not just the desktop header)', () => {
+    const { container } = renderPage();
+    const mobileToday = container.querySelector('[data-mobile-stack="today"]');
+    expect(mobileToday).not.toBeNull();
+    const scope = within(mobileToday as HTMLElement);
+    expect(scope.getByRole('button', { name: /aplicar plantilla/i })).toBeInTheDocument();
+    expect(scope.getByRole('button', { name: /guardar como plantilla/i })).toBeInTheDocument();
+  });
+
+  it('updates the existing entry (not add) when editing a planned meal from the mobile list', async () => {
+    const user = userEvent.setup();
+    const { container } = renderPage();
+    const mobileToday = container.querySelector('[data-mobile-stack="today"]') as HTMLElement;
+
+    await user.click(within(mobileToday).getByRole('button', { name: /avena con plátano/i }));
+    await user.click(await screen.findByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => expect(updateWeekSlotMutate).toHaveBeenCalledTimes(1));
+    expect(updateWeekSlotMutate).toHaveBeenCalledWith({
+      id: 's1',
+      patch: { recipe_id: 'r1', servings: 1 },
+    });
+    expect(addWeekSlotMutate).not.toHaveBeenCalled();
   });
 });
