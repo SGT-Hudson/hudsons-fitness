@@ -34,9 +34,14 @@ const TEXT_TONE: Record<Tone, string> = {
   neutral: 'text-muted-foreground',
 };
 
-interface Props {
-  /** ISO `YYYY-MM-DD`. */
-  dateIso: string;
+/**
+ * A planner day carries an ISO date, from which the weekday + day-number are
+ * derived. A template day (`day_of_week` 0-6, no date) has no date to derive
+ * from — it supplies its own label verbatim instead.
+ */
+type DayHeaderIdentity = { dateIso: string } | { label: string; sublabel?: string };
+
+interface DayHeaderCardBaseProps {
   isToday: boolean;
   isPast?: boolean;
   totals: Macros;
@@ -47,25 +52,18 @@ interface Props {
   className?: string;
 }
 
+type Props = DayHeaderCardBaseProps & DayHeaderIdentity;
+
 /**
  * The canvas `PlaniDayHeader`: a tone-striped column head carrying the day's
  * planned kcal against target and a 2×2 macro-chip grid. Today is marked with a
  * *neutral* outline, deliberately — a coloured one would collide with the
  * semantic tone palette (canvas `TODAY_OUTLINE`).
  */
-export function DayHeaderCard({
-  dateIso,
-  isToday,
-  isPast,
-  totals,
-  targets,
-  phaseType,
-  weightKg,
-  className,
-}: Props) {
+export function DayHeaderCard(props: Props) {
+  const { isToday, isPast, totals, targets, phaseType, weightKg, className } = props;
   const { i18n } = useTranslation('planning');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
-  const date = parseISO(dateIso);
 
   // A day with nothing planned carries no signal: `classify` would call it
   // `good` in a cut (the cut band only guards the upper side) and `low` in a
@@ -101,12 +99,25 @@ export function DayHeaderCard({
       />
 
       <div className="mt-px flex items-baseline gap-1.5">
-        <span className="text-[10px] font-medium uppercase tracking-[0.05em] text-text-dim">
-          {formatDate(date, 'EEE', locale)}
-        </span>
-        <span className="tnum text-base font-semibold leading-none">
-          {formatDate(date, 'd', locale)}
-        </span>
+        {'dateIso' in props ? (
+          <>
+            <span className="text-[10px] font-medium uppercase tracking-[0.05em] text-text-dim">
+              {formatDate(parseISO(props.dateIso), 'EEE', locale)}
+            </span>
+            <span className="tnum text-base font-semibold leading-none">
+              {formatDate(parseISO(props.dateIso), 'd', locale)}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="text-[10px] font-medium uppercase tracking-[0.05em] text-text-dim">
+              {props.label}
+            </span>
+            {props.sublabel && (
+              <span className="tnum text-base font-semibold leading-none">{props.sublabel}</span>
+            )}
+          </>
+        )}
       </div>
 
       <div>

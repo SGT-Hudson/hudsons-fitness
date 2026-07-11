@@ -122,4 +122,30 @@ describe('DayHeaderCard', () => {
       expect(chip?.className).not.toContain('border-destructive');
     }
   });
+
+  it('renders a passed label verbatim, with no date parsing, when given a label identity', () => {
+    render(
+      <DayHeaderCard label="Lunes" isToday={false} totals={totals} targets={targets} phaseType="cut" />,
+    );
+    expect(screen.getByText('Lunes')).toBeInTheDocument();
+    // A label identity carries no dateIso at all — nothing to parse into a
+    // weekday/day-number pair; the kcal hero and delta still render normally.
+    expect(screen.getByText('2240')).toBeInTheDocument();
+    expect(screen.getByText('+60')).toBeInTheDocument();
+  });
+
+  it('renders the optional sublabel alongside the label, verbatim', () => {
+    render(
+      <DayHeaderCard
+        label="Lunes"
+        sublabel="Semana 1"
+        isToday={false}
+        totals={totals}
+        targets={targets}
+        phaseType="cut"
+      />,
+    );
+    expect(screen.getByText('Lunes')).toBeInTheDocument();
+    expect(screen.getByText('Semana 1')).toBeInTheDocument();
+  });
 });

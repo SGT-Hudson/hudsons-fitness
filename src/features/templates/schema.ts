@@ -20,6 +20,11 @@ export const templateFormSchema = z
   .object({
     name: z.string(),
     meal_times: z.array(z.string()),
+    // The template's OWN phase tag — not the user's active phase. `null` is a
+    // first-class value ("works for any phase"), never a missing one: the
+    // editor's picker offers it explicitly and `save_template` writes
+    // `p_phase_type` unconditionally, so null clears the tag.
+    phase_type: z.enum(['cut', 'maintenance', 'bulk']).nullable(),
   })
   .superRefine((v, ctx) => {
     if (v.name.trim() === '') {

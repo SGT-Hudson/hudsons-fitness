@@ -7,9 +7,8 @@ import { MEAL_TYPE_ORDER } from './api';
 // The dialog is multi-mode: create has a recipe / ingredient / custom tab;
 // edit is locked to whatever the existing log was. The recipe/ingredient
 // autocomplete entities stay in component state (entity objects, not form
-// primitives — same pattern as RecipePickerDialog); the schema validates the
-// numeric/text primitives and is told, via `hasRecipe` / `hasIngredient`
-// booleans, whether an entity is selected.
+// primitives); the schema validates the numeric/text primitives and is told,
+// via `hasRecipe` / `hasIngredient` booleans, whether an entity is selected.
 //
 // Parity with the prior hand-rolled cascade in handleSubmit (each branch's
 // FIRST failing check, mapped to its exact i18n key):
