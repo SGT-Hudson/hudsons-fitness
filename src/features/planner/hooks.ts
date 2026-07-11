@@ -8,6 +8,7 @@ import {
 } from '@/lib/toast-helpers';
 import {
   addWeekSlot,
+  appendWeekMeal,
   applyTemplateToWeek,
   copyWeekMeal,
   deleteWeekSlot,
@@ -100,6 +101,18 @@ export function useCopyWeekMeal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: copyWeekMeal,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['planner'] });
+      toastSaved();
+    },
+    onError: toastError,
+  });
+}
+
+export function useAppendWeekMeal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: appendWeekMeal,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['planner'] });
       toastSaved();
