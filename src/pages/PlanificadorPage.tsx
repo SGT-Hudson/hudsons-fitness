@@ -78,16 +78,28 @@ export function PlanificadorPage() {
 
   // The three PR-B surfaces are mounted ONCE, here — not per cell. The grid and
   // the mobile list only raise intents; the page owns which slot they land on.
+  //
+  // `addTarget`/`peek` hold the surface's CONTENT and `addOpen`/`peekOpen` hold
+  // its visibility — deliberately two separate pieces of state. Closing only
+  // flips the `*Open` boolean; the content is left alone, so the drawer/peek
+  // keeps rendering its last payload while vaul/Radix plays the exit
+  // transition. Nulling the content in the same tick as the close would
+  // remove the component's props out from under it mid-animation (or, before
+  // this split, unmount it outright). A fresh open always sets both the new
+  // content AND `*Open = true` together, so the next slot's content can never
+  // flash the previous slot's payload.
   const [addTarget, setAddTarget] = useState<{
     target: AddRecipeTarget;
     editing?: AddRecipeEditing;
   } | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
   const [peek, setPeek] = useState<{
     entry: PlannerCellEntry;
     date: string;
     mealIndex: number;
     mealTime: string | null;
   } | null>(null);
+  const [peekOpen, setPeekOpen] = useState(false);
 
   const weekDates = Array.from({ length: 7 }, (_, i) =>
     formatDate(addDays(parseISO(weekStart), i), 'yyyy-MM-dd', locale),
@@ -201,6 +213,7 @@ export function PlanificadorPage() {
     setAddTarget({
       target: { date, mealIndex, mealTime, dayTotals: dayTotals.get(date) ?? ZERO_MACROS },
     });
+    setAddOpen(true);
   }
 
   /**
@@ -219,6 +232,18 @@ export function PlanificadorPage() {
         macros: entry.macros,
       },
     });
+    setAddOpen(true);
+  }
+
+  /** Open the recipe peek on a planned entry. */
+  function openPeek(
+    entry: PlannerCellEntry,
+    date: string,
+    mealIndex: number,
+    mealTime: string | null,
+  ) {
+    setPeek({ entry, date, mealIndex, mealTime });
+    setPeekOpen(true);
   }
 
   /** The plan context a peeked recipe was opened from: "mar 26 · Desayuno · 08:00". */
@@ -421,12 +446,7 @@ export function PlanificadorPage() {
                   onCopyMeal={(mealIndex) => setCopySource({ date: selectedDate, mealIndex })}
                   onOpenEntry={(entry) => {
                     const row = dayMeals.find((m) => m.entries.some((e) => e.id === entry.id));
-                    setPeek({
-                      entry,
-                      date: selectedDate,
-                      mealIndex: row?.mealIndex ?? 0,
-                      mealTime: row?.mealTime ?? null,
-                    });
+                    openPeek(entry, selectedDate, row?.mealIndex ?? 0, row?.mealTime ?? null);
                   }}
                 />
 
@@ -459,9 +479,7 @@ export function PlanificadorPage() {
                   phaseType={phaseType}
                   weightKg={weightKg}
                   onAddRequest={openAdd}
-                  onOpenEntry={(entry, date, mealIndex, mealTime) =>
-                    setPeek({ entry, date, mealIndex, mealTime })
-                  }
+                  onOpenEntry={openPeek}
                   onCopyMeal={(date, mealIndex) => setCopySource({ date, mealIndex })}
                 />
               </div>
@@ -490,8 +508,8 @@ export function PlanificadorPage() {
         />
         {addTarget && (
           <AddRecipeDrawer
-            open
-            onOpenChange={(o) => !o && setAddTarget(null)}
+            open={addOpen}
+            onOpenChange={setAddOpen}
             target={addTarget.target}
             editing={addTarget.editing}
             targets={targets}
@@ -500,31 +518,31 @@ export function PlanificadorPage() {
             onAdd={async (recipeId, recipeName, servings) => {
               const { date, mealIndex, mealTime } = addTarget.target;
               await handleAdd(date, mealIndex, mealTime, { id: recipeId, name: recipeName }, servings);
-              setAddTarget(null);
+              setAddOpen(false);
             }}
             onUpdate={async (entryId, recipeId, _recipeName, servings) => {
               await updateSlot.mutateAsync({
                 id: entryId,
                 patch: { recipe_id: recipeId, servings },
               });
-              setAddTarget(null);
+              setAddOpen(false);
             }}
             onRemove={async (entryId) => {
               await deleteSlot.mutateAsync(entryId);
-              setAddTarget(null);
+              setAddOpen(false);
             }}
           />
         )}
         {peek && (
           <RecipePeek
-            open
-            onOpenChange={(o) => !o && setPeek(null)}
+            open={peekOpen}
+            onOpenChange={setPeekOpen}
             recipeId={peek.entry.recipe_id}
             contextLabel={slotLabel(peek.date, peek.mealIndex, peek.mealTime)}
             servings={peek.entry.servings}
             onEdit={() => {
               openEdit(peek.entry, peek.date, peek.mealIndex, peek.mealTime);
-              setPeek(null);
+              setPeekOpen(false);
             }}
           />
         )}
