@@ -159,6 +159,16 @@
     "addMore": "add",
     "kcal": "kcal"
   },
+  "peek": {
+    "title": "Recipe in the plan",
+    "servings": "{{count}} servings",
+    "ingredients": "Ingredients",
+    "instructions": "Method",
+    "perServing": "Per serving",
+    "planned": "Planned: {{count}} serving(s)",
+    "open": "Open recipe",
+    "missing": "The recipe could not be loaded."
+  },
   "shopping": {
     "open": "Shopping list",
     "title": "Shopping list",

@@ -159,6 +159,16 @@
     "addMore": "añadir",
     "kcal": "kcal"
   },
+  "peek": {
+    "title": "Receta del plan",
+    "servings": "{{count}} raciones",
+    "ingredients": "Ingredientes",
+    "instructions": "Elaboración",
+    "perServing": "Por ración",
+    "planned": "Planificado: {{count}} ración(es)",
+    "open": "Abrir receta",
+    "missing": "No se pudo cargar la receta."
+  },
   "shopping": {
     "open": "Lista de la compra",
     "title": "Lista de la compra",
