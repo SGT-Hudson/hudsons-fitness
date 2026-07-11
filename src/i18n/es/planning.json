@@ -136,9 +136,9 @@
     "title": "Aplicar plantilla",
     "subtitle": "Se aplicará desde {{date}} en adelante. Los días anteriores no se tocan.",
     "template": "Plantilla",
-    "placeholder": "Elige una plantilla…",
     "noTemplates": "No tienes plantillas todavía.",
     "submit": "Aplicar",
+    "willFillLabel": "Días que se rellenarán",
     "errors": {
       "pickTemplate": "Elige una plantilla."
     }
@@ -208,5 +208,9 @@
     "addExtraPlaceholder": "Añadir artículo (p. ej. café)…",
     "addExtra": "Añadir artículo",
     "removeExtra": "Quitar"
+  },
+  "weekStrip": {
+    "willFill": "Se rellena",
+    "untouched": "Sin cambios"
   }
 }

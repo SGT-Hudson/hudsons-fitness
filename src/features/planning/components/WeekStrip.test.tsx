@@ -113,3 +113,30 @@ describe('WeekStrip', () => {
     expect(today.className).toContain('bg-accent-soft'); // …without losing the today tint
   });
 });
+
+describe('WeekStrip — fill variant', () => {
+  it('splits the week at fillFrom: earlier days untouched, that day onward filled', () => {
+    const { container } = render(<WeekStrip variant="fill" days={days} fillFrom="2026-05-28" />);
+
+    const filled = [...container.querySelectorAll('[data-fill="true"]')].map((el) =>
+      el.getAttribute('data-day'),
+    );
+    const untouched = [...container.querySelectorAll('[data-fill="false"]')].map((el) =>
+      el.getAttribute('data-day'),
+    );
+
+    expect(untouched).toEqual(['2026-05-25', '2026-05-26', '2026-05-27']);
+    expect(filled).toEqual(['2026-05-28', '2026-05-29', '2026-05-30', '2026-05-31']);
+  });
+
+  it('is a read-out, not a picker — nothing to press, no kcal tones', () => {
+    const { container } = render(
+      <WeekStrip variant="fill" days={days} target={2180} phase="cut" fillFrom="2026-05-28" />,
+    );
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    // Saturday is over target, but the fill strip reports writes, not nutrition.
+    const sat = container.querySelector('[data-day="2026-05-30"] [data-stripe]');
+    expect(sat?.className).not.toContain('bg-destructive');
+    expect(sat?.className).toContain('bg-accent');
+  });
+});

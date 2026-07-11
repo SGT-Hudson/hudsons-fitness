@@ -136,9 +136,9 @@
     "title": "Apply template",
     "subtitle": "Applies from {{date}} onward. Earlier days are kept as-is.",
     "template": "Template",
-    "placeholder": "Pick a template…",
     "noTemplates": "You have no templates yet.",
     "submit": "Apply",
+    "willFillLabel": "Days this will fill",
     "errors": {
       "pickTemplate": "Pick a template."
     }
@@ -208,5 +208,9 @@
     "addExtraPlaceholder": "Add an item (e.g. coffee)…",
     "addExtra": "Add item",
     "removeExtra": "Remove"
+  },
+  "weekStrip": {
+    "willFill": "Gets filled",
+    "untouched": "Left as-is"
   }
 }

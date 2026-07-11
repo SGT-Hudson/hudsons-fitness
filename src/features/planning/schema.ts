@@ -5,12 +5,8 @@ import { pickFirstError } from '@/lib/zod';
 // All error copy stays in the components (localized `t(...)`); the schemas
 // only decide validity.
 
-// ApplyTemplateDialog: a template must be picked. Parity with the prior
-// `if (!templateId) → t('apply.errors.pickTemplate')`.
-export const applyTemplateFormSchema = z.object({
-  templateId: z.string().min(1),
-});
-export type ApplyTemplateFormValues = z.infer<typeof applyTemplateFormSchema>;
+// ApplyTemplateDialog validates a single "a template is picked" boolean and so
+// carries no schema — it is a radio list, not a form of fields.
 
 // SaveAsTemplateDialog: name required (trimmed non-empty). Parity with the
 // prior `if (trimmed === '') → t('save.errors.nameRequired')`.
