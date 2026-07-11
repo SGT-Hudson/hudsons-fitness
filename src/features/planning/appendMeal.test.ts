@@ -45,6 +45,40 @@ describe('appendMealRows', () => {
     expect(rows.map((r) => r.recipe_id)).toEqual(['r1', 'r2']);
   });
 
+  it('continues after the target bucket max even with duplicate/gappy orders', () => {
+    const rows = appendMealRows({
+      planWeekId: 'w1',
+      slots: [
+        slot({ date: '2026-05-25', recipe_id: 'r1', display_order: 0 }),
+        slot({ date: '2026-05-25', recipe_id: 'r2', display_order: 1 }),
+        // Tuesday's lunch already holds duplicate AND gappy orders: [0, 0, 7].
+        slot({ date: '2026-05-26', recipe_id: 'rX', display_order: 0 }),
+        slot({ date: '2026-05-26', recipe_id: 'rW', display_order: 0 }),
+        slot({ date: '2026-05-26', recipe_id: 'rY', display_order: 7 }),
+      ],
+      sourceDate: '2026-05-25',
+      mealIndex: 1,
+      targetDates: ['2026-05-26'],
+    });
+    // max(existing)+1 = 8, NOT occupied.length (3) which would yield [3, 4].
+    expect(rows.map((r) => r.display_order)).toEqual([8, 9]);
+  });
+
+  it('keeps each copied row its own meal_time, not the first source row\'s', () => {
+    const rows = appendMealRows({
+      planWeekId: 'w1',
+      slots: [
+        slot({ date: '2026-05-25', recipe_id: 'r1', display_order: 0, meal_time: '10:00' }),
+        slot({ date: '2026-05-25', recipe_id: 'r2', display_order: 1, meal_time: '16:00' }),
+      ],
+      sourceDate: '2026-05-25',
+      mealIndex: 1,
+      targetDates: ['2026-05-26'],
+    });
+    expect(rows.find((r) => r.recipe_id === 'r1')?.meal_time).toBe('10:00');
+    expect(rows.find((r) => r.recipe_id === 'r2')?.meal_time).toBe('16:00');
+  });
+
   it('starts at 0 on an empty target slot', () => {
     const rows = appendMealRows({
       planWeekId: 'w1',
