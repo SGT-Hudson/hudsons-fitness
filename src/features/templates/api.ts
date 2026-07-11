@@ -4,6 +4,10 @@ import type { Json, Tables } from '@/types/database';
 export type Template = Tables<'meal_plan_templates'>;
 export type TemplateSlot = Tables<'meal_plan_template_slots'>;
 
+// Same three values as the meal_plan_templates.phase_type check constraint;
+// null is first-class ("no phase") and must never be coerced to a default.
+export type TemplatePhase = 'cut' | 'maintenance' | 'bulk';
+
 export interface TemplateListItem {
   id: string;
   name: string;
@@ -11,6 +15,7 @@ export interface TemplateListItem {
   default_meal_times: string[];
   updated_at: string;
   slot_count: number;
+  phase_type: TemplatePhase | null;
 }
 
 export interface TemplateSlotWithRecipe {
@@ -29,6 +34,7 @@ export interface TemplateDetail {
   same_schedule_all_days: boolean;
   default_meal_times: string[];
   is_auto_generated: boolean;
+  phase_type: TemplatePhase | null;
   slots: TemplateSlotWithRecipe[];
 }
 
@@ -36,7 +42,7 @@ export async function listTemplates(userId: string): Promise<TemplateListItem[]>
   const { data, error } = await supabase
     .from('meal_plan_templates')
     .select(
-      'id, name, is_auto_generated, default_meal_times, updated_at, meal_plan_template_slots(id)',
+      'id, name, is_auto_generated, default_meal_times, updated_at, phase_type, meal_plan_template_slots(id)',
     )
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
@@ -48,6 +54,7 @@ export async function listTemplates(userId: string): Promise<TemplateListItem[]>
     default_meal_times: (t.default_meal_times as string[]) ?? [],
     updated_at: t.updated_at,
     slot_count: t.meal_plan_template_slots?.length ?? 0,
+    phase_type: (t.phase_type as TemplatePhase | null) ?? null,
   }));
 }
 
@@ -57,6 +64,7 @@ interface RawTemplate {
   same_schedule_all_days: boolean;
   default_meal_times: string[];
   is_auto_generated: boolean;
+  phase_type: TemplatePhase | null;
   meal_plan_template_slots: Array<{
     id: string;
     day_of_week: number;
@@ -72,7 +80,7 @@ export async function fetchTemplate(templateId: string): Promise<TemplateDetail>
   const { data, error } = await supabase
     .from('meal_plan_templates')
     .select(
-      `id, name, same_schedule_all_days, default_meal_times, is_auto_generated,
+      `id, name, same_schedule_all_days, default_meal_times, is_auto_generated, phase_type,
        meal_plan_template_slots (
          id, day_of_week, meal_index, recipe_id, servings, display_order,
          recipe:recipes (id, name)
@@ -88,6 +96,7 @@ export async function fetchTemplate(templateId: string): Promise<TemplateDetail>
     same_schedule_all_days: raw.same_schedule_all_days,
     default_meal_times: (raw.default_meal_times as string[]) ?? [],
     is_auto_generated: raw.is_auto_generated,
+    phase_type: raw.phase_type ?? null,
     slots: raw.meal_plan_template_slots
       .map((s) => {
         const recipe = Array.isArray(s.recipe) ? s.recipe[0] : s.recipe;
@@ -122,6 +131,7 @@ export interface SaveTemplatePayload {
     servings: number;
     display_order: number;
   }>;
+  phaseType: TemplatePhase | null;
 }
 
 export async function saveTemplate(payload: SaveTemplatePayload): Promise<string> {
@@ -131,6 +141,7 @@ export async function saveTemplate(payload: SaveTemplatePayload): Promise<string
     p_same_schedule_all_days: payload.sameScheduleAllDays,
     p_default_meal_times: payload.defaultMealTimes,
     p_slots: payload.slots as unknown as Json,
+    p_phase_type: payload.phaseType,
   });
   if (error) throw error;
   return data as string;

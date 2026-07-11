@@ -182,7 +182,8 @@ export function PlanificadorPage() {
 
   async function handleSaveAs(name: string) {
     if (!week.data) return;
-    await saveAs.mutateAsync({ weekId: week.data.id, name });
+    // Task 6 gives the save dialog a phase picker; until then always save with no phase.
+    await saveAs.mutateAsync({ weekId: week.data.id, name, phaseType: null });
   }
 
   async function handleAdd(

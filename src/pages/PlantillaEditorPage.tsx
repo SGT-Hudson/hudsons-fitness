@@ -198,6 +198,8 @@ export function PlantillaEditorPage() {
           servings: s.servings,
           display_order: i,
         })),
+        // Task 5 gives the editor a phase picker; until then always save with no phase.
+        phaseType: null,
       });
       navigate(isNew ? `/templates/${newId}` : '/templates', { replace: true });
     } catch (err) {
