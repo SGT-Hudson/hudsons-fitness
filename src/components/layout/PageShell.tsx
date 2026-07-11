@@ -5,15 +5,18 @@ import { MobileTopBar } from './MobileTopBar';
 interface PageHeaderV2Props {
   title: string;
   subtitle?: string;
+  /** Inline header content between the title and the actions (e.g. the planner's week label + phase chip + week metrics). */
+  meta?: ReactNode;
   actions?: ReactNode;
 }
 
 /** Desktop page header (canvas PageHeaderV2): 56px, full-bleed, actions right. */
-export function PageHeaderV2({ title, subtitle, actions }: PageHeaderV2Props) {
+export function PageHeaderV2({ title, subtitle, meta, actions }: PageHeaderV2Props) {
   return (
     <header className="hidden h-14 shrink-0 items-center gap-3.5 border-b bg-card px-6 md:flex">
       <h1 className="text-[17px] font-semibold tracking-[-0.02em]">{title}</h1>
       {subtitle && <span className="tnum text-[13.5px] text-text-dim">{subtitle}</span>}
+      {meta}
       <div className="flex-1" />
       {actions}
     </header>
@@ -34,7 +37,7 @@ interface PageShellProps extends PageHeaderV2Props {
  * Unified page frame: MobileTopBar (root) or BackHeader (sub-screen) below md,
  * PageHeaderV2 at md+, body centred and capped at --content-max (1280px).
  */
-export function PageShell({ title, subtitle, actions, back, children }: PageShellProps) {
+export function PageShell({ title, subtitle, meta, actions, back, children }: PageShellProps) {
   return (
     <>
       {back !== undefined ? (
@@ -48,7 +51,7 @@ export function PageShell({ title, subtitle, actions, back, children }: PageShel
       ) : (
         <MobileTopBar title={title} subtitle={subtitle} />
       )}
-      <PageHeaderV2 title={title} subtitle={subtitle} actions={actions} />
+      <PageHeaderV2 title={title} subtitle={subtitle} meta={meta} actions={actions} />
       <div className="mx-auto w-full max-w-content px-4 py-5 md:px-6">{children}</div>
     </>
   );

@@ -8,12 +8,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/layout/PageShell';
+import { PhaseChip } from '@/components/ui/PhaseChip';
 import { ApplyTemplateDialog } from '@/features/planning/components/ApplyTemplateDialog';
 import { CopyMealDialog, type CopyTarget } from '@/features/planning/components/CopyMealDialog';
 import { SaveAsTemplateDialog } from '@/features/planning/components/SaveAsTemplateDialog';
 import { ShoppingListDialog } from '@/features/planning/components/ShoppingListDialog';
+import { RecipePickerDialog } from '@/features/planning/components/RecipePickerDialog';
 import { WeekGrid } from '@/features/planning/components/WeekGrid';
+import { WeekStrip } from '@/features/planning/components/WeekStrip';
+import { WeekSummaryCard } from '@/features/planning/components/WeekSummaryCard';
+import { TodayPlanList, type TodayMeal } from '@/features/planning/components/TodayPlanList';
+import type { PlannerCellEntry } from '@/features/planning/components/PlannerMealCell';
 import { weekMealTargets } from '@/features/planning/copyTargets';
+import { isoWeekNumber, weekAverages } from '@/features/planning/weekSummary';
+import { aggregateDayMacros } from '@/features/planning/daySummary';
 import {
   useActiveWeek,
   useAddWeekSlot,
@@ -25,6 +33,7 @@ import {
 } from '@/features/planner/hooks';
 import { useTemplates } from '@/features/templates/hooks';
 import { useDailyTarget } from '@/features/planning/useDailyTarget';
+import { roundMacro, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { formatDate, isoDate, mondayOf, type Locale } from '@/lib/dates';
 
 function capitalize(s: string): string {
@@ -55,25 +64,71 @@ export function PlanificadorPage() {
   const copyMeal = useCopyWeekMeal();
   const [copySource, setCopySource] = useState<{ date: string; mealIndex: number } | null>(null);
 
+  // Mobile add/edit goes through the existing RecipePickerDialog until PR-B's
+  // add drawer + recipe peek replace it. Without this the mobile list would have
+  // no way to add a meal — the web grid's cell picker is desktop-only.
+  const [mobilePick, setMobilePick] = useState<{
+    mealIndex: number;
+    mealTime: string | null;
+    entry: PlannerCellEntry | null;
+  } | null>(null);
+  const pickedEntry = mobilePick?.entry ?? null;
+
   const weekDates = Array.from({ length: 7 }, (_, i) =>
     formatDate(addDays(parseISO(weekStart), i), 'yyyy-MM-dd', locale),
   );
 
+  const slots = week.data?.slots ?? [];
+  const dayTotals = aggregateDayMacros(slots.map((s) => ({ key: s.date, macros: s.macros })));
+  const perDay: Macros[] = weekDates.map((d) => dayTotals.get(d) ?? ZERO_MACROS);
+  const { avgKcal, avgProteinG, proteinPct } = weekAverages(perDay, targets);
+
+  const chartDays = weekDates.map((d) => ({
+    date: d,
+    kcal: (dayTotals.get(d) ?? ZERO_MACROS).kcal,
+    isToday: d === today,
+  }));
+
+  const todayTotals = dayTotals.get(today) ?? ZERO_MACROS;
+
+  // Mobile "today" list: one block per configured meal time, plus any orphan
+  // meal_index the week diverged into — same row model as WeekGrid.
+  const mealTimes = week.data?.meal_times ?? [];
+  const todaySlots = slots.filter((s) => s.date === today);
+  const todayMeals: TodayMeal[] = [
+    ...mealTimes.map((time, i) => ({ mealIndex: i, mealTime: time as string | null })),
+    ...Array.from(
+      new Map(
+        todaySlots
+          .filter((s) => s.meal_index >= mealTimes.length)
+          .map((s) => [s.meal_index, { mealIndex: s.meal_index, mealTime: s.meal_time }]),
+      ).values(),
+    ).sort((a, b) => a.mealIndex - b.mealIndex),
+  ].map((row) => ({
+    ...row,
+    entries: todaySlots
+      .filter((s) => s.meal_index === row.mealIndex)
+      .sort((a, b) => a.display_order - b.display_order)
+      .map((s) => ({
+        id: s.id,
+        recipe_id: s.recipe_id,
+        recipe_name: s.recipe_name,
+        servings: s.servings,
+        macros: s.macros,
+      })),
+  }));
+
   const copyTargets: CopyTarget[] = copySource
-    ? weekMealTargets(week.data?.slots ?? [], weekDates, copySource.date, copySource.mealIndex).map(
-        (tg) => ({
-          key: tg.key,
-          label: capitalize(formatDate(parseISO(tg.key), 'EEEE', locale)),
-          sublabel: formatDate(parseISO(tg.key), 'd MMM', locale),
-          willOverwrite: tg.willOverwrite,
-        }),
-      )
+    ? weekMealTargets(slots, weekDates, copySource.date, copySource.mealIndex).map((tg) => ({
+        key: tg.key,
+        label: capitalize(formatDate(parseISO(tg.key), 'EEEE', locale)),
+        sublabel: formatDate(parseISO(tg.key), 'd MMM', locale),
+        willOverwrite: tg.willOverwrite,
+      }))
     : [];
 
   const copyEntries = copySource
-    ? (week.data?.slots ?? []).filter(
-        (s) => s.date === copySource.date && s.meal_index === copySource.mealIndex,
-      )
+    ? slots.filter((s) => s.date === copySource.date && s.meal_index === copySource.mealIndex)
     : [];
 
   const copySourceLabel = copySource
@@ -89,8 +144,32 @@ export function PlanificadorPage() {
     await saveAs.mutateAsync({ weekId: week.data.id, name });
   }
 
+  async function handleAdd(
+    date: string,
+    mealIndex: number,
+    mealTime: string | null,
+    recipe: { id: string; name: string },
+    servings: number,
+  ) {
+    if (!week.data) return;
+    const sameSlot = week.data.slots.filter(
+      (s) =>
+        s.date === date && s.meal_index === mealIndex && (s.meal_time ?? '') === (mealTime ?? ''),
+    );
+    await addSlot.mutateAsync({
+      plan_week_id: week.data.id,
+      date,
+      meal_index: mealIndex,
+      meal_time: mealTime,
+      recipe_id: recipe.id,
+      servings,
+      display_order: sameSlot.length,
+    });
+  }
+
   const hasTemplates = (templates.data ?? []).length > 0;
-  const isEmpty = !week.isLoading && (!week.data || week.data.slots.length === 0);
+  const hasSlots = (week.data?.slots.length ?? 0) > 0;
+  const isEmpty = !week.isLoading && !hasSlots;
 
   const busy =
     apply.isPending ||
@@ -98,6 +177,50 @@ export function PlanificadorPage() {
     updateSlot.isPending ||
     deleteSlot.isPending ||
     saveAs.isPending;
+
+  const weekLabel = t('planner.weekLabel', {
+    week: isoWeekNumber(weekStart),
+    from: formatDate(parseISO(weekStart), 'd MMM', locale),
+    to: formatDate(addDays(parseISO(weekStart), 6), 'd MMM', locale),
+  });
+
+  const applyLabel = week.data?.source_template_id
+    ? t('planner.swapTemplate')
+    : t('planner.applyTemplate');
+
+  // Desktop header meta: week label + phase chip + the two week metrics.
+  const headerMeta = (
+    <div className="flex items-center gap-3.5">
+      <span className="h-5 w-px bg-border" aria-hidden="true" />
+      <span className="tnum text-[13.5px] font-medium">{weekLabel}</span>
+      {phaseType && <PhaseChip phase={phaseType} />}
+      {targets && (
+        <>
+          <span className="h-5 w-px bg-border" aria-hidden="true" />
+          <span className="flex items-baseline gap-1.5 text-[12.5px]">
+            <span className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
+              {t('planner.avgKcal')}
+            </span>
+            <span className="tnum font-semibold">{avgKcal}</span>
+            <span className="tnum text-[11.5px] text-text-dim">
+              / {roundMacro(targets.kcal)} kcal
+            </span>
+          </span>
+          <span className="flex items-baseline gap-1.5 text-[12.5px]">
+            <span className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
+              {t('planner.proteinAvg')}
+            </span>
+            <span className="tnum font-semibold">{avgProteinG} g</span>
+            {proteinPct != null && (
+              <span className="tnum text-[11.5px] text-text-dim">
+                {t('planner.proteinPct', { pct: proteinPct })}
+              </span>
+            )}
+          </span>
+        </>
+      )}
+    </div>
+  );
 
   const headerActions = (
     <div className="flex flex-wrap gap-2">
@@ -114,21 +237,13 @@ export function PlanificadorPage() {
         title={!hasTemplates ? t('planner.needTemplate') : undefined}
       >
         <ArrowLeftRight className="h-4 w-4" />
-        {week.data?.source_template_id ? t('planner.swapTemplate') : t('planner.applyTemplate')}
+        {applyLabel}
       </Button>
-      <Button
-        variant="outline"
-        onClick={() => setSaveOpen(true)}
-        disabled={!week.data || week.data.slots.length === 0}
-      >
+      <Button variant="outline" onClick={() => setSaveOpen(true)} disabled={!hasSlots}>
         <Save className="h-4 w-4" />
         {t('planner.saveAsTemplate')}
       </Button>
-      <Button
-        variant="outline"
-        onClick={() => setShoppingOpen(true)}
-        disabled={!week.data || week.data.slots.length === 0}
-      >
+      <Button onClick={() => setShoppingOpen(true)} disabled={!hasSlots}>
         <ShoppingCart className="h-4 w-4" />
         {t('shopping.open')}
       </Button>
@@ -136,138 +251,228 @@ export function PlanificadorPage() {
   );
 
   return (
-    <PageShell title={t('planner.pageTitle')} actions={headerActions}>
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 md:hidden">{headerActions}</div>
-      <p className="text-sm text-muted-foreground">
-        {t('planner.weekOf', {
-          date: formatDate(weekStart, 'd MMM yyyy', locale),
-        })}
-      </p>
-
-      {week.data?.source_template_name && (
-        <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
-          <span>
-            {t('planner.basedOn', { name: week.data.source_template_name })}
-          </span>
-          {week.data.has_diverged && (
-            <Badge variant="warning" className="gap-1">
-              <Sparkles className="h-3 w-3" />
-              {t('planner.diverged')}
-            </Badge>
-          )}
+    <PageShell title={t('planner.pageTitle')} meta={headerMeta} actions={headerActions}>
+      <div className="space-y-4">
+        {/* Mobile header block: week label + phase chip + the shopping-list button
+            (the desktop header carries all three). */}
+        <div className="flex items-center gap-2 md:hidden">
+          <span className="tnum text-[11.5px] text-text-dim">{weekLabel}</span>
+          {phaseType && <PhaseChip phase={phaseType} className="ml-auto" />}
+          <Button
+            variant="outline"
+            size="icon"
+            className={phaseType ? undefined : 'ml-auto'}
+            onClick={() => setShoppingOpen(true)}
+            disabled={!hasSlots}
+            aria-label={t('shopping.open')}
+            title={t('shopping.open')}
+          >
+            <ShoppingCart className="h-4 w-4" />
+          </Button>
         </div>
-      )}
 
-      {week.isLoading ? (
-        <Card>
-          <CardContent className="py-6 space-y-3">
-            <Skeleton className="h-6 w-40" />
-            <div className="grid grid-cols-7 gap-2">
-              {Array.from({ length: 21 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ) : isEmpty ? (
-        <Card>
-          <CardContent className="py-10 text-center space-y-3">
-            <FileBox className="h-10 w-10 mx-auto text-muted-foreground" />
-            <p className="text-muted-foreground">
-              {hasTemplates ? t('planner.empty.hasTemplates') : t('planner.empty.noTemplates')}
-            </p>
-            {hasTemplates ? (
-              <Button onClick={() => setApplyOpen(true)}>
-                {t('planner.empty.applyCta')}
-              </Button>
-            ) : (
-              <Button asChild>
-                <Link to="/templates/new">{t('planner.empty.createCta')}</Link>
-              </Button>
+        {week.data?.source_template_name && (
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span>{t('planner.basedOn', { name: week.data.source_template_name })}</span>
+            {week.data.has_diverged && (
+              <Badge variant="warning" className="gap-1">
+                <Sparkles className="h-3 w-3" />
+                {t('planner.diverged')}
+              </Badge>
             )}
-          </CardContent>
-        </Card>
-      ) : (
-        week.data && (
-          <WeekGrid
-            weekStart={week.data.week_start}
-            slots={week.data.slots}
-            mealTimes={week.data.meal_times}
-            todayIso={today}
-            busy={busy}
-            targets={targets}
-            phaseType={phaseType}
-            weightKg={weightKg}
-            onAdd={async (date, mealIndex, mealTime, recipe, servings) => {
-              if (!week.data) return;
-              const sameSlot = week.data.slots.filter(
-                (s) =>
-                  s.date === date &&
-                  s.meal_index === mealIndex &&
-                  (s.meal_time ?? '') === (mealTime ?? ''),
-              );
-              await addSlot.mutateAsync({
-                plan_week_id: week.data.id,
-                date,
-                meal_index: mealIndex,
-                meal_time: mealTime,
-                recipe_id: recipe.id,
-                servings,
-                display_order: sameSlot.length,
-              });
-            }}
-            onUpdate={async (slotId, recipe, servings) => {
-              await updateSlot.mutateAsync({
-                id: slotId,
-                patch: { recipe_id: recipe.id, servings },
-              });
-            }}
-            onRemove={async (slotId) => {
-              await deleteSlot.mutateAsync(slotId);
-            }}
-            onCopyMeal={(date, mealIndex) => setCopySource({ date, mealIndex })}
-          />
-        )
-      )}
+          </div>
+        )}
 
-      <ApplyTemplateDialog
-        open={applyOpen}
-        onOpenChange={setApplyOpen}
-        targetDate={today}
-        onApply={handleApply}
-        busy={apply.isPending}
-      />
-      <SaveAsTemplateDialog
-        open={saveOpen}
-        onOpenChange={setSaveOpen}
-        weekStart={weekStart}
-        onSave={handleSaveAs}
-        busy={saveAs.isPending}
-      />
-      <ShoppingListDialog
-        open={shoppingOpen}
-        onOpenChange={setShoppingOpen}
-        weekStart={weekStart}
-      />
-      <CopyMealDialog
-        open={!!copySource}
-        onOpenChange={(o) => !o && setCopySource(null)}
-        sourceLabel={copySourceLabel}
-        entryCount={copyEntries.length}
-        targets={copyTargets}
-        busy={copyMeal.isPending}
-        onConfirm={async (keys) => {
-          if (!copySource || !week.data) return;
-          await copyMeal.mutateAsync({
-            plan_week_id: week.data.id,
-            source_date: copySource.date,
-            meal_index: copySource.mealIndex,
-            target_dates: keys,
-          });
-        }}
-      />
-    </div>
+        {week.isLoading ? (
+          <Card>
+            <CardContent className="space-y-3 py-6">
+              <Skeleton className="h-6 w-40" />
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: 21 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : isEmpty ? (
+          <Card>
+            <CardContent className="space-y-3 py-10 text-center">
+              <FileBox className="mx-auto h-10 w-10 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {hasTemplates ? t('planner.empty.hasTemplates') : t('planner.empty.noTemplates')}
+              </p>
+              {hasTemplates ? (
+                <Button onClick={() => setApplyOpen(true)}>{t('planner.empty.applyCta')}</Button>
+              ) : (
+                <Button asChild>
+                  <Link to="/templates/new">{t('planner.empty.createCta')}</Link>
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          week.data && (
+            <>
+              {/* Mobile: strip + summary chart + today's plan. */}
+              <div className="space-y-3 md:hidden">
+                <WeekStrip days={chartDays} target={targets?.kcal} phase={phaseType} />
+                <WeekSummaryCard days={chartDays} targets={targets} phase={phaseType} />
+
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.05em] text-muted-foreground">
+                    {t('planner.todayHeading', {
+                      date: capitalize(formatDate(parseISO(today), 'EEE d', locale)),
+                    })}
+                  </span>
+                  <span className="h-px flex-1 bg-border" aria-hidden="true" />
+                  {targets && (
+                    <span className="tnum text-[11px] text-text-dim">
+                      {t('planner.todayKcal', {
+                        consumed: roundMacro(todayTotals.kcal),
+                        target: roundMacro(targets.kcal),
+                      })}
+                    </span>
+                  )}
+                </div>
+
+                <TodayPlanList
+                  meals={todayMeals}
+                  busy={busy}
+                  onAddMeal={(mealIndex, mealTime) =>
+                    setMobilePick({ mealIndex, mealTime, entry: null })
+                  }
+                  onCopyMeal={(mealIndex) => setCopySource({ date: today, mealIndex })}
+                  onOpenEntry={(entry) => {
+                    const row = todayMeals.find((m) => m.entries.some((e) => e.id === entry.id));
+                    setMobilePick({
+                      mealIndex: row?.mealIndex ?? 0,
+                      mealTime: row?.mealTime ?? null,
+                      entry,
+                    });
+                  }}
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setApplyOpen(true)}
+                    disabled={!hasTemplates}
+                    title={!hasTemplates ? t('planner.needTemplate') : undefined}
+                  >
+                    <ArrowLeftRight className="h-4 w-4" />
+                    {applyLabel}
+                  </Button>
+                  <Button variant="outline" onClick={() => setSaveOpen(true)} disabled={!hasSlots}>
+                    <Save className="h-4 w-4" />
+                    {t('planner.saveAsTemplate')}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Web: the full week grid. */}
+              <div className="hidden md:block">
+                <WeekGrid
+                  weekStart={week.data.week_start}
+                  slots={week.data.slots}
+                  mealTimes={week.data.meal_times}
+                  todayIso={today}
+                  busy={busy}
+                  targets={targets}
+                  phaseType={phaseType}
+                  weightKg={weightKg}
+                  onAdd={handleAdd}
+                  onUpdate={async (slotId, recipe, servings) => {
+                    await updateSlot.mutateAsync({
+                      id: slotId,
+                      patch: { recipe_id: recipe.id, servings },
+                    });
+                  }}
+                  onRemove={async (slotId) => {
+                    await deleteSlot.mutateAsync(slotId);
+                  }}
+                  onCopyMeal={(date, mealIndex) => setCopySource({ date, mealIndex })}
+                />
+              </div>
+            </>
+          )
+        )}
+
+        <ApplyTemplateDialog
+          open={applyOpen}
+          onOpenChange={setApplyOpen}
+          targetDate={today}
+          onApply={handleApply}
+          busy={apply.isPending}
+        />
+        <SaveAsTemplateDialog
+          open={saveOpen}
+          onOpenChange={setSaveOpen}
+          weekStart={weekStart}
+          onSave={handleSaveAs}
+          busy={saveAs.isPending}
+        />
+        <ShoppingListDialog
+          open={shoppingOpen}
+          onOpenChange={setShoppingOpen}
+          weekStart={weekStart}
+        />
+        <RecipePickerDialog
+          open={!!mobilePick}
+          onOpenChange={(o) => !o && setMobilePick(null)}
+          initialRecipe={
+            pickedEntry
+              ? {
+                  id: pickedEntry.recipe_id,
+                  name: pickedEntry.recipe_name,
+                  servings: pickedEntry.servings,
+                }
+              : null
+          }
+          busy={busy}
+          onSave={async (recipeId, recipeName, servings) => {
+            if (!mobilePick) return;
+            if (pickedEntry) {
+              await updateSlot.mutateAsync({
+                id: pickedEntry.id,
+                patch: { recipe_id: recipeId, servings },
+              });
+            } else {
+              await handleAdd(
+                today,
+                mobilePick.mealIndex,
+                mobilePick.mealTime,
+                { id: recipeId, name: recipeName },
+                servings,
+              );
+            }
+          }}
+          onDelete={
+            pickedEntry
+              ? async () => {
+                  await deleteSlot.mutateAsync(pickedEntry.id);
+                  setMobilePick(null);
+                }
+              : undefined
+          }
+        />
+        <CopyMealDialog
+          open={!!copySource}
+          onOpenChange={(o) => !o && setCopySource(null)}
+          sourceLabel={copySourceLabel}
+          entryCount={copyEntries.length}
+          targets={copyTargets}
+          busy={copyMeal.isPending}
+          onConfirm={async (keys) => {
+            if (!copySource || !week.data) return;
+            await copyMeal.mutateAsync({
+              plan_week_id: week.data.id,
+              source_date: copySource.date,
+              meal_index: copySource.mealIndex,
+              target_dates: keys,
+            });
+          }}
+        />
+      </div>
     </PageShell>
   );
 }
