@@ -60,6 +60,7 @@ export function WeekSummaryCard({ days, targets, phase, className }: Props) {
         target={targets?.kcal ?? 0}
         phase={phase}
         showHeader={false}
+        showWeekdays={false}
         className="mt-2.5 rounded-none border-0 bg-transparent p-0"
       />
     </div>

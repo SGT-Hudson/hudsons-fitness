@@ -140,6 +140,24 @@ describe('WeeklyKcalChart', () => {
     expect(todayLabel).toHaveClass('font-semibold');
   });
 
+  it('showWeekdays={false} drops the weekday row (the planner strip above already shows it)', () => {
+    const days: WeeklyKcalDay[] = [
+      day('2026-07-04', 2000),
+      day('2026-07-05', 2000),
+      day('2026-07-06', 2000),
+      day('2026-07-07', 2000),
+      day('2026-07-08', 2000),
+      day('2026-07-09', 2000),
+      day('2026-07-10', 2000, true), // Friday
+    ];
+    const { container, queryByText } = render(
+      <WeeklyKcalChart days={days} target={2000} phase="cut" showWeekdays={false} />,
+    );
+    expect(queryByText(/^[VF]$/)).not.toBeInTheDocument();
+    // the bars themselves are untouched
+    expect(bars(container)).toHaveLength(7);
+  });
+
   it('renders the "Semana" title and "media … · obj …" summary with the dashed target chip', () => {
     const days: WeeklyKcalDay[] = [
       day('2026-07-04', 2000),

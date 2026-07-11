@@ -4,7 +4,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import i18n from '@/i18n';
-import { PageShell } from './PageShell';
+import { PageShell, PageHeaderV2 } from './PageShell';
 
 function Loc() {
   return <div data-testid="loc">{useLocation().pathname}</div>;
@@ -116,5 +116,42 @@ describe('PageShell', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Volver' }));
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('PageHeaderV2', () => {
+  function header(container: HTMLElement) {
+    return container.querySelector('header') as HTMLElement;
+  }
+
+  it('grows instead of clipping: min height, wrapping row, vertical padding', () => {
+    // The planner packs the row (title + week meta + 4 actions); a fixed `h-14`
+    // + `overflow` clipped the actions off the top of the page below ~1750px.
+    // The row must be free to wrap and the header free to grow with it.
+    const { container } = render(
+      <MemoryRouter>
+        <PageHeaderV2 title="Planificador" meta={<span>meta</span>} actions={<button>A</button>} />
+      </MemoryRouter>,
+    );
+    const el = header(container);
+    expect(el.className).toContain('min-h-14');
+    expect(el.className).toContain('flex-wrap');
+    // a wrapped row still needs to breathe
+    expect(el.className).toMatch(/(^|\s)py-2(\s|$)/);
+    // no fixed height — that is what clipped the content
+    expect(el.className).not.toMatch(/(^|\s)h-14(\s|$)/);
+  });
+
+  it('a header that fits on one row is unchanged: 56px tall, vertically centred', () => {
+    // min-h-14 (56px) + py-2 (16px) still measures 56px for any row up to 40px
+    // tall — every other page's header (title + a button, h-9) stays put.
+    const { container } = render(
+      <MemoryRouter>
+        <PageHeaderV2 title="Diario" />
+      </MemoryRouter>,
+    );
+    const el = header(container);
+    expect(el.className).toContain('min-h-14');
+    expect(el.className).toContain('items-center');
   });
 });
