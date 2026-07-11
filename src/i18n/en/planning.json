@@ -84,6 +84,7 @@
     "targetShort": "Target {{n}}",
     "kcalPerDay": "{{n}} kcal / day",
     "todayHeading": "Today · {{date}}",
+    "dayHeading": "{{date}}",
     "todayKcal": "{{consumed}} / {{target}} kcal",
     "addMeal": "Add meal",
     "mealName": { "0": "Breakfast", "1": "Lunch", "2": "Snack", "3": "Dinner" },

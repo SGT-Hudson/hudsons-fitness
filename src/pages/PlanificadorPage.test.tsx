@@ -82,6 +82,26 @@ const divergentWeek: ActiveWeek = {
   ],
 };
 
+// A week that also has a meal planned on Thursday (2026-05-28) — the day the
+// mobile view could not reach before the week strip became selectable.
+const weekWithThursday: ActiveWeek = {
+  ...week,
+  slots: [
+    ...week.slots,
+    {
+      id: 's4',
+      date: '2026-05-28',
+      meal_index: 1,
+      meal_time: '14:00',
+      recipe_id: 'r4',
+      recipe_name: 'Lentejas del jueves',
+      servings: 1,
+      display_order: 0,
+      macros: { ...ZERO_MACROS, kcal: 540, proteinG: 30, carbsG: 60, fatG: 12 },
+    },
+  ],
+};
+
 let activeWeekData: ActiveWeek = week;
 
 const noopMutation = { mutateAsync: vi.fn(), isPending: false };
@@ -111,7 +131,10 @@ vi.mock('@/features/planning/useDailyTarget', () => ({
 }));
 
 vi.mock('@/features/recipes/hooks', () => ({
-  useRecipes: () => ({ data: [], isLoading: false }),
+  useRecipes: () => ({
+    data: [{ id: 'r9', name: 'Pollo al horno', servings: 2, ingredient_count: 3 }],
+    isLoading: false,
+  }),
 }));
 
 function renderPage() {
@@ -205,5 +228,73 @@ describe('PlanificadorPage', () => {
     // the other day's orphan slot (meal_index 2, meal_time 16:00) must not
     // leak into today's list at all — it belongs to 2026-05-27, not today.
     expect(scope.queryByText('Batido de proteína')).not.toBeInTheDocument();
+  });
+});
+
+// The mobile view is the ONLY editable surface below `md` (the week grid is
+// `hidden md:block`), so the week strip has to be able to move the list off
+// today — otherwise Thursday's dinner is unreachable from a phone.
+describe('PlanificadorPage — mobile day selection', () => {
+  function mobileStack(container: HTMLElement) {
+    return container.querySelector('[data-mobile-stack="today"]') as HTMLElement;
+  }
+
+  it('defaults the mobile list to today', () => {
+    activeWeekData = weekWithThursday;
+    const { container } = renderPage();
+    const scope = within(mobileStack(container));
+
+    expect(scope.getByText('Hoy · Mar 26')).toBeInTheDocument();
+    expect(scope.getByText('Avena con plátano')).toBeInTheDocument();
+    expect(scope.queryByText('Lentejas del jueves')).not.toBeInTheDocument();
+  });
+
+  it('moves the mobile list, its heading and its totals to the day picked in the strip', async () => {
+    activeWeekData = weekWithThursday;
+    const user = userEvent.setup();
+    const { container } = renderPage();
+    const stack = mobileStack(container);
+
+    await user.click(stack.querySelector('[data-day="2026-05-28"]') as HTMLElement);
+
+    const scope = within(stack);
+    expect(scope.getByText('Jue 28')).toBeInTheDocument();
+    expect(scope.queryByText(/^Hoy ·/)).not.toBeInTheDocument();
+    expect(scope.getByText('Lentejas del jueves')).toBeInTheDocument();
+    expect(scope.queryByText('Avena con plátano')).not.toBeInTheDocument();
+    // Day totals readout follows the selection (Thursday = 540 kcal, today = 318).
+    expect(scope.getByText('540 / 2180 kcal')).toBeInTheDocument();
+  });
+
+  it('adds to the selected day, not to today', async () => {
+    activeWeekData = weekWithThursday;
+    const user = userEvent.setup();
+    const { container } = renderPage();
+    const stack = mobileStack(container);
+
+    await user.click(stack.querySelector('[data-day="2026-05-28"]') as HTMLElement);
+    await user.click(within(stack).getByRole('button', { name: /desayuno: añadir comida/i }));
+
+    await user.type(await screen.findByRole('textbox'), 'Pollo');
+    await user.click(await screen.findByRole('button', { name: /pollo al horno/i }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => expect(addWeekSlotMutate).toHaveBeenCalledTimes(1));
+    expect(addWeekSlotMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ date: '2026-05-28', meal_index: 0, meal_time: '08:00', recipe_id: 'r9' }),
+    );
+  });
+
+  it('copies the meal of the selected day, not of today', async () => {
+    activeWeekData = weekWithThursday;
+    const user = userEvent.setup();
+    const { container } = renderPage();
+    const stack = mobileStack(container);
+
+    await user.click(stack.querySelector('[data-day="2026-05-28"]') as HTMLElement);
+    await user.click(within(stack).getByRole('button', { name: /copiar comida a otros días/i }));
+
+    // The copy dialog names its source day — Thursday, the selected one.
+    expect(await screen.findByText(/Jueves/)).toBeInTheDocument();
   });
 });

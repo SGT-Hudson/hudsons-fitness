@@ -84,6 +84,7 @@
     "targetShort": "Objetivo {{n}}",
     "kcalPerDay": "{{n}} kcal / día",
     "todayHeading": "Hoy · {{date}}",
+    "dayHeading": "{{date}}",
     "todayKcal": "{{consumed}} / {{target}} kcal",
     "addMeal": "Añadir comida",
     "mealName": { "0": "Desayuno", "1": "Comida", "2": "Merienda", "3": "Cena" },

@@ -61,6 +61,10 @@ export function PlanificadorPage() {
   const [saveOpen, setSaveOpen] = useState(false);
   const [shoppingOpen, setShoppingOpen] = useState(false);
 
+  // Below `md` the week grid is hidden, so the plan list is the only editable
+  // surface — the week strip picks which day it shows (and writes to).
+  const [selectedDate, setSelectedDate] = useState(today);
+
   const copyMeal = useCopyWeekMeal();
   const [copySource, setCopySource] = useState<{ date: string; mealIndex: number } | null>(null);
 
@@ -89,37 +93,38 @@ export function PlanificadorPage() {
     isToday: d === today,
   }));
 
-  const todayTotals = dayTotals.get(today) ?? ZERO_MACROS;
+  const selectedTotals = dayTotals.get(selectedDate) ?? ZERO_MACROS;
+  const selectedIsToday = selectedDate === today;
 
-  // Mobile "today" list: one block per configured meal time, plus orphan
-  // (meal_index, meal_time) rows unioned across the WHOLE week's slots — like
-  // WeekGrid — not just today's. meal_times comes only from the source
-  // template, and source_template_id is ON DELETE SET NULL, so a week whose
-  // template got deleted keeps its slots but reports meal_times: []; deriving
-  // orphans from today alone would leave today with zero rows (no way to add
-  // a meal) whenever today itself happens to have no slots. Entries are still
-  // filtered down to today's date, and — like WeekGrid's entriesFor — matched
-  // on BOTH meal_index and meal_time: a divergent week can carry two rows
-  // sharing a meal_index but differing in meal_time (per-day custom template
-  // times + apply_template_to_week's partial rewrite leaves pre-target-date
-  // days on the old template), so meal_index alone would double-render
-  // today's slot under both rows.
+  // Mobile plan list for the SELECTED day: one block per configured meal time,
+  // plus orphan (meal_index, meal_time) rows unioned across the WHOLE week's
+  // slots — like WeekGrid — not just the selected day's. meal_times comes only
+  // from the source template, and source_template_id is ON DELETE SET NULL, so
+  // a week whose template got deleted keeps its slots but reports
+  // meal_times: []; deriving orphans from one day alone would leave that day
+  // with zero rows (no way to add a meal) whenever it happens to have no slots.
+  // Entries are still filtered down to the selected date, and — like WeekGrid's
+  // entriesFor — matched on BOTH meal_index and meal_time: a divergent week can
+  // carry two rows sharing a meal_index but differing in meal_time (per-day
+  // custom template times + apply_template_to_week's partial rewrite leaves
+  // pre-target-date days on the old template), so meal_index alone would
+  // double-render the day's slot under both rows.
   const mealTimes = week.data?.meal_times ?? [];
-  const todaySlots = slots.filter((s) => s.date === today);
+  const selectedSlots = slots.filter((s) => s.date === selectedDate);
   const weekOrphans = new Map<string, { mealIndex: number; mealTime: string | null }>();
   for (const s of slots) {
     if (s.meal_index < mealTimes.length) continue;
     const key = `${s.meal_index}|${s.meal_time ?? ''}`;
     if (!weekOrphans.has(key)) weekOrphans.set(key, { mealIndex: s.meal_index, mealTime: s.meal_time });
   }
-  const todayMeals: TodayMeal[] = [
+  const dayMeals: TodayMeal[] = [
     ...mealTimes.map((time, i) => ({ mealIndex: i, mealTime: time })),
     ...Array.from(weekOrphans.values()).sort(
       (a, b) => a.mealIndex - b.mealIndex || (a.mealTime ?? '').localeCompare(b.mealTime ?? ''),
     ),
   ].map((row) => ({
     ...row,
-    entries: todaySlots
+    entries: selectedSlots
       .filter((s) => s.meal_index === row.mealIndex && (s.meal_time ?? '') === (row.mealTime ?? ''))
       .sort((a, b) => a.display_order - b.display_order)
       .map((s) => ({
@@ -328,20 +333,26 @@ export function PlanificadorPage() {
             <>
               {/* Mobile: strip + summary chart + today's plan. */}
               <div data-mobile-stack="today" className="space-y-3 md:hidden">
-                <WeekStrip days={chartDays} target={targets?.kcal} phase={phaseType} />
+                <WeekStrip
+                  days={chartDays}
+                  selectedDate={selectedDate}
+                  onSelect={setSelectedDate}
+                  target={targets?.kcal}
+                  phase={phaseType}
+                />
                 <WeekSummaryCard days={chartDays} targets={targets} phase={phaseType} />
 
                 <div className="flex items-center gap-2 pt-1">
                   <span className="text-[11px] font-medium uppercase tracking-[0.05em] text-muted-foreground">
-                    {t('planner.todayHeading', {
-                      date: capitalize(formatDate(parseISO(today), 'EEE d', locale)),
+                    {t(selectedIsToday ? 'planner.todayHeading' : 'planner.dayHeading', {
+                      date: capitalize(formatDate(parseISO(selectedDate), 'EEE d', locale)),
                     })}
                   </span>
                   <span className="h-px flex-1 bg-border" aria-hidden="true" />
                   {targets && (
                     <span className="tnum text-[11px] text-text-dim">
                       {t('planner.todayKcal', {
-                        consumed: roundMacro(todayTotals.kcal),
+                        consumed: roundMacro(selectedTotals.kcal),
                         target: roundMacro(targets.kcal),
                       })}
                     </span>
@@ -349,14 +360,14 @@ export function PlanificadorPage() {
                 </div>
 
                 <TodayPlanList
-                  meals={todayMeals}
+                  meals={dayMeals}
                   busy={busy}
                   onAddMeal={(mealIndex, mealTime) =>
                     setMobilePick({ mealIndex, mealTime, entry: null })
                   }
-                  onCopyMeal={(mealIndex) => setCopySource({ date: today, mealIndex })}
+                  onCopyMeal={(mealIndex) => setCopySource({ date: selectedDate, mealIndex })}
                   onOpenEntry={(entry) => {
-                    const row = todayMeals.find((m) => m.entries.some((e) => e.id === entry.id));
+                    const row = dayMeals.find((m) => m.entries.some((e) => e.id === entry.id));
                     setMobilePick({
                       mealIndex: row?.mealIndex ?? 0,
                       mealTime: row?.mealTime ?? null,
@@ -451,7 +462,7 @@ export function PlanificadorPage() {
               });
             } else {
               await handleAdd(
-                today,
+                selectedDate,
                 mobilePick.mealIndex,
                 mobilePick.mealTime,
                 { id: recipeId, name: recipeName },
