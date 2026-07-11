@@ -63,7 +63,6 @@
   },
   "planner": {
     "pageTitle": "Planner",
-    "weekOf": "Week of {{date}}",
     "manageTemplates": "Templates",
     "applyTemplate": "Apply template",
     "swapTemplate": "Swap template",
@@ -76,7 +75,21 @@
       "hasTemplates": "This week is empty. Apply one of your templates to get started.",
       "applyCta": "Apply template",
       "createCta": "Create first template"
-    }
+    },
+    "weekLabel": "Week {{week}} · {{from}} → {{to}}",
+    "avgDaily": "Daily average",
+    "avgKcal": "Average",
+    "proteinAvg": "Protein",
+    "proteinPct": "· {{pct}}%",
+    "targetShort": "Target {{n}}",
+    "kcalPerDay": "{{n}} kcal / day",
+    "todayHeading": "Today · {{date}}",
+    "dayHeading": "{{date}}",
+    "todayKcal": "{{consumed}} / {{target}} kcal",
+    "addMeal": "Add meal",
+    "mealName": { "0": "Breakfast", "1": "Lunch", "2": "Snack", "3": "Dinner" },
+    "mealNameN": "Meal {{n}}",
+    "noPlanToday": "Nothing planned for today."
   },
   "week": {
     "noSlots": "No meals planned."
@@ -112,7 +125,13 @@
     "fatLowHelpLabel": "Fat info",
     "fatLowHelp": "You are below the healthy fat minimum (0.6 g per kg of bodyweight). Fat is essential for hormones and for absorbing vitamins.",
     "totalRow": "Total",
-    "emptyDay": "No meals yet"
+    "emptyDay": "No meals yet",
+    "letter": { "protein": "P", "carbs": "C", "fat": "F", "fiber": "Fb" }
+  },
+  "cell": {
+    "addFirst": "add meal",
+    "addMore": "add",
+    "kcal": "kcal"
   },
   "shopping": {
     "open": "Shopping list",

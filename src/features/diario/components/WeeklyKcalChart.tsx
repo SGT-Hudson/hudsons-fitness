@@ -23,6 +23,8 @@ interface Props {
   target: number;
   /** Today's active phase — drives non-today bar tone via `getKcalStatus`. */
   phase?: PhaseType;
+  /** The planner embeds this chart inside its own card, which supplies the heading. */
+  showHeader?: boolean;
   className?: string;
 }
 
@@ -50,7 +52,13 @@ function weekdayIndex(iso: string): number {
  * pure/prop-driven so it's unit-testable without a data layer; `useWeeklyKcal`
  * supplies `days`, and the caller (Task 6) supplies today's phase target/type.
  */
-export function WeeklyKcalChart({ days, target, phase = 'cut', className }: Props) {
+export function WeeklyKcalChart({
+  days,
+  target,
+  phase = 'cut',
+  showHeader = true,
+  className,
+}: Props) {
   const { t } = useTranslation('diario');
   const hasTarget = target > 0;
   const average = days.length
@@ -61,12 +69,14 @@ export function WeeklyKcalChart({ days, target, phase = 'cut', className }: Prop
 
   return (
     <div className={cn('rounded-md border bg-card p-3.5', className)}>
-      <div className="mb-1 flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">{t('weekly.title')}</span>
-        <span className="tabular-nums text-[11px] text-text-dim">
-          {t('weekly.summary', { avg: average, target })}
-        </span>
-      </div>
+      {showHeader && (
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">{t('weekly.title')}</span>
+          <span className="tabular-nums text-[11px] text-text-dim">
+            {t('weekly.summary', { avg: average, target })}
+          </span>
+        </div>
+      )}
 
       <div className="relative mt-2" style={{ height: CHART_H }}>
         {targetTop != null && (

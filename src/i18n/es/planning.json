@@ -63,7 +63,6 @@
   },
   "planner": {
     "pageTitle": "Planificador",
-    "weekOf": "Semana del {{date}}",
     "manageTemplates": "Plantillas",
     "applyTemplate": "Aplicar plantilla",
     "swapTemplate": "Cambiar plantilla",
@@ -76,7 +75,21 @@
       "hasTemplates": "Esta semana está vacía. Aplica una de tus plantillas para empezar.",
       "applyCta": "Aplicar plantilla",
       "createCta": "Crear primera plantilla"
-    }
+    },
+    "weekLabel": "Sem {{week}} · {{from}} → {{to}}",
+    "avgDaily": "Media diaria",
+    "avgKcal": "Media",
+    "proteinAvg": "Proteína",
+    "proteinPct": "· {{pct}} %",
+    "targetShort": "Objetivo {{n}}",
+    "kcalPerDay": "{{n}} kcal / día",
+    "todayHeading": "Hoy · {{date}}",
+    "dayHeading": "{{date}}",
+    "todayKcal": "{{consumed}} / {{target}} kcal",
+    "addMeal": "Añadir comida",
+    "mealName": { "0": "Desayuno", "1": "Comida", "2": "Merienda", "3": "Cena" },
+    "mealNameN": "Comida {{n}}",
+    "noPlanToday": "Hoy no tienes nada planificado."
   },
   "week": {
     "noSlots": "Sin comidas planificadas."
@@ -112,7 +125,13 @@
     "fatLowHelpLabel": "Ayuda sobre grasa",
     "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (0,6 g por kg de peso corporal). La grasa es esencial para las hormonas y para absorber vitaminas.",
     "totalRow": "Total",
-    "emptyDay": "Día sin comidas todavía"
+    "emptyDay": "Día sin comidas todavía",
+    "letter": { "protein": "P", "carbs": "C", "fat": "G", "fiber": "F" }
+  },
+  "cell": {
+    "addFirst": "añadir comida",
+    "addMore": "añadir",
+    "kcal": "kcal"
   },
   "shopping": {
     "open": "Lista de la compra",
