@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { ResponsiveDialog } from '@/components/ui/ResponsiveDialog';
 import { CopyMealPanel, type CopyMode, type CopyTarget } from './CopyMealPanel';
 
@@ -35,6 +36,7 @@ export function CopyMealDialog({
   allowAppend,
 }: Props) {
   const { t } = useTranslation('planning');
+  const { t: tCommon } = useTranslation('common');
   const [mode, setMode] = useState<CopyMode>('replace');
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -66,21 +68,35 @@ export function CopyMealDialog({
       title={t('copyMeal.title')}
       variant="centered"
     >
-      <div className="space-y-4">
-        <h2 className="text-base font-semibold">{t('copyMeal.title')}</h2>
-        <CopyMealPanel
-          sourceLabel={sourceLabel}
-          entryNames={entryNames}
-          targets={targets}
-          mode={mode}
-          onModeChange={setMode}
-          selected={selected}
-          onToggle={toggle}
-          busy={busy}
-          onConfirm={confirm}
-          allowAppend={allowAppend}
-        />
-      </div>
+      {({ isMobile }) => (
+        <div className="space-y-4">
+          <h2 className="text-base font-semibold">{t('copyMeal.title')}</h2>
+          <CopyMealPanel
+            sourceLabel={sourceLabel}
+            entryNames={entryNames}
+            targets={targets}
+            mode={mode}
+            onModeChange={setMode}
+            selected={selected}
+            onToggle={toggle}
+            busy={busy}
+            onConfirm={confirm}
+            allowAppend={allowAppend}
+          />
+          {/* Desktop's DialogContent draws its own X; vaul's drawer draws none,
+              so mobile would otherwise only be dismissible by dragging it. */}
+          {isMobile && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => onOpenChange(false)}
+            >
+              {tCommon('cancel')}
+            </Button>
+          )}
+        </div>
+      )}
     </ResponsiveDialog>
   );
 }

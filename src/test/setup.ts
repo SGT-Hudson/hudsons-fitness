@@ -26,6 +26,17 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
   })) as unknown as typeof window.matchMedia;
 }
 
+// jsdom implements none of the Pointer Capture API, and vaul grabs the pointer
+// on `pointerdown` to drive its drag-to-dismiss. Without these, ANY realistic
+// click inside a mobile Drawer throws `setPointerCapture is not a function` —
+// an unhandled error that fails the run even when every assertion passed. The
+// drag gesture itself is not testable in jsdom; capturing is a no-op here.
+if (typeof Element !== 'undefined' && !Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = vi.fn();
+  Element.prototype.releasePointerCapture = vi.fn();
+  Element.prototype.hasPointerCapture = vi.fn(() => false);
+}
+
 afterEach(() => {
   cleanup();
 });

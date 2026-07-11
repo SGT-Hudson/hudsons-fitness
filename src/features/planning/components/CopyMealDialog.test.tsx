@@ -13,16 +13,20 @@ beforeAll(() => {
   void i18n.changeLanguage('es');
 });
 
-// jsdom has no matchMedia; ResponsiveDialog needs one. Desktop branch.
-beforeEach(() => {
+// jsdom has no matchMedia; ResponsiveDialog needs one. Drive the breakpoint.
+function setViewport(isDesktop: boolean) {
   window.matchMedia = vi.fn().mockImplementation((q: string) => ({
-    matches: true,
+    matches: isDesktop,
     media: q,
     onchange: null,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })) as unknown as typeof window.matchMedia;
+}
+
+beforeEach(() => {
+  setViewport(true);
 });
 
 function renderDialog(over: Partial<Parameters<typeof CopyMealDialog>[0]> = {}) {
@@ -89,5 +93,23 @@ describe('CopyMealDialog', () => {
   it('with allowAppend, shows the mode toggle', () => {
     renderDialog({ allowAppend: true });
     expect(screen.getByRole('button', { name: /añadir junto/i })).toBeInTheDocument();
+  });
+
+  // vaul draws no close affordance of its own, so the mobile branch would be
+  // dismissible only by dragging it without an explicit control.
+  it('offers a Cancel control on mobile that closes the dialog', async () => {
+    setViewport(false);
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    renderDialog({ onOpenChange });
+
+    await user.click(screen.getByRole('button', { name: /cancelar/i }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('leaves the Cancel control to radix on desktop', () => {
+    renderDialog();
+    // The desktop DialogContent draws its own X — a second control would be noise.
+    expect(screen.queryByRole('button', { name: /cancelar/i })).toBeNull();
   });
 });
