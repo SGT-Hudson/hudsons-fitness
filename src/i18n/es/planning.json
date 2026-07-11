@@ -1,4 +1,9 @@
 {
+  "phase": {
+    "none": "Sin fase",
+    "noneHint": "Sirve para cualquier fase",
+    "pick": "Fase de la plantilla"
+  },
   "days": {
     "mon": "Lun",
     "tue": "Mar",

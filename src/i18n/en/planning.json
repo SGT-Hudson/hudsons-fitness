@@ -1,4 +1,9 @@
 {
+  "phase": {
+    "none": "No phase",
+    "noneHint": "Works for any phase",
+    "pick": "Template phase"
+  },
   "days": {
     "mon": "Mon",
     "tue": "Tue",
