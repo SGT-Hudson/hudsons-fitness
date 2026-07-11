@@ -36,6 +36,14 @@ interface SelectProps extends BaseProps {
   selectedDate: string;
   onSelect: (dateIso: string) => void;
   fillFrom?: never;
+  /**
+   * The template editor (R-33 wave 4): `days[].date` is a reference week's
+   * ISO date, kept only to derive each column's weekday and drive selection —
+   * a template has no calendar dates of its own. Suppresses the day number
+   * and shortens the accessible name to the weekday alone, so neither the
+   * render nor a screen reader announces a date the template does not have.
+   */
+  dateless?: boolean;
 }
 
 interface FillProps extends BaseProps {
@@ -148,7 +156,7 @@ export function WeekStrip(props: Props) {
     );
   }
 
-  const { selectedDate, onSelect } = props;
+  const { selectedDate, onSelect, dateless } = props;
 
   return (
     <div className={cn('grid grid-cols-7 gap-1.5 px-[15px]', className)}>
@@ -161,13 +169,16 @@ export function WeekStrip(props: Props) {
         const tone: Tone = kcal === 0 ? 'neutral' : classify('kcal', kcal, target, phase).tone;
         const selected = d.date === selectedDate;
         const date = parseISO(d.date);
+        const ariaLabel = dateless
+          ? capitalize(formatDate(date, 'EEEE', locale))
+          : capitalize(formatDate(date, 'EEEE d MMMM', locale));
         return (
           <button
             key={d.date}
             type="button"
             data-day={d.date}
             aria-pressed={selected}
-            aria-label={capitalize(formatDate(date, 'EEEE d MMMM', locale))}
+            aria-label={ariaLabel}
             onClick={() => onSelect(d.date)}
             className={cn(
               CELL,
@@ -188,14 +199,16 @@ export function WeekStrip(props: Props) {
             >
               {formatDate(date, 'EEE', locale)}
             </span>
-            <span
-              className={cn(
-                'tnum text-[12.5px] font-semibold',
-                d.isToday ? 'text-accent-ink' : 'text-foreground',
-              )}
-            >
-              {formatDate(date, 'd', locale)}
-            </span>
+            {!dateless && (
+              <span
+                className={cn(
+                  'tnum text-[12.5px] font-semibold',
+                  d.isToday ? 'text-accent-ink' : 'text-foreground',
+                )}
+              >
+                {formatDate(date, 'd', locale)}
+              </span>
+            )}
             <span
               aria-hidden="true"
               className={cn('h-1 w-1 rounded-full opacity-80', BG_TONE[tone])}

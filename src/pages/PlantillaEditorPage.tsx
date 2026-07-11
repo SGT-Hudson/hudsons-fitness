@@ -362,6 +362,7 @@ export function PlantillaEditorPage() {
             onSelect={(dateIso) => setSelectedDay(dayOfWeekFor(dateIso, weekDates))}
             target={targets?.kcal}
             phase={phaseType}
+            dateless
           />
 
           <div className="flex items-center gap-2 pt-1">

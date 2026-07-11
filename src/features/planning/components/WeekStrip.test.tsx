@@ -114,6 +114,25 @@ describe('WeekStrip', () => {
   });
 });
 
+describe('WeekStrip — dateless mode (template editor)', () => {
+  // A template has no calendar dates. `dateless` reuses the same 7-cell strip
+  // to pick a `day_of_week`, but must never leak the reference week's real
+  // day numbers or dates into the render or the accessible name.
+  it('renders the weekday label only, with no day number', () => {
+    const { container } = render(
+      <WeekStrip days={days} selectedDate="2026-05-26" onSelect={noop} dateless />,
+    );
+    const thu = container.querySelector('[data-day="2026-05-28"]') as HTMLElement;
+    expect(thu.textContent).not.toMatch(/28/);
+  });
+
+  it('gives each day an accessible name that is the weekday alone', () => {
+    render(<WeekStrip days={days} selectedDate="2026-05-26" onSelect={noop} dateless />);
+    expect(screen.getByRole('button', { name: 'Jueves' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /28/ })).not.toBeInTheDocument();
+  });
+});
+
 describe('WeekStrip — fill variant', () => {
   it('splits the week at fillFrom: earlier days untouched, that day onward filled', () => {
     const { container } = render(<WeekStrip variant="fill" days={days} fillFrom="2026-05-28" />);
