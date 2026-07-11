@@ -50,4 +50,40 @@ describe('DayHeaderCard', () => {
     expect(container.querySelector('[data-day-header]')).not.toBeNull();
     expect(screen.queryByText('+0')).toBeNull(); // no target ⇒ no delta readout
   });
+
+  it('dims a past day and only a past day', () => {
+    const { container: pastContainer } = render(
+      <DayHeaderCard dateIso="2026-05-26" isToday={false} isPast totals={totals} targets={targets} phaseType="cut" />,
+    );
+    expect(pastContainer.querySelector('[data-day-header]')?.className).toContain('opacity-60');
+
+    const { container: presentContainer } = render(
+      <DayHeaderCard dateIso="2026-05-26" isToday={false} totals={totals} targets={targets} phaseType="cut" />,
+    );
+    expect(presentContainer.querySelector('[data-day-header]')?.className).not.toContain('opacity-60');
+  });
+
+  it('outlines only the fat chip when weightKg drives fat below its essential floor', () => {
+    const floorTargets: Macros = { kcal: 2000, proteinG: 150, carbsG: 200, fatG: 70, fiberG: 30 };
+    const floorTotals: Macros = { kcal: 2000, proteinG: 150, carbsG: 200, fatG: 30, fiberG: 30 };
+    const { container } = render(
+      <DayHeaderCard
+        dateIso="2026-05-26"
+        isToday={false}
+        totals={floorTotals}
+        targets={floorTargets}
+        phaseType="cut"
+        weightKg={80}
+      />,
+    );
+    // 0.6 g/kg × 80 kg = 48 g floor; 30 g consumed is below it.
+    const fatChip = container.querySelector('[data-macro="fat"]');
+    expect(fatChip?.className).toContain('border-destructive');
+    expect(fatChip?.querySelector('[data-tick="min"]')).not.toBeNull();
+
+    for (const metric of ['protein', 'carbs', 'fiber']) {
+      const chip = container.querySelector(`[data-macro="${metric}"]`);
+      expect(chip?.className).not.toContain('border-destructive');
+    }
+  });
 });
