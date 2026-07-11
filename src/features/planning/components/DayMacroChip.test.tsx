@@ -32,6 +32,24 @@ describe('DayMacroChip', () => {
     expect(container.querySelector('[data-tick="min"]')).not.toBeNull();
   });
 
+  it('signals a fat-floor breach with text, not colour alone', () => {
+    const { container } = render(
+      <DayMacroChip metric="fat" consumed={30} target={68} phase="cut" floorG={48} />,
+    );
+    const chip = container.querySelector('[data-macro="fat"]');
+    // Health signal: reachable without perceiving the red outline or the tick.
+    expect(chip?.getAttribute('title')).toBe(i18n.t('planning:summary.fatLowHelp'));
+    expect(screen.getByText(i18n.t('planning:summary.fatLow'))).toBeInTheDocument();
+  });
+
+  it('carries no fat warning when fat clears the floor', () => {
+    const { container } = render(
+      <DayMacroChip metric="fat" consumed={60} target={68} phase="cut" floorG={48} />,
+    );
+    expect(container.querySelector('[data-macro="fat"]')?.getAttribute('title')).toBeNull();
+    expect(screen.queryByText(/falta grasa/i)).not.toBeInTheDocument();
+  });
+
   it('renders neutral on demand, ignoring the classifier and the fat floor', () => {
     const { container } = render(
       <DayMacroChip metric="fat" consumed={0} target={68} phase="cut" floorG={48} neutral />,

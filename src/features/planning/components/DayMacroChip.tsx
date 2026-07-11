@@ -84,6 +84,11 @@ export function DayMacroChip({
   return (
     <div
       data-macro={metric}
+      // The essential-fat floor is a health signal: the red outline and the bar
+      // tick alone would carry it by colour only. The chip is too small for a
+      // visible sentence, so the warning rides on the tooltip (pointer) and on
+      // screen-reader text (assistive tech) — never on colour alone.
+      title={fatBelowFloor ? t('summary.fatLowHelp') : undefined}
       className={cn(
         'flex min-w-0 flex-col gap-[3px] rounded-[5px] border px-1.5 pb-[5px] pt-1',
         SOFT_BG[s.tone],
@@ -91,6 +96,7 @@ export function DayMacroChip({
         className,
       )}
     >
+      {fatBelowFloor && <span className="sr-only">{t('summary.fatLow')}</span>}
       <div className="flex items-baseline justify-between gap-1">
         <span className={cn('text-[9.5px] font-bold tracking-[0.05em]', TEXT_TONE[s.tone])}>
           {t(`summary.letter.${metric}`)}
