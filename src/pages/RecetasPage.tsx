@@ -18,6 +18,8 @@ import type { RecipeMealType } from '@/features/recipes/mealTypes';
 import type { RecipeGoalKey } from '@/features/recipes/labels';
 import { isRecipeFilterActive, matchesRecipeFilter } from '@/features/recipes/recipeFilter';
 import { useHideRecipe, useRecipes } from '@/features/recipes/hooks';
+import { canEditRecipe } from '@/features/recipes/ownership';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { useRecipeFavorites } from '@/features/recipes/useFavorites';
 import { partitionFavorites } from '@/features/recipes/favorites';
 import { RecipeCard } from '@/features/recipes/components/RecipeCard';
@@ -38,6 +40,7 @@ export function RecetasPage() {
   const [addRecipe, setAddRecipe] = useState<RecipeListItem | null>(null);
 
   const { favorites, isFavorite, toggle: toggleFavorite } = useRecipeFavorites();
+  const { user } = useAuth();
   const recipes = useRecipes();
   const hide = useHideRecipe();
   // Warm today's meal-log cache the moment this page mounts (result unused
@@ -216,6 +219,7 @@ export function RecetasPage() {
                   <RecipeRow
                     recipe={r}
                     favorite={isFavorite(r.id)}
+                    canEdit={canEditRecipe(r, user?.id)}
                     onToggleFavorite={() => toggleFavorite(r.id)}
                     onRemove={() => handleRemove(r.id, r.name)}
                     onAddToDay={() => setAddRecipe(r)}
@@ -229,6 +233,7 @@ export function RecetasPage() {
                   <RecipeCard
                     recipe={r}
                     favorite={isFavorite(r.id)}
+                    canEdit={canEditRecipe(r, user?.id)}
                     onToggleFavorite={() => toggleFavorite(r.id)}
                     onRemove={() => handleRemove(r.id, r.name)}
                   />

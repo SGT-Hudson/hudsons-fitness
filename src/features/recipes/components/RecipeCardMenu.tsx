@@ -11,6 +11,13 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   recipeId: string;
+  /**
+   * Am I the recipe's creator? Recipes are pooled (R-01), so a library can hold
+   * refs to recipes someone else made — and `save_recipe` refuses to update
+   * those. When false the edit item is omitted rather than offered-then-400'd.
+   * Removing (below) stays available either way: it is only a ref drop.
+   */
+  canEdit: boolean;
   onRemove: () => void;
   className?: string;
 }
@@ -26,7 +33,7 @@ interface Props {
  * already links to `/recipes/:id`, which since the wave-5 route split is the
  * read view.
  */
-export function RecipeCardMenu({ recipeId, onRemove, className }: Props) {
+export function RecipeCardMenu({ recipeId, canEdit, onRemove, className }: Props) {
   const { t } = useTranslation('recetas');
   const { t: tCommon } = useTranslation('common');
 
@@ -42,12 +49,14 @@ export function RecipeCardMenu({ recipeId, onRemove, className }: Props) {
         <MoreVertical className="h-3.5 w-3.5" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem asChild>
-          <Link to={`/recipes/${recipeId}/edit`}>
-            <Pencil className="h-4 w-4" aria-hidden="true" />
-            {tCommon('edit')}
-          </Link>
-        </DropdownMenuItem>
+        {canEdit && (
+          <DropdownMenuItem asChild>
+            <Link to={`/recipes/${recipeId}/edit`}>
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+              {tCommon('edit')}
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onSelect={onRemove} className="text-destructive focus:text-destructive">
           <Trash2 className="h-4 w-4" aria-hidden="true" />
           {t('list.removeFromLibrary')}

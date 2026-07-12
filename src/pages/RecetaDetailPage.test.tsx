@@ -12,6 +12,11 @@ vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }))
 const useRecipeMock = vi.fn();
 vi.mock('@/features/recipes/hooks', () => ({ useRecipe: () => useRecipeMock() }));
 
+// Ownership drives whether "Editar" is offered at all (R-01 shared pool).
+vi.mock('@/features/auth/AuthProvider', () => ({
+  useAuth: () => ({ user: { id: 'me', email: 'qa@x.dev' } }),
+}));
+
 // The add-to-day cache warm-up. Its query never runs here (the sheet is not
 // opened), but the hook is called on every render.
 vi.mock('@/features/diario/hooks', async (importActual) => ({
@@ -46,6 +51,9 @@ function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredient
   return {
     id: 'r-1',
     name: 'Pollo con arroz',
+    // Mine by default (the useAuth mock above is 'me'); override to model a
+    // pooled recipe someone else created but that I hold a ref to.
+    created_by_user_id: 'me',
     servings: 4,
     description: null,
     instructions: 'Dora el pollo.\nAñade el arroz.',
@@ -183,13 +191,45 @@ describe('RecetaDetailPage', () => {
     expect(screen.queryByText('Preparación')).not.toBeInTheDocument();
   });
 
-  it('routes the edit action to the editor', () => {
+  it('routes the edit action to the editor for a recipe I created', () => {
     useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
     renderPage();
 
     const editLinks = screen.getAllByRole('link', { name: /Editar/ });
     expect(editLinks.length).toBeGreaterThan(0);
     for (const link of editLinks) expect(link).toHaveAttribute('href', '/recipes/r-1/edit');
+  });
+
+  // R-01: recipes are a shared pool — my library can hold a ref to a recipe
+  // someone else created, and `save_recipe` refuses to update it ("recipe not
+  // found or not owned by user"). Offering "Editar" there is a guaranteed 400.
+  it('offers no edit action on a pooled recipe I did not create', () => {
+    useRecipeMock.mockReturnValue({
+      data: recipe({ created_by_user_id: 'someone-else' }),
+      isLoading: false,
+      isError: false,
+    });
+    renderPage();
+
+    expect(screen.queryByRole('link', { name: /Editar/ })).toBeNull();
+    // …and the page is otherwise fully usable: it is still a recipe I can read,
+    // favourite and cook. Only the action that cannot succeed is gone.
+    expect(screen.getAllByText('Pollo con arroz').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: 'Favorita' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: 'Añadir al día' }).length).toBeGreaterThan(0);
+  });
+
+  // An orphaned recipe (its creator dropped their ref) is re-owned by the ANON
+  // user, so it belongs to nobody and nobody can save an edit to it.
+  it('offers no edit action on an orphaned recipe re-owned by the anon user', () => {
+    useRecipeMock.mockReturnValue({
+      data: recipe({ created_by_user_id: '00000000-0000-0000-0000-00000000a0a0' }),
+      isLoading: false,
+      isError: false,
+    });
+    renderPage();
+
+    expect(screen.queryByRole('link', { name: /Editar/ })).toBeNull();
   });
 
   it('offers the favourite and add-to-day actions', () => {

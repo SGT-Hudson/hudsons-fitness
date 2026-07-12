@@ -12,7 +12,9 @@ import type { AddSheetSelection } from '@/features/diario/components/AddToDayShe
 import { useMealLogsForDay } from '@/features/diario/hooks';
 import { isoDate } from '@/lib/dates';
 import { ingredientDisplayName } from '@/features/ingredients/api';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { useRecipe } from '@/features/recipes/hooks';
+import { canEditRecipe } from '@/features/recipes/ownership';
 import { computeRecipeMacros } from '@/features/recipes/macros';
 import { toRecipeMealTypes } from '@/features/recipes/mealTypes';
 import { useRecipeFavorites } from '@/features/recipes/useFavorites';
@@ -39,6 +41,7 @@ export function RecetaDetailPage() {
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   const { data: recipe, isLoading, isError } = useRecipe(id);
+  const { user } = useAuth();
   const { isFavorite, toggle: toggleFavorite } = useRecipeFavorites();
   const [addOpen, setAddOpen] = useState(false);
 
@@ -159,17 +162,27 @@ export function RecetaDetailPage() {
     </Button>
   );
 
+  // R-01: recipes are pooled, so this may be someone else's recipe that I merely
+  // hold a ref to — and `save_recipe` refuses to update a recipe I did not
+  // create. Offering "editar" there would walk straight into a 400, so the
+  // action is omitted for non-creators. Everything else on this page still
+  // works on a pooled recipe: reading it, favouriting it, adding it to the day,
+  // and removing it from the library (a ref drop, deliberately ungated).
+  const canEdit = canEditRecipe(recipe, user?.id);
+
   const actions = (
     <>
       {favoriteButton('hidden md:inline-flex')}
       {addToDayButton('hidden md:inline-flex', 'outline')}
-      <Button asChild size="sm" className="md:h-9 md:px-3.5">
-        <Link to={`/recipes/${id}/edit`}>
-          <Pencil className="h-4 w-4" aria-hidden="true" />
-          <span className="hidden md:inline">{t('detail.edit')}</span>
-          <span className="md:hidden">{t('detail.editShort')}</span>
-        </Link>
-      </Button>
+      {canEdit && (
+        <Button asChild size="sm" className="md:h-9 md:px-3.5">
+          <Link to={`/recipes/${id}/edit`}>
+            <Pencil className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden md:inline">{t('detail.edit')}</span>
+            <span className="md:hidden">{t('detail.editShort')}</span>
+          </Link>
+        </Button>
+      )}
     </>
   );
 

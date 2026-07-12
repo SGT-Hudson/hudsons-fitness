@@ -11,6 +11,8 @@ import { RecipeCardMenu } from './RecipeCardMenu';
 interface Props {
   recipe: RecipeListItem;
   favorite: boolean;
+  /** Only the recipe's creator can save an edit (R-01) — see `ownership.ts`. */
+  canEdit: boolean;
   onToggleFavorite: () => void;
   onRemove: () => void;
   /** Opens the wave-2 add-to-day sheet on this recipe. */
@@ -26,7 +28,14 @@ interface Props {
  * Same stretched-link anatomy as the web card: the name owns the whole row, the
  * pin / menu / CTA sit above it.
  */
-export function RecipeRow({ recipe, favorite, onToggleFavorite, onRemove, onAddToDay }: Props) {
+export function RecipeRow({
+  recipe,
+  favorite,
+  canEdit,
+  onToggleFavorite,
+  onRemove,
+  onAddToDay,
+}: Props) {
   const { t } = useTranslation('recetas');
 
   return (
@@ -58,6 +67,7 @@ export function RecipeRow({ recipe, favorite, onToggleFavorite, onRemove, onAddT
               (dropping only the rest one would pop a card-coloured chip on hover). */}
           <RecipeCardMenu
             recipeId={recipe.id}
+            canEdit={canEdit}
             onRemove={onRemove}
             className="relative z-10 bg-transparent hover:bg-muted"
           />

@@ -12,6 +12,8 @@ import { RecipeCardMenu } from './RecipeCardMenu';
 interface Props {
   recipe: RecipeListItem;
   favorite: boolean;
+  /** Only the recipe's creator can save an edit (R-01) — see `ownership.ts`. */
+  canEdit: boolean;
   onToggleFavorite: () => void;
   onRemove: () => void;
 }
@@ -31,7 +33,7 @@ interface Props {
  * so the pin and the menu — the only other interactive things — sit above it on
  * `z-10` rather than nesting buttons inside an anchor.
  */
-export function RecipeCard({ recipe, favorite, onToggleFavorite, onRemove }: Props) {
+export function RecipeCard({ recipe, favorite, canEdit, onToggleFavorite, onRemove }: Props) {
   const { t } = useTranslation('recetas');
   const mealTypes = toRecipeMealTypes(recipe.meal_types);
 
@@ -60,7 +62,7 @@ export function RecipeCard({ recipe, favorite, onToggleFavorite, onRemove }: Pro
           <RecipeWarningPills labels={recipe.labels} />
         </div>
         <div className="absolute right-2.5 top-2.5 z-10 flex items-center gap-1">
-          <RecipeCardMenu recipeId={recipe.id} onRemove={onRemove} />
+          <RecipeCardMenu recipeId={recipe.id} canEdit={canEdit} onRemove={onRemove} />
           <RecipeFavoritePin favorite={favorite} onToggle={onToggleFavorite} />
         </div>
       </div>

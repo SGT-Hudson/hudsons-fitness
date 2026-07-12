@@ -89,6 +89,9 @@ function recipe(over: Partial<RecipeListItem> & Pick<RecipeListItem, 'id' | 'nam
     ingredient_count: 5,
     meal_types: [],
     prep_time_minutes: null,
+    // Mine by default — the useAuth mock above is 'u1'. Override to model a
+    // pooled recipe (R-01) that I hold a ref to but did not create.
+    created_by_user_id: 'u1',
     labels: NO_LABELS,
     perServing: { kcal: 420, proteinG: 30, carbsG: 40, fatG: 12, fiberG: 6 },
     ...over,
@@ -284,6 +287,52 @@ describe('RecetasPage', () => {
     renderPage();
 
     expect(screen.getByRole('button', { name: 'Favoritas (1)' })).toBeInTheDocument();
+  });
+});
+
+// R-01: a library is a set of refs into a shared pool, so it can hold recipes
+// other people created. `save_recipe` scopes its UPDATE to the creator, so the
+// card menu must not offer "editar" on those — it is a guaranteed 400. Removing
+// one from the library (`hide_owned_recipe`) is a ref drop and stays available.
+describe('RecetasPage card menu — edit is creator-only, remove is not', () => {
+  const mine = recipe({ id: 'r-1', name: 'Pollo con arroz', created_by_user_id: 'u1' });
+  const theirs = recipe({
+    id: 'r-2',
+    name: 'Avena con plátano',
+    created_by_user_id: 'someone-else',
+  });
+
+  // Both layouts (mobile RecipeRow + web RecipeCard) mount, so each recipe has
+  // two menus. Open the one belonging to the named recipe's row/card.
+  async function openMenuFor(user: ReturnType<typeof userEvent.setup>, index: number) {
+    await user.click(screen.getAllByRole('button', { name: 'Acciones de la receta' })[index]);
+  }
+
+  it('offers edit on a recipe I created', async () => {
+    const user = userEvent.setup();
+    useRecipes.mockReturnValue({ data: [mine], isLoading: false });
+    renderPage();
+
+    await openMenuFor(user, 0);
+
+    expect(await screen.findByRole('menuitem', { name: /Editar/ })).toHaveAttribute(
+      'href',
+      '/recipes/r-1/edit',
+    );
+    expect(screen.getByRole('menuitem', { name: /Quitar de mi biblioteca/ })).toBeInTheDocument();
+  });
+
+  it('offers no edit on a pooled recipe I did not create — but still lets me remove it', async () => {
+    const user = userEvent.setup();
+    useRecipes.mockReturnValue({ data: [theirs], isLoading: false });
+    renderPage();
+
+    await openMenuFor(user, 0);
+
+    // The ref drop is NOT ownership-gated and must keep working.
+    expect(await screen.findByRole('menuitem', { name: /Quitar de mi biblioteca/ })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Editar/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Editar/ })).toBeNull();
   });
 });
 
