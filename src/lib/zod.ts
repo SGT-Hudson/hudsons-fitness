@@ -67,6 +67,22 @@ export const optionalNumericString = (min: number, max: number) =>
 // ---------------------------------------------------------------------------
 
 /**
+ * Shape `pickFirstError` reads off an RHF `errors` object. A scanned key may
+ * be a FIELD ARRAY (`useFieldArray`): react-hook-form parks an error aimed at
+ * the array itself under `errors.<key>.root`, because `errors.<key>` is the
+ * per-index array — so `root` is part of what's actually read, not incidental.
+ * Callers that narrow their cast to `{ message?: string }` (dropping `root`)
+ * still compile, because `root` is optional here, but that silently breaks
+ * field-array error messages with no type error to catch it. Use this type
+ * for every `errors as …` cast feeding `pickFirstError` (directly or via a
+ * `firstXError` wrapper) so the cast can never drop what the helper reads.
+ */
+export type FieldErrors = Record<
+  string,
+  { message?: string; root?: { message?: string } } | undefined
+>;
+
+/**
  * Pick the single message code to show, preserving the original check
  * precedence. `errors` is the RHF errors object; `orderedKeys` is the list of
  * field keys to scan; `order` is the canonical code precedence. Returns the
@@ -74,13 +90,14 @@ export const optionalNumericString = (min: number, max: number) =>
  * component maps the returned code to `t('errors.<code>')`.
  */
 export function pickFirstError<Code extends string>(
-  errors: Record<string, { message?: string } | undefined>,
+  errors: FieldErrors,
   orderedKeys: readonly string[],
   order: readonly Code[],
 ): Code | null {
   const codes = new Set<string>();
   for (const key of orderedKeys) {
-    const m = errors[key]?.message;
+    const entry = errors[key];
+    const m = entry?.message ?? entry?.root?.message;
     if (m) codes.add(m);
   }
   for (const code of order) {

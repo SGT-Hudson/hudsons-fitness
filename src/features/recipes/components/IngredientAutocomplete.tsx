@@ -6,24 +6,22 @@ import { Button } from '@/components/ui/button';
 import { useLocalIngredientSearch } from '@/features/ingredients/hooks';
 import { IngredientDialog } from '@/features/ingredients/components/IngredientDialog';
 import { ingredientDisplayName, type Ingredient } from '@/features/ingredients/api';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
 interface Props {
   selected: Ingredient | null;
   onSelect: (ingredient: Ingredient) => void;
   onClear: () => void;
+  /**
+   * Override the search field's placeholder. The recipe editor's table footer
+   * (R-33 wave 5) uses this component as a permanent "add a row" search line
+   * rather than as a row's own picker, and says so.
+   */
+  placeholder?: string;
 }
 
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = window.setTimeout(() => setDebounced(value), delayMs);
-    return () => window.clearTimeout(id);
-  }, [value, delayMs]);
-  return debounced;
-}
-
-export function IngredientAutocomplete({ selected, onSelect, onClear }: Props) {
+export function IngredientAutocomplete({ selected, onSelect, onClear, placeholder }: Props) {
   const { t, i18n } = useTranslation('recetas');
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const [open, setOpen] = useState(false);
@@ -77,7 +75,8 @@ export function IngredientAutocomplete({ selected, onSelect, onClear }: Props) {
         <Input
           ref={inputRef}
           className="pl-9"
-          placeholder={t('autocomplete.placeholder')}
+          placeholder={placeholder ?? t('autocomplete.placeholder')}
+          aria-label={placeholder ?? t('autocomplete.placeholder')}
           value={query}
           // U-7: don't surface the dropdown on focus — only once the user has
           // started typing (an unfiltered "first few ingredients" list on focus

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { pickFirstError } from '@/lib/zod';
+import { pickFirstError, type FieldErrors } from '@/lib/zod';
 
 // Co-located zod schema for the template editor form (D-C2/D-C3, R-09).
 // PlantillaEditorPage has no page feature folder; `templates` (api.ts/hooks.ts
@@ -41,8 +41,6 @@ export const templateFormSchema = z
 
 export type TemplateFormValues = z.infer<typeof templateFormSchema>;
 
-export function firstTemplateError(
-  errors: Record<string, { message?: string } | undefined>,
-): TemplateErrorCode | null {
+export function firstTemplateError(errors: FieldErrors): TemplateErrorCode | null {
   return pickFirstError(errors, ['name', 'meal_times'], TEMPLATE_ERROR_ORDER);
 }
