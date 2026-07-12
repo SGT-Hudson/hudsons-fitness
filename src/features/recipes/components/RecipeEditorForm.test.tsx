@@ -63,6 +63,23 @@ function ingredient(): Ingredient {
   } as unknown as Ingredient;
 }
 
+function secondIngredient(): Ingredient {
+  return {
+    id: 'i-2',
+    name: 'Arroz blanco',
+    name_en: null,
+    brand: null,
+    unit_type: 'gram',
+    kcal_per_unit: 130,
+    protein_g_per_unit: 2.7,
+    carbs_g_per_unit: 28,
+    fat_g_per_unit: 0.3,
+    fiber_g_per_unit: 0.4,
+    sugar_g_per_unit: 0,
+    saturated_fat_g_per_unit: 0.1,
+  } as unknown as Ingredient;
+}
+
 function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredients {
   return {
     id: 'r-1',
@@ -405,6 +422,59 @@ describe('RecipeEditorForm — removing a row (inline confirm, Cancelar on the o
       screen.getAllByText('Los macros se calcularán a medida que añadas ingredientes.').length,
     ).toBeGreaterThan(0);
   });
+
+  // The regression the rowId keying exists to prevent: confirming the SECOND
+  // row's delete must remove the second row, not whichever row happens to sit
+  // at some other index. Every other delete test in this file uses a single
+  // -row fixture, so `removeRow(0)` hardcoded in place of `removeRow(index)`
+  // would still pass all of them — this is the one that catches it.
+  it('deletes the row that was confirmed, not the first one in the list', async () => {
+    const user = userEvent.setup();
+    const onSubmit = renderForm(
+      recipeToEditorState(
+        recipe({
+          recipe_ingredients: [
+            {
+              id: 'ri-1',
+              recipe_id: 'r-1',
+              ingredient_id: 'i-1',
+              quantity: 500,
+              per_serving: false,
+              display_order: 0,
+              created_at: '2026-06-01T00:00:00.000Z',
+              ingredient: ingredient(),
+            },
+            {
+              id: 'ri-2',
+              recipe_id: 'r-1',
+              ingredient_id: 'i-2',
+              quantity: 200,
+              per_serving: false,
+              display_order: 1,
+              created_at: '2026-06-01T00:00:00.000Z',
+              ingredient: secondIngredient(),
+            },
+          ],
+        } as unknown as Partial<RecipeWithIngredients>),
+      ),
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Quitar Arroz blanco de la receta' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Quitar' }));
+
+    // The second row is gone; the first survives, untouched.
+    expect(screen.queryByText('Arroz blanco')).toBeNull();
+    expect(screen.getByText('Pollo pechuga')).toBeInTheDocument();
+    expect(screen.getByLabelText('Cantidad de Pollo pechuga')).toHaveValue(500);
+
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const rows = (onSubmit.mock.calls[0][0] as EditorState).rows;
+    expect(rows).toHaveLength(1);
+    expect(rows[0].ingredient?.id).toBe('i-1');
+  });
 });
 
 describe('RecipeEditorForm — adding an ingredient (web: the table footer)', () => {
@@ -420,9 +490,12 @@ describe('RecipeEditorForm — adding an ingredient (web: the table footer)', ()
     await user.click(await screen.findByRole('button', { name: /Pollo pechuga/ }));
 
     // The row exists, empty-handed: the web footer carries no quantity, so you
-    // type it into the row that just appeared.
+    // type it into the row that just appeared — and it should already have
+    // focus, so typing needs no click first. jsdom honours React's `autoFocus`,
+    // so this is a real assertion, not a tautology of `user.type` itself.
     const qty = screen.getByLabelText('Cantidad de Pollo pechuga');
     expect(qty).toHaveValue(null);
+    expect(qty).toHaveFocus();
 
     await user.type(qty, '200');
 

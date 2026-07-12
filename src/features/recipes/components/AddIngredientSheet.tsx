@@ -71,9 +71,16 @@ export function AddIngredientSheet({ open, onOpenChange, recipeName, onAdd }: Pr
   }, [open]);
 
   // Same as the autocomplete: no fetch until the user has typed something.
+  //
+  // Gated on the DEBOUNCED value, not the raw query: for the ~200 ms between a
+  // keystroke and the debounce settling, the fetch is still disabled (enabled
+  // above is the same debounced check), so `isLoading` is false and `results`
+  // is still whatever the previous state was — gating on the raw query here
+  // made that window render "no hay resultados" (plus a `0` counter) before
+  // "buscando…" ever got a chance to show.
   const search = useLocalIngredientSearch(debounced, 12, debounced.trim() !== '');
   const results = search.data ?? [];
-  const typed = query.trim() !== '';
+  const typed = debounced.trim() !== '';
 
   function select(ing: Ingredient) {
     setSelected(ing);
@@ -119,14 +126,19 @@ export function AddIngredientSheet({ open, onOpenChange, recipeName, onAdd }: Pr
                   </span>
                 )}
               </div>
-              {/* Only the vaul Drawer needs one — DialogContent draws its own X. */}
+              {/* Only the vaul Drawer needs one — DialogContent draws its own X.
+                  Labelled "Cerrar"/"Close", not "Cancelar": it dismisses the
+                  sheet, it does not cancel a pending action — and "Cancelar"
+                  is already the row-delete confirm's button name elsewhere in
+                  this editor, so reusing it here collided two different
+                  controls under one accessible name. */}
               {isMobile && (
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
                   className="h-[30px] w-[30px] shrink-0 rounded-[9px] text-muted-foreground"
-                  aria-label={tCommon('cancel')}
+                  aria-label={tCommon('close')}
                   onClick={() => onOpenChange(false)}
                 >
                   <X className="h-3.5 w-3.5" />

@@ -157,7 +157,9 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
   // the wrong row the moment an earlier one is removed.
   const [confirmRowId, setConfirmRowId] = useState<string | null>(null);
   // The row the web footer just created, so its (empty) quantity input can take
-  // focus on mount. `autoFocus` fires on mount only, which is exactly the event.
+  // focus on mount. `autoFocus` fires on mount only, which is exactly the event
+  // this drives — the input's own `onFocus` below clears it right back to null,
+  // so the flag never outlives the autofocus it exists for.
   const [justAddedRowId, setJustAddedRowId] = useState<string | null>(null);
 
   function toggleMealType(key: RecipeMealType) {
@@ -471,6 +473,7 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
                           step="0.1"
                           min={0}
                           autoFocus={field.rowId === justAddedRowId}
+                          onFocus={() => setJustAddedRowId(null)}
                           placeholder={t('form.quantity')}
                           className="tnum h-8 rounded-[7px] border-input bg-muted pl-2 pr-6 text-[12px] font-medium"
                           {...register(`rows.${index}.quantity`)}
