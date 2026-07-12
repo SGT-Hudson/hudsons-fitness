@@ -153,4 +153,17 @@ describe('IngredientSearchPage', () => {
     expect(screen.getByTestId('loc')).toHaveTextContent('/recipes/ingredients');
     expect(screen.getByText('LA LISTA')).toBeInTheDocument();
   });
+
+  // The takeover is the app's only Radix-based overlay's worth of Escape
+  // handling — it used to be a hand-rolled `keydown` listener; now it rides
+  // Dialog's own Escape-to-close, which this proves still answers the key.
+  it('returns to the list on Escape', async () => {
+    const user = userEvent.setup();
+    renderSearch();
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.getByTestId('loc')).toHaveTextContent('/recipes/ingredients');
+    expect(screen.getByText('LA LISTA')).toBeInTheDocument();
+  });
 });

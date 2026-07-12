@@ -2,7 +2,7 @@ import i18n from '@/i18n';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // The page (and IngredientDialog, which it still mounts for create/edit) import
@@ -94,12 +94,18 @@ const platano = ingredient({
   kcal_per_unit: 89,
 });
 
-function renderPage() {
+function Probe() {
+  const { pathname, search } = useLocation();
+  return <div data-testid="loc">{pathname + search}</div>;
+}
+
+function renderPage(initialPath = '/recipes/ingredients') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={['/recipes/ingredients']}>
+      <MemoryRouter initialEntries={[initialPath]}>
         <IngredientesPage />
+        <Probe />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -231,5 +237,25 @@ describe('IngredientesPage', () => {
     for (const badge of screen.getAllByRole('img', { name: 'Verificada' })) {
       expect(badge.tagName).not.toBe('BUTTON');
     }
+  });
+
+  // `withQuery` carries the active `?q=` into `/new` (routeIntent === 'create'
+  // opens IngredientDialog), and `closeDialog` carries it back out again —
+  // both ends, or the user loses their search by opening the create dialog.
+  it('round-trips an active `?q=` through the create dialog, in and out', async () => {
+    const user = userEvent.setup();
+    usePoolIngredients.mockReturnValue({ data: [pollo, avena], isLoading: false });
+    renderPage('/recipes/ingredients?q=avena');
+
+    expect(screen.getByTestId('loc')).toHaveTextContent('/recipes/ingredients?q=avena');
+
+    // In: opening the create dialog is a navigation to `/new`, and it must
+    // not drop the query the user was already scoped to.
+    await user.click(screen.getAllByRole('link', { name: 'Nuevo ingrediente' })[0]);
+    expect(screen.getByTestId('loc')).toHaveTextContent('/recipes/ingredients/new?q=avena');
+
+    // Out: cancelling the dialog returns to the list, still scoped to it.
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(screen.getByTestId('loc')).toHaveTextContent('/recipes/ingredients?q=avena');
   });
 });
