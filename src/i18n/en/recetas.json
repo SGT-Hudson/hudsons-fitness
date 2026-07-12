@@ -83,6 +83,7 @@
   "errors": {
     "nameRequired": "Give your recipe a name.",
     "servingsInvalid": "Servings must be greater than 0.",
+    "prepTimeInvalid": "Prep time must be a whole number of minutes greater than 0.",
     "noIngredients": "Add at least one ingredient.",
     "rowMissingIngredient": "Some rows have no ingredient selected.",
     "rowInvalidQuantity": "Some rows have an invalid or empty quantity."

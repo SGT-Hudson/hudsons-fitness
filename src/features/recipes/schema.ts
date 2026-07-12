@@ -11,9 +11,10 @@ import { recipeMealTypeSchema } from './mealTypes';
 //
 //   1. name.trim() === ''                    → errors.nameRequired
 //   2. !Number.isFinite(servings) || <= 0    → errors.servingsInvalid
-//   3. filledRows.length === 0               → errors.noIngredients
-//   4. a filled row with no ingredient       → errors.rowMissingIngredient
-//   5. a filled row with bad/<=0 quantity    → errors.rowInvalidQuantity
+//   3. prep time set but not whole minutes   → errors.prepTimeInvalid  (R-33 w5)
+//   4. filledRows.length === 0               → errors.noIngredients
+//   5. a filled row with no ingredient       → errors.rowMissingIngredient
+//   6. a filled row with bad/<=0 quantity    → errors.rowInvalidQuantity
 //
 // "filled row" = ingredient set OR quantity string non-empty (unchanged). The
 // component still renders ONE localized message and preserves this exact
@@ -33,6 +34,7 @@ const rowSchema = z.object({
 export const RECIPE_ERROR_ORDER = [
   'nameRequired',
   'servingsInvalid',
+  'prepTimeInvalid',
   'noIngredients',
   'rowMissingIngredient',
   'rowInvalidQuantity',
@@ -40,12 +42,32 @@ export const RECIPE_ERROR_ORDER = [
 
 export type RecipeErrorCode = (typeof RECIPE_ERROR_ORDER)[number];
 
+/**
+ * R-33 wave 5 — the prep-time form boundary (invariant 6).
+ *
+ * The `<input>` value is a string; `recipes.prep_time_minutes` is nullable
+ * positive-integer MINUTES. Empty (or whitespace-only) → `null`, i.e. "no time
+ * recorded" — a legitimate permanent state, not a validation failure. Anything
+ * that is not a positive whole number of minutes (0, negatives, fractions,
+ * free text) → `'invalid'`; the schema below turns that into a form error, and
+ * the column's check constraint is the DB-side backstop.
+ */
+export function parsePrepTimeMinutes(raw: string): number | null | 'invalid' {
+  const s = raw.trim();
+  if (s === '') return null;
+  if (!/^\d+$/.test(s)) return 'invalid';
+  const n = Number(s);
+  return n > 0 ? n : 'invalid';
+}
+
 export const recipeFormSchema = z
   .object({
     name: z.string(),
     servings: z.string(),
     description: z.string(),
     instructions: z.string(),
+    // R-33 wave 5: optional prep time in minutes (empty = no time recorded).
+    prepTime: z.string().default(''),
     rows: z.array(rowSchema),
     // U-2: optional meal-type tags, any combination (empty = untagged).
     mealTypes: z.array(recipeMealTypeSchema).default([]),
@@ -60,6 +82,13 @@ export const recipeFormSchema = z
         code: z.ZodIssueCode.custom,
         path: ['servings'],
         message: 'servingsInvalid',
+      });
+    }
+    if (parsePrepTimeMinutes(v.prepTime) === 'invalid') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['prepTime'],
+        message: 'prepTimeInvalid',
       });
     }
     const filled = v.rows.filter((r) => r.ingredient || r.quantity.trim() !== '');
@@ -97,5 +126,5 @@ export type RecipeFormValues = z.infer<typeof recipeFormSchema>;
 export function firstRecipeError(
   errors: Record<string, { message?: string } | undefined>,
 ): RecipeErrorCode | null {
-  return pickFirstError(errors, ['name', 'servings', 'rows'], RECIPE_ERROR_ORDER);
+  return pickFirstError(errors, ['name', 'servings', 'prepTime', 'rows'], RECIPE_ERROR_ORDER);
 }

@@ -83,6 +83,7 @@
   "errors": {
     "nameRequired": "Ponle un nombre a la receta.",
     "servingsInvalid": "Las raciones deben ser mayores que 0.",
+    "prepTimeInvalid": "El tiempo de preparación debe ser un número entero de minutos mayor que 0.",
     "noIngredients": "Añade al menos un ingrediente.",
     "rowMissingIngredient": "Hay filas sin ingrediente seleccionado.",
     "rowInvalidQuantity": "Hay filas con cantidad inválida o vacía."

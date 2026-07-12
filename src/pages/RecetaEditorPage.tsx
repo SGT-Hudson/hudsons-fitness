@@ -9,6 +9,7 @@ import {
   type EditorState,
 } from '@/features/recipes/components/RecipeEditorForm';
 import { useRecipe, useSaveRecipe } from '@/features/recipes/hooks';
+import { parsePrepTimeMinutes } from '@/features/recipes/schema';
 
 export function RecetaEditorPage() {
   const { id } = useParams<{ id?: string }>();
@@ -32,6 +33,10 @@ export function RecetaEditorPage() {
 
   async function handleSubmit(state: EditorState) {
     setError(null);
+    // Form boundary (invariant 6): the minutes string becomes the integer|null
+    // the RPC writes. `'invalid'` cannot reach here — the zod schema blocks
+    // submit — but it maps to null (= "no time") rather than crashing.
+    const prep = parsePrepTimeMinutes(state.prepTime);
     try {
       await save.mutateAsync({
         recipeId: isNew ? null : id!,
@@ -40,6 +45,7 @@ export function RecetaEditorPage() {
         description: state.description.trim() === '' ? null : state.description.trim(),
         instructions: state.instructions.trim() === '' ? null : state.instructions.trim(),
         mealTypes: state.mealTypes,
+        prepTimeMinutes: prep === 'invalid' ? null : prep,
         ingredients: state.rows
           .filter((r) => r.ingredient && Number(r.quantity) > 0)
           .map((r, i) => ({

@@ -335,6 +335,115 @@ select is(
   'cut', 'A''s template phase is unchanged by B''s attempts');
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- R-33 wave 5 — recipes.prep_time_minutes
+-- The column's check constraint (positive integer minutes or null), the
+-- round-trip through save_recipe (create / update / clear-to-null), and the
+-- pre-existing RPC behaviour the DROP-and-recreate must not have changed:
+-- ownership is still enforced on update, and children are still replaced.
+-- ════════════════════════════════════════════════════════════════════════════
+reset role;
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+
+-- the check constraint, straight at the table
+select throws_ok(
+  $q$ insert into recipes (created_by_user_id, name, prep_time_minutes)
+      values ('11111111-1111-1111-1111-111111111111', 'zero prep', 0) $q$,
+  '23514', null,
+  'the check constraint rejects a prep time of 0');
+select throws_ok(
+  $q$ insert into recipes (created_by_user_id, name, prep_time_minutes)
+      values ('11111111-1111-1111-1111-111111111111', 'negative prep', -5) $q$,
+  '23514', null,
+  'the check constraint rejects a negative prep time');
+select lives_ok(
+  $q$ insert into recipes (created_by_user_id, name, prep_time_minutes)
+      values ('11111111-1111-1111-1111-111111111111', 'positive prep', 45) $q$,
+  'the check constraint accepts a positive prep time');
+select lives_ok(
+  $q$ insert into recipes (created_by_user_id, name, prep_time_minutes)
+      values ('11111111-1111-1111-1111-111111111111', 'null prep', null) $q$,
+  'the check constraint accepts a null prep time (no time recorded)');
+
+-- create through the RPC, with a prep time and the meal types still in place
+select lives_ok(
+  $q$ select save_recipe(null, 'R prep', 2, 'd', 'i',
+        '[{"ingredient_id":"00000000-0000-0000-0000-0000000000d1","quantity":100},
+          {"ingredient_id":"00000000-0000-0000-0000-0000000000d2","quantity":50}]'::jsonb,
+        array['lunch']::text[], 35) $q$,
+  'save_recipe creates a recipe with a prep time');
+select is(
+  (select prep_time_minutes from recipes where name = 'R prep'),
+  35, 'the prep time round-trips on create');
+select is(
+  (select meal_types from recipes where name = 'R prep'),
+  array['lunch']::text[], 'save_recipe still writes meal_types (U-2 behaviour survives the recreate)');
+select is(
+  (select count(*)::int from recipe_ingredients ri
+     join recipes r on r.id = ri.recipe_id where r.name = 'R prep'),
+  2, 'save_recipe still writes its ingredient children');
+
+-- create with no prep time at all (the default keeps the 7-arg call sites honest)
+select lives_ok(
+  $q$ select save_recipe(null, 'R no prep', 1, null, null, '[]'::jsonb, array['snack']::text[]) $q$,
+  'save_recipe still accepts a call that omits the prep time');
+select is(
+  (select prep_time_minutes from recipes where name = 'R no prep'),
+  null::int, 'a recipe saved without a prep time really has none');
+
+-- a bad prep time through the RPC is rejected by the constraint, not by app code
+select throws_ok(
+  $q$ select save_recipe(null, 'R bad prep', 1, null, null, '[]'::jsonb, '{}'::text[], 0) $q$,
+  '23514', null,
+  'save_recipe surfaces the check constraint for a prep time of 0');
+
+-- update: re-time, and children are still replaced (not duplicated)
+select lives_ok(
+  $q$ select save_recipe(
+        (select id from recipes where name = 'R prep'),
+        'R prep', 2, 'd', 'i',
+        '[{"ingredient_id":"00000000-0000-0000-0000-0000000000d1","quantity":120}]'::jsonb,
+        array['lunch']::text[], 50) $q$,
+  'save_recipe updates the prep time of an existing recipe');
+select is(
+  (select prep_time_minutes from recipes where name = 'R prep'),
+  50, 'the prep time round-trips on update');
+select is(
+  (select count(*)::int from recipe_ingredients ri
+     join recipes r on r.id = ri.recipe_id where r.name = 'R prep'),
+  1, 'save_recipe still replaces (not duplicates) its ingredient children on update');
+
+-- clearing back to null is a real write, not an omission
+select lives_ok(
+  $q$ select save_recipe(
+        (select id from recipes where name = 'R prep'),
+        'R prep', 2, 'd', 'i', '[]'::jsonb, array['lunch']::text[], null) $q$,
+  'save_recipe clears a prep time back to null');
+select is(
+  (select prep_time_minutes from recipes where name = 'R prep'),
+  null::int, 'a cleared prep time really is null, not the old value');
+
+-- ownership is still enforced on update. Fixed literal id: a subquery would be
+-- hidden from B by RLS, so save_recipe would receive NULL and create a new
+-- recipe instead of failing (same trap as the save_workout section above).
+reset role;
+insert into recipes (id, created_by_user_id, name, prep_time_minutes) values
+  ('00000000-0000-0000-0000-0000000000f1', '11111111-1111-1111-1111-111111111111', 'A owned recipe', 20);
+
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
+set local role authenticated;
+select throws_ok(
+  $q$ select save_recipe('00000000-0000-0000-0000-0000000000f1', 'hijack', 1, null, null,
+        '[]'::jsonb, '{}'::text[], 99) $q$,
+  'P0001', 'recipe not found or not owned by user',
+  'B cannot save_recipe into A''s recipe');
+
+reset role;
+select is(
+  (select prep_time_minutes from recipes where id = '00000000-0000-0000-0000-0000000000f1'),
+  20, 'A''s prep time is unchanged by B''s attempt');
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- reconcile_account_delete — purge refs, anonymise pool, leave others intact
 -- ════════════════════════════════════════════════════════════════════════════
 reset role;

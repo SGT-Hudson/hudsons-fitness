@@ -912,6 +912,7 @@ export type Database = {
           meal_types: string[]
           name: string
           photo_url: string | null
+          prep_time_minutes: number | null
           servings: number
           updated_at: string
         }
@@ -924,6 +925,7 @@ export type Database = {
           meal_types?: string[]
           name: string
           photo_url?: string | null
+          prep_time_minutes?: number | null
           servings?: number
           updated_at?: string
         }
@@ -936,6 +938,7 @@ export type Database = {
           meal_types?: string[]
           name?: string
           photo_url?: string | null
+          prep_time_minutes?: number | null
           servings?: number
           updated_at?: string
         }
@@ -1328,9 +1331,10 @@ export type Database = {
     // The marked args below are nullable BY DESIGN — a null create-or-update id
     // (p_recipe_id / p_template_id / p_program_id / p_routine_id / p_session_id)
     // means "create new", p_phase_type null means "no phase / clear the phase"
-    // (R-33 wave 4), and p_notes / p_title / p_performed_on / p_anchor_date
-    // are optional metadata. Restored to `string | null` so call sites stay
-    // honest instead of casting NULL to ''. Re-apply to save_recipe /
+    // (R-33 wave 4), p_prep_time_minutes null means "no time recorded / clear
+    // the prep time" (R-33 wave 5), and p_notes / p_title / p_performed_on /
+    // p_anchor_date are optional metadata. Restored to `… | null` so call sites
+    // stay honest instead of casting NULL to ''. Re-apply to save_recipe /
     // save_template / save_week_as_template / save_program / save_routine /
     // save_workout / set_active_program after any regen — see
     // docs/conventions.md (generated-types caveats).
@@ -1380,6 +1384,7 @@ export type Database = {
           p_instructions: string | null
           p_meal_types?: string[]
           p_name: string
+          p_prep_time_minutes?: number | null
           p_recipe_id: string | null
           p_servings: number
         }
