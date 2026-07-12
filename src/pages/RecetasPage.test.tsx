@@ -1,16 +1,68 @@
 import i18n from '@/i18n';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { isoDate } from '@/lib/dates';
+import type { MealLogWithJoins } from '@/features/diario/api';
 
 vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
+
+// AddToDaySheet uses useMediaQuery (window.matchMedia is unpolyfilled in jsdom).
+// Stub it to mobile (false) so the sheet renders as the vaul Drawer.
+vi.stubGlobal('matchMedia', (q: string) => ({
+  matches: false,
+  media: q,
+  onchange: null,
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  addListener: vi.fn(),
+  removeListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+}));
 
 const useRecipes = vi.fn();
 const hideMutate = vi.fn();
 vi.mock('@/features/recipes/hooks', () => ({
   useRecipes: () => useRecipes(),
   useHideRecipe: () => ({ mutate: hideMutate }),
+}));
+
+vi.mock('@/features/auth/AuthProvider', () => ({
+  useAuth: () => ({ user: { id: 'u1', email: 'qa@x.dev' } }),
+}));
+vi.mock('@/features/phases/hooks', () => ({ useActivePhase: () => ({ data: null }) }));
+vi.mock('@/features/measurements/hooks', () => ({ useLatestMeasurement: () => ({ data: undefined }) }));
+vi.mock('@/features/tdee/hooks', () => ({ useLatestTdee: () => ({ data: undefined }) }));
+vi.mock('@/features/ingredients/hooks', () => ({
+  useLocalIngredientSearch: () => ({ data: [], isLoading: false }),
+}));
+
+// `useMealLogsForDay` stays real — its query timing (cold cache vs. already
+// warmed) is exactly what task 3's regression test exercises. Everything else
+// AddToDaySheet/RacionStep pull from this module is stubbed.
+vi.mock('@/features/diario/hooks', async (importActual) => ({
+  ...(await importActual<typeof import('@/features/diario/hooks')>()),
+  useQuickAddRecipes: () => ({ data: [] }),
+  useCreateMealLog: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateMealLog: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteMealLog: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
+// `fetchMealLogsForDay` is the network edge `useMealLogsForDay` calls — mocked
+// with a controllable delay so a test can simulate "the query is still in
+// flight" vs. "it landed a while ago".
+const fetchMealLogsForDayMock = vi.fn(
+  () =>
+    new Promise<MealLogWithJoins[]>((resolve) => {
+      setTimeout(() => resolve([]), 30);
+    }),
+);
+vi.mock('@/features/diario/api', async (importActual) => ({
+  ...(await importActual<typeof import('@/features/diario/api')>()),
+  fetchMealLogsForDay: (...args: Parameters<typeof fetchMealLogsForDayMock>) =>
+    fetchMealLogsForDayMock(...args),
 }));
 
 import { RecetasPage } from './RecetasPage';
@@ -55,12 +107,44 @@ const avena = recipe({
   },
 });
 
+// A fresh, empty QueryClient per render — the "cold cache" the task-3
+// regression test needs (no prior fetch for today's meal logs).
 function renderPage() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <RecetasPage />
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <RecetasPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
+}
+
+function makeBreakfastLog(): MealLogWithJoins {
+  return {
+    id: 'log-1',
+    user_id: 'u1',
+    logged_on: isoDate(),
+    meal_type: 'breakfast',
+    notes: null,
+    from_plan: false,
+    recipe_id: null,
+    ingredient_id: null,
+    servings: null,
+    quantity: null,
+    custom_name: 'Avena con plátano',
+    custom_kcal: 318,
+    custom_protein_g: 11,
+    custom_carbs_g: 58,
+    custom_fat_g: 5,
+    custom_fiber_g: 4,
+    custom_sugar_g: null,
+    custom_saturated_fat_g: null,
+    plan_week_slot_id: null,
+    created_at: '2026-05-18T08:00:00Z',
+    recipe: null,
+    ingredient: null,
+  } as MealLogWithJoins;
 }
 
 beforeEach(async () => {
@@ -68,6 +152,10 @@ beforeEach(async () => {
   hideMutate.mockReset();
   window.localStorage.clear();
   await i18n.changeLanguage('es');
+  fetchMealLogsForDayMock.mockReset();
+  fetchMealLogsForDayMock.mockImplementation(
+    () => new Promise<MealLogWithJoins[]>((resolve) => setTimeout(() => resolve([]), 30)),
+  );
 });
 
 describe('RecetasPage', () => {
@@ -196,5 +284,41 @@ describe('RecetasPage', () => {
     renderPage();
 
     expect(screen.getByRole('button', { name: 'Favoritas (1)' })).toBeInTheDocument();
+  });
+});
+
+// Task 3 regression: on a cold react-query cache, the add-to-day sheet opened
+// from a recipe row must land on the day's first *empty* meal slot, not the
+// 'breakfast' fallback baked into AddToDaySheet's props. RecetasPage warms
+// `useMealLogsForDay` on mount so it has landed by the time a click is
+// possible; without that, the sheet's reset effect (which reads its meal-slot
+// prop once, on open) fires while the query is still in flight.
+describe('RecetasPage add-to-day slot suggestion (cold cache)', () => {
+  it('lands the sheet on the first empty meal slot once the day already has a breakfast logged', async () => {
+    const user = userEvent.setup();
+    // The day already has breakfast logged — so once the meal-log query
+    // resolves, the first *empty* real slot is lunch ('Comida'), not breakfast.
+    fetchMealLogsForDayMock.mockImplementation(
+      () => new Promise<MealLogWithJoins[]>((resolve) => setTimeout(() => resolve([makeBreakfastLog()]), 30)),
+    );
+    useRecipes.mockReturnValue({ data: [pollo, avena], isLoading: false });
+    renderPage();
+
+    // Give the page-mount prefetch (30ms mock delay) time to land — a stand-in
+    // for the "user browses the list for a bit before clicking" gap the real
+    // fix relies on.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    await user.click(screen.getAllByRole('button', { name: /añadir al diario/i })[0]);
+
+    const slotGroup = await screen.findByRole('radiogroup', { name: 'Elegir franja' });
+    expect(within(slotGroup).getByRole('radio', { name: /Comida/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(within(slotGroup).getByRole('radio', { name: /Desayuno/ })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
   });
 });

@@ -12,6 +12,8 @@ import { PaginationBar } from '@/components/ui/PaginationBar';
 import { usePagination } from '@/hooks/usePagination';
 import { TodayAddToDaySheet } from '@/features/diario/components/TodayAddToDaySheet';
 import type { AddSheetSelection } from '@/features/diario/components/AddToDaySheet';
+import { useMealLogsForDay } from '@/features/diario/hooks';
+import { isoDate } from '@/lib/dates';
 import type { RecipeMealType } from '@/features/recipes/mealTypes';
 import type { RecipeGoalKey } from '@/features/recipes/labels';
 import { isRecipeFilterActive, matchesRecipeFilter } from '@/features/recipes/recipeFilter';
@@ -38,6 +40,16 @@ export function RecetasPage() {
   const { favorites, isFavorite, toggle: toggleFavorite } = useRecipeFavorites();
   const recipes = useRecipes();
   const hide = useHideRecipe();
+  // Warm today's meal-log cache the moment this page mounts (result unused
+  // here) so it has landed in the react-query cache by the time the user
+  // clicks a row's "+ añadir al diario" CTA — a browse away. Otherwise, on a
+  // cold cache, TodayAddToDaySheet's day-context query is still in flight at
+  // open, and the sheet (which reads its initial meal slot once, on open —
+  // see AddToDaySheet) is stuck on the 'breakfast' fallback instead of the
+  // day's real first empty slot. Not gating `open` on this: the CTA is a click
+  // away from a page already being browsed, so there's ample time without
+  // ever delaying the sheet's opening animation.
+  useMealLogsForDay(isoDate());
 
   function toggleMealType(key: RecipeMealType) {
     setSelectedMealTypes((prev) =>
