@@ -48,6 +48,13 @@ interface Props {
    * its quantity/macros, and confirming updates (or deleting removes) it.
    */
   editing?: MealLogWithJoins | null;
+  /**
+   * Open straight on a chosen item (R-33 wave 5: the Recetas list's "+ añadir al
+   * diario" already knows which recipe you meant, so making you search for it
+   * again would be silly). Ignored in edit mode. Must be referentially stable
+   * while the sheet is open — it is a dependency of the reset effect below.
+   */
+  initialSelection?: AddSheetSelection | null;
 }
 
 /**
@@ -130,6 +137,7 @@ export function AddToDaySheet({
   targets,
   phaseLabel,
   editing,
+  initialSelection,
 }: Props) {
   const { t, i18n } = useTranslation('diario');
   const { t: tIngredientes } = useTranslation('ingredientes');
@@ -146,7 +154,9 @@ export function AddToDaySheet({
   // Reset all transient state whenever the sheet (re)opens — a stale step /
   // tab / query from a previous open would otherwise leak through. Edit mode
   // skips explore entirely: it opens straight into the ración step locked to
-  // the entry's kind, at the entry's own meal slot.
+  // the entry's kind, at the entry's own meal slot. A caller-supplied
+  // `initialSelection` does the same, but at the caller's meal slot and with
+  // "back" still returning to explore.
   useEffect(() => {
     if (!open) return;
     if (editing) {
@@ -155,12 +165,17 @@ export function AddToDaySheet({
       setSelection(editSelection(editing));
       return;
     }
-    setStep('explore');
     setMealType(initialMealType);
     setTab('recientes');
     setQuery('');
+    if (initialSelection) {
+      setStep('racion');
+      setSelection(initialSelection);
+      return;
+    }
+    setStep('explore');
     setSelection(null);
-  }, [open, initialMealType, editing]);
+  }, [open, initialMealType, editing, initialSelection]);
 
   const quickAdd = useQuickAddRecipes();
   const recipes = useRecipes();

@@ -53,6 +53,39 @@
   color: var(--text-dim);
 }
 
+/* Lift card — the canvas's "cutout card" (Nutrición Web.html), which is not a
+   notch: it is layered elevation that rises 2px on hover, on the canvas's slow
+   cubic-bezier(0.23,1,0.32,1) easing. The card's inner motion (media zoom, the
+   "read more" arrow gap) rides `group-hover:` utilities on the children, so
+   this utility only owns the card's own elevation, border and transform.
+   Shared: the recipes grid card today, the ingredients editor next. */
+@utility card-lift {
+  box-shadow: var(--shadow-lift-raw);
+  transition:
+    box-shadow 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* `(hover: hover)` mirrors what Tailwind puts around its own `hover:` /
+     `group-hover:` variants — without it a tap on a touch screen would leave
+     the card stuck in its lifted state while the group-hover motion inside it
+     (media zoom, arrow gap) stayed put. */
+  @media (hover: hover) {
+    &:hover {
+      border-color: var(--line-strong);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lift-hover-raw);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
 /* ── Design tokens — ported from canvas tokens.css (source of truth) ── */
 :root {
   /* Neutrals (light) — warm tinted */
@@ -127,6 +160,9 @@
   /* Shadows (raw; wired to utilities via @theme inline below) */
   --shadow-card-raw: 0 1px 0 oklch(0.92 0.005 95), 0 1px 2px oklch(0.18 0.01 95 / 0.04);
   --shadow-hi-raw:   0 8px 24px oklch(0.18 0.01 95 / 0.08);
+  /* Lift card (canvas "cutout card") — resting + hovered elevation */
+  --shadow-lift-raw:       0 1px 2px oklch(0.18 0.01 95 / 0.06), 0 4px 10px oklch(0.18 0.01 95 / 0.05);
+  --shadow-lift-hover-raw: 0 4px 10px oklch(0.18 0.01 95 / 0.08), 0 16px 30px oklch(0.18 0.01 95 / 0.10);
 
   /* Default accent = nutri (shared routes); section classes override */
   --accent: var(--nutri); --accent-soft: var(--nutri-soft);
@@ -224,6 +260,10 @@
 
   --shadow-card-raw: 0 1px 0 oklch(0.27 0.008 250), 0 1px 2px oklch(0 0 0 / 0.4);
   --shadow-hi-raw:   0 12px 32px oklch(0 0 0 / 0.5);
+  /* Dark surfaces sit on a near-black page: the light theme's soft warm shadow
+     is invisible there, so the lift reads through a deeper, blacker one. */
+  --shadow-lift-raw:       0 1px 2px oklch(0 0 0 / 0.35), 0 4px 10px oklch(0 0 0 / 0.30);
+  --shadow-lift-hover-raw: 0 4px 10px oklch(0 0 0 / 0.45), 0 16px 30px oklch(0 0 0 / 0.50);
 }
 
 /* Section-scoped accent (spec §3.2) — class lives on <html> (applied by AppLayout via
