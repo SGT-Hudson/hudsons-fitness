@@ -171,9 +171,9 @@ describe('RecetasPage', () => {
     expect(screen.getAllByText('318').length).toBeGreaterThan(0);
   });
 
-  // The card/row is a stretched link to the recipe, and the kebab's edit item
-  // points at the editor. Both are routes the wave-5 route split moves — pin
-  // them so a bad retarget fails here instead of in the browser.
+  // The card/row is a stretched link to the recipe's read view, and the kebab's
+  // edit item points at the editor — two different routes since the wave-5 split.
+  // Pin them so a bad retarget fails here instead of in the browser.
   it('links every card and row to its recipe', () => {
     useRecipes.mockReturnValue({ data: [pollo, avena], isLoading: false });
     renderPage();
@@ -193,7 +193,7 @@ describe('RecetasPage', () => {
 
     expect(screen.getByRole('menuitem', { name: 'Editar' })).toHaveAttribute(
       'href',
-      '/recipes/r-1',
+      '/recipes/r-1/edit',
     );
 
     await user.click(screen.getByRole('menuitem', { name: 'Quitar de mi biblioteca' }));

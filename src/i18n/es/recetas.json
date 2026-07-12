@@ -16,6 +16,35 @@
     "removeFromLibrary": "Quitar de mi biblioteca",
     "removeConfirm": "¿Quitar la receta \"{{name}}\" de tu biblioteca? Si la creaste tú, dejará de ser editable (pasará a la biblioteca compartida anonimizada). El histórico de comidas se conserva."
   },
+  "detail": {
+    "loading": "Cargando…",
+    "servings_one": "{{count}} ración",
+    "servings_other": "{{count}} raciones",
+    "forServings_one": "para {{count}} ración",
+    "forServings_other": "para {{count}} raciones",
+    "minutes": "{{count}} min",
+    "kcalUnit": "kcal",
+    "stats": {
+      "servings": "Raciones",
+      "time": "Tiempo",
+      "kcalPerServing": "Kcal / ración",
+      "kcalPerServingShort": "Kcal/r",
+      "ingredients": "Ingredientes",
+      "ingredientsShort": "Ingr."
+    },
+    "macrosTitle": "Macros",
+    "distribution": "Distribución calórica",
+    "ingredientsTitle": "Ingredientes",
+    "perServingChip": "por ración",
+    "instructionsTitle": "Preparación",
+    "favorite": "Favorita",
+    "addToDay": "Añadir al día",
+    "edit": "Editar receta",
+    "editShort": "Editar",
+    "notFoundTitle": "Receta no encontrada",
+    "notFoundHint": "Puede que ya no exista o que la hayas quitado de tu biblioteca.",
+    "backToList": "Volver a Recetas"
+  },
   "editor": {
     "newTitle": "Nueva receta",
     "editTitle": "Editar receta",

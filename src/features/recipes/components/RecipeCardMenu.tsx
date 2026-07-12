@@ -22,8 +22,9 @@ interface Props {
  * library — so the two affordances collapse into one menu button instead of the
  * pre-redesign row of icon buttons.
  *
- * The edit item points at `/recipes/:id`, today's editor route. The route split
- * (`/recipes/:id` = read view, `/recipes/:id/edit` = editor) retargets it.
+ * The edit item points at the editor (`/recipes/:id/edit`) — the card itself
+ * already links to `/recipes/:id`, which since the wave-5 route split is the
+ * read view.
  */
 export function RecipeCardMenu({ recipeId, onRemove, className }: Props) {
   const { t } = useTranslation('recetas');
@@ -42,7 +43,7 @@ export function RecipeCardMenu({ recipeId, onRemove, className }: Props) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
-          <Link to={`/recipes/${recipeId}`}>
+          <Link to={`/recipes/${recipeId}/edit`}>
             <Pencil className="h-4 w-4" aria-hidden="true" />
             {tCommon('edit')}
           </Link>

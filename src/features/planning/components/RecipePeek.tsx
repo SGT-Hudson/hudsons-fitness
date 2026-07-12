@@ -26,8 +26,11 @@ interface Props {
 /**
  * Read-only "what am I actually cooking" view of a recipe planned into a
  * week slot (canvas option 3). Replaces the editor as the tap target from a
- * plan cell — editing the recipe itself is still reachable via the "Abrir
- * receta" footer link, but looking at it no longer forces edit mode.
+ * plan cell — looking at a planned recipe no longer forces edit mode.
+ *
+ * "Abrir receta" leaves for `/recipes/:id`, which since the wave-5 route split
+ * is the recipe's full read view (it used to be the editor — a reading intent
+ * that landed in edit mode).
  *
  * Fetches via `useRecipe` (unchanged — no new `.select()`) and derives
  * per-serving macros the same way `AddToDaySheet`'s `editSelection` does.

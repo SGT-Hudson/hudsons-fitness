@@ -38,7 +38,7 @@ export function RecetaEditorPage() {
     // submit — but it maps to null (= "no time") rather than crashing.
     const prep = parsePrepTimeMinutes(state.prepTime);
     try {
-      await save.mutateAsync({
+      const savedId = await save.mutateAsync({
         recipeId: isNew ? null : id!,
         name: state.name.trim(),
         servings: Number(state.servings),
@@ -55,9 +55,11 @@ export function RecetaEditorPage() {
             display_order: i,
           })),
       });
-      // B-1: after a successful save (create OR edit) go back to the recipe
-      // list, rather than staying inside the editor on the new recipe.
-      navigate('/recipes', { replace: true });
+      // After a successful save (create OR edit) land on the recipe's read
+      // view — the thing you were making. The RPC returns the id, so this works
+      // for a brand-new recipe too. (Pre-R-33 this went to the list, because
+      // `/recipes/:id` was the editor itself and staying there was a no-op.)
+      navigate(`/recipes/${savedId}`, { replace: true });
     } catch (err) {
       setError((err as Error).message);
     }
@@ -69,8 +71,12 @@ export function RecetaEditorPage() {
     navigate('/recipes/new', { state: { duplicate: { ...dup, name: `${dup.name} (copia)` } } });
   }
 
+  // Leaving the editor (back / cancel) returns you where you came from: the read
+  // view of the recipe you were editing, or the list when creating a new one.
+  const exitTo = isNew ? '/recipes' : `/recipes/${id}`;
+
   return (
-    <PageShell title={isNew ? t('editor.newTitle') : t('editor.editTitle')} back="/recipes">
+    <PageShell title={isNew ? t('editor.newTitle') : t('editor.editTitle')} back={exitTo}>
       <div className="space-y-6">
         {/* R-01 (★ model item 5): make the shared-library contract loud at
             create time. Private content belongs in the per-user note on the
@@ -84,7 +90,7 @@ export function RecetaEditorPage() {
           submitting={save.isPending}
           error={error}
           onSubmit={handleSubmit}
-          onCancel={() => navigate('/recipes')}
+          onCancel={() => navigate(exitTo)}
           onDuplicate={!isNew && recipeQuery.data ? handleDuplicate : undefined}
         />
       </div>

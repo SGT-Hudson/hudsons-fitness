@@ -16,6 +16,35 @@
     "removeFromLibrary": "Remove from my library",
     "removeConfirm": "Remove recipe \"{{name}}\" from your library? If you created it, it will no longer be editable (it becomes anonymized in the shared library). Your meal history is preserved."
   },
+  "detail": {
+    "loading": "Loading…",
+    "servings_one": "{{count}} serving",
+    "servings_other": "{{count}} servings",
+    "forServings_one": "for {{count}} serving",
+    "forServings_other": "for {{count}} servings",
+    "minutes": "{{count}} min",
+    "kcalUnit": "kcal",
+    "stats": {
+      "servings": "Servings",
+      "time": "Time",
+      "kcalPerServing": "Kcal / serving",
+      "kcalPerServingShort": "Kcal/s",
+      "ingredients": "Ingredients",
+      "ingredientsShort": "Ingr."
+    },
+    "macrosTitle": "Macros",
+    "distribution": "Calorie split",
+    "ingredientsTitle": "Ingredients",
+    "perServingChip": "per serving",
+    "instructionsTitle": "Preparation",
+    "favorite": "Favorite",
+    "addToDay": "Add to day",
+    "edit": "Edit recipe",
+    "editShort": "Edit",
+    "notFoundTitle": "Recipe not found",
+    "notFoundHint": "It may no longer exist, or you removed it from your library.",
+    "backToList": "Back to Recipes"
+  },
   "editor": {
     "newTitle": "New recipe",
     "editTitle": "Edit recipe",
