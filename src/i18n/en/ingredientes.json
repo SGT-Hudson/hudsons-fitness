@@ -90,6 +90,19 @@
     "base": "Base",
     "mine": "Mine"
   },
+  "search": {
+    "open": "Search ingredients",
+    "placeholder": "Search ingredients…",
+    "cancel": "Cancel",
+    "clear": "Clear search",
+    "results": "Results",
+    "hint": "Type to search the whole shared library.",
+    "noResults": "No results",
+    "noResultsHint": "Nothing matches “{{query}}”. Create it, or scan its barcode.",
+    "footerTitle": "Can't find what you're looking for?",
+    "create": "Create a new ingredient",
+    "scan": "Scan the barcode"
+  },
   "scan": {
     "open": "Scan a barcode",
     "bannerTitle": "Scan the barcode",

@@ -90,6 +90,19 @@
     "base": "Base",
     "mine": "Mías"
   },
+  "search": {
+    "open": "Buscar ingredientes",
+    "placeholder": "Buscar ingredientes…",
+    "cancel": "Cancelar",
+    "clear": "Borrar la búsqueda",
+    "results": "Resultados",
+    "hint": "Escribe para buscar en toda la biblioteca compartida.",
+    "noResults": "Sin resultados",
+    "noResultsHint": "Nada coincide con «{{query}}». Créalo o escanea su código de barras.",
+    "footerTitle": "¿No encuentras lo que buscas?",
+    "create": "Crear un ingrediente nuevo",
+    "scan": "Escanear el código de barras"
+  },
   "scan": {
     "open": "Escanear un código de barras",
     "bannerTitle": "Escanea el código de barras",

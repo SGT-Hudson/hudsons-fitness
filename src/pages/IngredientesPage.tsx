@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useCallback, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Camera, ChevronRight, Plus, Search, SearchX, Wheat } from 'lucide-react';
+import { Camera, ChevronRight, Plus, Search, SearchX, Wheat, X } from 'lucide-react';
 import { RecipesTabs } from './RecipesTabs';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -46,7 +46,27 @@ export function IngredientesPage() {
   const { pathname } = useLocation();
   const { user } = useAuth();
 
-  const [query, setQuery] = useState('');
+  // The query lives in the URL (`?q=`), not in local state: the full-screen
+  // search hands its pick back this way (`/recipes/ingredients?q=<name>`), so
+  // the list has to be able to open already scoped to one. Desktop's inline
+  // field writes it with `replace`, so typing does not fill the back stack.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q') ?? '';
+  const setQuery = useCallback(
+    (next: string) => {
+      setSearchParams(
+        (prev) => {
+          const params = new URLSearchParams(prev);
+          if (next === '') params.delete('q');
+          else params.set('q', next);
+          return params;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
   const [facets, setFacets] = useState<IngredientFacet[]>([]);
   const [editing, setEditing] = useState<Ingredient | null>(null);
 
@@ -101,8 +121,10 @@ export function IngredientesPage() {
     if (routeIntent) navigate('/recipes/ingredients', { replace: true });
   }
 
+  // Desktop only (it rides `actions`, which PageHeaderV2 renders and MobileTopBar
+  // ignores) — mobile's field is the link into the full-screen search, below.
   const searchBox = (
-    <div className="relative w-full md:w-[280px]">
+    <div className="relative w-[280px]">
       <Search
         className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
         aria-hidden="true"
@@ -154,9 +176,40 @@ export function IngredientesPage() {
             header; dropping it silently would leave manual creation reachable
             only by camera → /scan → switching off the barcode tab in a dialog
             that clips at 390px. So it rides here too, icon-only to match the
-            camera button's footprint. */}
+            camera button's footprint.
+
+            The field itself is a LINK, not an input: on mobile, tapping it opens
+            the full-screen search (D-F24) — the canvas's pattern, and the only
+            way the pinned "create it / scan it" escape hatch gets a surface. It
+            shows the active `?q=`, with its own clear button (a sibling, not a
+            child: a button inside a link is invalid). Desktop keeps the inline
+            field in the header. */}
         <div className="flex items-center gap-2 md:hidden">
-          {searchBox}
+          <div className="relative flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Link
+              to="/recipes/ingredients/search"
+              aria-label={t('search.open')}
+              className="flex h-9 w-full items-center truncate rounded-[10px] border bg-card pl-9 pr-9 text-[13px] leading-9"
+            >
+              <span className={query === '' ? 'truncate text-muted-foreground' : 'truncate'}>
+                {query === '' ? t('searchPlaceholder') : query}
+              </span>
+            </Link>
+            {query !== '' && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label={t('search.clear')}
+                className="absolute right-2 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded-full bg-text-dim text-card"
+              >
+                <X className="size-3" aria-hidden="true" />
+              </button>
+            )}
+          </div>
           <Link
             to="/recipes/ingredients/scan"
             aria-label={t('scan.open')}

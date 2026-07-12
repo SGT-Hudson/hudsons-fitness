@@ -17,6 +17,7 @@ import { RecetasPage } from '@/pages/RecetasPage';
 import { RecetaDetailPage } from '@/pages/RecetaDetailPage';
 import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
+import { IngredientSearchPage } from '@/pages/IngredientSearchPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { MorePage } from '@/pages/MorePage';
@@ -119,6 +120,8 @@ export function AppRoutes() {
               user out of Ingredientes). */}
           <Route path="/recipes/ingredients/new" element={<IngredientesPage />} />
           <Route path="/recipes/ingredients/scan" element={<IngredientesPage />} />
+          {/* D-F24 — the full-screen search, deferred out of the Diario wave. */}
+          <Route path="/recipes/ingredients/search" element={<IngredientSearchPage />} />
 
           {/* Entreno */}
           <Route path="/training" element={<EntrenamientoPage />} />
