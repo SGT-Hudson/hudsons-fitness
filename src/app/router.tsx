@@ -111,6 +111,14 @@ export function AppRoutes() {
           <Route path="/recipes/:id" element={<RecetaDetailPage />} />
           <Route path="/recipes/:id/edit" element={<RecetaEditorPage />} />
           <Route path="/recipes/ingredients" element={<IngredientesPage />} />
+          {/* R-33 wave 6: the list's "nuevo ingrediente" / scan affordances point
+              here. PR-B replaces these two elements with the method picker and the
+              full-screen scanner; until then they resolve to the list with the
+              existing IngredientDialog open (the catch-all below redirects unknown
+              paths to /diary, so leaving them unrouted would silently teleport the
+              user out of Ingredientes). */}
+          <Route path="/recipes/ingredients/new" element={<IngredientesPage />} />
+          <Route path="/recipes/ingredients/scan" element={<IngredientesPage />} />
 
           {/* Entreno */}
           <Route path="/training" element={<EntrenamientoPage />} />

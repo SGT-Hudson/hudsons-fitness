@@ -17,10 +17,13 @@ const builder = {
     calls.or = v;
     return builder;
   }),
-  order: vi.fn(() => builder),
-  range: vi.fn((from: number, to: number) => {
-    calls.range = [from, to];
-    return Promise.resolve({ data: [{ id: '1' }], count: 42, error: null });
+  order: vi.fn((column: string, opts?: unknown) => {
+    calls.order = [...((calls.order as unknown[]) ?? []), [column, opts]];
+    return builder;
+  }),
+  limit: vi.fn((n: number) => {
+    calls.limit = n;
+    return Promise.resolve({ data: [{ id: '1' }], error: null });
   }),
   insert: vi.fn((payload: unknown) => {
     calls.insertPayload = payload;
@@ -41,7 +44,7 @@ vi.mock('@/lib/supabase', () => ({
 import {
   ingredientDisplayName,
   importIngredientFromOFF,
-  searchLocalIngredientsPage,
+  listPoolIngredients,
   type Ingredient,
   type ManualIngredientInput,
 } from './api';
@@ -61,20 +64,19 @@ describe('ingredientDisplayName', () => {
   });
 });
 
-describe('searchLocalIngredientsPage', () => {
-  it('computes range from page/pageSize and returns rows + total', async () => {
-    const res = await searchLocalIngredientsPage('rice', { page: 3, pageSize: 10 });
-    expect(calls.range).toEqual([20, 29]);
-    expect(calls.or).toContain('name.ilike.%rice%');
-    expect(calls.or).toContain('name_en.ilike.%rice%');
-    expect(res).toEqual({ rows: [{ id: '1' }], total: 42 });
-  });
-
-  it('omits the or-filter for an empty query', async () => {
-    calls.or = undefined;
-    await searchLocalIngredientsPage('   ', { page: 1, pageSize: 5 });
-    expect(calls.or).toBeUndefined();
-    expect(calls.range).toEqual([0, 4]);
+// The list page holds the pool in memory (one query) so its five filter chips
+// can carry real counts — hence a deterministic, bounded, unfiltered fetch.
+describe('listPoolIngredients', () => {
+  it('fetches the pool in a deterministic order, under an explicit ceiling', async () => {
+    calls.order = undefined;
+    const rows = await listPoolIngredients();
+    expect(calls.order).toEqual([
+      ['is_verified', { ascending: false }],
+      ['name', undefined],
+      ['id', undefined],
+    ]);
+    expect(calls.limit).toBe(1000);
+    expect(rows).toEqual([{ id: '1' }]);
   });
 });
 

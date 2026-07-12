@@ -43,6 +43,13 @@ interface Props {
   mode: Mode;
   initial?: Ingredient | null;
   defaultName?: string;
+  /**
+   * Which create tab to land on when there is no `defaultName` to route by.
+   * The Ingredientes list's scan affordances open straight on `barcode`
+   * (`/recipes/ingredients/scan` — PR-B replaces this with the full-screen
+   * scanner). Defaults to `off`, as before.
+   */
+  defaultTab?: 'off' | 'manual' | 'barcode';
   onSaved?: (ingredient: Ingredient) => void;
 }
 
@@ -61,6 +68,7 @@ export function IngredientDialog({
   mode,
   initial,
   defaultName,
+  defaultTab,
   onSaved,
 }: Props) {
   const { t } = useTranslation('ingredientes');
@@ -107,12 +115,12 @@ export function IngredientDialog({
         setTab('off');
         setOffQuery(seed);
       } else {
-        setTab(seed === '' ? 'off' : 'manual');
+        setTab(seed === '' ? (defaultTab ?? 'off') : 'manual');
         setOffQuery('');
       }
       reset({ ...emptyForm, name: seed });
     }
-  }, [open, isEdit, initial, defaultName, reset]);
+  }, [open, isEdit, initial, defaultName, defaultTab, reset]);
 
   const submitting = create.isPending || importOFF.isPending || update.isPending;
 

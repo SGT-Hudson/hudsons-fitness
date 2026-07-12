@@ -224,39 +224,44 @@ export function ingredientDisplayName(ing: Ingredient, lang: 'es' | 'en'): strin
   return ing.name;
 }
 
-export interface PagedIngredients {
-  rows: Ingredient[];
-  total: number;
+/**
+ * The whole pool, in one query (R-33 wave 6 — the Ingredientes list).
+ *
+ * Replaces the server-side paged search the list used to run: the redesigned
+ * page carries five filter chips whose counts must be REAL numbers, and a
+ * count-per-chip round trip (or a `count: 'exact'` per facet) is five requests
+ * on every keystroke. The pool is a single shared catalogue (~235 rows today,
+ * dominated by the ~230 `system` seeds), so one fetch feeds the rows, the five
+ * counts and the in-memory pagination — see `ingredientFilter.ts`.
+ *
+ * `limit` is an explicit ceiling rather than PostgREST's implicit 1000-row cap:
+ * if the pool ever outgrows it, the page silently truncating is the failure we
+ * want to notice, and the fix is a server-side facet count (an RPC), not a
+ * bigger number here.
+ *
+ * Order is deterministic (`is_verified desc, name asc, id asc`) — `name` is not
+ * unique, hence the `id` tiebreaker.
+ */
+export async function listPoolIngredients(limit = 1000): Promise<Ingredient[]> {
+  const { data, error } = await supabase
+    .from('ingredients')
+    .select('*')
+    .order('is_verified', { ascending: false })
+    .order('name')
+    .order('id')
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
 }
 
 /**
- * Server-side paged pool search (R-01: over the WHOLE pool). Returns the page's
- * rows plus the exact total for the pagination control. Order is deterministic
- * (`is_verified desc, name asc, id asc`) so offset paging never skips/dupes —
- * `name` is not unique, hence the `id` tiebreaker. Searches `name_en` too so the
- * paginated list is bilingual (F-1), matching the autocomplete/list search.
+ * The ids of the ingredients in MY library — the `user_ingredient_refs` rows
+ * RLS already scopes to `auth.uid()`. One query; the "mi biblioteca" chip and
+ * the row menu's "quitar de mi biblioteca" both read it. Ids only: the pool
+ * rows themselves come from `listPoolIngredients`.
  */
-export async function searchLocalIngredientsPage(
-  query: string,
-  { page, pageSize }: { page: number; pageSize: number },
-): Promise<PagedIngredients> {
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
-  const trimmed = query.trim();
-
-  let q = supabase
-    .from('ingredients')
-    .select('*', { count: 'exact' })
-    .order('is_verified', { ascending: false })
-    .order('name')
-    .order('id');
-
-  if (trimmed !== '') {
-    const safe = trimmed.replace(/[%_,]/g, '');
-    q = q.or(`name.ilike.%${safe}%,name_en.ilike.%${safe}%,brand.ilike.%${safe}%`);
-  }
-
-  const { data, error, count } = await q.range(from, to);
+export async function listMyIngredientRefIds(): Promise<string[]> {
+  const { data, error } = await supabase.from('user_ingredient_refs').select('ingredient_id');
   if (error) throw error;
-  return { rows: data ?? [], total: count ?? 0 };
+  return (data ?? []).map((r) => r.ingredient_id);
 }

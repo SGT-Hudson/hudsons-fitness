@@ -1,5 +1,7 @@
 {
   "pageTitle": "Ingredients",
+  "subtitle": "Shared library",
+  "barcodeAction": "Barcode",
   "description": "Shared library. What you add becomes available to all users. You can only edit what you created; \"remove\" sends it to the anonymized library.",
   "createNoteHint": "This will be contributed to the shared library. Private info (your typical quantity, reminders) belongs in the ingredient's note in your library, not in the name.",
   "newIngredient": "New ingredient",
@@ -56,16 +58,60 @@
     "empty": "No results.",
     "perUnit": "/ unit",
     "per100g": "/ 100 g",
+    "kcalUnit": "kcal",
+    "byUnit": "per unit",
+    "generic": "generic",
+    "macrosNote": "Macros per 100 g",
+    "verified": "Verified",
+    "menu": "Ingredient actions",
     "removeFromLibrary": "Remove from my library",
     "removeConfirm": "Remove this ingredient from your library? If you created it, it will no longer be editable (it becomes anonymized in the shared library).",
     "readOnly": "Read-only"
   },
+  "table": {
+    "name": "Ingredient",
+    "kcal": "kcal",
+    "protein": "prot g",
+    "carbs": "carbs g",
+    "fat": "fat g",
+    "fiber": "fiber g",
+    "source": "Origin"
+  },
+  "macros": {
+    "letter": {
+      "protein": "P",
+      "carbs": "C",
+      "fat": "F"
+    }
+  },
+  "filters": {
+    "groupLabel": "Filters",
+    "library": "My library",
+    "verified": "Verified",
+    "perUnit": "Per unit",
+    "base": "Base",
+    "mine": "Mine"
+  },
+  "scan": {
+    "open": "Scan a barcode",
+    "bannerTitle": "Scan the barcode",
+    "bannerHint": "we look it up on OpenFoodFacts and fill in the macros"
+  },
+  "empty": {
+    "title": "No ingredients yet",
+    "hint": "Create the first one, or scan a product's barcode.",
+    "noMatchTitle": "No results",
+    "noMatchHint": "Try clearing a filter or changing your search."
+  },
   "source": {
     "system": "System ingredient",
     "systemShort": "System",
+    "base": "Base-library ingredient",
+    "baseShort": "base",
     "openfoodfacts": "Imported from OpenFoodFacts",
+    "offShort": "O.F.F.",
     "manual": "Manual entry",
-    "manualShort": "Manual"
+    "manualShort": "manual"
   },
   "errors": {
     "invalid": "Check the fields. Some are missing or invalid."

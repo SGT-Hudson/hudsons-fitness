@@ -1,12 +1,13 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
 import {
   createManualIngredient,
   hideOwnedIngredient,
   importIngredientFromOFF,
   listIngredients,
+  listMyIngredientRefIds,
+  listPoolIngredients,
   searchLocalIngredients,
-  searchLocalIngredientsPage,
   updateIngredient,
   type Ingredient,
   type ManualIngredientInput,
@@ -118,14 +119,19 @@ export function useHideIngredient() {
   });
 }
 
-export function useLocalIngredientSearchPage(
-  query: string,
-  page: number,
-  pageSize: number,
-) {
+/** The whole pool, once — the Ingredientes list filters, counts and pages it in memory. */
+export function usePoolIngredients() {
   return useQuery({
-    queryKey: ['ingredients', 'search-page', query, page, pageSize],
-    queryFn: () => searchLocalIngredientsPage(query, { page, pageSize }),
-    placeholderData: keepPreviousData,
+    queryKey: ['ingredients', 'pool'],
+    queryFn: () => listPoolIngredients(),
+  });
+}
+
+/** The ingredient ids in my library, as a Set (the "mi biblioteca" facet). */
+export function useMyIngredientRefIds() {
+  return useQuery({
+    queryKey: ['ingredients', 'refs'],
+    queryFn: () => listMyIngredientRefIds(),
+    select: (ids: string[]) => new Set(ids),
   });
 }
