@@ -141,6 +141,7 @@ export function IngredientDialog({
             fiber_g_per_unit: parsed.fiber_g_per_unit,
             sugar_g_per_unit: parsed.sugar_g_per_unit,
             saturated_fat_g_per_unit: parsed.saturated_fat_g_per_unit,
+            salt_g_per_unit: parsed.salt_g_per_unit,
           },
         });
       } else if (pickedOFF) {
@@ -211,6 +212,8 @@ export function IngredientDialog({
                       sugar_g_per_unit: r.sugarPer100g == null ? '' : String(r.sugarPer100g),
                       saturated_fat_g_per_unit:
                         r.satFatPer100g == null ? '' : String(r.satFatPer100g),
+                      // OFF had no salt figure → blank (unknown), never "0".
+                      salt_g_per_unit: r.saltPer100g == null ? '' : String(r.saltPer100g),
                     });
                   }}
                 />
@@ -256,6 +259,8 @@ export function IngredientDialog({
                       sugar_g_per_unit: r.sugarPer100g == null ? '' : String(r.sugarPer100g),
                       saturated_fat_g_per_unit:
                         r.satFatPer100g == null ? '' : String(r.satFatPer100g),
+                      // OFF had no salt figure → blank (unknown), never "0".
+                      salt_g_per_unit: r.saltPer100g == null ? '' : String(r.saltPer100g),
                     });
                     setTab('manual');
                   }}

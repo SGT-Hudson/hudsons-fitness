@@ -15,8 +15,11 @@ export interface ManualIngredientInput {
   carbs_g_per_unit: number;
   fat_g_per_unit: number;
   fiber_g_per_unit: number;
+  // Optional sub-macros — `null` means UNKNOWN, never 0 (U-1; salt joins the
+  // same contract in R-33 wave 6).
   sugar_g_per_unit: number | null;
   saturated_fat_g_per_unit: number | null;
+  salt_g_per_unit: number | null;
 }
 
 // Pool search (R-01 spec §7 — intentionally over the WHOLE pool, including
@@ -101,6 +104,7 @@ export async function createManualIngredient(
     fiber_g_per_unit: input.fiber_g_per_unit,
     sugar_g_per_unit: input.sugar_g_per_unit,
     saturated_fat_g_per_unit: input.saturated_fat_g_per_unit,
+    salt_g_per_unit: input.salt_g_per_unit,
   };
   const { data, error } = await supabase
     .from('ingredients')
@@ -131,6 +135,7 @@ export async function importIngredientFromOFF(
     fiber_g_per_unit: overrides?.fiber_g_per_unit ?? product.fiberPer100g,
     sugar_g_per_unit: overrides?.sugar_g_per_unit ?? product.sugarPer100g,
     saturated_fat_g_per_unit: overrides?.saturated_fat_g_per_unit ?? product.satFatPer100g,
+    salt_g_per_unit: overrides?.salt_g_per_unit ?? product.saltPer100g,
   };
 
   const { data, error } = await supabase

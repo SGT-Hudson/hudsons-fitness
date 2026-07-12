@@ -49,6 +49,7 @@
     "fiber": "Fibra (g)",
     "sugar": "De los cuales azúcares (g)",
     "satFat": "De las cuales saturadas (g)",
+    "salt": "Sal (g)",
     "subMacroWarning": "El azúcar no puede superar los carbohidratos, ni las saturadas la grasa total — revisa el valor."
   },
   "list": {

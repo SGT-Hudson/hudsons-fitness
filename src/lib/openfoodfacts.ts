@@ -6,6 +6,7 @@ export interface OFFNutriments {
   fiber_100g?: number;
   sugars_100g?: number;
   'saturated-fat_100g'?: number;
+  salt_100g?: number;
 }
 
 export interface OFFProduct {
@@ -27,9 +28,11 @@ export interface OFFSearchResult {
   fatPer100g: number;
   fiberPer100g: number;
   // U-1: optional "of which" sub-macros. `null` = OFF did not provide it
-  // (≠ 0 — never assert "sugar-free" from a missing value).
+  // (≠ 0 — never assert "sugar-free" from a missing value). R-33 wave 6 adds
+  // salt on the same contract.
   sugarPer100g: number | null;
   satFatPer100g: number | null;
+  saltPer100g: number | null;
 }
 
 /** Barcode-lookup result: an OFFSearchResult plus whether OFF already had an
@@ -89,14 +92,17 @@ function round2(n: number): number {
 
 /** Map OFF's optional sub-macro nutriments, preserving `null` when absent
  *  (U-1: a missing OFF value must NOT become 0 — that would falsely assert
- *  "sugar-free"). Used by both the search and barcode-lookup paths. */
+ *  "sugar-free"; likewise a missing salt is unknown, not "salt-free"). Used by
+ *  both the search and barcode-lookup paths. */
 export function mapOFFNutriments(n: OFFNutriments): {
   sugarPer100g: number | null;
   satFatPer100g: number | null;
+  saltPer100g: number | null;
 } {
   return {
     sugarPer100g: n.sugars_100g != null ? round2(n.sugars_100g) : null,
     satFatPer100g: n['saturated-fat_100g'] != null ? round2(n['saturated-fat_100g']) : null,
+    saltPer100g: n.salt_100g != null ? round2(n.salt_100g) : null,
   };
 }
 
