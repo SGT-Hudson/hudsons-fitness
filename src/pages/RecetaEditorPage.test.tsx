@@ -227,6 +227,17 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     expect(screen.getByLabelText('Raciones')).toHaveValue(4);
     expect(screen.getByLabelText('Tiempo')).toHaveValue('35');
     expect(screen.getByLabelText('Descripción')).toHaveValue('Batch cooking');
+
+    // The whole point of "Duplicar" is copying the recipe WITH its ingredients
+    // and meal types — a copy that landed on the right name/servings/time but
+    // dropped `rows` or `mealTypes` would still pass every assertion above.
+    // The source recipe carries one ingredient (Pollo pechuga) and one meal
+    // type (lunch/"Comida"); both must have made it into the duplicated form.
+    expect(screen.getByLabelText('Cantidad de Pollo pechuga')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Comida' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 });
 

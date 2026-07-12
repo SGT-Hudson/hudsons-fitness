@@ -191,9 +191,16 @@ export function RecetaDetailPage() {
     <>
       {favoriteButton('hidden md:inline-flex')}
       {addToDayButton('hidden md:inline-flex', 'outline')}
-      <Button type="button" variant="outline" size="sm" onClick={handleDuplicate} className="md:h-9 md:px-3.5">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handleDuplicate}
+        className="md:h-9 md:px-3.5"
+        aria-label={t('actions.duplicate')}
+      >
         <Copy className="h-4 w-4" aria-hidden="true" />
-        {t('actions.duplicate')}
+        <span className="hidden md:inline">{t('actions.duplicate')}</span>
       </Button>
       {canEdit && (
         <Button asChild size="sm" className="md:h-9 md:px-3.5">
