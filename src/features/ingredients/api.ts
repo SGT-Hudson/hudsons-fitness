@@ -116,26 +116,34 @@ export async function createManualIngredient(
   return data;
 }
 
+// `overrides` is the dialog's fully-parsed form (`ParsedIngredient` in
+// IngredientFormFields.tsx — every key present, `null` on a sub-macro the
+// user deliberately cleared). It is NOT a partial patch merged over `product`:
+// a `??` merge here would silently discard the user's blanking whenever OFF's
+// raw value happens to be falsy-but-present (e.g. `salt_100g: 0`), writing a
+// false zero into a column whose whole contract is null-means-unknown (U-1;
+// salt in R-33 wave 6). `product` is used only for `external_id` — every
+// ingredient field comes from `overrides`, unconditionally.
 export async function importIngredientFromOFF(
   userId: string,
   product: OFFSearchResult,
-  overrides?: Partial<ManualIngredientInput>,
+  overrides: ManualIngredientInput,
 ): Promise<Ingredient> {
   const payload: TablesInsert<'ingredients'> = {
     created_by_user_id: userId,
     source: 'openfoodfacts',
     external_id: product.code,
     unit_type: 'gram',
-    name: overrides?.name ?? product.name,
-    brand: overrides?.brand ?? product.brand,
-    kcal_per_unit: overrides?.kcal_per_unit ?? product.kcalPer100g,
-    protein_g_per_unit: overrides?.protein_g_per_unit ?? product.proteinPer100g,
-    carbs_g_per_unit: overrides?.carbs_g_per_unit ?? product.carbsPer100g,
-    fat_g_per_unit: overrides?.fat_g_per_unit ?? product.fatPer100g,
-    fiber_g_per_unit: overrides?.fiber_g_per_unit ?? product.fiberPer100g,
-    sugar_g_per_unit: overrides?.sugar_g_per_unit ?? product.sugarPer100g,
-    saturated_fat_g_per_unit: overrides?.saturated_fat_g_per_unit ?? product.satFatPer100g,
-    salt_g_per_unit: overrides?.salt_g_per_unit ?? product.saltPer100g,
+    name: overrides.name,
+    brand: overrides.brand,
+    kcal_per_unit: overrides.kcal_per_unit,
+    protein_g_per_unit: overrides.protein_g_per_unit,
+    carbs_g_per_unit: overrides.carbs_g_per_unit,
+    fat_g_per_unit: overrides.fat_g_per_unit,
+    fiber_g_per_unit: overrides.fiber_g_per_unit,
+    sugar_g_per_unit: overrides.sugar_g_per_unit,
+    saturated_fat_g_per_unit: overrides.saturated_fat_g_per_unit,
+    salt_g_per_unit: overrides.salt_g_per_unit,
   };
 
   const { data, error } = await supabase

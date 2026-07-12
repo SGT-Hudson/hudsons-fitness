@@ -75,7 +75,7 @@ export function useImportFromOFF() {
       overrides,
     }: {
       product: OFFSearchResult;
-      overrides?: Partial<ManualIngredientInput>;
+      overrides: ManualIngredientInput;
     }) => importIngredientFromOFF(user!.id, product, overrides),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['ingredients'] });
