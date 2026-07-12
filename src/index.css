@@ -104,6 +104,16 @@
   --macro-g:   oklch(0.84 0.12 92);
   --macro-fib: oklch(0.70 0.10 150);
 
+  /* Recipe media placeholder (R-33 wave 5) — hue is supplied per-recipe by
+     recipeMediaHue(); only lightness/chroma live here so the fill (and the
+     centred icon) stay legible in both themes without a JS theme check. */
+  --recipe-media-l:      0.88;
+  --recipe-media-c:      0.08;
+  --recipe-media-l2:     0.84;
+  --recipe-media-c2:     0.09;
+  --recipe-media-ink-l:  0.4;
+  --recipe-media-ink-c:  0.06;
+
   /* app extensions — not in canvas tokens.css (see plan header table) */
   --tone-good:      oklch(0.52 0.13 148);
   --tone-warn:      oklch(0.62 0.13 75);
@@ -189,6 +199,13 @@
   --macro-c:   oklch(0.72 0.14 250);
   --macro-g:   oklch(0.80 0.14 92);
   --macro-fib: oklch(0.72 0.13 150);
+
+  --recipe-media-l:      0.32;
+  --recipe-media-c:      0.09;
+  --recipe-media-l2:     0.28;
+  --recipe-media-c2:     0.1;
+  --recipe-media-ink-l:  0.92;
+  --recipe-media-ink-c:  0.05;
 
   /* app extensions */
   --tone-good:      oklch(0.74 0.14 148);

@@ -10,6 +10,9 @@
     "add": "Marcar como favorita",
     "remove": "Quitar de favoritas"
   },
+  "media": {
+    "placeholderAlt": "Receta sin foto"
+  },
   "list": {
     "empty": "Aún no has creado ninguna receta. Pulsa \"Nueva receta\" para empezar.",
     "noMatch": "Ninguna receta coincide con la búsqueda.",
