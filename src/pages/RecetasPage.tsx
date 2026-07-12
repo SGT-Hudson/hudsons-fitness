@@ -76,9 +76,19 @@ export function RecetasPage() {
 
   const ordered = useMemo(() => partitionFavorites(filtered, favorites), [filtered, favorites]);
 
+  // The favourites *in the library* — the stored set can outlive the recipes it
+  // points at (a removed recipe leaves its id behind), and a chip that counts
+  // ids you can't see is a lie.
+  const favoriteIdsInLibrary = useMemo(
+    () => all.filter((r) => favorites.has(r.id)).map((r) => r.id),
+    [all, favorites],
+  );
+
+  // Favourites are part of the reset key: they sort first, so starring one
+  // reorders the list — the current page would otherwise show different rows.
   const { page, pageSize, pageCount, setPage, setPageSize } = usePagination({
     total: ordered.length,
-    resetKey: `${query}|${favoritesOnly}|${selectedMealTypes.join(',')}|${selectedGoals.join(',')}`,
+    resetKey: `${query}|${favoritesOnly}|${selectedMealTypes.join(',')}|${selectedGoals.join(',')}|${favoriteIdsInLibrary.join(',')}`,
   });
   const paged = useMemo(
     () => ordered.slice((page - 1) * pageSize, page * pageSize),
@@ -92,24 +102,20 @@ export function RecetasPage() {
     hide.mutate(id);
   }
 
-  // Stable while the sheet is open (it is a dependency of the sheet's reset
-  // effect): one object per opened recipe, not one per render.
-  const addSelection = useMemo<AddSheetSelection | null>(
-    () =>
-      addRecipe
-        ? {
-            kind: 'recipe',
-            recipe: {
-              id: addRecipe.id,
-              name: addRecipe.name,
-              servings: addRecipe.servings,
-              ingredient_count: addRecipe.ingredient_count,
-              perServing: addRecipe.perServing,
-            },
-          }
-        : null,
-    [addRecipe],
-  );
+  // TodayAddToDaySheet freezes this on the recipe's identity, so the object may
+  // be rebuilt per render without re-firing the sheet's reset effect.
+  const addSelection: AddSheetSelection | null = addRecipe
+    ? {
+        kind: 'recipe',
+        recipe: {
+          id: addRecipe.id,
+          name: addRecipe.name,
+          servings: addRecipe.servings,
+          ingredient_count: addRecipe.ingredient_count,
+          perServing: addRecipe.perServing,
+        },
+      }
+    : null;
 
   const searchBox = (
     <div className="relative w-full md:w-[280px]">
@@ -157,7 +163,7 @@ export function RecetasPage() {
 
         <RecipeFilterBar
           total={all.length}
-          favoritesCount={favorites.size}
+          favoritesCount={favoriteIdsInLibrary.length}
           favoritesOnly={favoritesOnly}
           mealTypes={selectedMealTypes}
           goals={selectedGoals}

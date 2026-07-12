@@ -51,8 +51,13 @@ interface Props {
   /**
    * Open straight on a chosen item (R-33 wave 5: the Recetas list's "+ añadir al
    * diario" already knows which recipe you meant, so making you search for it
-   * again would be silly). Ignored in edit mode. Must be referentially stable
-   * while the sheet is open — it is a dependency of the reset effect below.
+   * again would be silly). Ignored in edit mode.
+   *
+   * Must be referentially stable while the sheet is open — it is a dependency of
+   * the reset effect below, and a fresh object per render would re-fire it and
+   * snap the user's chosen meal slot back to the default. `TodayAddToDaySheet`
+   * (the connector every caller outside Diario goes through) freezes it on the
+   * item's identity, so callers do not have to memoise.
    */
   initialSelection?: AddSheetSelection | null;
 }

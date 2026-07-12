@@ -52,11 +52,14 @@ export function RecipeRow({ recipe, favorite, onToggleFavorite, onRemove, onAddT
             </Link>
           </h3>
           {/* `relative` is load-bearing: the title's stretched `after:` overlay is
-              a positioned box, so a static sibling would paint under it. */}
+              a positioned box, so a static sibling would paint under it. The menu's
+              glass chip belongs on the card's media band, not on this row's plain
+              card surface — so both its rest AND hover backgrounds are overridden
+              (dropping only the rest one would pop a card-coloured chip on hover). */}
           <RecipeCardMenu
             recipeId={recipe.id}
             onRemove={onRemove}
-            className="relative z-10 bg-transparent"
+            className="relative z-10 bg-transparent hover:bg-muted"
           />
         </div>
 

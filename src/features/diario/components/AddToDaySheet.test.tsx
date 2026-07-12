@@ -246,6 +246,41 @@ describe('AddToDaySheet', () => {
     expect(screen.getAllByRole('button', { name: /close|cerrar/i })).toHaveLength(1);
   });
 
+  // R-33 wave 5: the Recetas list (and the recipe read view) already know which
+  // recipe you meant, so they hand the sheet a preselected item.
+  describe('initialSelection (preselected item)', () => {
+    const preselected = { kind: 'recipe' as const, recipe: RECIPES[1] };
+
+    it('opens straight on the ración step with the recipe preselected, at the caller’s slot', () => {
+      renderSheet({ initialSelection: preselected, initialMealType: 'dinner' });
+
+      // No explore chrome: no search box, no tabs.
+      expect(screen.queryByPlaceholderText('Buscar receta, alimento…')).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: 'Recetas' })).not.toBeInTheDocument();
+
+      expect(screen.getByText('Ensalada César')).toBeInTheDocument();
+      // The caller's meal slot, not the sheet's breakfast default.
+      expect(screen.getByRole('button', { name: 'Añadir a Cena' })).toBeEnabled();
+    });
+
+    it('keeps "back" wired to explore (unlike edit mode, which is locked)', () => {
+      renderSheet({ initialSelection: preselected });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Volver a explorar' }));
+
+      expect(screen.getByPlaceholderText('Buscar receta, alimento…')).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Recetas' })).toBeInTheDocument();
+    });
+
+    it('is ignored in edit mode (the entry being edited wins)', () => {
+      renderSheet({ initialSelection: preselected, editing: EDIT_CUSTOM });
+
+      expect(screen.getAllByText('Editar entrada').length).toBeGreaterThan(0);
+      expect(screen.getByDisplayValue('Yogur')).toBeInTheDocument();
+      expect(screen.queryByText('Ensalada César')).not.toBeInTheDocument();
+    });
+  });
+
   describe('ración step', () => {
     const totals = { kcal: 1200, proteinG: 80, carbsG: 120, fatG: 40, fiberG: 10 };
     const targets = { kcal: 2000, proteinG: 140, carbsG: 200, fatG: 70, fiberG: 30 };

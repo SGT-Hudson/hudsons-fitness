@@ -83,6 +83,51 @@ describe('RecetasPage', () => {
     expect(screen.getAllByText('318').length).toBeGreaterThan(0);
   });
 
+  // The card/row is a stretched link to the recipe, and the kebab's edit item
+  // points at the editor. Both are routes the wave-5 route split moves — pin
+  // them so a bad retarget fails here instead of in the browser.
+  it('links every card and row to its recipe', () => {
+    useRecipes.mockReturnValue({ data: [pollo, avena], isLoading: false });
+    renderPage();
+
+    const links = screen.getAllByRole('link', { name: 'Pollo con arroz' });
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) expect(link).toHaveAttribute('href', '/recipes/r-1');
+  });
+
+  it('the card menu edits the recipe and removes it from the library after confirming', async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    useRecipes.mockReturnValue({ data: [pollo, avena], isLoading: false });
+    renderPage();
+
+    await user.click(screen.getAllByRole('button', { name: 'Acciones de la receta' })[0]);
+
+    expect(screen.getByRole('menuitem', { name: 'Editar' })).toHaveAttribute(
+      'href',
+      '/recipes/r-1',
+    );
+
+    await user.click(screen.getByRole('menuitem', { name: 'Quitar de mi biblioteca' }));
+
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('Pollo con arroz'));
+    expect(hideMutate).toHaveBeenCalledWith('r-1');
+    confirmSpy.mockRestore();
+  });
+
+  it('does not remove the recipe when the confirm is dismissed', async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    useRecipes.mockReturnValue({ data: [pollo, avena], isLoading: false });
+    renderPage();
+
+    await user.click(screen.getAllByRole('button', { name: 'Acciones de la receta' })[0]);
+    await user.click(screen.getByRole('menuitem', { name: 'Quitar de mi biblioteca' }));
+
+    expect(hideMutate).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
   it('narrows the list with a meal-type chip', async () => {
     const user = userEvent.setup();
     useRecipes.mockReturnValue({ data: [pollo, avena], isLoading: false });
@@ -138,5 +183,18 @@ describe('RecetasPage', () => {
     expect(JSON.parse(window.localStorage.getItem('hudsons-fitness-recetas-favorites') ?? '[]')).toEqual([
       'r-1',
     ]);
+  });
+
+  // Favourites are device-local ids: a removed recipe leaves its id in storage.
+  // The chip must count what the library actually has, not what storage holds.
+  it('counts only favourites present in the library, not stored ghosts', () => {
+    window.localStorage.setItem(
+      'hudsons-fitness-recetas-favorites',
+      JSON.stringify(['r-1', 'gone-1', 'gone-2']),
+    );
+    useRecipes.mockReturnValue({ data: [pollo, avena], isLoading: false });
+    renderPage();
+
+    expect(screen.getByRole('button', { name: 'Favoritas (1)' })).toBeInTheDocument();
   });
 });

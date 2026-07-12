@@ -48,8 +48,14 @@ interface Props {
 
 /**
  * The canvas's filter row: Todas · Favoritas · the 5 meal types · the U-3 goal
- * chips, with the sort label pinned right. Mobile wraps them bare (the mobile
- * artboard); at md+ they sit in the artboard's surface card.
+ * chips, with the sort label pinned right.
+ *
+ * On mobile they ride a **single swipeable strip** (one row, no visible
+ * scrollbar): the mobile artboard drew 5 chips, we have 11, and wrapping them
+ * stacked four rows of chips above the list on a 390px screen. The bleed
+ * (`-mx-4 px-4`, cancelling the page gutter) is what lets the strip scroll edge
+ * to edge instead of ending inside the gutter. At md+ they wrap inside the
+ * artboard's surface card, as drawn.
  *
  * The sort label is a label, not a control: `listRecipes` orders by
  * `created_at desc` and nothing in this wave changes that.
@@ -72,7 +78,7 @@ export function RecipeFilterBar({
     <div
       role="group"
       aria-label={t('filters.groupLabel')}
-      className="flex flex-wrap items-center gap-1.5 md:rounded-[14px] md:border md:bg-card md:px-3.5 md:py-2.5"
+      className="no-scrollbar -mx-4 flex items-center gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:overflow-x-visible md:rounded-[14px] md:border md:bg-card md:px-3.5 md:py-2.5"
     >
       <FilterChip active={!anyActive} onClick={onClearAll}>
         {t('filters.all', { count: total })}

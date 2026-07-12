@@ -22,6 +22,14 @@
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
 }
+
+/* Swipeable strips (the Recetas mobile filter row): scrolls, shows no bar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
 @utility text-title-screen {
   font-size: 22px;
   font-weight: 600;
@@ -236,10 +244,14 @@
   --macro-g:   oklch(0.80 0.14 92);
   --macro-fib: oklch(0.72 0.13 150);
 
-  --recipe-media-l:      0.32;
-  --recipe-media-c:      0.09;
-  --recipe-media-l2:     0.28;
-  --recipe-media-c2:     0.1;
+  /* Chroma goes UP as lightness comes down (as --phase-* and --nutri-soft do):
+     carrying the light theme's chroma into a dark fill produced burnt browns
+     and olives. The extra lightness over a chip-sized token buys the warm hues
+     the sRGB gamut room they need at this chroma. */
+  --recipe-media-l:      0.34;
+  --recipe-media-c:      0.13;
+  --recipe-media-l2:     0.29;
+  --recipe-media-c2:     0.15;
   --recipe-media-ink-l:  0.92;
   --recipe-media-ink-c:  0.05;
 
