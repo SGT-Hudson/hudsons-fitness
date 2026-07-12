@@ -30,8 +30,11 @@ export function IngredientTable({ ingredients, libraryIds, userId, onEdit, onRem
   const { t, i18n } = useTranslation('ingredientes');
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
+  // The fixed tracks below sum to 520px; `min-w` keeps a readable name column on
+  // top of them instead of letting it collapse to zero when the content column
+  // is narrow. The card wrapper scrolls horizontally when it cannot afford it.
   return (
-    <table className="w-full table-fixed border-collapse text-[13px]">
+    <table className="w-full min-w-[640px] table-fixed border-collapse text-[13px]">
       <thead>
         <tr className="border-b bg-muted text-cap-label">
           <th scope="col" className="px-3.5 py-2.5 text-left font-medium">

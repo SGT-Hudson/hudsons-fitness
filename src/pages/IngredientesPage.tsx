@@ -67,6 +67,18 @@ export function IngredientesPage() {
     [setSearchParams],
   );
 
+  // `/new` and `/scan` are routes, so opening the dialog is a navigation — and a
+  // bare `to="/recipes/ingredients/new"` would drop the active `?q=` on the way
+  // in, with `closeDialog` dropping it again on the way out. Both ends carry it,
+  // so the user comes back to the list they were searching.
+  const withQuery = useCallback(
+    (pathname: string) => {
+      const search = searchParams.toString();
+      return search === '' ? pathname : `${pathname}?${search}`;
+    },
+    [searchParams],
+  );
+
   const [facets, setFacets] = useState<IngredientFacet[]>([]);
   const [editing, setEditing] = useState<Ingredient | null>(null);
 
@@ -118,7 +130,7 @@ export function IngredientesPage() {
 
   function closeDialog() {
     setEditing(null);
-    if (routeIntent) navigate('/recipes/ingredients', { replace: true });
+    if (routeIntent) navigate(withQuery('/recipes/ingredients'), { replace: true });
   }
 
   // Desktop only (it rides `actions`, which PageHeaderV2 renders and MobileTopBar
@@ -141,7 +153,7 @@ export function IngredientesPage() {
 
   const newIngredientButton = (
     <Button asChild>
-      <Link to="/recipes/ingredients/new">
+      <Link to={withQuery('/recipes/ingredients/new')}>
         <Plus className="size-4" aria-hidden="true" />
         {t('newIngredient')}
       </Link>
@@ -156,7 +168,7 @@ export function IngredientesPage() {
         <>
           {searchBox}
           <Button variant="outline" asChild>
-            <Link to="/recipes/ingredients/scan">
+            <Link to={withQuery('/recipes/ingredients/scan')}>
               <Camera className="size-4" aria-hidden="true" />
               {t('barcodeAction')}
             </Link>
@@ -211,14 +223,14 @@ export function IngredientesPage() {
             )}
           </div>
           <Link
-            to="/recipes/ingredients/scan"
+            to={withQuery('/recipes/ingredients/scan')}
             aria-label={t('scan.open')}
             className="grid size-9 shrink-0 place-items-center rounded-[10px] border bg-card text-muted-foreground"
           >
             <Camera className="size-4" aria-hidden="true" />
           </Link>
           <Link
-            to="/recipes/ingredients/new"
+            to={withQuery('/recipes/ingredients/new')}
             aria-label={t('newIngredient')}
             className="grid size-9 shrink-0 place-items-center rounded-[10px] border bg-card text-muted-foreground"
           >
@@ -228,7 +240,7 @@ export function IngredientesPage() {
 
         {/* The artboard's accent-tinted scan banner (mobile only). */}
         <Link
-          to="/recipes/ingredients/scan"
+          to={withQuery('/recipes/ingredients/scan')}
           className="flex items-center gap-2.5 rounded-[14px] border border-accent-line bg-accent-soft px-3 py-2.5 text-accent-ink md:hidden"
         >
           <span className="grid size-[30px] shrink-0 place-items-center rounded-[8px] bg-card text-accent">
@@ -274,7 +286,12 @@ export function IngredientesPage() {
               ))}
             </div>
 
-            <div className="hidden overflow-hidden rounded-[14px] border bg-card md:block">
+            {/* `overflow-x-auto`, not `hidden`: between md and ~lg the content
+                column is narrower than the table's fixed numeric tracks (more so
+                with the sidebar expanded), and clipping would eat the Origen
+                badge and the row menu — the only surface for "quitar de mi
+                biblioteca". A scrollbar inside the card is the honest fallback. */}
+            <div className="hidden overflow-x-auto rounded-[14px] border bg-card md:block">
               <IngredientTable
                 ingredients={paged}
                 libraryIds={libraryIds}

@@ -57,8 +57,32 @@ describe('findMatchRange', () => {
     expect(matched('  Pollo', 'pollo')).toBe('Pollo');
   });
 
+  // The cases above are all NFC, where stripping the combining marks happens to
+  // be length-preserving — folded offsets and original offsets coincide, so they
+  // cannot tell the two apart. Names come from OpenFoodFacts, which does not
+  // normalise: a decomposed "Jamón" is 14 code units where the composed one is
+  // 13, and every offset after the accent shifts. This is the case the whole
+  // per-code-point bookkeeping exists for.
+  it('keeps offsets aligned when the text is already decomposed (NFD)', () => {
+    const nfd = 'Jamón serrano'.normalize('NFD'); // 14 code units, not 13
+    expect(nfd.length).toBe(14);
+
+    // Folded offsets would point one short of the match: " serran".
+    expect(matched(nfd, 'serrano')).toBe('serrano');
+    expect(findMatchRange(nfd, 'serrano')).toEqual({ start: 7, end: 14 });
+
+    // The match is LONGER than the query — `start + query.length` would cut the
+    // final "n" off and leave a dangling combining mark.
+    expect(matched(nfd, 'jamon')).toBe('Jamón'.normalize('NFD'));
+    expect(findMatchRange(nfd, 'jamon')).toEqual({ start: 0, end: 6 });
+  });
+
   it('does not split a surrogate pair', () => {
     expect(matched('🥑 Aguacate', 'aguacate')).toBe('Aguacate');
+    // With a decomposed accent behind it, the emoji's two code units and the
+    // combining mark push the original offsets away from the folded ones.
+    const nfd = '🥑 Aguacate ecológico'.normalize('NFD');
+    expect(matched(nfd, 'ecologico')).toBe('ecológico'.normalize('NFD'));
   });
 
   it('reports the first occurrence when the query appears twice', () => {

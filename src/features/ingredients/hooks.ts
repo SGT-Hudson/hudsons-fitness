@@ -15,7 +15,9 @@ import {
 import type { OFFSearchResult } from '@/lib/openfoodfacts';
 import { getProductByBarcode, searchOpenFoodFacts } from '@/lib/openfoodfacts';
 import type { TablesUpdate } from '@/types/database';
-import { toastCreated, toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
+import i18n from '@/i18n';
+import { toast } from '@/hooks/use-toast';
+import { toastCreated, toastError, toastSaved } from '@/lib/toast-helpers';
 
 export function useIngredients(limit = 100) {
   return useQuery({
@@ -113,7 +115,9 @@ export function useHideIngredient() {
     mutationFn: (id: string) => hideOwnedIngredient(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['ingredients'] });
-      toastDeleted();
+      // NOT "Eliminado": nothing is deleted. The pool row survives (and stays
+      // visible in the list) — what went away is my reference to it.
+      toast({ variant: 'success', title: i18n.t('ingredientes:list.removedToast') });
     },
     onError: toastError,
   });

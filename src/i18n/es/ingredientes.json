@@ -65,7 +65,7 @@
     "menu": "Acciones del ingrediente",
     "removeFromLibrary": "Quitar de mi biblioteca",
     "removeConfirm": "¿Quitar este ingrediente de tu biblioteca? Si lo creaste tú, dejará de ser editable (pasará a la biblioteca compartida anonimizada).",
-    "readOnly": "Solo lectura"
+    "removedToast": "Quitado de tu biblioteca"
   },
   "table": {
     "name": "Ingrediente",

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, createSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Camera, ChevronRight, Plus, Search, SearchX, X } from 'lucide-react';
@@ -42,6 +42,19 @@ export function IngredientSearchPage() {
 
   const [query, setQuery] = useState('');
   const debounced = useDebouncedValue(query, 200);
+
+  // A takeover has to answer Escape like the dialogs it stands in for — on a
+  // keyboard (desktop, where this is reachable by deep link) `Cancelar` is
+  // otherwise the only way out.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      navigate(LIST);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [navigate]);
 
   // Gated on the DEBOUNCED value (as in AddIngredientSheet): gating on the raw
   // query flashes "sin resultados" in the ~200 ms before the fetch is enabled.

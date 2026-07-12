@@ -65,7 +65,7 @@
     "menu": "Ingredient actions",
     "removeFromLibrary": "Remove from my library",
     "removeConfirm": "Remove this ingredient from your library? If you created it, it will no longer be editable (it becomes anonymized in the shared library).",
-    "readOnly": "Read-only"
+    "removedToast": "Removed from your library"
   },
   "table": {
     "name": "Ingredient",
