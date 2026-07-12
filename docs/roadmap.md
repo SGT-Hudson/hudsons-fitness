@@ -1220,9 +1220,38 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 - **decision:** (D-id at spec time)
 - **blocked-by:** —
 - **status:** todo (spawned by R-33 spec, 2026-07-02)
-- **scope:** ingredient `is_verified` + verify flow; "comida libre" free
-  entries; per-meal times; notifications bell (ties to the notifications
-  backlog); MealLogEntry per-meal glyph set.
+- **scope:** ingredient verify **flow**; "comida libre" free entries; per-meal
+  times; notifications bell (ties to the notifications backlog); MealLogEntry
+  per-meal glyph set.
+- **note (R-33 wave 6, 2026-07-12):** `ingredients.is_verified` **already
+  exists** (the R-33 spec's claim that it does not was wrong) and already sorts
+  search results. Wave 6 ships the **read-only badge**. What is still open is the
+  *verify flow*: ingredients are a **shared pool**, so setting `is_verified` on a
+  row you did not create is a global claim about someone else's data, and no RLS
+  policy or RPC governs who may do it. That is a permissions decision, not a UI
+  one — hence deferred here rather than shipped with the badge.
+
+## R-44 — Ingredient category
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (deferred from R-33 wave 6 by Gonzalo, 2026-07-12)
+- **scope:** the design canvas's ingredient editor has a **Categoría** select
+  (Lácteos, …) on both platforms. There is **no `category` column**, no agreed
+  vocabulary, and nothing truthful to backfill onto the ~900 `source='system'`
+  ingredients. Cut from wave 6 deliberately: it needs a taxonomy decision (fixed
+  enum vs lookup table vs free tags), a backfill story, and a filter story on the
+  list — not just a column. Pick it up when the taxonomy question is worth
+  answering.
+
+## R-45 — Ingredient photos
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (noted during R-33 wave 6 recon, 2026-07-12)
+- **scope:** `ingredients` has **no image column** (unlike `recipes.photo_url`).
+  OpenFoodFacts returns `image_thumb_url`, which the OFF search result list
+  renders transiently and never persists. The canvas's ingredient screens use no
+  photos either, so nothing is missing today — this exists only so the gap is
+  recorded. Rides with recipe photo upload if that ever ships.
 
 ## Feature & UX family index
 
