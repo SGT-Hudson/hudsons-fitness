@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Copy, Save, Trash2 } from 'lucide-react';
@@ -41,15 +41,29 @@ export function RecetaEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [removeOpen, setRemoveOpen] = useState(false);
 
+  const recipe = isNew ? undefined : recipeQuery.data;
+  // `recipe` (react-query's `data`) keeps a stable identity across re-renders
+  // as long as the underlying data hasn't changed, so these memoize on it
+  // rather than the page's own re-render — `setError`/`isPending`/`removeOpen`
+  // churn (e.g. opening then cancelling the remove dialog) must NOT produce a
+  // new `initial` identity, or RecipeEditorForm's reset-on-`initial`-change
+  // effect wipes whatever the user has typed. Above the early returns below
+  // so hook order stays constant regardless of loading/error state.
+  const initial: EditorState | undefined = useMemo(
+    () => (recipe ? recipeToEditorState(recipe) : undefined),
+    [recipe],
+  );
+  // The create page has no `recipe`, so `initial` is always undefined — memoize
+  // its `emptyEditorState()` fallback too, or every re-render would hand
+  // RecipeEditorForm a fresh (but equivalent) object and trigger the same reset.
+  const emptyInitial = useMemo(() => emptyEditorState(), []);
+
   if (!isNew && recipeQuery.isLoading) {
     return <div className="text-muted-foreground">{t('editor.loading')}</div>;
   }
   if (!isNew && recipeQuery.error) {
     return <Navigate to="/recipes" replace />;
   }
-
-  const recipe = isNew ? undefined : recipeQuery.data;
-  const initial: EditorState | undefined = recipe ? recipeToEditorState(recipe) : undefined;
 
   async function handleSubmit(state: EditorState) {
     setError(null);
@@ -171,7 +185,7 @@ export function RecetaEditorPage() {
           <p className="text-[12.5px] text-muted-foreground">{t('editor.sharedLibraryHint')}</p>
         )}
         <RecipeEditorForm
-          initial={initial ?? emptyEditorState()}
+          initial={initial ?? emptyInitial}
           error={error}
           onSubmit={handleSubmit}
           recipeId={recipe?.id}

@@ -8,7 +8,7 @@
 // with a prep time, editing something else and saving must send it back.
 import i18n from '@/i18n';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
@@ -170,6 +170,32 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
       'El tiempo de preparación no puede superar las 24 h (1440 min).',
     );
     expect(saveMutateAsync).not.toHaveBeenCalled();
+  });
+
+  // The regression this task exists to fix: `initial` used to be a fresh
+  // object on every render, and opening (then cancelling) the remove dialog
+  // re-renders the page — which reset the form back to the saved values and
+  // silently threw away whatever the user had typed.
+  it('keeps unsaved edits after opening the remove dialog and cancelling', async () => {
+    const user = userEvent.setup();
+    renderEditor('/recipes/r-1/edit');
+
+    await user.type(screen.getByLabelText('Nombre'), ' v2');
+    await user.clear(screen.getByLabelText('Tiempo'));
+    await user.type(screen.getByLabelText('Tiempo'), '50');
+
+    // Two "Quitar receta" buttons exist (desktop header action + mobile
+    // footer button — both are always in the DOM, one is only CSS-hidden).
+    await user.click(screen.getAllByRole('button', { name: 'Quitar receta' })[0]);
+
+    const dialog = await screen.findByRole('dialog', {
+      name: '¿Quitar esta receta de tu biblioteca?',
+    });
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Pollo con arroz v2');
+    expect(screen.getByLabelText('Tiempo')).toHaveValue('50');
   });
 });
 

@@ -19,6 +19,7 @@ import {
   recipeFormSchema,
   type RecipeFormValues,
 } from '../schema';
+import type { FieldErrors } from '@/lib/zod';
 import { RECIPE_MEAL_TYPES, toRecipeMealTypes, type RecipeMealType } from '../mealTypes';
 import { cn } from '@/lib/utils';
 
@@ -176,9 +177,7 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
   }
 
   // One localized message, original precedence (D-C2 parity).
-  const validationCode = firstRecipeError(
-    errors as Record<string, { message?: string } | undefined>,
-  );
+  const validationCode = firstRecipeError(errors as FieldErrors);
   const validationError = validationCode ? t(`errors.${validationCode}`) : null;
 
   return (

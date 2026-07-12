@@ -13,6 +13,7 @@ import { ingredientMacros } from '../macros';
 import { useCreateMealLog, useUpdateMealLog, useDeleteMealLog } from '../hooks';
 import type { CreateMealLogInput, MealLogWithJoins, MealType } from '../api';
 import type { TablesUpdate } from '@/types/database';
+import type { FieldErrors } from '@/lib/zod';
 import {
   firstMealLogError,
   mealLogFormSchema,
@@ -289,7 +290,7 @@ export function RacionStep({
         });
       },
       (errors) => {
-        const code = firstMealLogError(errors as Record<string, { message?: string } | undefined>);
+        const code = firstMealLogError(errors as FieldErrors);
         setCustomError(code ? t(`errors.${code}`) : null);
       },
     )();
@@ -318,7 +319,7 @@ export function RacionStep({
         });
       },
       (errors) => {
-        const code = firstMealLogError(errors as Record<string, { message?: string } | undefined>);
+        const code = firstMealLogError(errors as FieldErrors);
         setCustomError(code ? t(`errors.${code}`) : null);
       },
     )();

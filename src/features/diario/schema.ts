@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { pickFirstError } from '@/lib/zod';
+import { pickFirstError, type FieldErrors } from '@/lib/zod';
 import { MEAL_TYPE_ORDER } from './api';
 
 // Co-located zod schema for the meal-log entry form (D-C2/D-C3, R-09).
@@ -127,9 +127,7 @@ export const mealLogFormSchema = z
 
 export type MealLogFormValues = z.infer<typeof mealLogFormSchema>;
 
-export function firstMealLogError(
-  errors: Record<string, { message?: string } | undefined>,
-): MealLogErrorCode | null {
+export function firstMealLogError(errors: FieldErrors): MealLogErrorCode | null {
   return pickFirstError(
     errors,
     ['source', 'servings', 'quantity', 'customName', 'customKcal'],

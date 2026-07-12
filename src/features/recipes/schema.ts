@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { pickFirstError } from '@/lib/zod';
+import { pickFirstError, type FieldErrors } from '@/lib/zod';
 import { recipeMealTypeSchema } from './mealTypes';
 
 // Co-located zod schema for the recipe editor form (D-C2/D-C3, R-09).
@@ -141,8 +141,6 @@ export type RecipeFormValues = z.infer<typeof recipeFormSchema>;
  * Pick the single message to show, preserving the original check precedence.
  * Returns the legacy error code (the component maps it to `t('errors.<code>')`).
  */
-export function firstRecipeError(
-  errors: Record<string, { message?: string } | undefined>,
-): RecipeErrorCode | null {
+export function firstRecipeError(errors: FieldErrors): RecipeErrorCode | null {
   return pickFirstError(errors, ['name', 'servings', 'prepTime', 'rows'], RECIPE_ERROR_ORDER);
 }

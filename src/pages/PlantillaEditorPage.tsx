@@ -33,6 +33,7 @@ import { copyTemplateMeal } from '@/features/templates/copyMeal';
 import { dayOfWeekFor, templateDayTotals, templateWeekDates } from '@/features/templates/templateWeek';
 import { roundMacro, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { formatDate, type Locale } from '@/lib/dates';
+import type { FieldErrors } from '@/lib/zod';
 import { useSaveTemplate, useTemplate, useRecipeMacros } from '@/features/templates/hooks';
 import { useDailyTarget } from '@/features/planning/useDailyTarget';
 import {
@@ -270,9 +271,7 @@ export function PlantillaEditorPage() {
   }
 
   // One localized message, original precedence (name → times) — D-C2 parity.
-  const validationCode = firstTemplateError(
-    errors as Record<string, { message?: string } | undefined>,
-  );
+  const validationCode = firstTemplateError(errors as FieldErrors);
   const validationError = validationCode ? t(`editor.errors.${validationCode}`) : null;
 
   function onInvalid() {
