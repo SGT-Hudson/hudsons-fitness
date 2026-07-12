@@ -43,6 +43,13 @@ interface Props {
   mode: Mode;
   initial?: Ingredient | null;
   defaultName?: string;
+  /**
+   * Which create tab to land on when there is no `defaultName` to route by.
+   * The Ingredientes list's scan affordances open straight on `barcode`
+   * (`/recipes/ingredients/scan` — PR-B replaces this with the full-screen
+   * scanner). Defaults to `off`, as before.
+   */
+  defaultTab?: 'off' | 'manual' | 'barcode';
   onSaved?: (ingredient: Ingredient) => void;
 }
 
@@ -61,6 +68,7 @@ export function IngredientDialog({
   mode,
   initial,
   defaultName,
+  defaultTab,
   onSaved,
 }: Props) {
   const { t } = useTranslation('ingredientes');
@@ -107,12 +115,12 @@ export function IngredientDialog({
         setTab('off');
         setOffQuery(seed);
       } else {
-        setTab(seed === '' ? 'off' : 'manual');
+        setTab(seed === '' ? (defaultTab ?? 'off') : 'manual');
         setOffQuery('');
       }
       reset({ ...emptyForm, name: seed });
     }
-  }, [open, isEdit, initial, defaultName, reset]);
+  }, [open, isEdit, initial, defaultName, defaultTab, reset]);
 
   const submitting = create.isPending || importOFF.isPending || update.isPending;
 
@@ -141,6 +149,7 @@ export function IngredientDialog({
             fiber_g_per_unit: parsed.fiber_g_per_unit,
             sugar_g_per_unit: parsed.sugar_g_per_unit,
             saturated_fat_g_per_unit: parsed.saturated_fat_g_per_unit,
+            salt_g_per_unit: parsed.salt_g_per_unit,
           },
         });
       } else if (pickedOFF) {
@@ -211,6 +220,8 @@ export function IngredientDialog({
                       sugar_g_per_unit: r.sugarPer100g == null ? '' : String(r.sugarPer100g),
                       saturated_fat_g_per_unit:
                         r.satFatPer100g == null ? '' : String(r.satFatPer100g),
+                      // OFF had no salt figure → blank (unknown), never "0".
+                      salt_g_per_unit: r.saltPer100g == null ? '' : String(r.saltPer100g),
                     });
                   }}
                 />
@@ -256,6 +267,8 @@ export function IngredientDialog({
                       sugar_g_per_unit: r.sugarPer100g == null ? '' : String(r.sugarPer100g),
                       saturated_fat_g_per_unit:
                         r.satFatPer100g == null ? '' : String(r.satFatPer100g),
+                      // OFF had no salt figure → blank (unknown), never "0".
+                      salt_g_per_unit: r.saltPer100g == null ? '' : String(r.saltPer100g),
                     });
                     setTab('manual');
                   }}

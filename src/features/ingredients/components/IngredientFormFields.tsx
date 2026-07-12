@@ -28,6 +28,7 @@ export const emptyForm: IngredientFormState = {
   fiber_g_per_unit: '',
   sugar_g_per_unit: '',
   saturated_fat_g_per_unit: '',
+  salt_g_per_unit: '',
 };
 
 interface Props {
@@ -150,6 +151,17 @@ export function IngredientFormFields({ value, onChange, idPrefix = 'ing' }: Prop
             min={0}
             max={100}
           />
+          {/* Salt is an optional sub-macro like sugar/saturated fat: blank =
+              unknown (NULL), never 0. It is an ingredient-level fact only —
+              deliberately not aggregated into recipe/day totals this wave. */}
+          <NumberField
+            id={`${idPrefix}-salt`}
+            label={t('form.salt')}
+            value={value.salt_g_per_unit}
+            onChange={(v) => set('salt_g_per_unit', v)}
+            min={0}
+            max={100}
+          />
         </div>
         {showSubWarning && (
           <p className="text-xs text-tone-warn">{t('form.subMacroWarning')}</p>
@@ -201,6 +213,7 @@ export function ingredientToForm(ing: {
   fiber_g_per_unit: number;
   sugar_g_per_unit?: number | null;
   saturated_fat_g_per_unit?: number | null;
+  salt_g_per_unit?: number | null;
 }): IngredientFormState {
   return {
     name: ing.name,
@@ -215,6 +228,7 @@ export function ingredientToForm(ing: {
     sugar_g_per_unit: ing.sugar_g_per_unit == null ? '' : String(ing.sugar_g_per_unit),
     saturated_fat_g_per_unit:
       ing.saturated_fat_g_per_unit == null ? '' : String(ing.saturated_fat_g_per_unit),
+    salt_g_per_unit: ing.salt_g_per_unit == null ? '' : String(ing.salt_g_per_unit),
   };
 }
 
@@ -229,6 +243,7 @@ export interface ParsedIngredient {
   fiber_g_per_unit: number;
   sugar_g_per_unit: number | null;
   saturated_fat_g_per_unit: number | null;
+  salt_g_per_unit: number | null;
 }
 
 /**
@@ -252,5 +267,6 @@ export function parseForm(form: IngredientFormState): ParsedIngredient | null {
     fiber_g_per_unit: v.fiber_g_per_unit,
     sugar_g_per_unit: v.sugar_g_per_unit,
     saturated_fat_g_per_unit: v.saturated_fat_g_per_unit,
+    salt_g_per_unit: v.salt_g_per_unit,
   };
 }

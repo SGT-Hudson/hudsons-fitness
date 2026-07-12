@@ -1,12 +1,13 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
 import {
   createManualIngredient,
   hideOwnedIngredient,
   importIngredientFromOFF,
   listIngredients,
+  listMyIngredientRefIds,
+  listPoolIngredients,
   searchLocalIngredients,
-  searchLocalIngredientsPage,
   updateIngredient,
   type Ingredient,
   type ManualIngredientInput,
@@ -14,7 +15,9 @@ import {
 import type { OFFSearchResult } from '@/lib/openfoodfacts';
 import { getProductByBarcode, searchOpenFoodFacts } from '@/lib/openfoodfacts';
 import type { TablesUpdate } from '@/types/database';
-import { toastCreated, toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
+import i18n from '@/i18n';
+import { toast } from '@/hooks/use-toast';
+import { toastCreated, toastError, toastSaved } from '@/lib/toast-helpers';
 
 export function useIngredients(limit = 100) {
   return useQuery({
@@ -75,7 +78,7 @@ export function useImportFromOFF() {
       overrides,
     }: {
       product: OFFSearchResult;
-      overrides?: Partial<ManualIngredientInput>;
+      overrides: ManualIngredientInput;
     }) => importIngredientFromOFF(user!.id, product, overrides),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['ingredients'] });
@@ -112,20 +115,37 @@ export function useHideIngredient() {
     mutationFn: (id: string) => hideOwnedIngredient(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['ingredients'] });
-      toastDeleted();
+      // NOT "Eliminado": nothing is deleted. The pool row survives (and stays
+      // visible in the list) — what went away is my reference to it.
+      toast({ variant: 'success', title: i18n.t('ingredientes:list.removedToast') });
     },
     onError: toastError,
   });
 }
 
-export function useLocalIngredientSearchPage(
-  query: string,
-  page: number,
-  pageSize: number,
-) {
+/** The whole pool, once — the Ingredientes list filters, counts and pages it in memory. */
+export function usePoolIngredients() {
   return useQuery({
-    queryKey: ['ingredients', 'search-page', query, page, pageSize],
-    queryFn: () => searchLocalIngredientsPage(query, { page, pageSize }),
-    placeholderData: keepPreviousData,
+    queryKey: ['ingredients', 'pool'],
+    queryFn: () => listPoolIngredients(),
+  });
+}
+
+// Hoisted so its identity is stable across renders — an inline arrow here
+// would get a fresh function every render, which defeats react-query's select
+// memoization and hands out a brand-new `Set` (and therefore a new `libraryIds`
+// reference) on every re-render, cascading into every `useMemo` downstream
+// that depends on it.
+function toIdSet(ids: string[]): Set<string> {
+  return new Set(ids);
+}
+
+/** The ingredient ids in my library, as a Set (gates `IngredientRowMenu`'s
+ * "quitar de mi biblioteca" and `usePagination`'s reset key). */
+export function useMyIngredientRefIds() {
+  return useQuery({
+    queryKey: ['ingredients', 'refs'],
+    queryFn: () => listMyIngredientRefIds(),
+    select: toIdSet,
   });
 }

@@ -124,6 +124,11 @@
   --danger-line:  oklch(0.84 0.07 27);
   --amber:        oklch(0.74 0.15 75);
   --amber-soft:   oklch(0.95 0.05 80);
+  /* R-33 wave 6: the ingredient source badge's OpenFoodFacts variant needs a
+     border to match the base/manual variants. The canvas hardcodes it as raw
+     oklch(0.85 0.07 80) with no dark value — minted here instead, following the
+     --danger-line / --nutri-line light↔dark pattern. */
+  --amber-line:   oklch(0.85 0.07 80);
 
   /* Nutritional phases */
   --phase-cut:        oklch(0.62 0.14 350);
@@ -225,6 +230,7 @@
   --danger-line: oklch(0.44 0.10 27);
   --amber:       oklch(0.80 0.14 75);
   --amber-soft:  oklch(0.32 0.07 75);
+  --amber-line:  oklch(0.44 0.10 75);
 
   --phase-cut:        oklch(0.72 0.14 350);
   --phase-cut-soft:   oklch(0.30 0.08 350);
@@ -331,6 +337,7 @@
   --color-amber: var(--amber);
   --color-amber-soft: var(--amber-soft);
   --color-amber-ink: var(--amber-ink);
+  --color-amber-line: var(--amber-line);
 
   --color-phase-cut: var(--phase-cut);
   --color-phase-cut-soft: var(--phase-cut-soft);

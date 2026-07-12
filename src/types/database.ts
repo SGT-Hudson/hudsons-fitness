@@ -292,6 +292,7 @@ export type Database = {
           name: string
           name_en: string | null
           protein_g_per_unit: number
+          salt_g_per_unit: number | null
           saturated_fat_g_per_unit: number | null
           source: string
           sugar_g_per_unit: number | null
@@ -312,6 +313,7 @@ export type Database = {
           name: string
           name_en?: string | null
           protein_g_per_unit: number
+          salt_g_per_unit?: number | null
           saturated_fat_g_per_unit?: number | null
           source?: string
           sugar_g_per_unit?: number | null
@@ -332,6 +334,7 @@ export type Database = {
           name?: string
           name_en?: string | null
           protein_g_per_unit?: number
+          salt_g_per_unit?: number | null
           saturated_fat_g_per_unit?: number | null
           source?: string
           sugar_g_per_unit?: number | null

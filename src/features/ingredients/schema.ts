@@ -35,8 +35,9 @@ const fiberFromString = z
   .transform((s) => (s.trim() === '' ? 0 : Number(s)))
   .pipe(z.number().min(0));
 
-// Optional sub-macro (sugar / saturated fat, U-1): blank string means NULL
-// (unknown ≠ 0 — distinct from fiber's blank→0). Otherwise non-negative number.
+// Optional sub-macro (sugar / saturated fat, U-1; salt, R-33 wave 6): blank
+// string means NULL (unknown ≠ 0 — distinct from fiber's blank→0). Otherwise
+// non-negative number.
 const optionalNonNegFromString = z
   .string()
   .transform((s) => (s.trim() === '' ? null : Number(s)))
@@ -53,6 +54,7 @@ export const ingredientFormSchema = z.object({
   fiber_g_per_unit: fiberFromString,
   sugar_g_per_unit: optionalNonNegFromString,
   saturated_fat_g_per_unit: optionalNonNegFromString,
+  salt_g_per_unit: optionalNonNegFromString,
 });
 
 export type IngredientFormValues = z.input<typeof ingredientFormSchema>;

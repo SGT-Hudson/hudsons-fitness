@@ -1,5 +1,7 @@
 {
   "pageTitle": "Ingredientes",
+  "subtitle": "Biblioteca compartida",
+  "barcodeAction": "Código de barras",
   "description": "Biblioteca compartida. Lo que añadas estará disponible para todos los usuarios. Solo puedes editar lo que tú creaste; al \"quitar\" pasa a la biblioteca anonimizada.",
   "createNoteHint": "Esto se añadirá a la biblioteca compartida. Información privada (cantidad típica para ti, recordatorios) va mejor en la nota del ingrediente en tu biblioteca, no en el nombre.",
   "newIngredient": "Nuevo ingrediente",
@@ -49,22 +51,76 @@
     "fiber": "Fibra (g)",
     "sugar": "De los cuales azúcares (g)",
     "satFat": "De las cuales saturadas (g)",
+    "salt": "Sal (g)",
     "subMacroWarning": "El azúcar no puede superar los carbohidratos, ni las saturadas la grasa total — revisa el valor."
   },
   "list": {
-    "empty": "Sin resultados.",
     "perUnit": "/ ud",
     "per100g": "/ 100 g",
+    "kcalUnit": "kcal",
+    "byUnit": "por ud",
+    "generic": "genérico",
+    "macrosNote": "Macros por 100 g",
+    "verified": "Verificada",
+    "menu": "Acciones del ingrediente",
     "removeFromLibrary": "Quitar de mi biblioteca",
     "removeConfirm": "¿Quitar este ingrediente de tu biblioteca? Si lo creaste tú, dejará de ser editable (pasará a la biblioteca compartida anonimizada).",
-    "readOnly": "Solo lectura"
+    "removedToast": "Quitado de tu biblioteca"
+  },
+  "table": {
+    "name": "Ingrediente",
+    "kcal": "kcal",
+    "protein": "prot g",
+    "carbs": "carbs g",
+    "fat": "grasa g",
+    "fiber": "fibra g",
+    "source": "Origen"
+  },
+  "macros": {
+    "letter": {
+      "protein": "P",
+      "carbs": "C",
+      "fat": "G"
+    }
+  },
+  "filters": {
+    "groupLabel": "Filtros",
+    "verified": "Verificadas",
+    "perUnit": "Por unidad",
+    "base": "Base",
+    "mine": "Mías"
+  },
+  "search": {
+    "open": "Buscar ingredientes",
+    "placeholder": "Buscar ingredientes…",
+    "cancel": "Cancelar",
+    "clear": "Borrar la búsqueda",
+    "results": "Resultados",
+    "hint": "Escribe para buscar en toda la biblioteca compartida.",
+    "noResults": "Sin resultados",
+    "noResultsHint": "Nada coincide con «{{query}}». Créalo o escanea su código de barras.",
+    "footerTitle": "¿No encuentras lo que buscas?",
+    "create": "Crear un ingrediente nuevo",
+    "scan": "Escanear el código de barras"
+  },
+  "scan": {
+    "open": "Escanear un código de barras",
+    "bannerTitle": "Escanea el código de barras",
+    "bannerHint": "buscamos en OpenFoodFacts y rellenamos las macros"
+  },
+  "empty": {
+    "title": "Aún no hay ingredientes",
+    "hint": "Crea el primero o escanea el código de barras de un producto.",
+    "noMatchTitle": "Sin resultados",
+    "noMatchHint": "Prueba a quitar algún filtro o a cambiar la búsqueda."
   },
   "source": {
-    "system": "Ingrediente del sistema",
-    "systemShort": "Sistema",
+    "base": "Ingrediente de la base",
+    "baseShort": "base",
     "openfoodfacts": "Importado de OpenFoodFacts",
+    "offShort": "O.F.F.",
     "manual": "Creado a mano",
-    "manualShort": "Manual"
+    "manualShort": "manual"
   },
   "errors": {
     "invalid": "Revisa los campos. Faltan datos o hay valores no válidos."
