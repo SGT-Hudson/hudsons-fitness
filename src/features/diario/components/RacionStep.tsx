@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Minus, Plus, Trash2, Apple, UtensilsCrossed, Pencil } from 'lucide-react';
+import { ArrowLeft, Trash2, Apple, UtensilsCrossed, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { QuantityStepper, roundToStep } from '@/components/ui/QuantityStepper';
 import { cn } from '@/lib/utils';
 import { roundMacro, scale, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { ingredientDisplayName } from '@/features/ingredients/api';
@@ -99,16 +100,6 @@ function stepperConfig(selection: AddSheetSelection): { min: number; step: numbe
   return null;
 }
 
-function roundToStep(v: number, step: number, min: number): number {
-  const snapped = Math.round(v / step) * step;
-  // Guard against float noise (e.g. 0.1 + 0.2) before clamping to the floor.
-  return Math.max(min, Math.round(snapped * 100) / 100);
-}
-
-function formatQty(qty: number, lang: 'es' | 'en'): string {
-  return new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'es-ES').format(qty);
-}
-
 function parseKcalPreview(v: string): number {
   const n = Number(v.trim());
   return Number.isFinite(n) ? n : 0;
@@ -130,51 +121,6 @@ function projectedAdded(
     fatG: parseOptionalNumber(custom.customFat) ?? 0,
     fiberG: parseOptionalNumber(custom.customFiber) ?? 0,
   };
-}
-
-interface StepperProps {
-  qty: number;
-  unitLabel: string;
-  lang: 'es' | 'en';
-  decreaseLabel: string;
-  increaseLabel: string;
-  onMinus: () => void;
-  onPlus: () => void;
-}
-
-function RacionStepper({
-  qty,
-  unitLabel,
-  lang,
-  decreaseLabel,
-  increaseLabel,
-  onMinus,
-  onPlus,
-}: StepperProps) {
-  return (
-    <div className="flex h-11 shrink-0 items-stretch overflow-hidden rounded-xl border border-border bg-card">
-      <button
-        type="button"
-        onClick={onMinus}
-        aria-label={decreaseLabel}
-        className="flex w-10 items-center justify-center border-r border-border text-muted-foreground"
-      >
-        <Minus className="h-4 w-4" />
-      </button>
-      <div className="flex min-w-[74px] flex-col items-center justify-center leading-tight">
-        <span className="tabular-nums text-base font-semibold">{formatQty(qty, lang)}</span>
-        <span className="text-[9.5px] text-text-dim">{unitLabel}</span>
-      </div>
-      <button
-        type="button"
-        onClick={onPlus}
-        aria-label={increaseLabel}
-        className="flex w-10 items-center justify-center border-l border-border text-muted-foreground"
-      >
-        <Plus className="h-4 w-4" />
-      </button>
-    </div>
-  );
 }
 
 /**
@@ -375,8 +321,8 @@ export function RacionStep({
 
       <div className="mt-4 flex items-center gap-3.5">
         {stepCfg && (
-          <RacionStepper
-            qty={qty}
+          <QuantityStepper
+            value={qty}
             unitLabel={unitLabel}
             lang={lang}
             decreaseLabel={t('addSheet.decreaseQty')}

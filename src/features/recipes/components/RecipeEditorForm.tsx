@@ -1,17 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import { Trash2, Plus, Utensils } from 'lucide-react';
+import { Trash2, Search, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { AddIngredientSheet } from './AddIngredientSheet';
 import { IngredientAutocomplete } from './IngredientAutocomplete';
 import { RecipeMacrosCard } from './RecipeMacrosCard';
 import { RecipeMediaPlaceholder } from './RecipeMediaPlaceholder';
-import type { Ingredient } from '@/features/ingredients/api';
+import { ingredientDisplayName, type Ingredient } from '@/features/ingredients/api';
 import type { RecipeWithIngredients } from '../api';
 import { computeRecipeMacros } from '../macros';
 import {
@@ -53,7 +54,11 @@ export function emptyEditorState(): EditorState {
     instructions: '',
     prepTime: '',
     mealTypes: [],
-    rows: [{ rowId: newRowId(), ingredient: null, quantity: '', per_serving: false }],
+    // R-33 wave 5 PR-B: no seeded blank row any more. A row is now BORN with an
+    // ingredient in it — you pick one in the footer's search (web) or the add
+    // sheet (mobile) and the row appears. A blank row would render a table row
+    // with no name, no macros and nothing to say.
+    rows: [],
   };
 }
 
@@ -83,6 +88,19 @@ const META_LABEL = 'text-[9.5px] font-medium uppercase tracking-[0.05em] text-te
 /** The meta card's small bordered value inputs (Raciones, Tiempo). */
 const META_INPUT =
   'tnum h-9 rounded-[8px] border-input bg-muted px-2 text-[13.5px] font-semibold md:h-9';
+/** The uppercase bar that caps every card (canvas `SectionRule`). */
+const CARD_HEADER = 'text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim';
+/**
+ * The ingredients "table": name | quantity | type | ✕. The canvas's leading
+ * drag column is stripped — reordering needs a DnD library, which is a new
+ * dependency, so `display_order` stays the row index (see RecetaEditorPage).
+ *
+ * Carries the columns but NOT `display`, so the caller decides: the rows are a
+ * grid at every width, the column-header bar only from `md` up (the mobile
+ * artboard's rows have no header — the type hint below carries the meaning).
+ */
+const ING_GRID =
+  'grid-cols-[1fr_84px_auto_28px] items-center gap-2 md:grid-cols-[1fr_112px_92px_28px] md:gap-3';
 
 interface Props {
   initial?: EditorState;
@@ -100,8 +118,9 @@ interface Props {
 }
 
 export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove }: Props) {
-  const { t } = useTranslation('recetas');
+  const { t, i18n } = useTranslation('recetas');
   const { t: tCommon } = useTranslation('common');
+  const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   const {
     register,
@@ -129,6 +148,17 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
   const rows = watch('rows');
   const servingsNum = Number(watch('servings'));
   const mealTypes = watch('mealTypes') ?? [];
+  const recipeName = watch('name') ?? '';
+
+  // Mobile's add affordance is a sheet, not an inline search line.
+  const [addOpen, setAddOpen] = useState(false);
+  // Deleting a row is confirmed IN the row (canvas `MConfirmDeleteRow`), so the
+  // strip needs to know which one — by rowId, not index: an index would point at
+  // the wrong row the moment an earlier one is removed.
+  const [confirmRowId, setConfirmRowId] = useState<string | null>(null);
+  // The row the web footer just created, so its (empty) quantity input can take
+  // focus on mount. `autoFocus` fires on mount only, which is exactly the event.
+  const [justAddedRowId, setJustAddedRowId] = useState<string | null>(null);
 
   function toggleMealType(key: RecipeMealType) {
     const next = mealTypes.includes(key)
@@ -163,8 +193,27 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
     />
   );
 
-  function addRow() {
-    append({ rowId: newRowId(), ingredient: null, quantity: '', per_serving: false });
+  /**
+   * A row is born with its ingredient already in it. The web footer's search
+   * hands over no quantity (you type it into the row that just appeared — hence
+   * the autofocus below); the mobile sheet's stepper hands over the one you
+   * chose. `per_serving` starts false: "en total" — the quantity you enter is
+   * the one that goes into the pot, which is what a recipe normally records.
+   */
+  function addIngredient(ingredient: Ingredient, quantity?: number) {
+    const rowId = newRowId();
+    setJustAddedRowId(quantity === undefined ? rowId : null);
+    append({
+      rowId,
+      ingredient,
+      quantity: quantity === undefined ? '' : String(quantity),
+      per_serving: false,
+    });
+  }
+
+  function removeRow(index: number) {
+    setConfirmRowId(null);
+    remove(index);
   }
 
   function onValid(values: EditorState) {
@@ -298,86 +347,225 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
             card, above the ingredients — the mobile artboard's order. */}
         {macrosCard('md:hidden')}
 
-        {/* Ingredients: the pre-redesign rows, re-framed by the new card. The
-            table itself (drag handles, inline quantity, the add flow) is the
-            next task — this is deliberately the existing implementation. */}
-        <Card className="overflow-hidden">
-          <div className="flex items-center gap-2 border-b bg-muted px-4 py-2.5">
-            <h2 className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
-              {t('form.ingredients')}
-            </h2>
+        {/* Ingredients (canvas `RecetaEditorWebV2`'s table / `MIngEditRow`).
+            NOT `overflow-hidden`, unlike the sibling cards: the footer's search
+            drops its results list *below* the input, i.e. past the card's own
+            bottom edge — clipping the card would swallow the dropdown whole and
+            picking an ingredient on desktop would be impossible. The header and
+            footer bars round their own outer corners instead. */}
+        <Card>
+          <div className="flex items-center gap-2 rounded-t-lg border-b bg-muted px-3.5 py-2.5 md:px-4">
+            <h2 className={CARD_HEADER}>{t('form.ingredients')}</h2>
             <span className="tnum text-[10.5px] text-text-dim">{fields.length}</span>
           </div>
-          <ul className="space-y-2 p-3.5">
-            {fields.map((field, index) => {
-              const row = rows?.[index];
-              const ingredient = row?.ingredient ?? null;
-              const unitSuffix = !ingredient
-                ? ''
-                : ingredient.unit_type === 'unit'
-                  ? t('form.units')
-                  : 'g';
-              return (
-                <li
-                  key={field.id}
-                  className="grid items-start gap-2 sm:grid-cols-[1fr_140px_auto_auto]"
-                >
-                  <IngredientAutocomplete
-                    selected={ingredient}
-                    onSelect={(ing) =>
-                      setValue(`rows.${index}.ingredient`, ing, {
-                        shouldValidate: true,
-                      })
-                    }
-                    onClear={() =>
-                      setValue(`rows.${index}.ingredient`, null, {
-                        shouldValidate: true,
-                      })
-                    }
-                  />
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.1"
-                      min={0}
-                      placeholder={t('form.quantity')}
-                      {...register(`rows.${index}.quantity`)}
-                    />
-                    {unitSuffix && (
-                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                        {unitSuffix}
-                      </span>
-                    )}
-                  </div>
-                  <label className="inline-flex h-10 cursor-pointer select-none items-center gap-2 rounded-md border border-input bg-background px-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4"
-                      {...register(`rows.${index}.per_serving`)}
-                    />
-                    <span>{t('form.perServing')}</span>
-                  </label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={tCommon('delete')}
-                    onClick={() => remove(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="border-t bg-muted px-3.5 py-2.5">
-            <Button type="button" variant="outline" size="sm" onClick={addRow}>
-              <Plus className="h-4 w-4" />
+
+          {fields.length === 0 ? (
+            <div className="flex flex-col items-center gap-1.5 px-6 py-8 text-center">
+              <span className="grid size-10 place-items-center rounded-[12px] bg-muted text-text-dim">
+                <Utensils className="size-4" aria-hidden="true" />
+              </span>
+              <p className="text-[13px] font-semibold">{t('form.emptyTitle')}</p>
+              <p className="max-w-[38ch] text-[11.5px] leading-[1.45] text-text-dim">
+                {t('form.emptyHint')}
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* What the chip actually means — and it is not decorative: it
+                  changes how the row aggregates (see computeRecipeMacros). */}
+              <p className="border-b bg-muted px-3.5 py-1.5 text-[10.5px] leading-[1.4] text-text-dim md:px-4">
+                {t('form.typeHint')}
+              </p>
+
+              {/* Column names. Presentational: every cell below carries its own
+                  accessible name (the ingredient's, or an aria-label), so a
+                  screen reader gains nothing from re-announcing the header. */}
+              <div
+                aria-hidden="true"
+                className={cn(
+                  'hidden md:grid',
+                  ING_GRID,
+                  'border-b bg-muted px-3.5 py-2 md:px-4',
+                  'text-[10px] font-medium uppercase tracking-[0.05em] text-text-dim',
+                )}
+              >
+                <span>{t('form.colIngredient')}</span>
+                <span>{t('form.colQuantity')}</span>
+                <span>{t('form.colType')}</span>
+                <span />
+              </div>
+
+              <ul>
+                {fields.map((field, index) => {
+                  const row = rows?.[index];
+                  const ingredient = row?.ingredient ?? null;
+                  const name = ingredient ? ingredientDisplayName(ingredient, lang) : '';
+                  const unitSuffix =
+                    ingredient?.unit_type === 'unit' ? t('form.units') : 'g';
+                  const perServing = row?.per_serving ?? false;
+
+                  // Deleting a row = an inline confirm IN the row (the canvas's
+                  // convention for minor elements). Cancelar sits on the OUTSIDE:
+                  // an imprecise thumb lands on it, never on the danger action.
+                  if (confirmRowId === field.rowId) {
+                    return (
+                      <li
+                        key={field.id}
+                        className="flex items-center gap-2 border-b bg-danger-soft px-3 py-2.5 last:border-b-0"
+                      >
+                        <span className="grid size-[22px] shrink-0 place-items-center rounded-[7px] bg-danger text-white">
+                          <Trash2 className="size-3" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-danger-ink">
+                          {t('form.removeRowConfirm', { name })}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={() => removeRow(index)}
+                          className="h-8 shrink-0 rounded-[9px] px-2.5 text-[11.5px]"
+                        >
+                          <Trash2 className="size-3" aria-hidden="true" />
+                          {t('form.removeRow')}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setConfirmRowId(null)}
+                          className="h-8 shrink-0 rounded-[9px] px-2.5 text-[11.5px]"
+                        >
+                          {tCommon('cancel')}
+                        </Button>
+                      </li>
+                    );
+                  }
+
+                  return (
+                    <li
+                      key={field.id}
+                      className={cn(
+                        'grid',
+                        ING_GRID,
+                        'border-b px-3.5 py-2 last:border-b-0 md:px-4',
+                      )}
+                    >
+                      <div className="min-w-0 leading-[1.25]">
+                        <span className="block truncate text-[12.5px] font-medium md:text-[13px]">
+                          {name}
+                        </span>
+                        {ingredient?.brand && (
+                          <span className="block truncate text-[10.5px] text-text-dim">
+                            {ingredient.brand}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="relative">
+                        <Label htmlFor={`row-qty-${field.rowId}`} className="sr-only">
+                          {t('form.quantityOf', { name })}
+                        </Label>
+                        <Input
+                          id={`row-qty-${field.rowId}`}
+                          type="number"
+                          inputMode="decimal"
+                          step="0.1"
+                          min={0}
+                          autoFocus={field.rowId === justAddedRowId}
+                          placeholder={t('form.quantity')}
+                          className="tnum h-8 rounded-[7px] border-input bg-muted pl-2 pr-6 text-[12px] font-medium"
+                          {...register(`rows.${index}.quantity`)}
+                        />
+                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10.5px] text-text-dim">
+                          {unitSuffix}
+                        </span>
+                      </div>
+
+                      {/* THE load-bearing control. `per_serving` decides how the
+                          row aggregates in computeRecipeMacros: a "por ración"
+                          row's quantity is multiplied by the servings before it
+                          enters the total (so it lands whole in EVERY serving);
+                          an "en total" row's is not (so it is split across them).
+                          The visible label shortens on mobile; the accessible
+                          name stays the long form, which contains it. */}
+                      <button
+                        type="button"
+                        aria-pressed={perServing}
+                        // The visible label shortens below `md` — and the long
+                        // one is `display:none` there, so it is out of the
+                        // accessibility tree entirely. An explicit aria-label is
+                        // what keeps the button NAMED on a phone: without it the
+                        // chip announces as an unlabelled toggle. (jsdom applies
+                        // no CSS and so cannot see this — a real browser can.)
+                        aria-label={perServing ? t('form.typePerServing') : t('form.typeTotal')}
+                        onClick={() =>
+                          setValue(`rows.${index}.per_serving`, !perServing, {
+                            shouldDirty: true,
+                          })
+                        }
+                        className={cn(
+                          // `justify-self-start` so the chip hugs its label
+                          // instead of stretching across the fixed Tipo column.
+                          'inline-flex h-[19px] items-center justify-center justify-self-start rounded-full border px-2 text-[9.5px] font-medium transition-colors',
+                          perServing
+                            ? 'border-accent-line bg-accent-soft text-accent-ink'
+                            : 'border-input bg-card text-text-dim hover:bg-muted',
+                        )}
+                      >
+                        <span className="md:hidden">
+                          {perServing ? t('form.typePerServingShort') : t('form.typeTotalShort')}
+                        </span>
+                        <span className="hidden md:inline">
+                          {perServing ? t('form.typePerServing') : t('form.typeTotal')}
+                        </span>
+                      </button>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={t('form.removeRowLabel', { name })}
+                        onClick={() => setConfirmRowId(field.rowId)}
+                        className="size-7 text-text-dim"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+
+          {/* The add affordance. Web: the search line lives at the foot of the
+              table and picking a result appends a row. Mobile: a thumb cannot
+              reach a dropdown pinned under a 12px input, so the canvas swaps it
+              for a full-width button that opens the bottom sheet. */}
+          <div className="rounded-b-lg border-t bg-muted px-3 py-2.5 md:px-3.5">
+            <Button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              className="h-10 w-full rounded-[11px] md:hidden"
+            >
+              <Search className="h-4 w-4" aria-hidden="true" />
               {t('form.addRow')}
             </Button>
+            <div className="hidden md:block">
+              <IngredientAutocomplete
+                selected={null}
+                onSelect={(ing) => addIngredient(ing)}
+                onClear={() => {}}
+                placeholder={t('form.addRowSearch')}
+              />
+            </div>
           </div>
         </Card>
+
+        <AddIngredientSheet
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          recipeName={recipeName}
+          onAdd={(ing, quantity) => addIngredient(ing, quantity)}
+        />
 
         {/* Preparación: ONE `instructions` text column, so one textarea —
             restyled, not split into fake step rows. Structured, reorderable
