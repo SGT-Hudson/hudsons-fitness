@@ -31,12 +31,14 @@ describe('RecipeMediaPlaceholder', () => {
     expect(a.firstElementChild?.getAttribute('style')).not.toBe(b.firstElementChild?.getAttribute('style'));
   });
 
-  it('uses a tighter stripe pitch for the thumbnail variant than the card/hero', () => {
+  it('uses a tighter stripe pitch for the thumbnail and hero variants than the card', () => {
     const id = 'recipe-variant-check';
     const { container: card } = render(<RecipeMediaPlaceholder recipeId={id} variant="card" />);
     const { container: thumb } = render(<RecipeMediaPlaceholder recipeId={id} variant="thumbnail" />);
+    const { container: hero } = render(<RecipeMediaPlaceholder recipeId={id} variant="hero" />);
     expect(card.firstElementChild?.getAttribute('style')).toContain('0 14px');
     expect(thumb.firstElementChild?.getAttribute('style')).toContain('0 12px');
+    expect(hero.firstElementChild?.getAttribute('style')).toContain('0 12px');
   });
 
   it('accepts a className for the caller to size and round', () => {

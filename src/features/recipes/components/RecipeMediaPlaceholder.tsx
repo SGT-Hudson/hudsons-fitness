@@ -6,11 +6,11 @@ import { recipeMediaHue } from '../mediaHue';
 export type RecipeMediaVariant = 'card' | 'thumbnail' | 'hero';
 
 /** Stripe pitch (px) per call site — mirrors the design canvas: the list
- * card media band uses a 14/28px repeat, the mobile row thumbnail a tighter
- * 12/24px one. The detail hero reuses the card's wider pitch. */
+ * card media band uses a 14/28px repeat; the mobile row thumbnail and the
+ * detail hero both use a tighter 12/24px one. */
 const STRIPE_PX: Record<RecipeMediaVariant, number> = {
   card: 14,
-  hero: 14,
+  hero: 12,
   thumbnail: 12,
 };
 
