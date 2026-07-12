@@ -39,6 +39,7 @@ export function emptyEditorState(): EditorState {
     servings: '1',
     description: '',
     instructions: '',
+    prepTime: '',
     mealTypes: [],
     rows: [{ rowId: newRowId(), ingredient: null, quantity: '', per_serving: false }],
   };
@@ -50,6 +51,10 @@ export function recipeToEditorState(recipe: RecipeWithIngredients): EditorState 
     servings: String(recipe.servings),
     description: recipe.description ?? '',
     instructions: recipe.instructions ?? '',
+    // R-33 wave 5. No input renders it yet (PR-B): carrying it through the
+    // editor state is what stops a save from clearing a recipe's prep time,
+    // since save_recipe writes the field unconditionally.
+    prepTime: recipe.prep_time_minutes === null ? '' : String(recipe.prep_time_minutes),
     mealTypes: toRecipeMealTypes(recipe.meal_types),
     rows: recipe.recipe_ingredients.map((ri) => ({
       rowId: newRowId(),

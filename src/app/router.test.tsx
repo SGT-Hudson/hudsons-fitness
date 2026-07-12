@@ -21,6 +21,7 @@ vi.mock('@/pages/PlanificadorPage', () => ({ PlanificadorPage: () => <div>Planif
 vi.mock('@/pages/PlantillasPage', () => ({ PlantillasPage: () => <div>PlantillasPage</div> }));
 vi.mock('@/pages/PlantillaEditorPage', () => ({ PlantillaEditorPage: () => <div>PlantillaEditorPage</div> }));
 vi.mock('@/pages/RecetasPage', () => ({ RecetasPage: () => <div>RecetasPage</div> }));
+vi.mock('@/pages/RecetaDetailPage', () => ({ RecetaDetailPage: () => <div>RecetaDetailPage</div> }));
 vi.mock('@/pages/RecetaEditorPage', () => ({ RecetaEditorPage: () => <div>RecetaEditorPage</div> }));
 vi.mock('@/pages/IngredientesPage', () => ({ IngredientesPage: () => <div>IngredientesPage</div> }));
 vi.mock('@/pages/EntrenamientoPage', () => ({ EntrenamientoPage: () => <div>EntrenamientoPage</div> }));
@@ -80,6 +81,24 @@ describe('AppRoutes', () => {
   it('redirects the index to /diary', () => {
     render(<MemoryRouter initialEntries={['/']}><AppRoutes /></MemoryRouter>);
     expect(screen.getByText('DiarioPage')).toBeInTheDocument();
+  });
+
+  // R-33 wave 5 route split: reading a recipe and editing it are different
+  // screens. Pin all three recipe routes — a regression here silently drops the
+  // user back into edit mode from a reading intent.
+  it('routes /recipes/:id to the recipe read view', () => {
+    render(<MemoryRouter initialEntries={['/recipes/r-1']}><AppRoutes /></MemoryRouter>);
+    expect(screen.getByText('RecetaDetailPage')).toBeInTheDocument();
+  });
+
+  it('routes /recipes/:id/edit to the recipe editor', () => {
+    render(<MemoryRouter initialEntries={['/recipes/r-1/edit']}><AppRoutes /></MemoryRouter>);
+    expect(screen.getByText('RecetaEditorPage')).toBeInTheDocument();
+  });
+
+  it('routes /recipes/new to the recipe editor', () => {
+    render(<MemoryRouter initialEntries={['/recipes/new']}><AppRoutes /></MemoryRouter>);
+    expect(screen.getByText('RecetaEditorPage')).toBeInTheDocument();
   });
 
   it('routes /more to the More hub page', () => {

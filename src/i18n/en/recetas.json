@@ -1,25 +1,49 @@
 {
   "pageTitle": "Recipes",
+  "subtitle": "Your library",
   "newRecipe": "New recipe",
   "searchPlaceholder": "Search recipe…",
-  "view": {
-    "grid": "Grid view",
-    "list": "List view"
-  },
   "favorite": {
     "add": "Mark as favorite",
     "remove": "Remove from favorites"
   },
+  "media": {
+    "placeholderAlt": "Recipe without a photo"
+  },
   "list": {
-    "empty": "You haven't created any recipes yet. Click \"New recipe\" to get started.",
-    "noMatch": "No recipes match your search.",
-    "servings_one": "{{count}} serving",
-    "servings_other": "{{count}} servings",
     "ingredients_one": "{{count}} ingredient",
     "ingredients_other": "{{count}} ingredients",
-    "updated": "Updated {{date}}",
     "removeFromLibrary": "Remove from my library",
     "removeConfirm": "Remove recipe \"{{name}}\" from your library? If you created it, it will no longer be editable (it becomes anonymized in the shared library). Your meal history is preserved."
+  },
+  "detail": {
+    "loading": "Loading…",
+    "servings_one": "{{count}} serving",
+    "servings_other": "{{count}} servings",
+    "forServings_one": "for {{count}} serving",
+    "forServings_other": "for {{count}} servings",
+    "minutes": "{{count}} min",
+    "kcalUnit": "kcal",
+    "stats": {
+      "servings": "Servings",
+      "time": "Time",
+      "kcalPerServing": "Kcal / serving",
+      "kcalPerServingShort": "Kcal/s",
+      "ingredients": "Ingredients",
+      "ingredientsShort": "Ingr."
+    },
+    "macrosTitle": "Macros",
+    "distribution": "Calorie split",
+    "ingredientsTitle": "Ingredients",
+    "perServingChip": "per serving",
+    "instructionsTitle": "Preparation",
+    "favorite": "Favorite",
+    "addToDay": "Add to day",
+    "edit": "Edit recipe",
+    "editShort": "Edit",
+    "notFoundTitle": "Recipe not found",
+    "notFoundHint": "It may no longer exist, or you removed it from your library.",
+    "backToList": "Back to Recipes"
   },
   "editor": {
     "newTitle": "New recipe",
@@ -47,7 +71,9 @@
     "dessert": "Dessert"
   },
   "filters": {
-    "heading": "Nutrition",
+    "all": "All ({{count}})",
+    "favorites": "Favorites ({{count}})",
+    "groupLabel": "Filters",
     "highProtein": "High protein",
     "lowCarb": "Low carb",
     "lowFat": "Low fat",
@@ -68,7 +94,12 @@
     "protein": "Protein",
     "carbs": "Carbs",
     "fat": "Fat",
-    "fiber": "Fiber"
+    "fiber": "Fiber",
+    "letter": {
+      "protein": "P",
+      "carbs": "C",
+      "fat": "F"
+    }
   },
   "actions": {
     "duplicate": "Duplicate"
@@ -83,8 +114,26 @@
   "errors": {
     "nameRequired": "Give your recipe a name.",
     "servingsInvalid": "Servings must be greater than 0.",
+    "prepTimeInvalid": "Prep time must be a whole number of minutes greater than 0.",
     "noIngredients": "Add at least one ingredient.",
     "rowMissingIngredient": "Some rows have no ingredient selected.",
     "rowInvalidQuantity": "Some rows have an invalid or empty quantity."
+  },
+  "sort": {
+    "label": "Sort by:",
+    "recent": "recent"
+  },
+  "card": {
+    "kcalPerServing": "kcal / serving",
+    "ingredientsShort": "{{count}} ingr.",
+    "readMore": "Read more",
+    "addToDiary": "add to diary",
+    "menu": "Recipe actions"
+  },
+  "empty": {
+    "title": "No recipes yet",
+    "hint": "Create your first recipe and it will show up here.",
+    "noMatchTitle": "No results",
+    "noMatchHint": "Try removing a filter or changing your search."
   }
 }

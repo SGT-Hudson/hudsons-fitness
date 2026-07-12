@@ -47,6 +47,9 @@ const RECIPES = [
   },
 ];
 
+/** What the Recetas CTA hands the sheet: an already-chosen recipe. */
+const PRESELECTED = { kind: 'recipe' as const, recipe: RECIPES[1] };
+
 // Distinct from any recipe in RECIPES, and with no matching library recipe —
 // exercises the "quick-add row without a full library match" fallback path.
 const QUICK_ADD = [{ recipeId: 'r3', name: 'Batido proteico', kcalPerServing: 180 }];
@@ -144,19 +147,23 @@ const EDIT_RECIPE = {
   },
 } as unknown as MealLogWithJoins;
 
-function renderSheet(overrides: Partial<Parameters<typeof AddToDaySheet>[0]> = {}) {
-  return render(
-    <AddToDaySheet
-      open
-      onOpenChange={vi.fn()}
-      loggedOn="2026-05-18"
-      initialMealType="breakfast"
-      mealSubtotals={{ breakfast: 300, lunch: 500 }}
-      totals={{ ...Z, kcal: 1200 }}
-      targets={{ ...Z, kcal: 2000 }}
-      {...overrides}
-    />,
-  );
+type SheetProps = Parameters<typeof AddToDaySheet>[0];
+
+function sheetProps(overrides: Partial<SheetProps> = {}): SheetProps {
+  return {
+    open: true,
+    onOpenChange: vi.fn(),
+    loggedOn: '2026-05-18',
+    initialMealType: 'breakfast',
+    mealSubtotals: { breakfast: 300, lunch: 500 },
+    totals: { ...Z, kcal: 1200 },
+    targets: { ...Z, kcal: 2000 },
+    ...overrides,
+  };
+}
+
+function renderSheet(overrides: Partial<SheetProps> = {}) {
+  return render(<AddToDaySheet {...sheetProps(overrides)} />);
 }
 
 let mutateAsync: ReturnType<typeof vi.fn>;
@@ -244,6 +251,94 @@ describe('AddToDaySheet', () => {
     expect(screen.getAllByText('Añadir a hoy')).toHaveLength(2);
     // Radix Dialog renders its own close button; the sheet must not double it up.
     expect(screen.getAllByRole('button', { name: /close|cerrar/i })).toHaveLength(1);
+  });
+
+  // R-33 wave 5: the Recetas list (and the recipe read view) already know which
+  // recipe you meant, so they hand the sheet a preselected item.
+  describe('initialSelection (preselected item)', () => {
+    const preselected = { kind: 'recipe' as const, recipe: RECIPES[1] };
+
+    it('opens straight on the ración step with the recipe preselected, at the caller’s slot', () => {
+      renderSheet({ initialSelection: preselected, initialMealType: 'dinner' });
+
+      // No explore chrome: no search box, no tabs.
+      expect(screen.queryByPlaceholderText('Buscar receta, alimento…')).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: 'Recetas' })).not.toBeInTheDocument();
+
+      expect(screen.getByText('Ensalada César')).toBeInTheDocument();
+      // The caller's meal slot, not the sheet's breakfast default.
+      expect(screen.getByRole('button', { name: 'Añadir a Cena' })).toBeEnabled();
+    });
+
+    it('keeps "back" wired to explore (unlike edit mode, which is locked)', () => {
+      renderSheet({ initialSelection: preselected });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Volver a explorar' }));
+
+      expect(screen.getByPlaceholderText('Buscar receta, alimento…')).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Recetas' })).toBeInTheDocument();
+    });
+
+    it('is ignored in edit mode (the entry being edited wins)', () => {
+      renderSheet({ initialSelection: preselected, editing: EDIT_CUSTOM });
+
+      expect(screen.getAllByText('Editar entrada').length).toBeGreaterThan(0);
+      expect(screen.getByDisplayValue('Yogur')).toBeInTheDocument();
+      expect(screen.queryByText('Ensalada César')).not.toBeInTheDocument();
+    });
+  });
+
+  // Once the sheet is up, it owns its state: the caller's props are read at the
+  // moment of opening and never re-applied. They can settle *after* the open —
+  // `TodayAddToDaySheet` derives `initialMealType` (the day's first empty slot)
+  // from an async query — and re-applying them then would overwrite whatever the
+  // user has already picked.
+  describe('reset fires on the open transition, not on prop changes', () => {
+    function slot(name: RegExp) {
+      const group = screen.getByRole('radiogroup', { name: 'Elegir franja' });
+      return within(group).getByRole('radio', { name });
+    }
+
+    it('a late-arriving initialMealType does not overwrite the slot the user picked', () => {
+      const { rerender } = render(<AddToDaySheet {...sheetProps({ initialMealType: 'breakfast' })} />);
+
+      fireEvent.click(slot(/Cena/));
+      expect(slot(/Cena/)).toHaveAttribute('aria-checked', 'true');
+
+      // The day's meal-log query resolves ~200 ms in: the caller's default slot
+      // changes under an already-open sheet.
+      rerender(<AddToDaySheet {...sheetProps({ initialMealType: 'lunch' })} />);
+
+      expect(slot(/Cena/)).toHaveAttribute('aria-checked', 'true');
+      expect(slot(/Comida/)).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('a late-arriving initialSelection does not yank the user out of explore', () => {
+      const { rerender } = render(<AddToDaySheet {...sheetProps()} />);
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'Recetas' }));
+
+      rerender(<AddToDaySheet {...sheetProps({ initialSelection: PRESELECTED })} />);
+
+      expect(screen.getByPlaceholderText('Buscar receta, alimento…')).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Recetas' })).toBeInTheDocument();
+    });
+
+    it('closing and reopening picks up the caller’s current props', () => {
+      const { rerender } = render(<AddToDaySheet {...sheetProps({ initialMealType: 'breakfast' })} />);
+      fireEvent.click(slot(/Cena/));
+
+      rerender(<AddToDaySheet {...sheetProps({ open: false, initialMealType: 'lunch' })} />);
+      rerender(
+        <AddToDaySheet
+          {...sheetProps({ open: true, initialMealType: 'lunch', initialSelection: PRESELECTED })}
+        />,
+      );
+
+      expect(slot(/Comida/)).toHaveAttribute('aria-checked', 'true');
+      expect(slot(/Cena/)).toHaveAttribute('aria-checked', 'false');
+      expect(screen.getByText('Ensalada César')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Añadir a Comida' })).toBeEnabled();
+    });
   });
 
   describe('ración step', () => {

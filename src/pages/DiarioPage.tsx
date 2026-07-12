@@ -14,27 +14,15 @@ import { KcalHero } from '@/features/diario/components/KcalHero';
 import { MacroGrid, type MacroGridItem } from '@/features/diario/components/MacroGrid';
 import { WeeklyKcalChart } from '@/features/diario/components/WeeklyKcalChart';
 import type { ProteinBasis } from '@/lib/macros';
-import { roundMacro } from '@/features/recipes/macros';
 import { AddToDaySheet } from '@/features/diario/components/AddToDaySheet';
-import {
-  ADD_SHEET_MEAL_TYPES,
-  type MealSubtotals,
-} from '@/features/diario/components/MealSlotSelector';
 import { MealSection } from '@/features/diario/components/MealSection';
-import {
-  useMaterializePlan,
-  useMealLogsForDay,
-  useQuickAddRecipes,
-  useWeeklyKcal,
-} from '@/features/diario/hooks';
-import { computeMealLogMacros, computeMealLogSub, sumMacros, sumSub } from '@/features/diario/macros';
+import { useMaterializePlan, useQuickAddRecipes, useWeeklyKcal } from '@/features/diario/hooks';
+import { useDayContext } from '@/features/diario/useDayContext';
+import { computeMealLogMacros, computeMealLogSub, sumSub } from '@/features/diario/macros';
 import { MEAL_TYPE_ORDER, type MealLogWithJoins, type MealType } from '@/features/diario/api';
-import { useLatestMeasurement, useSmoothedMeasurements } from '@/features/measurements/hooks';
+import { useSmoothedMeasurements } from '@/features/measurements/hooks';
 import { smoothedRatePerWeek } from '@/features/measurements/trend';
-import { essentialFatFloorG, type PhaseType } from '@/core/nutritionTone';
-import { useActivePhase } from '@/features/phases/hooks';
-import { computePhaseTargets } from '@/features/phases/targets';
-import { useLatestTdee } from '@/features/tdee/hooks';
+import { essentialFatFloorG } from '@/core/nutritionTone';
 import { tdeeConfidenceBand } from '@/features/tdee/api';
 import { isoDate } from '@/lib/dates';
 
@@ -44,7 +32,6 @@ function isValidDate(s: string): boolean {
 
 export function DiarioPage() {
   const { t } = useTranslation('diario');
-  const { t: tPhases } = useTranslation('objetivos');
   const navigate = useNavigate();
   const params = useParams<{ date?: string }>();
   const today = isoDate();
@@ -55,11 +42,25 @@ export function DiarioPage() {
   const [editing, setEditing] = useState<MealLogWithJoins | null>(null);
   const [copyOpen, setCopyOpen] = useState(false);
 
-  const logs = useMealLogsForDay(date);
-  const latestMeasurement = useLatestMeasurement();
+  // The day's shared context — entries, slot subtotals, totals, phase targets,
+  // the add-sheet's default slot. `TodayAddToDaySheet` derives the same thing
+  // from the same hook.
+  const {
+    logs,
+    activePhase,
+    latestMeasurement,
+    latestTdee,
+    entries,
+    grouped,
+    mealSubtotals,
+    defaultAddSlot,
+    totals,
+    targets,
+    phaseType,
+    phaseLabel,
+  } = useDayContext(date);
+
   const smoothed = useSmoothedMeasurements('30d');
-  const activePhase = useActivePhase();
-  const latestTdee = useLatestTdee();
   const materialize = useMaterializePlan();
   // Quick-add chips are best-effort: loading/error silently degrade to none.
   const quickAddItems = useQuickAddRecipes().data ?? [];
@@ -86,69 +87,20 @@ export function DiarioPage() {
     }
   }, [params.date, navigate]);
 
-  const grouped = useMemo(() => {
-    const map = new Map<MealType, MealLogWithJoins[]>();
-    for (const mt of MEAL_TYPE_ORDER) map.set(mt, []);
-    for (const log of logs.data ?? []) {
-      const mt = (log.meal_type as MealType) ?? 'other';
-      const list = map.get(mt) ?? [];
-      list.push(log);
-      map.set(mt, list);
-    }
-    return map;
-  }, [logs.data]);
-
-  // Per-slot kcal subtotal for the add-sheet's meal-slot selector, built from
-  // the SAME helpers as the meal cards' subtotal so the two always match.
-  const mealSubtotals = useMemo<MealSubtotals>(() => {
-    const out: MealSubtotals = {};
-    for (const mt of ADD_SHEET_MEAL_TYPES) {
-      const items = grouped.get(mt) ?? [];
-      if (items.length > 0) {
-        out[mt] = roundMacro(sumMacros(items.map(computeMealLogMacros)).kcal);
-      }
-    }
-    return out;
-  }, [grouped]);
-
-  // Header "Añadir comida" default slot: the first still-empty real meal, so
-  // the sheet lands on a sensible slot instead of a hardcoded breakfast.
-  const defaultAddSlot: MealType = useMemo(
-    () => ADD_SHEET_MEAL_TYPES.find((mt) => (grouped.get(mt)?.length ?? 0) === 0) ?? 'breakfast',
-    [grouped],
-  );
-
-  const totals = useMemo(
-    () => sumMacros((logs.data ?? []).map((l) => computeMealLogMacros(l))),
-    [logs.data],
-  );
-
   const subTotals = useMemo(
-    () => sumSub((logs.data ?? []).map((l) => computeMealLogSub(l))),
-    [logs.data],
+    () => sumSub(entries.map((l) => computeMealLogSub(l))),
+    [entries],
   );
 
   // D-F19 ring footnote: kcal contributed by today's plan-materialized
-  // entries (from_plan=true), already counted inside `totals.kcal` above.
+  // entries (from_plan=true), already counted inside `totals.kcal`.
   const planKcal = useMemo(
     () =>
-      (logs.data ?? [])
+      entries
         .filter((l) => l.from_plan)
         .reduce((sum, l) => sum + computeMealLogMacros(l).kcal, 0),
-    [logs.data],
+    [entries],
   );
-
-  const targets = useMemo(() => {
-    if (!activePhase.data || !latestMeasurement.data?.weight_kg) return undefined;
-    return (
-      computePhaseTargets(
-        activePhase.data,
-        latestMeasurement.data.weight_kg,
-        latestMeasurement.data.body_fat_pct,
-        latestTdee.data?.estimated_tdee_kcal ?? null,
-      ) ?? undefined
-    );
-  }, [activePhase.data, latestMeasurement.data, latestTdee.data]);
 
   // The protein basis is fully data-driven (D-B1): a logged body-fat % on the
   // latest measurement → phase-aware lean-mass path; absent → 1.6 g/kg
@@ -164,9 +116,6 @@ export function DiarioPage() {
     activePhase.data?.kcal_mode === 'tdee_delta'
       ? tdeeConfidenceBand(latestTdee.data)
       : null;
-
-  const phaseType = activePhase.data?.phase_type as PhaseType | undefined;
-  const phaseLabel = phaseType ? tPhases(`phases.type.${phaseType}`) : undefined;
 
   const fatFloor =
     latestMeasurement.data?.weight_kg != null

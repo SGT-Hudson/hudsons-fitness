@@ -24,6 +24,13 @@ export interface RecipeListItem {
   updated_at: string;
   ingredient_count: number;
   meal_types: string[];
+  // R-01: the pool's owner. A library is a set of refs, so this is NOT always
+  // the listing user — `save_recipe` only lets the creator edit, so the card
+  // menu needs it to know whether to offer "editar" at all (see ownership.ts).
+  created_by_user_id: string;
+  // R-33 wave 5: minutes, or null when no time was ever recorded (the card
+  // omits the stat entirely rather than rendering 0 or a guess).
+  prep_time_minutes: number | null;
   // U-3: per-serving nutrition labels (goal filters + warning badges), computed
   // in-memory from the joined ingredient macros via the shared core.
   labels: RecipeLabels;
@@ -50,7 +57,8 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
     .from('user_recipe_refs')
     .select(
       `recipe:recipes (
-         id, name, servings, description, updated_at, meal_types,
+         id, name, servings, description, updated_at, meal_types, prep_time_minutes,
+         created_by_user_id,
          recipe_ingredients (
            quantity, per_serving,
            ingredient:ingredients (
@@ -72,7 +80,14 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
     recipe:
       | (Pick<
           Recipe,
-          'id' | 'name' | 'servings' | 'description' | 'updated_at' | 'meal_types'
+          | 'id'
+          | 'name'
+          | 'servings'
+          | 'description'
+          | 'updated_at'
+          | 'meal_types'
+          | 'prep_time_minutes'
+          | 'created_by_user_id'
         > & {
           recipe_ingredients: MacroRow[] | null;
         })
@@ -102,6 +117,8 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
       updated_at: r.recipe.updated_at,
       ingredient_count: ri.length,
       meal_types: r.recipe.meal_types ?? [],
+      prep_time_minutes: r.recipe.prep_time_minutes ?? null,
+      created_by_user_id: r.recipe.created_by_user_id,
       labels,
       perServing,
     });
@@ -144,6 +161,9 @@ export interface SaveRecipePayload {
   description: string | null;
   instructions: string | null;
   mealTypes: string[];
+  // R-33 wave 5: minutes, or null for "no time recorded". ALWAYS sent, never
+  // omitted — the RPC writes it unconditionally, so null genuinely clears it.
+  prepTimeMinutes: number | null;
   ingredients: Array<{
     ingredient_id: string;
     quantity: number;
@@ -164,6 +184,7 @@ export async function saveRecipe(payload: SaveRecipePayload): Promise<string> {
     p_instructions: payload.instructions,
     p_ingredients: payload.ingredients,
     p_meal_types: payload.mealTypes,
+    p_prep_time_minutes: payload.prepTimeMinutes,
   });
   if (error) throw error;
   return data as string;

@@ -14,6 +14,7 @@ import { PlanificadorPage } from '@/pages/PlanificadorPage';
 import { PlantillasPage } from '@/pages/PlantillasPage';
 import { PlantillaEditorPage } from '@/pages/PlantillaEditorPage';
 import { RecetasPage } from '@/pages/RecetasPage';
+import { RecetaDetailPage } from '@/pages/RecetaDetailPage';
 import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
@@ -105,7 +106,10 @@ export function AppRoutes() {
           <Route path="/templates/:id" element={<PlantillaEditorPage />} />
           <Route path="/recipes" element={<RecetasPage />} />
           <Route path="/recipes/new" element={<RecetaEditorPage />} />
-          <Route path="/recipes/:id" element={<RecetaEditorPage />} />
+          {/* R-33 wave 5: reading a recipe and editing it are different screens.
+              `/recipes/:id` is the read view; the editor moved to `/edit`. */}
+          <Route path="/recipes/:id" element={<RecetaDetailPage />} />
+          <Route path="/recipes/:id/edit" element={<RecetaEditorPage />} />
           <Route path="/recipes/ingredients" element={<IngredientesPage />} />
 
           {/* Entreno */}
