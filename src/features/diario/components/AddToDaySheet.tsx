@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,11 +53,8 @@ interface Props {
    * diario" already knows which recipe you meant, so making you search for it
    * again would be silly). Ignored in edit mode.
    *
-   * Must be referentially stable while the sheet is open — it is a dependency of
-   * the reset effect below, and a fresh object per render would re-fire it and
-   * snap the user's chosen meal slot back to the default. `TodayAddToDaySheet`
-   * (the connector every caller outside Diario goes through) freezes it on the
-   * item's identity, so callers do not have to memoise.
+   * Read at the moment the sheet opens (see the reset effect below), so it needs
+   * no referential stability: rebuilding the object on a re-render is a no-op.
    */
   initialSelection?: AddSheetSelection | null;
 }
@@ -156,14 +153,24 @@ export function AddToDaySheet({
   const [selection, setSelection] = useState<AddSheetSelection | null>(null);
   const debouncedQuery = useDebouncedValue(query, 200);
 
-  // Reset all transient state whenever the sheet (re)opens — a stale step /
-  // tab / query from a previous open would otherwise leak through. Edit mode
-  // skips explore entirely: it opens straight into the ración step locked to
-  // the entry's kind, at the entry's own meal slot. A caller-supplied
-  // `initialSelection` does the same, but at the caller's meal slot and with
-  // "back" still returning to explore.
+  // Reset all transient state on the closed → open transition, and only there —
+  // a stale step / tab / query from a previous open would otherwise leak
+  // through. Edit mode skips explore entirely: it opens straight into the ración
+  // step locked to the entry's kind, at the entry's own meal slot. A
+  // caller-supplied `initialSelection` does the same, but at the caller's meal
+  // slot and with "back" still returning to explore.
+  //
+  // The props are read once, at the moment of opening; from there the sheet owns
+  // its state. Re-running the reset on a prop change would let a value that
+  // settles *after* the open (callers derive `initialMealType` from the day's
+  // meal-log query, which resolves a tick later) overwrite what the user has
+  // already picked — silently logging the meal into the wrong slot. Hence the
+  // transition guard rather than a dependency list.
+  const prevOpen = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    const justOpened = open && !prevOpen.current;
+    prevOpen.current = open;
+    if (!justOpened) return;
     if (editing) {
       setStep('racion');
       setMealType((editing.meal_type as MealType) ?? 'breakfast');
@@ -180,7 +187,7 @@ export function AddToDaySheet({
     }
     setStep('explore');
     setSelection(null);
-  }, [open, initialMealType, editing, initialSelection]);
+  });
 
   const quickAdd = useQuickAddRecipes();
   const recipes = useRecipes();

@@ -47,6 +47,9 @@ const RECIPES = [
   },
 ];
 
+/** What the Recetas CTA hands the sheet: an already-chosen recipe. */
+const PRESELECTED = { kind: 'recipe' as const, recipe: RECIPES[1] };
+
 // Distinct from any recipe in RECIPES, and with no matching library recipe —
 // exercises the "quick-add row without a full library match" fallback path.
 const QUICK_ADD = [{ recipeId: 'r3', name: 'Batido proteico', kcalPerServing: 180 }];
@@ -144,19 +147,23 @@ const EDIT_RECIPE = {
   },
 } as unknown as MealLogWithJoins;
 
-function renderSheet(overrides: Partial<Parameters<typeof AddToDaySheet>[0]> = {}) {
-  return render(
-    <AddToDaySheet
-      open
-      onOpenChange={vi.fn()}
-      loggedOn="2026-05-18"
-      initialMealType="breakfast"
-      mealSubtotals={{ breakfast: 300, lunch: 500 }}
-      totals={{ ...Z, kcal: 1200 }}
-      targets={{ ...Z, kcal: 2000 }}
-      {...overrides}
-    />,
-  );
+type SheetProps = Parameters<typeof AddToDaySheet>[0];
+
+function sheetProps(overrides: Partial<SheetProps> = {}): SheetProps {
+  return {
+    open: true,
+    onOpenChange: vi.fn(),
+    loggedOn: '2026-05-18',
+    initialMealType: 'breakfast',
+    mealSubtotals: { breakfast: 300, lunch: 500 },
+    totals: { ...Z, kcal: 1200 },
+    targets: { ...Z, kcal: 2000 },
+    ...overrides,
+  };
+}
+
+function renderSheet(overrides: Partial<SheetProps> = {}) {
+  return render(<AddToDaySheet {...sheetProps(overrides)} />);
 }
 
 let mutateAsync: ReturnType<typeof vi.fn>;
@@ -278,6 +285,59 @@ describe('AddToDaySheet', () => {
       expect(screen.getAllByText('Editar entrada').length).toBeGreaterThan(0);
       expect(screen.getByDisplayValue('Yogur')).toBeInTheDocument();
       expect(screen.queryByText('Ensalada César')).not.toBeInTheDocument();
+    });
+  });
+
+  // Once the sheet is up, it owns its state: the caller's props are read at the
+  // moment of opening and never re-applied. They can settle *after* the open —
+  // `TodayAddToDaySheet` derives `initialMealType` (the day's first empty slot)
+  // from an async query — and re-applying them then would overwrite whatever the
+  // user has already picked.
+  describe('reset fires on the open transition, not on prop changes', () => {
+    function slot(name: RegExp) {
+      const group = screen.getByRole('radiogroup', { name: 'Elegir franja' });
+      return within(group).getByRole('radio', { name });
+    }
+
+    it('a late-arriving initialMealType does not overwrite the slot the user picked', () => {
+      const { rerender } = render(<AddToDaySheet {...sheetProps({ initialMealType: 'breakfast' })} />);
+
+      fireEvent.click(slot(/Cena/));
+      expect(slot(/Cena/)).toHaveAttribute('aria-checked', 'true');
+
+      // The day's meal-log query resolves ~200 ms in: the caller's default slot
+      // changes under an already-open sheet.
+      rerender(<AddToDaySheet {...sheetProps({ initialMealType: 'lunch' })} />);
+
+      expect(slot(/Cena/)).toHaveAttribute('aria-checked', 'true');
+      expect(slot(/Comida/)).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('a late-arriving initialSelection does not yank the user out of explore', () => {
+      const { rerender } = render(<AddToDaySheet {...sheetProps()} />);
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'Recetas' }));
+
+      rerender(<AddToDaySheet {...sheetProps({ initialSelection: PRESELECTED })} />);
+
+      expect(screen.getByPlaceholderText('Buscar receta, alimento…')).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Recetas' })).toBeInTheDocument();
+    });
+
+    it('closing and reopening picks up the caller’s current props', () => {
+      const { rerender } = render(<AddToDaySheet {...sheetProps({ initialMealType: 'breakfast' })} />);
+      fireEvent.click(slot(/Cena/));
+
+      rerender(<AddToDaySheet {...sheetProps({ open: false, initialMealType: 'lunch' })} />);
+      rerender(
+        <AddToDaySheet
+          {...sheetProps({ open: true, initialMealType: 'lunch', initialSelection: PRESELECTED })}
+        />,
+      );
+
+      expect(slot(/Comida/)).toHaveAttribute('aria-checked', 'true');
+      expect(slot(/Cena/)).toHaveAttribute('aria-checked', 'false');
+      expect(screen.getByText('Ensalada César')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Añadir a Comida' })).toBeEnabled();
     });
   });
 

@@ -102,8 +102,8 @@ export function RecetasPage() {
     hide.mutate(id);
   }
 
-  // TodayAddToDaySheet freezes this on the recipe's identity, so the object may
-  // be rebuilt per render without re-firing the sheet's reset effect.
+  // The sheet reads this once, when it opens, so rebuilding the object on a
+  // re-render is a no-op — no memoisation needed.
   const addSelection: AddSheetSelection | null = addRecipe
     ? {
         kind: 'recipe',

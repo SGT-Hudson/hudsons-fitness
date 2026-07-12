@@ -179,6 +179,39 @@ describe('DiarioPage responsive layout', () => {
   });
 });
 
+// The page's numbers all come from `useDayContext` — this is the net under that
+// derivation: the day's kcal total (ring + rail hero), the active-phase label,
+// and the per-slot subtotals the add-sheet's slot picker draws.
+describe('DiarioPage day numbers (useDayContext)', () => {
+  it('renders the day’s kcal total, the phase label and the per-slot subtotals', () => {
+    state.logs = [
+      makeCustomLog(), // desayuno, 318 kcal
+      makeCustomLog({
+        id: 'log-2',
+        meal_type: 'lunch',
+        custom_name: 'Pollo con arroz',
+        custom_kcal: 500,
+      }),
+    ];
+    renderPage();
+
+    // totals.kcal = 318 + 500 → the mobile ring's centre number, and the rail
+    // hero's remaining against the mocked 2180 target.
+    expect(screen.getByTestId('kcal-ring-value')).toHaveTextContent('818');
+    expect(screen.getByTestId('kcal-hero-remaining')).toHaveTextContent('1362');
+
+    // phaseLabel — the rail hero's accent chip ('cut' → "Corte").
+    expect(screen.getByText('Corte')).toBeInTheDocument();
+
+    // mealSubtotals — one kcal figure per slot chip in the add-sheet.
+    fireEvent.click(screen.getAllByRole('button', { name: /^añadir comida$/i })[0]);
+    const group = screen.getByRole('radiogroup', { name: 'Elegir franja' });
+    expect(within(group).getByRole('radio', { name: /Desayuno/ })).toHaveTextContent('318');
+    expect(within(group).getByRole('radio', { name: /Comida/ })).toHaveTextContent('500');
+    expect(within(group).getByRole('radio', { name: /Cena/ })).toHaveTextContent('vacío');
+  });
+});
+
 describe('DiarioPage add-flow triggers', () => {
   function slotGroup() {
     return screen.getByRole('radiogroup', { name: 'Elegir franja' });

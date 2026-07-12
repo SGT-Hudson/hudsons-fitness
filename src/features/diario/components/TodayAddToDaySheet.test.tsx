@@ -114,4 +114,37 @@ describe('TodayAddToDaySheet', () => {
     ).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByRole('button', { name: 'Añadir a Cena' })).toBeEnabled();
   });
+
+  // The real shape of the bug: `defaultAddSlot` comes off an async query. The
+  // sheet opens while the day's logs are still in flight (fallback: breakfast);
+  // ~200 ms later they land and the default becomes the first empty slot. That
+  // must not reach into an open sheet and move the slot the user chose.
+  it('keeps the user’s chosen meal slot when the day’s logs resolve after the sheet is open', () => {
+    state.logs = []; // query in flight → defaultAddSlot falls back to breakfast
+    const { rerender } = render(
+      <TodayAddToDaySheet open onOpenChange={vi.fn()} selection={freshSelection()} />,
+    );
+
+    const group = screen.getByRole('radiogroup', { name: 'Elegir franja' });
+    fireEvent.click(within(group).getByRole('radio', { name: /Cena/ }));
+    expect(within(group).getByRole('radio', { name: /Cena/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+
+    // The logs land: desayuno is taken → defaultAddSlot flips to 'lunch'.
+    state.logs = [logAt('breakfast', 'l1')];
+    rerender(<TodayAddToDaySheet open onOpenChange={vi.fn()} selection={freshSelection()} />);
+
+    const after = screen.getByRole('radiogroup', { name: 'Elegir franja' });
+    expect(within(after).getByRole('radio', { name: /Cena/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(within(after).getByRole('radio', { name: /Comida/ })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(screen.getByRole('button', { name: 'Añadir a Cena' })).toBeEnabled();
+  });
 });
