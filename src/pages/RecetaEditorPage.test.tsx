@@ -35,6 +35,12 @@ vi.mock('@/features/recipes/hooks', () => ({
   useHideRecipe: () => ({ mutateAsync: hideMutateAsync, isPending: false }),
 }));
 
+// Ownership (task 3): the recipe below is created by 'u-1'. Signed in as its
+// creator by default, so the existing edit-mode tests keep exercising an
+// owner; the redirect test overrides this to a different uid.
+const useAuth = vi.fn();
+vi.mock('@/features/auth/AuthProvider', () => ({ useAuth: () => useAuth() }));
+
 import { RecetaEditorPage } from './RecetaEditorPage';
 import type { RecipeWithIngredients } from '@/features/recipes/api';
 import type { Ingredient } from '@/features/ingredients/api';
@@ -108,6 +114,7 @@ beforeEach(async () => {
   await i18n.changeLanguage('es');
   useRecipe.mockReturnValue({ data: recipe(), isLoading: false, error: null });
   saveMutateAsync.mockResolvedValue('r-1');
+  useAuth.mockReturnValue({ user: { id: 'u-1' } });
 });
 
 describe('RecetaEditorPage — editing an existing recipe', () => {
@@ -196,6 +203,53 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.getByLabelText('Nombre')).toHaveValue('Pollo con arroz v2');
     expect(screen.getByLabelText('Tiempo')).toHaveValue('50');
+  });
+
+  // Task 3: "Duplicar" is the one mechanism the read view's own button reuses
+  // (`navigateToRecipeDuplicate`). This pins the part that would silently
+  // break it: the create route must actually read the state it was handed —
+  // it used to navigate with a `duplicate` state nobody consumed, so this
+  // landed on a BLANK form (and, with it, a copy that lost its prep time).
+  it('"Duplicar" lands on /recipes/new pre-filled with an owned copy, prep time included', async () => {
+    const user = userEvent.setup();
+    renderEditor('/recipes/r-1/edit');
+
+    // Two "Duplicar" buttons exist for the same reason as "Quitar receta"
+    // above — both headers are always mounted, one only CSS-hidden.
+    await user.click(screen.getAllByRole('button', { name: 'Duplicar' })[0]);
+
+    // Landed on the create route, not still bound to the source recipe: no
+    // remove action — this copy does not exist yet, there is nothing to
+    // remove from a library.
+    expect(screen.queryByRole('button', { name: 'Quitar receta' })).toBeNull();
+
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Pollo con arroz (copia)');
+    expect(screen.getByLabelText('Raciones')).toHaveValue(4);
+    expect(screen.getByLabelText('Tiempo')).toHaveValue('35');
+    expect(screen.getByLabelText('Descripción')).toHaveValue('Batch cooking');
+  });
+});
+
+// Task 3, item 2: nothing in the UI links to `/recipes/:id/edit` for a recipe
+// the signed-in user did not create any more, but a bookmark or typed URL
+// still can. `save_recipe` scopes its UPDATE to `created_by_user_id`, so
+// rendering the editor there is a guaranteed 400 — redirect to the read view
+// instead. Must NOT interfere with duplicating (previous describe block):
+// that always targets `/recipes/new`, a route this check does not touch.
+describe('RecetaEditorPage — a non-owner deep link to /recipes/:id/edit', () => {
+  it('redirects to the read view instead of rendering the editor', () => {
+    useAuth.mockReturnValue({ user: { id: 'someone-else' } });
+    renderEditor('/recipes/r-1/edit');
+
+    expect(screen.getByText('vista')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Nombre')).toBeNull();
+  });
+
+  it('redirects when signed out entirely too', () => {
+    useAuth.mockReturnValue({ user: null });
+    renderEditor('/recipes/r-1/edit');
+
+    expect(screen.getByText('vista')).toBeInTheDocument();
   });
 });
 

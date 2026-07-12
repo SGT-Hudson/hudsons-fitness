@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Copy, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,10 @@ import {
   type EditorState,
 } from '@/features/recipes/components/RecipeEditorForm';
 import { RecipeMediaPlaceholder } from '@/features/recipes/components/RecipeMediaPlaceholder';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { useHideRecipe, useRecipe, useSaveRecipe } from '@/features/recipes/hooks';
+import { navigateToRecipeDuplicate } from '@/features/recipes/duplicate';
+import { canEditRecipe } from '@/features/recipes/ownership';
 import { parsePrepTimeMinutes } from '@/features/recipes/schema';
 
 /**
@@ -32,6 +35,8 @@ export function RecetaEditorPage() {
   const { id } = useParams<{ id?: string }>();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const { t } = useTranslation('recetas');
   const { t: tCommon } = useTranslation('common');
 
@@ -53,16 +58,29 @@ export function RecetaEditorPage() {
     () => (recipe ? recipeToEditorState(recipe) : undefined),
     [recipe],
   );
-  // The create page has no `recipe`, so `initial` is always undefined — memoize
-  // its `emptyEditorState()` fallback too, or every re-render would hand
-  // RecipeEditorForm a fresh (but equivalent) object and trigger the same reset.
-  const emptyInitial = useMemo(() => emptyEditorState(), []);
+  // The create page has no `recipe`. Reached via "Duplicar" (the editor's own
+  // button, or the read view's — `navigateToRecipeDuplicate`), `location.state`
+  // carries the source recipe's `EditorState` instead of a blank one;
+  // `location.state` itself is stable across this route's re-renders (it only
+  // changes on a fresh navigation, which unmounts/remounts this page), so
+  // memoizing on it is safe — the same "don't reset the user's typing"
+  // constraint as `initial` above.
+  const duplicateState = (location.state as { duplicate?: EditorState } | null)?.duplicate;
+  const emptyInitial = useMemo(() => duplicateState ?? emptyEditorState(), [duplicateState]);
 
   if (!isNew && recipeQuery.isLoading) {
     return <div className="text-muted-foreground">{t('editor.loading')}</div>;
   }
   if (!isNew && recipeQuery.error) {
     return <Navigate to="/recipes" replace />;
+  }
+  // A non-owner deep link (a bookmark, a typed URL — nothing in the UI links
+  // here any more): `save_recipe` would 400 on this recipe, so send them to the
+  // read view instead of rendering an editor that can only fail. Does not
+  // affect item 1's duplicate path, which always targets `/recipes/new` (this
+  // branch only fires for `/recipes/:id/edit`, `id` truthy).
+  if (!isNew && recipe && !canEditRecipe(recipe, user?.id)) {
+    return <Navigate to={`/recipes/${id}`} replace />;
   }
 
   async function handleSubmit(state: EditorState) {
@@ -102,8 +120,7 @@ export function RecetaEditorPage() {
 
   function handleDuplicate() {
     if (!recipe) return;
-    const dup = recipeToEditorState(recipe);
-    navigate('/recipes/new', { state: { duplicate: { ...dup, name: `${dup.name} (copia)` } } });
+    navigateToRecipeDuplicate(navigate, recipe, t('actions.duplicateName', { name: recipe.name }));
   }
 
   async function handleRemove() {

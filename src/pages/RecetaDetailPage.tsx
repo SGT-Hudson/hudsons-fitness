@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Star, Utensils } from 'lucide-react';
+import { Copy, Pencil, Plus, Star, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -15,6 +15,7 @@ import { ingredientDisplayName } from '@/features/ingredients/api';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useRecipe } from '@/features/recipes/hooks';
 import { canEditRecipe } from '@/features/recipes/ownership';
+import { navigateToRecipeDuplicate } from '@/features/recipes/duplicate';
 import { computeRecipeMacros } from '@/features/recipes/macros';
 import { toRecipeMealTypes } from '@/features/recipes/mealTypes';
 import { useRecipeFavorites } from '@/features/recipes/useFavorites';
@@ -30,13 +31,17 @@ import { cn } from '@/lib/utils';
  *
  * Web is the artboard's two-column read layout (content left, macros rail
  * right); mobile is the same sections stacked, with the two "do something with
- * it" actions (favourite, add to day) as a footer row and "editar" in the back
- * header — the artboards' own division of labour. `actions` is rendered by BOTH
- * PageShell headers (one is CSS-hidden), so the desktop-only buttons carry
- * `hidden md:inline-flex` rather than being a second node.
+ * it" actions (favourite, add to day) as a footer row, and "duplicar" /
+ * "editar" in the back header — the artboards' own division of labour.
+ * `actions` is rendered by BOTH PageShell headers (one is CSS-hidden), so the
+ * desktop-only buttons carry `hidden md:inline-flex` rather than being a
+ * second node; "duplicar" and "editar" have no such class because, like the
+ * editor's own header actions, they are meant to show on mobile too (task 3:
+ * "duplicar" is a pooled recipe's only route into its own library).
  */
 export function RecetaDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation('recetas');
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
@@ -170,10 +175,26 @@ export function RecetaDetailPage() {
   // and removing it from the library (a ref drop, deliberately ungated).
   const canEdit = canEditRecipe(recipe, user?.id);
 
+  // "Duplicar" is the editor's own mechanism (`navigateToRecipeDuplicate`),
+  // reachable from here too — the only reason it used to require opening the
+  // editor first was that this page didn't offer it, not that it needs
+  // ownership. Offered for every recipe, owned or pooled: it is the ONLY way
+  // to copy a pooled recipe into your own library (you cannot open the editor
+  // on one to reach it), and an owner loses nothing by having it here too —
+  // it is still also on the editor for a recipe you do own.
+  function handleDuplicate() {
+    if (!recipe) return;
+    navigateToRecipeDuplicate(navigate, recipe, t('actions.duplicateName', { name: recipe.name }));
+  }
+
   const actions = (
     <>
       {favoriteButton('hidden md:inline-flex')}
       {addToDayButton('hidden md:inline-flex', 'outline')}
+      <Button type="button" variant="outline" size="sm" onClick={handleDuplicate} className="md:h-9 md:px-3.5">
+        <Copy className="h-4 w-4" aria-hidden="true" />
+        {t('actions.duplicate')}
+      </Button>
       {canEdit && (
         <Button asChild size="sm" className="md:h-9 md:px-3.5">
           <Link to={`/recipes/${id}/edit`}>

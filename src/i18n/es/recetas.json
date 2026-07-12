@@ -136,7 +136,8 @@
     }
   },
   "actions": {
-    "duplicate": "Duplicar"
+    "duplicate": "Duplicar",
+    "duplicateName": "{{name}} (copia)"
   },
   "autocomplete": {
     "placeholder": "Buscar ingrediente…",

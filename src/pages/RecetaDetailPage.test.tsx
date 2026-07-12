@@ -2,7 +2,8 @@
 import i18n from '@/i18n';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // The page pulls `useRecipe` from a supabase-importing module: mock the client
@@ -87,6 +88,17 @@ function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredient
   } as unknown as RecipeWithIngredients;
 }
 
+// Stands in for the editor's create route: reads the `duplicate` state
+// `navigateToRecipeDuplicate` hands it (name|servings|prepTime), the same
+// shape RecetaEditorPage itself consumes on `/recipes/new`.
+function DuplicateStateProbe() {
+  const location = useLocation();
+  const dup = (
+    location.state as { duplicate?: { name: string; servings: string; prepTime: string } } | null
+  )?.duplicate;
+  return <div data-testid="duplicate-probe">{dup ? `${dup.name}|${dup.servings}|${dup.prepTime}` : 'none'}</div>;
+}
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -94,6 +106,7 @@ function renderPage() {
       <MemoryRouter initialEntries={['/recipes/r-1']}>
         <Routes>
           <Route path="/recipes/:id" element={<RecetaDetailPage />} />
+          <Route path="/recipes/new" element={<DuplicateStateProbe />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -217,6 +230,54 @@ describe('RecetaDetailPage', () => {
     expect(screen.getAllByText('Pollo con arroz').length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: 'Favorita' }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: 'Añadir al día' }).length).toBeGreaterThan(0);
+  });
+
+  // Task 3, item 1: PR-A gated "editar" on ownership, which — since opening
+  // the editor was the only way to reach its "Duplicar" button — made
+  // duplicating a pooled recipe (R-01) into your own library unreachable too.
+  // This button on the read view is how that capability survives; it is
+  // offered on ANY recipe, owned or not (unlike "editar").
+  it('offers Duplicar for a recipe I created', () => {
+    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    renderPage();
+
+    expect(screen.getAllByRole('button', { name: 'Duplicar' }).length).toBeGreaterThan(0);
+  });
+
+  it('offers Duplicar on a recipe I did not create — the only way to copy a pooled recipe into my library', () => {
+    useRecipeMock.mockReturnValue({
+      data: recipe({ created_by_user_id: 'someone-else' }),
+      isLoading: false,
+      isError: false,
+    });
+    renderPage();
+
+    expect(screen.getAllByRole('button', { name: 'Duplicar' }).length).toBeGreaterThan(0);
+    // Still not a back door into editing it directly.
+    expect(screen.queryByRole('link', { name: /Editar/ })).toBeNull();
+  });
+
+  // Mutation-guarding: this is the exact payload a broken duplicate would get
+  // wrong — dropping the prep time silently wipes it, since `save_recipe`
+  // writes `p_prep_time_minutes` unconditionally on the copy's first save.
+  it('"Duplicar" hands the editor an owned copy of a pooled recipe, prep time included', async () => {
+    const user = userEvent.setup();
+    useRecipeMock.mockReturnValue({
+      data: recipe({
+        created_by_user_id: 'someone-else',
+        name: 'Curry de garbanzos',
+        prep_time_minutes: 20,
+      }),
+      isLoading: false,
+      isError: false,
+    });
+    renderPage();
+
+    await user.click(screen.getAllByRole('button', { name: 'Duplicar' })[0]);
+
+    expect(await screen.findByTestId('duplicate-probe')).toHaveTextContent(
+      'Curry de garbanzos (copia)|4|20',
+    );
   });
 
   // An orphaned recipe (its creator dropped their ref) is re-owned by the ANON
