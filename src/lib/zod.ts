@@ -72,15 +72,22 @@ export const optionalNumericString = (min: number, max: number) =>
  * field keys to scan; `order` is the canonical code precedence. Returns the
  * first code (in `order`) that any scanned field carries, else null. The
  * component maps the returned code to `t('errors.<code>')`.
+ *
+ * A scanned key may be a FIELD ARRAY (`useFieldArray`): react-hook-form parks
+ * an error aimed at the array itself under `errors.<key>.root`, because
+ * `errors.<key>` is the per-index array. Scanning only `.message` there finds
+ * nothing and the form falls silent — a submit that visibly does nothing. So
+ * both shapes are read.
  */
 export function pickFirstError<Code extends string>(
-  errors: Record<string, { message?: string } | undefined>,
+  errors: Record<string, { message?: string; root?: { message?: string } } | undefined>,
   orderedKeys: readonly string[],
   order: readonly Code[],
 ): Code | null {
   const codes = new Set<string>();
   for (const key of orderedKeys) {
-    const m = errors[key]?.message;
+    const entry = errors[key];
+    const m = entry?.message ?? entry?.root?.message;
     if (m) codes.add(m);
   }
   for (const code of order) {

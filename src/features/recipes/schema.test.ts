@@ -5,7 +5,12 @@
 // are not times and never reach the RPC — the zod schema rejects them and the
 // check constraint is the backstop (Tier-3).
 import { describe, it, expect } from 'vitest';
-import { parsePrepTimeMinutes, recipeFormSchema, firstRecipeError } from './schema';
+import {
+  parsePrepTimeMinutes,
+  recipeFormSchema,
+  firstRecipeError,
+  PREP_TIME_MAX_MINUTES,
+} from './schema';
 
 const validRows = [
   { rowId: 'r1', ingredient: { id: 'i1' }, quantity: '100', per_serving: false },
@@ -47,6 +52,19 @@ describe('parsePrepTimeMinutes', () => {
     expect(parsePrepTimeMinutes('media hora')).toBe('invalid');
     expect(parsePrepTimeMinutes('35 min')).toBe('invalid');
   });
+
+  // The overflow this cap exists for: `prep_time_minutes` is an int4, so a
+  // value the form waves through lands in Postgres as `integer out of range`
+  // — a raw driver error in the editor's error box, not a form message.
+  it("rejects a value that would overflow the column's int4", () => {
+    expect(parsePrepTimeMinutes('99999999999')).toBe('tooLarge');
+    expect(parsePrepTimeMinutes('2147483648')).toBe('tooLarge');
+  });
+
+  it('accepts the cap itself and rejects one minute past it', () => {
+    expect(parsePrepTimeMinutes(String(PREP_TIME_MAX_MINUTES))).toBe(PREP_TIME_MAX_MINUTES);
+    expect(parsePrepTimeMinutes(String(PREP_TIME_MAX_MINUTES + 1))).toBe('tooLarge');
+  });
 });
 
 describe('recipeFormSchema — prep time', () => {
@@ -65,6 +83,27 @@ describe('recipeFormSchema — prep time', () => {
       const issue = res.error.issues.find((i) => i.path[0] === 'prepTime');
       expect(issue?.message).toBe('prepTimeInvalid');
     }
+  });
+
+  it('rejects an out-of-range prep time with its OWN code, not the generic one', () => {
+    const res = recipeFormSchema.safeParse(form({ prepTime: '99999999999' }));
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      const issue = res.error.issues.find((i) => i.path[0] === 'prepTime');
+      expect(issue?.message).toBe('prepTimeTooLarge');
+    }
+  });
+
+  it('accepts the cap itself', () => {
+    expect(
+      recipeFormSchema.safeParse(form({ prepTime: String(PREP_TIME_MAX_MINUTES) })).success,
+    ).toBe(true);
+  });
+
+  it('surfaces prepTimeTooLarge through firstRecipeError', () => {
+    expect(firstRecipeError({ prepTime: { message: 'prepTimeTooLarge' } })).toBe(
+      'prepTimeTooLarge',
+    );
   });
 
   it('surfaces prepTimeInvalid through firstRecipeError, after the name/servings rules', () => {
