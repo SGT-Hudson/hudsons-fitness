@@ -146,7 +146,6 @@ describe('IngredientesPage', () => {
     usePoolIngredients.mockReturnValue({ data: [pollo, avena, platano], isLoading: false });
     renderPage();
 
-    expect(screen.getByRole('button', { name: 'Mi biblioteca 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Base 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Por unidad 1' })).toBeInTheDocument();
 

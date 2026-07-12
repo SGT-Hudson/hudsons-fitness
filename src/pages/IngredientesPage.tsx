@@ -62,7 +62,10 @@ export function IngredientesPage() {
 
   const all = useMemo(() => pool.data ?? [], [pool.data]);
   const libraryIds = refs.data ?? NO_LIBRARY;
-  const ctx = useMemo(() => ({ libraryIds, userId: user?.id }), [libraryIds, user?.id]);
+  // `libraryIds` gates row actions (inLibrary) but is not itself a filter
+  // facet — "mi biblioteca" was dropped as a chip (redundant with "mías": a
+  // ref only ever exists on a row I created or imported).
+  const ctx = useMemo(() => ({ userId: user?.id }), [user?.id]);
 
   const counts = useMemo(() => countIngredientFacets(all, ctx), [all, ctx]);
   const filtered = useMemo(
@@ -143,8 +146,15 @@ export function IngredientesPage() {
       <div className="space-y-3.5">
         <RecipesTabs />
 
+        <p className="text-sm text-muted-foreground">{t('description')}</p>
+
         {/* PageHeaderV2 is CSS-hidden below md, so mobile carries its own search
-            row — the artboard's field + camera button. */}
+            row — the artboard's field + camera button. The artboard draws no
+            mobile create affordance, but the pre-redesign page had one in its
+            header; dropping it silently would leave manual creation reachable
+            only by camera → /scan → switching off the barcode tab in a dialog
+            that clips at 390px. So it rides here too, icon-only to match the
+            camera button's footprint. */}
         <div className="flex items-center gap-2 md:hidden">
           {searchBox}
           <Link
@@ -153,6 +163,13 @@ export function IngredientesPage() {
             className="grid size-9 shrink-0 place-items-center rounded-[10px] border bg-card text-muted-foreground"
           >
             <Camera className="size-4" aria-hidden="true" />
+          </Link>
+          <Link
+            to="/recipes/ingredients/new"
+            aria-label={t('newIngredient')}
+            className="grid size-9 shrink-0 place-items-center rounded-[10px] border bg-card text-muted-foreground"
+          >
+            <Plus className="size-4" aria-hidden="true" />
           </Link>
         </div>
 

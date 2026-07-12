@@ -9,8 +9,8 @@ interface Props {
 }
 
 /**
- * The web artboard's chip row — mi biblioteca · verificadas · por unidad · base
- * · mías — with the "Macros por 100 g" note pinned right, and the counts as
+ * The web artboard's chip row — verificadas · por unidad · base · mías — with
+ * the "Macros por 100 g" note pinned right, and the counts as
  * **real numbers** (the page holds the pool in memory and counts it in one
  * pass; see `ingredientFilter.ts`).
  *

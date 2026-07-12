@@ -20,7 +20,7 @@ function ing(over: Partial<FilterableIngredient> & Pick<FilterableIngredient, 'i
   };
 }
 
-const ctx: IngredientFilterContext = { libraryIds: new Set(['a']), userId: 'u1' };
+const ctx: IngredientFilterContext = { userId: 'u1' };
 
 describe('ingredientSourceVariant', () => {
   it('maps system AND bedca to the base badge', () => {
@@ -57,7 +57,7 @@ describe('matchesIngredientFilter', () => {
   it('never reads an anonymized (null-owner) row as mine', () => {
     const orphan = ing({ id: 'x', created_by_user_id: null });
     expect(
-      matchesIngredientFilter(orphan, { query: '', facets: ['mine'] }, { libraryIds: new Set(), userId: undefined }),
+      matchesIngredientFilter(orphan, { query: '', facets: ['mine'] }, { userId: undefined }),
     ).toBe(false);
   });
 });
@@ -65,13 +65,12 @@ describe('matchesIngredientFilter', () => {
 describe('countIngredientFacets', () => {
   it('counts every chip in one pass over the pool', () => {
     const pool = [
-      ing({ id: 'a', is_verified: true }), // in my library, base, verified
+      ing({ id: 'a', is_verified: true }), // base, verified
       ing({ id: 'b', source: 'openfoodfacts', unit_type: 'unit' }),
       ing({ id: 'c', source: 'manual', created_by_user_id: 'u1' }),
       ing({ id: 'd', source: 'bedca', is_verified: true }),
     ];
     expect(countIngredientFacets(pool, ctx)).toEqual({
-      library: 1,
       verified: 2,
       perUnit: 1,
       base: 2, // the `system` row and the `bedca` one

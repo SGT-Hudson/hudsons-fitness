@@ -55,7 +55,6 @@
     "subMacroWarning": "El azúcar no puede superar los carbohidratos, ni las saturadas la grasa total — revisa el valor."
   },
   "list": {
-    "empty": "Sin resultados.",
     "perUnit": "/ ud",
     "per100g": "/ 100 g",
     "kcalUnit": "kcal",
@@ -86,7 +85,6 @@
   },
   "filters": {
     "groupLabel": "Filtros",
-    "library": "Mi biblioteca",
     "verified": "Verificadas",
     "perUnit": "Por unidad",
     "base": "Base",
@@ -104,8 +102,6 @@
     "noMatchHint": "Prueba a quitar algún filtro o a cambiar la búsqueda."
   },
   "source": {
-    "system": "Ingrediente del sistema",
-    "systemShort": "Sistema",
     "base": "Ingrediente de la base",
     "baseShort": "base",
     "openfoodfacts": "Importado de OpenFoodFacts",

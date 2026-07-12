@@ -10,7 +10,7 @@
 import { normalizeText } from '@/features/recipes/recipeFilter';
 import { ingredientSourceVariant } from './ingredientSource';
 
-export const INGREDIENT_FACETS = ['library', 'verified', 'perUnit', 'base', 'mine'] as const;
+export const INGREDIENT_FACETS = ['verified', 'perUnit', 'base', 'mine'] as const;
 export type IngredientFacet = (typeof INGREDIENT_FACETS)[number];
 
 /** The shape the filter needs — `Ingredient` (Tables<'ingredients'>) satisfies it. */
@@ -26,8 +26,6 @@ export interface FilterableIngredient {
 }
 
 export interface IngredientFilterContext {
-  /** The ingredient ids I hold a `user_ingredient_refs` row for (= my library). */
-  libraryIds: ReadonlySet<string>;
   userId: string | null | undefined;
 }
 
@@ -44,8 +42,6 @@ export function matchesIngredientFacet(
   ctx: IngredientFilterContext,
 ): boolean {
   switch (facet) {
-    case 'library':
-      return ctx.libraryIds.has(ing.id);
     case 'verified':
       return ing.is_verified;
     case 'perUnit':
@@ -93,7 +89,6 @@ export function countIngredientFacets(
   ctx: IngredientFilterContext,
 ): Record<IngredientFacet, number> {
   const counts: Record<IngredientFacet, number> = {
-    library: 0,
     verified: 0,
     perUnit: 0,
     base: 0,

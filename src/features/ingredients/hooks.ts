@@ -127,11 +127,21 @@ export function usePoolIngredients() {
   });
 }
 
-/** The ingredient ids in my library, as a Set (the "mi biblioteca" facet). */
+// Hoisted so its identity is stable across renders — an inline arrow here
+// would get a fresh function every render, which defeats react-query's select
+// memoization and hands out a brand-new `Set` (and therefore a new `libraryIds`
+// reference) on every re-render, cascading into every `useMemo` downstream
+// that depends on it.
+function toIdSet(ids: string[]): Set<string> {
+  return new Set(ids);
+}
+
+/** The ingredient ids in my library, as a Set (gates `IngredientRowMenu`'s
+ * "quitar de mi biblioteca" and `usePagination`'s reset key). */
 export function useMyIngredientRefIds() {
   return useQuery({
     queryKey: ['ingredients', 'refs'],
     queryFn: () => listMyIngredientRefIds(),
-    select: (ids: string[]) => new Set(ids),
+    select: toIdSet,
   });
 }

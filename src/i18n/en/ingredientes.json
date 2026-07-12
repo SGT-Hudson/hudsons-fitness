@@ -55,7 +55,6 @@
     "subMacroWarning": "Sugar can't exceed total carbs, nor saturated exceed total fat — check the value."
   },
   "list": {
-    "empty": "No results.",
     "perUnit": "/ unit",
     "per100g": "/ 100 g",
     "kcalUnit": "kcal",
@@ -86,7 +85,6 @@
   },
   "filters": {
     "groupLabel": "Filters",
-    "library": "My library",
     "verified": "Verified",
     "perUnit": "Per unit",
     "base": "Base",
@@ -104,8 +102,6 @@
     "noMatchHint": "Try clearing a filter or changing your search."
   },
   "source": {
-    "system": "System ingredient",
-    "systemShort": "System",
     "base": "Base-library ingredient",
     "baseShort": "base",
     "openfoodfacts": "Imported from OpenFoodFacts",
