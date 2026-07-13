@@ -10,6 +10,7 @@ import {
   recipeFormSchema,
   firstRecipeError,
   PREP_TIME_MAX_MINUTES,
+  SERVINGS_MIN,
 } from './schema';
 
 const validRows = [
@@ -143,6 +144,30 @@ describe('recipeFormSchema — a row quantity with a decimal comma', () => {
           'rowInvalidQuantity',
         );
       }
+    }
+  });
+});
+
+// Servings is fraction-capable — `min={0.5} step="0.5"` on the input, and half a
+// serving is a legitimate recipe — so it is a `NumberField` like every other
+// decimal, and its `min` gate (which `type="text"` stopped enforcing) lives here.
+describe('recipeFormSchema — servings', () => {
+  it('accepts a decimal comma: 2,5 raciones', () => {
+    const res = recipeFormSchema.safeParse(form({ servings: '2,5' }));
+    expect(res.success).toBe(true);
+  });
+
+  it('accepts the half-serving floor itself', () => {
+    expect(recipeFormSchema.safeParse(form({ servings: String(SERVINGS_MIN) })).success).toBe(true);
+  });
+
+  it.each(['0', '0,2', '-1', '', 'dos', '1,234.5'])('rejects %s', (servings) => {
+    const res = recipeFormSchema.safeParse(form({ servings }));
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.error.issues.find((i) => i.path[0] === 'servings')?.message).toBe(
+        'servingsInvalid',
+      );
     }
   });
 });

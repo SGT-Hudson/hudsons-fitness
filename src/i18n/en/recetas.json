@@ -150,7 +150,7 @@
   },
   "errors": {
     "nameRequired": "Give your recipe a name.",
-    "servingsInvalid": "Servings must be greater than 0.",
+    "servingsInvalid": "Servings must be at least 0.5.",
     "prepTimeInvalid": "Prep time must be a whole number of minutes greater than 0.",
     "prepTimeTooLarge": "Prep time cannot exceed 24 h (1440 min).",
     "noIngredients": "Add at least one ingredient.",

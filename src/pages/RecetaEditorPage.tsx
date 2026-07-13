@@ -17,7 +17,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { useHideRecipe, useRecipe, useSaveRecipe } from '@/features/recipes/hooks';
 import { navigateToRecipeDuplicate } from '@/features/recipes/duplicate';
 import { canEditRecipe } from '@/features/recipes/ownership';
-import { parsePrepTimeMinutes } from '@/features/recipes/schema';
+import { parsePrepTimeMinutes, SERVINGS_MIN } from '@/features/recipes/schema';
 import { parseDecimalInput } from '@/lib/number';
 
 /**
@@ -95,7 +95,10 @@ export function RecetaEditorPage() {
       const savedId = await save.mutateAsync({
         recipeId: isNew ? null : id!,
         name: state.name.trim(),
-        servings: Number(state.servings),
+        // Fraction-capable (half servings are legal) and comma-typed, so it
+        // parses through the shared boundary like the row quantities below.
+        // The zod schema already refused anything below SERVINGS_MIN.
+        servings: parseDecimalInput(state.servings) ?? SERVINGS_MIN,
         description: state.description.trim() === '' ? null : state.description.trim(),
         instructions: state.instructions.trim() === '' ? null : state.instructions.trim(),
         mealTypes: state.mealTypes,

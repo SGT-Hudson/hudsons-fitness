@@ -148,7 +148,7 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
   });
 
   const rows = watch('rows');
-  const servingsNum = Number(watch('servings'));
+  const servingsNum = parseDecimalInput(watch('servings')) ?? 0;
   const mealTypes = watch('mealTypes') ?? [];
   const recipeName = watch('name') ?? '';
 
@@ -285,20 +285,18 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
             />
 
             <div className="mt-1 flex flex-wrap items-start gap-x-4 gap-y-2.5">
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="recipe-servings" className={META_LABEL}>
-                  {t('form.servings')}
-                </Label>
-                <Input
-                  id="recipe-servings"
-                  type="number"
-                  inputMode="decimal"
-                  min={0.5}
-                  step="0.5"
-                  className={cn(META_INPUT, 'w-[68px]')}
-                  {...register('servings')}
-                />
-              </div>
+              {/* Half a serving is legal (the field was `min={0.5} step="0.5"`),
+                  so servings is fraction-capable — and a Spanish keyboard types
+                  `2,5`, which a `type="number"` element would have handed React
+                  as "25". Hence `NumberField`. The `min` gate went with the
+                  `type` switch; the schema's `SERVINGS_MIN` is the gate now. */}
+              <NumberField
+                id="recipe-servings"
+                label={t('form.servings')}
+                labelClassName={META_LABEL}
+                className={cn(META_INPUT, 'w-[68px]')}
+                {...register('servings')}
+              />
 
               {/* Prep time — the new field (R-33 wave 5). Deliberately NOT a
                   native `type=number` with a `max`: the browser would block the

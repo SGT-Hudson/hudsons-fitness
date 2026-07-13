@@ -150,7 +150,7 @@
   },
   "errors": {
     "nameRequired": "Ponle un nombre a la receta.",
-    "servingsInvalid": "Las raciones deben ser mayores que 0.",
+    "servingsInvalid": "Las raciones deben ser al menos 0,5.",
     "prepTimeInvalid": "El tiempo de preparación debe ser un número entero de minutos mayor que 0.",
     "prepTimeTooLarge": "El tiempo de preparación no puede superar las 24 h (1440 min).",
     "noIngredients": "Añade al menos un ingrediente.",
