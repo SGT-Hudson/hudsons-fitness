@@ -77,7 +77,6 @@
     "fiber": "Fibre",
     "salt": "Salt",
     "autoChip": "auto",
-    "editByHand": "Edit by hand",
     "autoHint": "Calculated from protein, carbs and fat. You can override it.",
     "backToAuto": "Back to automatic",
     "offCaveat": "These values come from the OpenFoodFacts community; check them against your packaging.",

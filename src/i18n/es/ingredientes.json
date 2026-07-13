@@ -77,7 +77,6 @@
     "fiber": "Fibra",
     "salt": "Sal",
     "autoChip": "auto",
-    "editByHand": "Editar a mano",
     "autoHint": "Se calcula a partir de proteínas, carbohidratos y grasas. Puedes sobrescribirla.",
     "backToAuto": "Volver a automático",
     "offCaveat": "Los valores vienen de la comunidad de OpenFoodFacts; compáralos con tu envase.",

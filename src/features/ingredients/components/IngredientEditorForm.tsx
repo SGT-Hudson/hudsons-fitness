@@ -167,6 +167,10 @@ export function IngredientEditorForm({
     setValue('kcal_per_unit', String(autoKcal));
   }, [autoKcal, kcalMode, setValue]);
 
+  // Registered once so the JSX below can both spread it onto the input and
+  // wrap its `onChange` — `register()` returns a fresh object every render.
+  const kcalRegister = register('kcal_per_unit');
+
   // Soft, non-blocking sanity check (kept from `IngredientFormFields`): sugar ⊂
   // carbs, saturated ⊂ fat — only when both sides are filled in. Never blocks.
   const exceeds = (sub: string, parent: string) =>
@@ -318,36 +322,24 @@ export function IngredientEditorForm({
             </p>
           )}
 
-          {/* Calorías — auto-derived (spec §3).
-              While AUTO the field is read-only (the canvas's sunken, muted
-              treatment) and always shows what the macros imply. The canvas is a
-              static mock and never reconciled its own two claims — a read-only
-              field with the caption "puedes sobrescribirla" cannot be
-              overwritten — so the override is an EXPLICIT affordance: the
-              "editar a mano" pill (in the tab order, named, discoverable), and
-              a click on the field itself, so a tap does not dead-end. Focus
-              alone does NOT unlock: tabbing through the form must not silently
-              destroy the derivation.
-              "Volver a automático" is the way back the canvas offers nowhere —
-              without it the override is a one-way trap (Constraint 5). */}
+          {/* Calorías — auto-derived (spec §3), ALWAYS editable (a product
+              decision that overrides the canvas: a read-only field cannot be
+              "sobrescrita", so the canvas's own caption contradicted its own
+              read-only treatment). While AUTO the field shows the `auto` chip
+              and the live derivation. The moment the user types a real
+              keystroke into it — as opposed to the derivation's own
+              `setValue` below, which never fires `onChange` — the chip drops
+              and auto stops overwriting.
+              "Volver a automático" is the way back (Constraint 5). */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <Label htmlFor="ing-kcal" className={FIELD_LABEL}>
                 {t('editor.kcal')}
               </Label>
               {kcalMode === 'auto' ? (
-                <>
-                  <span className="rounded-full border bg-muted px-1.5 py-px text-[8.5px] font-medium text-muted-foreground">
-                    {t('editor.autoChip')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setKcalMode('manual')}
-                    className="ml-auto text-[10px] font-medium text-muted-foreground underline-offset-2 hover:underline"
-                  >
-                    {t('editor.editByHand')}
-                  </button>
-                </>
+                <span className="rounded-full border bg-muted px-1.5 py-px text-[8.5px] font-medium text-muted-foreground">
+                  {t('editor.autoChip')}
+                </span>
               ) : (
                 <button
                   type="button"
@@ -367,13 +359,15 @@ export function IngredientEditorForm({
                 step="0.1"
                 min={0}
                 required
-                readOnly={kcalMode === 'auto'}
-                onClick={() => setKcalMode('manual')}
                 className={cn(
                   'tnum h-10 pr-11 text-[15px] font-semibold',
                   kcalMode === 'auto' && 'bg-muted text-muted-foreground',
                 )}
-                {...register('kcal_per_unit')}
+                {...kcalRegister}
+                onChange={(e) => {
+                  void kcalRegister.onChange(e);
+                  if (kcalMode === 'auto') setKcalMode('manual');
+                }}
               />
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-text-dim">
                 {t('list.kcalUnit')}
@@ -592,89 +586,89 @@ function PreviewCard({ name, brand, perUnit, source, kcal, protein, carbs, fat }
     <Card role="region" aria-label={t('preview.title')} className="space-y-3 p-3.5 md:p-4">
       <div className="flex items-center gap-2">
         <h2 className={CARD_LABEL}>{t('preview.title')}</h2>
-          <span className="ml-auto text-[10px] text-text-dim">{t('preview.inLibrary')}</span>
-        </div>
+        <span className="ml-auto text-[10px] text-text-dim">{t('preview.inLibrary')}</span>
+      </div>
 
-        {/* The list row, as it will look */}
-        <div className="grid grid-cols-[1fr_auto] items-center gap-2.5 rounded-[10px] border bg-muted px-3 py-2.5">
-          <div className="min-w-0">
-            <p
-              className={cn(
-                'truncate text-[13px] font-semibold md:text-[13.5px]',
-                empty && 'text-text-dim',
-              )}
-            >
-              {empty ? t('preview.namePlaceholder') : name}
-            </p>
-            <p className="truncate text-[10.5px] text-text-dim">
-              {brand.trim() === '' ? t('list.generic') : brand}
-              {perUnit ? ` · ${t('form.perUnit')}` : ''}
-            </p>
-          </div>
-          <IngredientSourceBadge source={source} />
-        </div>
-
-        <div className="flex items-baseline gap-1.5">
-          <span
+      {/* The list row, as it will look */}
+      <div className="grid grid-cols-[1fr_auto] items-center gap-2.5 rounded-[10px] border bg-muted px-3 py-2.5">
+        <div className="min-w-0">
+          <p
             className={cn(
-              'tnum text-[28px] font-semibold tracking-[-0.03em] md:text-[30px]',
+              'truncate text-[13px] font-semibold md:text-[13.5px]',
               empty && 'text-text-dim',
             )}
           >
-            {empty ? '—' : kcalText}
-          </span>
-          <span className="text-[11px] text-text-dim md:text-[12px]">
-            {t('list.kcalUnit')} · {perUnit ? t('form.perUnit') : t('form.per100g')}
-          </span>
-        </div>
-
-        <div className="tnum grid grid-cols-3 gap-2">
-          {[
-            { key: 'protein', label: t('editor.protein'), value: p, dot: 'bg-macro-p' },
-            { key: 'carbs', label: t('editor.carbs'), value: c, dot: 'bg-macro-c' },
-            { key: 'fat', label: t('editor.fat'), value: f, dot: 'bg-macro-g' },
-          ].map((m) => (
-            <div key={m.key} className="min-w-0">
-              <span className="flex items-center gap-1 text-[9px] uppercase tracking-[0.04em] text-text-dim md:text-[9.5px]">
-                <span className={cn('size-[6px] shrink-0 rounded-full', m.dot)} aria-hidden="true" />
-                <span className="truncate">{m.label}</span>
-              </span>
-              <span
-                className={cn('block text-[14px] font-semibold md:text-[15px]', empty && 'text-text-dim')}
-              >
-                {empty ? '—' : `${formatMacro(m.value)} g`}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-2 border-t pt-3">
-          <p className="text-[9.5px] uppercase tracking-[0.05em] text-text-dim md:text-[10.5px]">
-            {t('preview.split')}
+            {empty ? t('preview.namePlaceholder') : name}
           </p>
-          {empty || atwater === 0 ? (
-            <div className="h-3 rounded-[6px] bg-muted" />
-          ) : (
-            <>
-              <div className="flex h-3 overflow-hidden rounded-[6px]">
-                {split.map((s) => (
-                  <div
-                    key={s.key}
-                    className={s.bar}
-                    style={{ width: `${(s.kcal / atwater) * 100}%` }}
-                  />
-                ))}
-              </div>
-              <div className="tnum flex justify-between text-[10.5px] text-muted-foreground">
-                {split.map((s) => (
-                  <span key={s.key} className="inline-flex items-center gap-1">
-                    <span className={cn('size-[6px] rounded-full', s.bar)} aria-hidden="true" />
-                    {t(`macros.letter.${s.key}`)} {Math.round((s.kcal / atwater) * 100)} %
-                  </span>
-                ))}
-              </div>
-            </>
+          <p className="truncate text-[10.5px] text-text-dim">
+            {brand.trim() === '' ? t('list.generic') : brand}
+            {perUnit ? ` · ${t('form.perUnit')}` : ''}
+          </p>
+        </div>
+        <IngredientSourceBadge source={source} />
+      </div>
+
+      <div className="flex items-baseline gap-1.5">
+        <span
+          className={cn(
+            'tnum text-[28px] font-semibold tracking-[-0.03em] md:text-[30px]',
+            empty && 'text-text-dim',
           )}
+        >
+          {empty ? '—' : kcalText}
+        </span>
+        <span className="text-[11px] text-text-dim md:text-[12px]">
+          {t('list.kcalUnit')} · {perUnit ? t('form.perUnit') : t('form.per100g')}
+        </span>
+      </div>
+
+      <div className="tnum grid grid-cols-3 gap-2">
+        {[
+          { key: 'protein', label: t('editor.protein'), value: p, dot: 'bg-macro-p' },
+          { key: 'carbs', label: t('editor.carbs'), value: c, dot: 'bg-macro-c' },
+          { key: 'fat', label: t('editor.fat'), value: f, dot: 'bg-macro-g' },
+        ].map((m) => (
+          <div key={m.key} className="min-w-0">
+            <span className="flex items-center gap-1 text-[9px] uppercase tracking-[0.04em] text-text-dim md:text-[9.5px]">
+              <span className={cn('size-[6px] shrink-0 rounded-full', m.dot)} aria-hidden="true" />
+              <span className="truncate">{m.label}</span>
+            </span>
+            <span
+              className={cn('block text-[14px] font-semibold md:text-[15px]', empty && 'text-text-dim')}
+            >
+              {empty ? '—' : `${formatMacro(m.value)} g`}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-2 border-t pt-3">
+        <p className="text-[9.5px] uppercase tracking-[0.05em] text-text-dim md:text-[10.5px]">
+          {t('preview.split')}
+        </p>
+        {empty || atwater === 0 ? (
+          <div className="h-3 rounded-[6px] bg-muted" />
+        ) : (
+          <>
+            <div className="flex h-3 overflow-hidden rounded-[6px]">
+              {split.map((s) => (
+                <div
+                  key={s.key}
+                  className={s.bar}
+                  style={{ width: `${(s.kcal / atwater) * 100}%` }}
+                />
+              ))}
+            </div>
+            <div className="tnum flex justify-between text-[10.5px] text-muted-foreground">
+              {split.map((s) => (
+                <span key={s.key} className="inline-flex items-center gap-1">
+                  <span className={cn('size-[6px] rounded-full', s.bar)} aria-hidden="true" />
+                  {t(`macros.letter.${s.key}`)} {Math.round((s.kcal / atwater) * 100)} %
+                </span>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </Card>
   );

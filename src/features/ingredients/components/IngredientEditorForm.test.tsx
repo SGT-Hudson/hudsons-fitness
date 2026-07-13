@@ -110,13 +110,10 @@ const autoChip = () => screen.queryByText('auto');
 const preview = () => screen.getByRole('region', { name: 'Vista previa' });
 
 /**
- * Take kcal over. The canvas renders the auto field read-only AND captions it
- * "puedes sobrescribirla" — it never reconciled the two, so the editor makes the
- * override an explicit affordance. This is the primary (named, keyboard-
- * reachable) one; a click on the field itself works too (pinned below).
+ * Take kcal over. The field is always editable (a product decision); typing a
+ * real keystroke into it is what flips the mode to manual — no unlock pill.
  */
 async function overrideKcal(user: ReturnType<typeof userEvent.setup>, value: string) {
-  await user.click(screen.getByRole('button', { name: 'Editar a mano' }));
   await user.clear(kcalField());
   await user.type(kcalField(), value);
 }
@@ -156,12 +153,11 @@ describe('auto-kcal', () => {
     await user.type(screen.getByLabelText('Grasas'), '5');
     await waitFor(() => expect(kcalField()).toHaveValue(165)); // + 9·5
 
-    // While auto, the field is the derivation's — not the user's.
-    expect(kcalField()).toHaveAttribute('readonly');
+    // Still auto: the field is the derivation's, not the user's.
     expect(autoChip()).toBeInTheDocument();
   });
 
-  it('hands kcal to the user when they override it — the chip goes and auto stops overwriting', async () => {
+  it('flips to manual the moment the user types into kcal — the chip goes and auto stops overwriting', async () => {
     const user = userEvent.setup();
     renderEditor();
     await fillMacros(user);
@@ -170,7 +166,7 @@ describe('auto-kcal', () => {
     await overrideKcal(user, '200');
 
     expect(autoChip()).not.toBeInTheDocument();
-    expect(kcalField()).not.toHaveAttribute('readonly');
+    await waitFor(() => expect(kcalField()).toHaveValue(200));
 
     // The derivation must not claw it back on the next macro keystroke.
     await user.type(screen.getByLabelText('Proteínas'), '5'); // 10 → 105
@@ -178,26 +174,19 @@ describe('auto-kcal', () => {
     expect(kcalField()).toHaveValue(200);
   });
 
-  it('unlocks kcal on a click of the field too — a tap must not dead-end', async () => {
+  it('does NOT flip on a click or focus alone — only an actual keystroke does', async () => {
     const user = userEvent.setup();
     renderEditor();
     await fillMacros(user);
-
-    await user.click(kcalField());
-
-    expect(autoChip()).not.toBeInTheDocument();
-    expect(kcalField()).not.toHaveAttribute('readonly');
-  });
-
-  it('does NOT unlock on focus alone — tabbing through must not destroy the derivation', async () => {
-    const user = userEvent.setup();
-    renderEditor();
-    await fillMacros(user);
+    await waitFor(() => expect(kcalField()).toHaveValue(165));
 
     kcalField().focus();
-
+    await user.click(kcalField());
     expect(autoChip()).toBeInTheDocument();
-    expect(kcalField()).toHaveAttribute('readonly');
+
+    // The first real keystroke does flip it.
+    await user.type(kcalField(), '0');
+    expect(autoChip()).not.toBeInTheDocument();
   });
 
   it('"volver a automático" gives the derivation back', async () => {
@@ -211,7 +200,6 @@ describe('auto-kcal', () => {
 
     await waitFor(() => expect(kcalField()).toHaveValue(165));
     expect(autoChip()).toBeInTheDocument();
-    expect(kcalField()).toHaveAttribute('readonly');
   });
 
   it('never auto-overwrites an OFF kcal: an OFF-seeded form starts MANUAL (Constraint 4)', async () => {
@@ -383,6 +371,19 @@ describe('the live preview card', () => {
   it('shows the row as it will look in the library: the source badge follows the origin', () => {
     renderEditor({ offProduct: offResult() });
     expect(within(preview()).getByLabelText('Importado de OpenFoodFacts')).toBeInTheDocument();
+  });
+
+  it('splits by the derived (Atwater) kcal, not an overridden kcal field — they can disagree', () => {
+    // protein 4.5 / carbs 4.2 / fat 9.7 g → Atwater ≈ 122 kcal. The stored
+    // kcal is overridden to 500, wildly disagreeing with it. If the split's
+    // denominator were `Number(kcal)` instead of `deriveAutoKcal(...)`, these
+    // percentages would read 4 % / 3 % / 17 % instead.
+    renderEditor({ ingredient: ingredient({ kcal_per_unit: 500 }) });
+
+    const card = preview();
+    expect(within(card).getByText(/15\s*%/)).toBeInTheDocument(); // P: 18/122
+    expect(within(card).getByText(/14\s*%/)).toBeInTheDocument(); // C: 16.8/122
+    expect(within(card).getByText(/72\s*%/)).toBeInTheDocument(); // F: 87.3/122
   });
 });
 
