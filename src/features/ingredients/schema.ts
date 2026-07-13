@@ -11,14 +11,15 @@ import { pickFirstError, type FieldErrors } from '@/lib/zod';
 //
 //  - name: required (trimmed non-empty)
 //  - unit_type: 'gram' | 'unit'
-//  - kcal / protein / carbs / fat per unit: required, finite, >= 0
-//  - fiber per unit: blank is allowed and means 0; otherwise finite >= 0
+//  - kcal / protein / carbs / fat per unit: required, parseable, >= 0
+//  - fiber per unit: blank is allowed and means 0; otherwise parseable >= 0
+//  - sugar / saturated fat / salt: blank means NULL (unknown); otherwise >= 0
 //  - brand: optional (trimmed-to-null in the dialog's submit mapping)
 //
 // Inputs are strings (the form keeps `IngredientFormState` string fields, used
-// as-is for the OFF-search seed + edit prefill), so numeric fields use a
-// preprocessor mirroring `parseForm`'s `Number.isFinite && >= 0` rule, and
-// fiber's blank→0 special case.
+// as-is for the OFF-search seed + edit prefill), so the numeric fields carry
+// the parse: `parseDecimalInput` + the `>= 0` rule, plus fiber's blank→0 and a
+// sub-macro's blank→null special cases.
 //
 // R-33 wave 6 (Task 1) adds STABLE issue codes (R-09 convention — see
 // `recipes/schema.ts`, `templates/schema.ts`) so the editor page can show real

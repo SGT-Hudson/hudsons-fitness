@@ -8,11 +8,20 @@ import { firstIngredientError, ingredientFormSchema } from './schema';
 // carries STABLE issue codes (previously it relied on zod's default English
 // text, which the old dialog never surfaced — it only checked pass/fail).
 //
-// The accept/reject SET is unchanged from before this task: a blank
-// name is still the only genuinely "required" failure (kcal/protein/carbs/fat
-// blank still parses as 0 — unchanged behavior, gated today by the dialog's
-// native `required` inputs); fiber blank still means 0; sugar/satFat/salt
-// blank still means null. Only the issue MESSAGE (code) is new.
+// The decimal-comma fix then moved every numeric field onto `parseDecimalInput`
+// and every input onto `NumberField` (`type="text"`), which changed the
+// accept/reject set in exactly two ways, both deliberate:
+//
+//  - a decimal COMMA now parses (`"8,5"` → 8.5), and an ambiguous separator
+//    pair is rejected rather than guessed;
+//  - a blank kcal/protein/carbs/fat is now REJECTED (`numberRequired`). It used
+//    to parse to 0, blocked only by the inputs' native `required` — which died
+//    with `type="number"`. The blank→0 transform cannot double as that gate, so
+//    zod carries it, and a blank protein cannot save 0 g in silence.
+//
+// What blank means everywhere else is untouched: fiber blank is still 0,
+// sugar/satFat/salt blank is still null (unknown ≠ 0), garbage in a sub-macro
+// is still an error rather than a silent null.
 
 const validForm = {
   name: 'Pan',
