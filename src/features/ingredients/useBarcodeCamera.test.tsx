@@ -24,20 +24,24 @@ const VALID_EAN = '5000112637922';
 interface FakeStream {
   stream: MediaStream;
   stop: ReturnType<typeof vi.fn>;
+  applyConstraints: ReturnType<typeof vi.fn>;
 }
 
-function makeFakeStream(): FakeStream {
+/** `torch` makes the track advertise (and accept) a torch, as a rear Android camera does. */
+function makeFakeStream({ torch = false }: { torch?: boolean } = {}): FakeStream {
   const stop = vi.fn();
+  const applyConstraints = vi.fn().mockResolvedValue(undefined);
   const track = {
     kind: 'video',
     stop,
-    getCapabilities: () => ({}),
+    applyConstraints,
+    getCapabilities: () => (torch ? { torch: true } : {}),
   } as unknown as MediaStreamTrack;
   const stream = {
     getTracks: () => [track],
     getVideoTracks: () => [track],
   } as unknown as MediaStream;
-  return { stream, stop };
+  return { stream, stop, applyConstraints };
 }
 
 /** A `getUserMedia` we resolve by hand — the whole point is the in-flight window. */
@@ -173,5 +177,80 @@ describe('useBarcodeCamera — the camera is always released', () => {
     await waitFor(() => expect(onDetected).toHaveBeenCalledWith(VALID_EAN));
     // The found/not-found panel sits over a DEAD feed — the track is already gone.
     expect(first.stop).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * The torch is the ONE thing that needs the stream across renders (`streamRef`) —
+ * everything else in the lifecycle is effect-local. Nothing used to hold that
+ * line down: deleting `streamRef.current = opened` from `start()` left the whole
+ * suite green while `toggleTorch` silently became a no-op (no track ⇒ early
+ * return), i.e. a torch button that does nothing. These pin it.
+ *
+ * Only a real phone can confirm the LED physically lights — that is the owner's
+ * check. This confirms we drive the live track at all.
+ */
+describe('useBarcodeCamera — the torch rides the live track', () => {
+  it('offers no torch when the camera does not advertise one', async () => {
+    const cam = makeFakeStream(); // getCapabilities() → {}
+    getUserMedia.mockResolvedValue(cam.stream);
+
+    render(<Harness />);
+
+    await waitFor(() => expect(api?.status).toBe('scanning'));
+    expect(api?.torchAvailable).toBe(false);
+  });
+
+  it('toggles the torch ON the live video track, and back off', async () => {
+    const cam = makeFakeStream({ torch: true });
+    getUserMedia.mockResolvedValue(cam.stream);
+
+    render(<Harness />);
+
+    await waitFor(() => expect(api?.torchAvailable).toBe(true));
+    expect(api?.torchOn).toBe(false);
+
+    await act(async () => api!.toggleTorch());
+    // The constraint must reach the very track the camera is filming with — this
+    // is what `streamRef.current = opened` exists for.
+    expect(cam.applyConstraints).toHaveBeenCalledWith({ advanced: [{ torch: true }] });
+    expect(api?.torchOn).toBe(true);
+
+    await act(async () => api!.toggleTorch());
+    expect(cam.applyConstraints).toHaveBeenLastCalledWith({ advanced: [{ torch: false }] });
+    expect(api?.torchOn).toBe(false);
+  });
+
+  it('drops the affordance when the capability lied (applyConstraints rejects)', async () => {
+    const cam = makeFakeStream({ torch: true });
+    cam.applyConstraints.mockRejectedValue(new Error('cannot drive the torch'));
+    getUserMedia.mockResolvedValue(cam.stream);
+
+    render(<Harness />);
+
+    await waitFor(() => expect(api?.torchAvailable).toBe(true));
+    await act(async () => api!.toggleTorch());
+
+    // Some Android cameras advertise a torch they cannot drive: better no button
+    // than a dead one.
+    await waitFor(() => expect(api?.torchAvailable).toBe(false));
+    expect(api?.torchOn).toBe(false);
+  });
+
+  it('a restart re-arms the torch against the NEW track, not the dead one', async () => {
+    const first = makeFakeStream({ torch: true });
+    const second = makeFakeStream({ torch: true });
+    getUserMedia.mockResolvedValueOnce(first.stream).mockResolvedValueOnce(second.stream);
+
+    render(<Harness />);
+    await waitFor(() => expect(api?.torchAvailable).toBe(true));
+
+    await act(async () => api!.restart());
+    await waitFor(() => expect(api?.torchAvailable).toBe(true));
+    expect(first.stop).toHaveBeenCalledTimes(1); // the old camera is dead
+
+    await act(async () => api!.toggleTorch());
+    expect(second.applyConstraints).toHaveBeenCalledWith({ advanced: [{ torch: true }] });
+    expect(first.applyConstraints).not.toHaveBeenCalled();
   });
 });
