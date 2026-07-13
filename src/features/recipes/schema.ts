@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseDecimalInput } from '@/lib/number';
 import { pickFirstError, type FieldErrors } from '@/lib/zod';
 import { recipeMealTypeSchema } from './mealTypes';
 
@@ -123,8 +124,13 @@ export const recipeFormSchema = z
         });
         return;
       }
-      const q = Number(row.quantity);
-      if (!Number.isFinite(q) || q <= 0) {
+      // A quantity is fraction-capable (82,4 g of chicken), so it renders as a
+      // `NumberField` and a typed decimal comma reaches this parse. `servings`
+      // and `prepTime` above are integers — they keep their `type="number"`
+      // spinner and their integer parses (a comma there is a typo, not a
+      // decimal).
+      const q = parseDecimalInput(row.quantity);
+      if (q === null || q <= 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['rows'],

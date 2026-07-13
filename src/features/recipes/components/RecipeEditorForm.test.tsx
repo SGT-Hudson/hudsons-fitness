@@ -279,7 +279,7 @@ describe('RecipeEditorForm — the ingredients table', () => {
     renderForm(recipeToEditorState(recipe()));
 
     expect(screen.getByText('Pollo pechuga')).toBeInTheDocument();
-    expect(screen.getByLabelText('Cantidad de Pollo pechuga')).toHaveValue(500);
+    expect(screen.getByLabelText('Cantidad de Pollo pechuga')).toHaveValue('500');
   });
 
   it('says "en total" for a row that is not per_serving', () => {
@@ -397,7 +397,7 @@ describe('RecipeEditorForm — removing a row (inline confirm, Cancelar on the o
     );
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
 
-    expect(screen.getByLabelText('Cantidad de Pollo pechuga')).toHaveValue(500);
+    expect(screen.getByLabelText('Cantidad de Pollo pechuga')).toHaveValue('500');
 
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
@@ -467,7 +467,7 @@ describe('RecipeEditorForm — removing a row (inline confirm, Cancelar on the o
     // The second row is gone; the first survives, untouched.
     expect(screen.queryByText('Arroz blanco')).toBeNull();
     expect(screen.getByText('Pollo pechuga')).toBeInTheDocument();
-    expect(screen.getByLabelText('Cantidad de Pollo pechuga')).toHaveValue(500);
+    expect(screen.getByLabelText('Cantidad de Pollo pechuga')).toHaveValue('500');
 
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
@@ -494,7 +494,7 @@ describe('RecipeEditorForm — adding an ingredient (web: the table footer)', ()
     // focus, so typing needs no click first. jsdom honours React's `autoFocus`,
     // so this is a real assertion, not a tautology of `user.type` itself.
     const qty = screen.getByLabelText('Cantidad de Pollo pechuga');
-    expect(qty).toHaveValue(null);
+    expect(qty).toHaveValue('');
     expect(qty).toHaveFocus();
 
     await user.type(qty, '200');
@@ -536,7 +536,7 @@ describe('RecipeEditorForm — adding an ingredient (mobile: the bottom sheet)',
 
     // The sheet closed, the row landed WITH its quantity, macros moved.
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(screen.getByLabelText('Cantidad de Pollo pechuga')).toHaveValue(110);
+    expect(screen.getByLabelText('Cantidad de Pollo pechuga')).toHaveValue('110');
     expect(screen.getAllByText('121').length).toBeGreaterThan(0);
 
     await user.type(screen.getByLabelText('Nombre'), 'Receta nueva');

@@ -179,6 +179,25 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     expect(saveMutateAsync).not.toHaveBeenCalled();
   });
 
+  // The decimal-comma fix, at the row quantity — the recipe editor's one
+  // fraction-capable field. `<input type="number">` strips the comma before
+  // React sees it (`82,4` → `"824"`), and the page's own `Number(...)` boundary
+  // then has to read the comma back. Asserts what reaches `save_recipe`.
+  it('sends a comma-typed row quantity as a decimal: 82,4 → 82.4', async () => {
+    const user = userEvent.setup();
+    renderEditor('/recipes/r-1/edit');
+
+    const qty = screen.getByLabelText('Cantidad de Pollo pechuga');
+    await user.clear(qty);
+    await user.type(qty, '82,4');
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0].ingredients).toEqual([
+      expect.objectContaining({ ingredient_id: 'i-1', quantity: 82.4 }),
+    ]);
+  });
+
   // The regression this task exists to fix: `initial` used to be a fresh
   // object on every render, and opening (then cancelling) the remove dialog
   // re-renders the page — which reset the form back to the saved values and

@@ -240,8 +240,8 @@ describe('IngredientEditorPage — /recipes/ingredients/new/manual', () => {
 
     // Untouched by that last keystroke — only a wrongly-refired `reset()`
     // could have cleared them.
-    expect(screen.getByLabelText(/Proteínas/)).toHaveValue(12);
-    expect(screen.getByLabelText(/Grasas/)).toHaveValue(5);
+    expect(screen.getByLabelText(/Proteínas/)).toHaveValue('12');
+    expect(screen.getByLabelText(/Grasas/)).toHaveValue('5');
   });
 
   it('returns to the list after a successful create', async () => {

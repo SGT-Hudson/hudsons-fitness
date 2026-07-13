@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +6,9 @@ import { Barcode, RotateCcw, Zap } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NumberField } from '@/components/ui/NumberField';
 import { deriveAutoKcal } from '@/core/autoKcal';
+import { parseDecimalInput } from '@/lib/number';
 import { cn } from '@/lib/utils';
 import type { OFFSearchResult } from '@/lib/openfoodfacts';
 import type { FieldErrors } from '@/lib/zod';
@@ -78,6 +80,8 @@ export interface IngredientEditorFormProps {
 const CARD_LABEL = 'text-[10px] font-medium uppercase tracking-[0.05em] text-text-dim md:text-[10.5px]';
 /** The macro inputs' own label (canvas `MacroInput`'s caption). */
 const FIELD_LABEL = 'text-[9.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground md:text-[10.5px]';
+/** The macro inputs' own box (canvas `MacroInput`'s value). */
+const MACRO_INPUT = 'h-10 text-[14px] font-semibold';
 
 /** The three seeds, in precedence order. Shared by the defaults and the mode. */
 type Seed = Pick<IngredientEditorFormProps, 'ingredient' | 'offProduct' | 'initialValues'>;
@@ -153,10 +157,15 @@ export function IngredientEditorForm({
 
   const values = watch();
   const perUnit = values.unit_type === 'unit';
+  // The macro fields are raw strings and the user may well have typed `8,5`
+  // (a Spanish keyboard's default) — so the derivation reads them through the
+  // shared parser, exactly as the schema does. `Number('8,5')` would be NaN,
+  // and the derived kcal would land in the field as the string "NaN".
+  const num = (s: string) => parseDecimalInput(s) ?? 0;
   const autoKcal = deriveAutoKcal({
-    proteinG: Number(values.protein_g_per_unit),
-    carbsG: Number(values.carbs_g_per_unit),
-    fatG: Number(values.fat_g_per_unit),
+    proteinG: num(values.protein_g_per_unit),
+    carbsG: num(values.carbs_g_per_unit),
+    fatG: num(values.fat_g_per_unit),
   });
 
   // THE derivation. `setValue` (unlike a real keystroke) does not fire the
@@ -174,7 +183,7 @@ export function IngredientEditorForm({
   // Soft, non-blocking sanity check (kept from the retired `IngredientFormFields`): sugar ⊂
   // carbs, saturated ⊂ fat — only when both sides are filled in. Never blocks.
   const exceeds = (sub: string, parent: string) =>
-    sub.trim() !== '' && parent.trim() !== '' && Number(sub) > Number(parent);
+    sub.trim() !== '' && parent.trim() !== '' && num(sub) > num(parent);
   const showSubWarning =
     exceeds(values.sugar_g_per_unit, values.carbs_g_per_unit) ||
     exceeds(values.saturated_fat_g_per_unit, values.fat_g_per_unit);
@@ -351,28 +360,24 @@ export function IngredientEditorForm({
                 </button>
               )}
             </div>
-            <div className="relative">
-              <Input
-                id="ing-kcal"
-                type="number"
-                inputMode="decimal"
-                step="0.1"
-                min={0}
-                required
-                className={cn(
-                  'tnum h-10 pr-11 text-[15px] font-semibold',
-                  kcalMode === 'auto' && 'bg-muted text-muted-foreground',
-                )}
-                {...kcalRegister}
-                onChange={(e) => {
-                  void kcalRegister.onChange(e);
-                  if (kcalMode === 'auto') setKcalMode('manual');
-                }}
-              />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-text-dim">
-                {t('list.kcalUnit')}
-              </span>
-            </div>
+            {/* No `label` — the label sits in the row above, next to the auto
+                chip / "volver a automático". No `required` either: `type="text"`
+                (the only way a typed comma survives) would still enforce it, but
+                the browser's bubble preempts the schema's own message — so zod
+                owns the gate now (`numberRequired`). */}
+            <NumberField
+              id="ing-kcal"
+              suffix={t('list.kcalUnit')}
+              className={cn(
+                'h-10 pr-11 text-[15px] font-semibold',
+                kcalMode === 'auto' && 'bg-muted text-muted-foreground',
+              )}
+              {...kcalRegister}
+              onChange={(e) => {
+                void kcalRegister.onChange(e);
+                if (kcalMode === 'auto') setKcalMode('manual');
+              }}
+            />
             {kcalMode === 'auto' && (
               <p className="flex items-center gap-1.5 text-[10.5px] text-text-dim">
                 <Zap className="size-3 shrink-0" aria-hidden="true" />
@@ -381,26 +386,39 @@ export function IngredientEditorForm({
             )}
           </div>
 
+          {/* The macro block. `NumberField` (shared) replaced this file's
+              private `MacroField`: `type="text" inputMode="decimal"`, so a
+              typed comma reaches the schema instead of being silently stripped.
+              With it went `required` (zod's `numberRequired` owns the blank now,
+              and says why) and the hardcoded `max={100}` — which BLOCKED a
+              legitimate save: one unit of something can hold more than 100 g of
+              a macro. */}
           <div className="grid grid-cols-3 gap-2.5">
-            <MacroField
+            <NumberField
               id="ing-protein"
               label={t('editor.protein')}
               dot="protein"
-              required
+              suffix="g"
+              labelClassName={FIELD_LABEL}
+              className={MACRO_INPUT}
               {...register('protein_g_per_unit')}
             />
-            <MacroField
+            <NumberField
               id="ing-carbs"
               label={t('editor.carbs')}
               dot="carbs"
-              required
+              suffix="g"
+              labelClassName={FIELD_LABEL}
+              className={MACRO_INPUT}
               {...register('carbs_g_per_unit')}
             />
-            <MacroField
+            <NumberField
               id="ing-fat"
               label={t('editor.fat')}
               dot="fat"
-              required
+              suffix="g"
+              labelClassName={FIELD_LABEL}
+              className={MACRO_INPUT}
               {...register('fat_g_per_unit')}
             />
           </div>
@@ -408,18 +426,24 @@ export function IngredientEditorForm({
           {/* The "of which" sub-macros — subsets of carbs / fat, hence the ↳.
               BLANK means UNKNOWN (null), never 0. */}
           <div className="grid grid-cols-2 gap-2.5">
-            <MacroField
+            <NumberField
               id="ing-sugar"
               label={t('editor.sugar')}
               dot="carbs"
               sub
+              suffix="g"
+              labelClassName={FIELD_LABEL}
+              className={MACRO_INPUT}
               {...register('sugar_g_per_unit')}
             />
-            <MacroField
+            <NumberField
               id="ing-satfat"
               label={t('editor.satFat')}
               dot="fat"
               sub
+              suffix="g"
+              labelClassName={FIELD_LABEL}
+              className={MACRO_INPUT}
               {...register('saturated_fat_g_per_unit')}
             />
           </div>
@@ -427,15 +451,25 @@ export function IngredientEditorForm({
           <div className="h-px bg-border" />
 
           <div className="grid grid-cols-2 gap-2.5">
-            <MacroField
+            <NumberField
               id="ing-fiber"
               label={t('editor.fiber')}
               dot="fiber"
+              suffix="g"
+              labelClassName={FIELD_LABEL}
+              className={MACRO_INPUT}
               {...register('fiber_g_per_unit')}
             />
             {/* Salt: an optional sub-macro on the same contract as sugar /
                 saturated fat — blank = unknown (NULL), never 0. */}
-            <MacroField id="ing-salt" label={t('editor.salt')} {...register('salt_g_per_unit')} />
+            <NumberField
+              id="ing-salt"
+              label={t('editor.salt')}
+              suffix="g"
+              labelClassName={FIELD_LABEL}
+              className={MACRO_INPUT}
+              {...register('salt_g_per_unit')}
+            />
           </div>
 
           {showSubWarning && <p className="text-[10.5px] text-tone-warn">{t('form.subMacroWarning')}</p>}
@@ -489,64 +523,6 @@ export function IngredientEditorForm({
   );
 }
 
-const DOT = {
-  protein: 'bg-macro-p',
-  carbs: 'bg-macro-c',
-  fat: 'bg-macro-g',
-  fiber: 'bg-macro-fib',
-} as const;
-
-interface MacroFieldProps extends React.ComponentPropsWithoutRef<'input'> {
-  id: string;
-  label: string;
-  /** The shared macro identity dot (same tokens as the list's `IngredientMacroDots`). */
-  dot?: keyof typeof DOT;
-  /** An "of which" sub-macro: indented under its parent, with the canvas's ↳. */
-  sub?: boolean;
-}
-
-/**
- * The canvas's framed macro input: caption + dot (+ ↳), value, unit suffix.
- * `forwardRef` is load-bearing — `{...register(name)}` hands over a ref, and
- * without it react-hook-form holds no DOM node for the field: `reset()` (the
- * seed/prefill path) would silently fail to repopulate it.
- */
-const MacroField = forwardRef<HTMLInputElement, MacroFieldProps>(function MacroField(
-  { id, label, dot, sub, className, ...input },
-  ref,
-) {
-  return (
-    <div className="min-w-0 space-y-1.5">
-      <Label
-        htmlFor={id}
-        className={cn(FIELD_LABEL, 'flex items-center gap-1', sub && 'text-text-dim')}
-      >
-        {sub && <span aria-hidden="true">↳</span>}
-        {dot && (
-          <span className={cn('size-[6px] shrink-0 rounded-full', DOT[dot])} aria-hidden="true" />
-        )}
-        <span className="truncate">{label}</span>
-      </Label>
-      <div className="relative">
-        <Input
-          ref={ref}
-          id={id}
-          type="number"
-          inputMode="decimal"
-          step="0.1"
-          min={0}
-          max={100}
-          className={cn('tnum h-10 pr-6 text-[14px] font-semibold', className)}
-          {...input}
-        />
-        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10.5px] text-text-dim">
-          g
-        </span>
-      </div>
-    </div>
-  );
-});
-
 interface PreviewProps {
   name: string;
   brand: string;
@@ -571,16 +547,17 @@ interface PreviewProps {
 function PreviewCard({ name, brand, perUnit, source, kcal, protein, carbs, fat }: PreviewProps) {
   const { t } = useTranslation('ingredientes');
   const empty = name.trim() === '';
-  const p = Math.max(0, Number(protein) || 0);
-  const c = Math.max(0, Number(carbs) || 0);
-  const f = Math.max(0, Number(fat) || 0);
+  // Same parser as the schema: the fields are strings and `8,5` is a valid one.
+  const p = Math.max(0, parseDecimalInput(protein) ?? 0);
+  const c = Math.max(0, parseDecimalInput(carbs) ?? 0);
+  const f = Math.max(0, parseDecimalInput(fat) ?? 0);
   const atwater = deriveAutoKcal({ proteinG: p, carbsG: c, fatG: f });
   const split = [
     { key: 'protein', kcal: p * 4, bar: 'bg-macro-p' },
     { key: 'carbs', kcal: c * 4, bar: 'bg-macro-c' },
     { key: 'fat', kcal: f * 9, bar: 'bg-macro-g' },
   ] as const;
-  const kcalText = kcal.trim() === '' ? '0' : formatMacro(Number(kcal) || 0);
+  const kcalText = kcal.trim() === '' ? '0' : formatMacro(parseDecimalInput(kcal) ?? 0);
 
   return (
     <Card role="region" aria-label={t('preview.title')} className="space-y-3 p-3.5 md:p-4">

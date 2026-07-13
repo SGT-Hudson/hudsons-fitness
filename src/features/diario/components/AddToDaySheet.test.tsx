@@ -1,6 +1,7 @@
 import '@/i18n';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import i18n from '@/i18n';
 
 // Component-test env has no Supabase (Tier-2, R-16) — '@/features/ingredients/api'
@@ -448,6 +449,51 @@ describe('AddToDaySheet', () => {
         },
         notes: null,
       }));
+    });
+
+    // The decimal-comma fix, driven with userEvent (fireEvent bypasses the
+    // browser's own sanitisation and is BLIND to this bug): `<input
+    // type="number">` turns a typed `30,5` into `"305"` before React sees it.
+    // Asserts the CREATED LOG, not the field.
+    it('a custom entry stores a decimal comma: 30,5 g of protein → 30.5', async () => {
+      const user = userEvent.setup();
+      renderSheet({ totals, targets });
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'Alimentos' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Crear alimento personalizado' }));
+
+      await user.type(screen.getByLabelText('Nombre'), 'Batido casero');
+      await user.type(screen.getByLabelText('Kcal'), '250,5');
+      await user.type(screen.getByLabelText('Proteína (g)'), '30,5');
+
+      await user.click(screen.getByRole('button', { name: /^Añadir a /i }));
+
+      await waitFor(() =>
+        expect(mutateAsync).toHaveBeenCalledWith(
+          expect.objectContaining({
+            source: expect.objectContaining({ kcal: 250.5, proteinG: 30.5 }),
+          }),
+        ),
+      );
+    });
+
+    // `min={0}` died with `type="number"`; zod is the only thing left that can
+    // refuse a negative macro.
+    it('refuses a negative custom macro (the zod rule that replaced `min={0}`)', async () => {
+      const user = userEvent.setup();
+      renderSheet({ totals, targets });
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'Alimentos' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Crear alimento personalizado' }));
+
+      await user.type(screen.getByLabelText('Nombre'), 'Batido casero');
+      await user.type(screen.getByLabelText('Kcal'), '250');
+      await user.type(screen.getByLabelText('Proteína (g)'), '-30');
+
+      await user.click(screen.getByRole('button', { name: /^Añadir a /i }));
+
+      expect(
+        await screen.findByText('Las calorías y los macros no pueden ser negativos.'),
+      ).toBeInTheDocument();
+      expect(mutateAsync).not.toHaveBeenCalled();
     });
   });
 

@@ -117,3 +117,32 @@ describe('recipeFormSchema — prep time', () => {
     ).toBe('nameRequired');
   });
 });
+
+// The decimal-comma fix. A row quantity is fraction-capable (82,4 g of chicken),
+// so it renders as a `NumberField` (`type="text" inputMode="decimal"`) and the
+// comma reaches the schema. `servings` is deliberately NOT migrated — it keeps
+// its integer spinner — and `prepTime` is integer minutes, so `1,5` there is
+// still invalid (pinned above).
+describe('recipeFormSchema — a row quantity with a decimal comma', () => {
+  it('accepts 82,4 as a quantity', () => {
+    expect(
+      recipeFormSchema.safeParse(
+        form({ rows: [{ ...validRows[0], quantity: '82,4' }] }),
+      ).success,
+    ).toBe(true);
+  });
+
+  it('still rejects a garbage / zero / ambiguous quantity', () => {
+    for (const quantity of ['mucho', '0', '-5', '1,234.5']) {
+      const res = recipeFormSchema.safeParse(
+        form({ rows: [{ ...validRows[0], quantity }] }),
+      );
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.issues.find((i) => i.path[0] === 'rows')?.message).toBe(
+          'rowInvalidQuantity',
+        );
+      }
+    }
+  });
+});

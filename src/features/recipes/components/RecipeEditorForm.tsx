@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NumberField } from '@/components/ui/NumberField';
 import { Textarea } from '@/components/ui/textarea';
+import { parseDecimalInput } from '@/lib/number';
 import { AddIngredientSheet } from './AddIngredientSheet';
 import { IngredientAutocomplete } from './IngredientAutocomplete';
 import { RecipeMacrosCard } from './RecipeMacrosCard';
@@ -169,11 +171,15 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
     setValue('mealTypes', next, { shouldDirty: true });
   }
 
+  // The row quantities are raw strings and may carry a decimal comma, so the
+  // live macros read them through the same parser the schema and the save path
+  // use (`Number('82,4')` would be NaN and the row would vanish from the card).
   const macroRows = (rows ?? [])
-    .filter((r) => r.ingredient && Number(r.quantity) > 0)
+    .map((r) => ({ ...r, qty: parseDecimalInput(r.quantity) ?? 0 }))
+    .filter((r) => r.ingredient && r.qty > 0)
     .map((r) => ({
       ingredient: r.ingredient as Ingredient,
-      quantity: Number(r.quantity),
+      quantity: r.qty,
       perServing: r.per_serving,
     }));
 
@@ -462,25 +468,26 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
                         )}
                       </div>
 
-                      <div className="relative">
+                      {/* A quantity is fraction-capable (82,4 g), so it is a
+                          `NumberField` — `type="text" inputMode="decimal"`, the
+                          only shape in which a typed decimal comma survives to
+                          JS. Its own label is rendered here (sr-only) rather
+                          than by the field: the column header carries the visible
+                          name. `min={0}` went with the `type` switch; the
+                          schema's `rowInvalidQuantity` rule (> 0) is the gate. */}
+                      <div>
                         <Label htmlFor={`row-qty-${field.rowId}`} className="sr-only">
                           {t('form.quantityOf', { name })}
                         </Label>
-                        <Input
+                        <NumberField
                           id={`row-qty-${field.rowId}`}
-                          type="number"
-                          inputMode="decimal"
-                          step="0.1"
-                          min={0}
+                          suffix={unitSuffix}
                           autoFocus={field.rowId === justAddedRowId}
                           onFocus={() => setJustAddedRowId(null)}
                           placeholder={t('form.quantity')}
-                          className="tnum h-8 rounded-[7px] border-input bg-muted pl-2 pr-6 text-[12px] font-medium"
+                          className="h-8 rounded-[7px] border-input bg-muted pl-2 pr-6 text-[12px] font-medium"
                           {...register(`rows.${index}.quantity`)}
                         />
-                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10.5px] text-text-dim">
-                          {unitSuffix}
-                        </span>
                       </div>
 
                       {/* THE load-bearing control. `per_serving` decides how the
