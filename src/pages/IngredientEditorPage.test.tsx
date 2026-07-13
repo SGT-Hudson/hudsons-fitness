@@ -124,8 +124,11 @@ async function fillMacros(user: ReturnType<typeof userEvent.setup>) {
 
 beforeEach(async () => {
   createMut.mutateAsync.mockReset().mockResolvedValue(ingredient());
+  createMut.isPending = false;
   importMut.mutateAsync.mockReset().mockResolvedValue(ingredient({ source: 'openfoodfacts' }));
+  importMut.isPending = false;
   updateMut.mutateAsync.mockReset().mockResolvedValue(ingredient());
+  updateMut.isPending = false;
   useIngredient.mockReset().mockReturnValue({ data: undefined, isLoading: false, error: null });
   useAuth.mockReset().mockReturnValue({ user: { id: 'u1', email: 'qa@x.dev' } });
   await i18n.changeLanguage('es');
@@ -190,6 +193,55 @@ describe('IngredientEditorPage — /recipes/ingredients/new/manual', () => {
   it('prefills the name handed over in location.state', () => {
     renderAt('/recipes/ingredients/new/manual', { name: 'Kefir' });
     expect(nameField()).toHaveValue('Kefir');
+  });
+
+  // Regression pin for the page's `initialValues` memo. `location.state` hands
+  // back the SAME `{ name }` object every render, but the page still wraps it
+  // in `useMemo` — because the object it builds from that name is a brand-new
+  // literal each time it runs. Unmemoized, ANY page re-render unrelated to the
+  // name (here: the Save button disabling itself while its mutation is in
+  // flight) hands the form a fresh `initialValues` reference, which the form
+  // treats as a new seed and `reset()`s to — silently wiping whatever the user
+  // had typed. This exact bug shipped once in the recipe editor, which is why
+  // `RecetaEditorPage` memoizes `initial` the same way (see its comment).
+  it('keeps typed macros through a page re-render unrelated to the name seed', async () => {
+    const user = userEvent.setup();
+    // The save is left pending on purpose — this test only needs to observe
+    // the in-flight window (Save disables itself), not a finished save, which
+    // would navigate away before there's anything left to assert.
+    createMut.mutateAsync.mockImplementation(
+      () =>
+        new Promise(() => {
+          createMut.isPending = true;
+        }),
+    );
+    renderAt('/recipes/ingredients/new/manual', { name: 'Kefir' });
+
+    // Protein/carbs/fat are the form's `required` fields (native HTML5
+    // validation) — all three have to be filled or the click below never
+    // reaches `handleSubmit` at all.
+    await user.type(screen.getByLabelText(/Proteínas/), '12');
+    await user.type(screen.getByLabelText(/Carbohidratos/), '7');
+    await user.type(screen.getByLabelText(/Grasas/), '5');
+
+    // Starts the (now-pending) save — `isPending` flips true, but nothing has
+    // re-rendered the form yet to notice.
+    await user.click(save());
+    // An ordinary follow-up keystroke on the SAME field react-hook-form's
+    // `watch()` re-renders the form on every field change, and this is the
+    // first such render to read the now-true `isPending`. That reaches the
+    // page via `onSubmittingChange` — the unrelated page re-render this test
+    // exists to exercise.
+    await user.type(screen.getByLabelText(/Carbohidratos/), '1');
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /Cargando/ })[0]).toBeDisabled(),
+    );
+
+    // Untouched by that last keystroke — only a wrongly-refired `reset()`
+    // could have cleared them.
+    expect(screen.getByLabelText(/Proteínas/)).toHaveValue(12);
+    expect(screen.getByLabelText(/Grasas/)).toHaveValue(5);
   });
 
   it('returns to the list after a successful create', async () => {
