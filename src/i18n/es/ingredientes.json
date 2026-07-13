@@ -54,6 +54,42 @@
     "salt": "Sal (g)",
     "subMacroWarning": "El azúcar no puede superar los carbohidratos, ni las saturadas la grasa total — revisa el valor."
   },
+  "editor": {
+    "identity": "Identidad",
+    "optional": "opcional",
+    "namePlaceholder": "Ej. Yogur natural griego",
+    "brandPlaceholder": "Genérico",
+    "baseUnit": "Unidad base",
+    "baseUnitHintGram": "las macros se expresan por 100 g",
+    "baseUnitHintUnit": "las macros se expresan por unidad",
+    "unitGram": "g",
+    "unitGramCaption": "gramos",
+    "unitUnit": "ud",
+    "unitUnitCaption": "por unidad",
+    "macrosGram": "Macros por 100 g",
+    "macrosUnit": "Macros por unidad",
+    "kcal": "Calorías",
+    "protein": "Proteínas",
+    "carbs": "Carbohidratos",
+    "fat": "Grasas",
+    "sugar": "de las cuales azúcares",
+    "satFat": "de las cuales saturadas",
+    "fiber": "Fibra",
+    "salt": "Sal",
+    "autoChip": "auto",
+    "editByHand": "Editar a mano",
+    "autoHint": "Se calcula a partir de proteínas, carbohidratos y grasas. Puedes sobrescribirla.",
+    "backToAuto": "Volver a automático",
+    "offCaveat": "Los valores vienen de la comunidad de OpenFoodFacts; compáralos con tu envase.",
+    "origin": "Origen del dato",
+    "barcode": "Código de barras"
+  },
+  "preview": {
+    "title": "Vista previa",
+    "inLibrary": "en tu biblioteca",
+    "namePlaceholder": "Nombre del ingrediente",
+    "split": "Reparto calórico"
+  },
   "list": {
     "perUnit": "/ ud",
     "per100g": "/ 100 g",
@@ -123,6 +159,8 @@
     "manualShort": "manual"
   },
   "errors": {
-    "invalid": "Revisa los campos. Faltan datos o hay valores no válidos."
+    "invalid": "Revisa los campos. Faltan datos o hay valores no válidos.",
+    "nameRequired": "Escribe un nombre para el ingrediente.",
+    "invalidNumber": "Revisa los valores: deben ser números positivos."
   }
 }

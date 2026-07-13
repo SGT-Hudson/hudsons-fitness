@@ -54,6 +54,42 @@
     "salt": "Salt (g)",
     "subMacroWarning": "Sugar can't exceed total carbs, nor saturated exceed total fat — check the value."
   },
+  "editor": {
+    "identity": "Identity",
+    "optional": "optional",
+    "namePlaceholder": "e.g. Greek natural yogurt",
+    "brandPlaceholder": "Generic",
+    "baseUnit": "Base unit",
+    "baseUnitHintGram": "macros are expressed per 100 g",
+    "baseUnitHintUnit": "macros are expressed per unit",
+    "unitGram": "g",
+    "unitGramCaption": "grams",
+    "unitUnit": "unit",
+    "unitUnitCaption": "per unit",
+    "macrosGram": "Macros per 100 g",
+    "macrosUnit": "Macros per unit",
+    "kcal": "Calories",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat",
+    "sugar": "of which sugars",
+    "satFat": "of which saturates",
+    "fiber": "Fibre",
+    "salt": "Salt",
+    "autoChip": "auto",
+    "editByHand": "Edit by hand",
+    "autoHint": "Calculated from protein, carbs and fat. You can override it.",
+    "backToAuto": "Back to automatic",
+    "offCaveat": "These values come from the OpenFoodFacts community; check them against your packaging.",
+    "origin": "Data source",
+    "barcode": "Barcode"
+  },
+  "preview": {
+    "title": "Preview",
+    "inLibrary": "in your library",
+    "namePlaceholder": "Ingredient name",
+    "split": "Calorie split"
+  },
   "list": {
     "perUnit": "/ unit",
     "per100g": "/ 100 g",
@@ -123,6 +159,8 @@
     "manualShort": "manual"
   },
   "errors": {
-    "invalid": "Check the fields. Some are missing or invalid."
+    "invalid": "Check the fields. Some are missing or invalid.",
+    "nameRequired": "Give the ingredient a name.",
+    "invalidNumber": "Check the values: they must be positive numbers."
   }
 }
