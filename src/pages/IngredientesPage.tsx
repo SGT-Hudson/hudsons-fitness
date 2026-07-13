@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Camera, ChevronRight, Plus, Search, SearchX, Wheat, X } from 'lucide-react';
 import { RecipesTabs } from './RecipesTabs';
@@ -11,7 +11,6 @@ import { PageShell } from '@/components/layout/PageShell';
 import { PaginationBar } from '@/components/ui/PaginationBar';
 import { usePagination } from '@/hooks/usePagination';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { IngredientDialog } from '@/features/ingredients/components/IngredientDialog';
 import { IngredientFilterBar } from '@/features/ingredients/components/IngredientFilterBar';
 import { IngredientRow } from '@/features/ingredients/components/IngredientRow';
 import { IngredientTable } from '@/features/ingredients/components/IngredientTable';
@@ -22,6 +21,8 @@ import {
   type IngredientFacet,
 } from '@/features/ingredients/ingredientFilter';
 import type { Ingredient } from '@/features/ingredients/api';
+import { canEditIngredient } from '@/features/ingredients/ownership';
+import { ingredientEditPath } from '@/features/ingredients/editorRoute';
 
 const NO_LIBRARY: ReadonlySet<string> = new Set();
 
@@ -33,17 +34,13 @@ const NO_LIBRARY: ReadonlySet<string> = new Set();
  * five chips whose counts must be real numbers cannot each afford a
  * `count: 'exact'` round trip per keystroke. See `listPoolIngredients`.
  *
- * `/new` and `/scan` are the routes PR-B turns into the method picker and the
- * full-screen scanner. They are wired here already (so nothing in the redesigned
- * chrome points at a dead link — the router's catch-all would bounce the user to
- * the diary), and until PR-B lands they resolve to this page with the existing
- * `IngredientDialog` open on the matching tab. PR-B swaps the two `<Route>`
- * elements; the links do not move.
+ * Every affordance that leaves it is a route now — `/new` the method picker,
+ * `/scan` the full-screen viewfinder, `/:id/edit` the editor: this page only
+ * LINKS at them, and carries the active `?q=` along.
  */
 export function IngredientesPage() {
   const { t } = useTranslation('ingredientes');
   const navigate = useNavigate();
-  const { pathname } = useLocation();
   const { user } = useAuth();
 
   // The query lives in the URL (`?q=`), not in local state: the full-screen
@@ -80,17 +77,10 @@ export function IngredientesPage() {
   );
 
   const [facets, setFacets] = useState<IngredientFacet[]>([]);
-  const [editing, setEditing] = useState<Ingredient | null>(null);
 
   const pool = usePoolIngredients();
   const refs = useMyIngredientRefIds();
   const hide = useHideIngredient();
-
-  const routeIntent = pathname.endsWith('/new')
-    ? 'create'
-    : pathname.endsWith('/scan')
-      ? 'scan'
-      : null;
 
   const all = useMemo(() => pool.data ?? [], [pool.data]);
   const libraryIds = refs.data ?? NO_LIBRARY;
@@ -128,9 +118,14 @@ export function IngredientesPage() {
     hide.mutate(ing.id);
   }
 
-  function closeDialog() {
-    setEditing(null);
-    if (routeIntent) navigate(withQuery('/recipes/ingredients'), { replace: true });
+  // R-33 wave 6: editing is a ROUTE, not a dialog. Still a callback rather than
+  // a `<Link>` in the row: the affordance lives inside `IngredientRowMenu`'s
+  // Radix dropdown, where turning the item into a link means `asChild` + Slot
+  // (which silently stringifies a function `className`), and the `?q=` the list
+  // must carry along would then have to be threaded through three components.
+  // One `navigate` here keeps that in the page that owns the query.
+  function handleEdit(ing: Ingredient) {
+    navigate(withQuery(ingredientEditPath(ing.id)));
   }
 
   // Desktop only (it rides `actions`, which PageHeaderV2 renders and MobileTopBar
@@ -278,9 +273,9 @@ export function IngredientesPage() {
                 <IngredientRow
                   key={ing.id}
                   ingredient={ing}
-                  canEdit={ing.created_by_user_id === user?.id}
+                  canEdit={canEditIngredient(ing, user?.id)}
                   inLibrary={libraryIds.has(ing.id)}
-                  onEdit={() => setEditing(ing)}
+                  onEdit={() => handleEdit(ing)}
                   onRemove={() => handleRemove(ing)}
                 />
               ))}
@@ -296,7 +291,7 @@ export function IngredientesPage() {
                 ingredients={paged}
                 libraryIds={libraryIds}
                 userId={user?.id}
-                onEdit={setEditing}
+                onEdit={handleEdit}
                 onRemove={handleRemove}
               />
             </div>
@@ -313,17 +308,6 @@ export function IngredientesPage() {
         )}
       </div>
 
-      {(routeIntent !== null || editing !== null) && (
-        <IngredientDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) closeDialog();
-          }}
-          mode={editing ? 'edit' : 'create'}
-          initial={editing}
-          defaultTab={routeIntent === 'scan' ? 'barcode' : undefined}
-        />
-      )}
     </PageShell>
   );
 }

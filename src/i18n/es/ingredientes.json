@@ -6,53 +6,81 @@
   "createNoteHint": "Esto se añadirá a la biblioteca compartida. Información privada (cantidad típica para ti, recordatorios) va mejor en la nota del ingrediente en tu biblioteca, no en el nombre.",
   "newIngredient": "Nuevo ingrediente",
   "searchPlaceholder": "Buscar por nombre o marca…",
-  "tabs": {
-    "off": "Buscar (OpenFoodFacts)",
-    "manual": "Manual",
-    "barcode": "Código de barras"
-  },
   "barcode": {
-    "startScan": "Escanear con la cámara",
-    "aimHint": "Apunta al código de barras dentro del recuadro.",
-    "cameraError": "No se pudo acceder a la cámara. Escribe el código abajo.",
     "manualLabel": "Código de barras (EAN/UPC)",
     "lookup": "Buscar",
-    "looking": "Buscando…",
-    "notFound": "No está en OpenFoodFacts — pasa a Manual para introducirlo a mano.",
-    "bannerNew": "No está en Open Food Facts. Introduce sus datos manualmente.",
-    "bannerComplete": "Faltan algunos datos. Complétalos para terminar la ficha.",
-    "bannerFound": "Producto encontrado - revisa y guarda."
+    "looking": "Buscando…"
   },
   "dialog": {
     "createTitle": "Nuevo ingrediente",
-    "createSubtitle": "Busca en OpenFoodFacts o introduce los macros a mano.",
-    "editTitle": "Editar ingrediente",
-    "editSubtitle": "Los cambios afectan a la biblioteca compartida."
+    "createSubtitle": "Introduce sus macros. Al guardar se añade a la biblioteca compartida y queda seleccionado aquí."
   },
   "off": {
     "searchPlaceholder": "ej. yogur griego natural",
     "minChars": "Escribe al menos 3 caracteres para buscar.",
-    "noResults": "No se encontraron resultados.",
-    "adjustHint": "Comprueba y ajusta los macros si lo necesitas antes de guardar."
+    "noResults": "No se encontraron resultados."
   },
   "form": {
     "name": "Nombre",
     "brand": "Marca",
-    "unitType": "Unidad",
-    "unitGram": "Gramos (macros por 100 g)",
-    "unitUnit": "Unidad (macros por unidad)",
-    "macrosLabel": "Macros {{suffix}}",
     "perUnit": "por unidad",
     "per100g": "por 100 g",
-    "kcal": "Kcal",
-    "protein": "Proteína (g)",
-    "carbs": "Carbohidratos (g)",
-    "fat": "Grasa (g)",
-    "fiber": "Fibra (g)",
-    "sugar": "De los cuales azúcares (g)",
-    "satFat": "De las cuales saturadas (g)",
-    "salt": "Sal (g)",
     "subMacroWarning": "El azúcar no puede superar los carbohidratos, ni las saturadas la grasa total — revisa el valor."
+  },
+  "method": {
+    "subtitle": "¿Cómo quieres añadirlo?",
+    "intro": "Elige el método más cómodo. Sea cual sea, podrás revisar y ajustar las macros antes de guardar.",
+    "manualTitle": "Añadir manualmente",
+    "manualHint": "Teclea el nombre y las macros por 100 g. Ideal para alimentos a granel o sin etiqueta.",
+    "offTitle": "Buscar en OpenFoodFacts",
+    "offHint": "Busca por nombre o marca en la base de datos abierta y rellenamos las macros por ti.",
+    "offBack": "Volver a los métodos",
+    "scanTitle": "Escanear código de barras",
+    "scanHint": "Apunta con la cámara y buscamos el producto en OpenFoodFacts.",
+    "scanOpen": "Abrir cámara",
+    "eanTitle": "Código de barras",
+    "eanHint": "Introduce el EAN del producto y lo buscamos en OpenFoodFacts.",
+    "cameraTitle": "Escanear con la cámara",
+    "cameraDesktopOnly": "solo está disponible en el móvil. En el escritorio, teclea el código a mano."
+  },
+  "editor": {
+    "newTitle": "Nuevo ingrediente",
+    "newSubtitle": "Se añadirá a la biblioteca compartida",
+    "editTitle": "Editar ingrediente",
+    "scannedNotFound": "Código {{code}} escaneado: no está en OpenFoodFacts. Introduce sus datos a mano (el código no se guarda con un ingrediente manual).",
+    "identity": "Identidad",
+    "optional": "opcional",
+    "namePlaceholder": "Ej. Yogur natural griego",
+    "brandPlaceholder": "Genérico",
+    "baseUnit": "Unidad base",
+    "baseUnitHintGram": "las macros se expresan por 100 g",
+    "baseUnitHintUnit": "las macros se expresan por unidad",
+    "unitGram": "g",
+    "unitGramCaption": "gramos",
+    "unitUnit": "ud",
+    "unitUnitCaption": "por unidad",
+    "macrosGram": "Macros por 100 g",
+    "macrosUnit": "Macros por unidad",
+    "kcal": "Calorías",
+    "protein": "Proteínas",
+    "carbs": "Carbohidratos",
+    "fat": "Grasas",
+    "sugar": "de las cuales azúcares",
+    "satFat": "de las cuales saturadas",
+    "fiber": "Fibra",
+    "salt": "Sal",
+    "autoChip": "auto",
+    "autoHint": "Se calcula a partir de proteínas, carbohidratos y grasas. Puedes sobrescribirla.",
+    "backToAuto": "Volver a automático",
+    "offCaveat": "Los valores vienen de la comunidad de OpenFoodFacts; compáralos con tu envase.",
+    "origin": "Origen del dato",
+    "barcode": "Código de barras"
+  },
+  "preview": {
+    "title": "Vista previa",
+    "inLibrary": "en tu biblioteca",
+    "namePlaceholder": "Nombre del ingrediente",
+    "split": "Reparto calórico"
   },
   "list": {
     "perUnit": "/ ud",
@@ -106,7 +134,27 @@
   "scan": {
     "open": "Escanear un código de barras",
     "bannerTitle": "Escanea el código de barras",
-    "bannerHint": "buscamos en OpenFoodFacts y rellenamos las macros"
+    "bannerHint": "buscamos en OpenFoodFacts y rellenamos las macros",
+    "title": "Escanear código",
+    "subtitle": "Buscamos el producto en OpenFoodFacts",
+    "close": "Cerrar el escáner",
+    "torchOn": "Encender la linterna",
+    "torchOff": "Apagar la linterna",
+    "starting": "Abriendo la cámara…",
+    "searching": "Buscando código…",
+    "aim": "Apunta al código de barras del envase",
+    "looking": "Buscando el producto…",
+    "found": "Producto encontrado",
+    "notFoundTitle": "No está en OpenFoodFacts",
+    "notFoundHint": "Nadie ha subido aún el código {{code}}. Puedes crear el ingrediente a mano con los datos del envase.",
+    "notFoundCreate": "Crearlo a mano",
+    "again": "Escanear otro código",
+    "deniedTitle": "La cámara está bloqueada",
+    "deniedHint": "Has denegado el acceso a la cámara. Actívalo en los permisos del navegador (el candado junto a la dirección) y reintenta — o escribe el código a mano.",
+    "deniedRetry": "Reintentar con la cámara",
+    "errorTitle": "No se pudo abrir la cámara",
+    "errorHint": "Este dispositivo no nos deja usarla ahora mismo. Escribe el código a mano y lo buscamos igual.",
+    "manualOpen": "Escribir código a mano"
   },
   "empty": {
     "title": "Aún no hay ingredientes",
@@ -123,6 +171,8 @@
     "manualShort": "manual"
   },
   "errors": {
-    "invalid": "Revisa los campos. Faltan datos o hay valores no válidos."
+    "invalid": "Revisa los campos. Faltan datos o hay valores no válidos.",
+    "nameRequired": "Escribe un nombre para el ingrediente.",
+    "invalidNumber": "Revisa los valores: deben ser números positivos."
   }
 }

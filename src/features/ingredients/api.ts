@@ -75,6 +75,22 @@ export async function listIngredients(limit = 100): Promise<Ingredient[]> {
   return out;
 }
 
+/**
+ * Single ingredient by id (R-33 wave 6 — the `/:id/edit` route). Reading the
+ * pool cache (`usePoolIngredients`) alone renders blank on a hard reload or a
+ * deep link (the query hasn't run yet / isn't in cache), so the editor needs
+ * its own fetch. Mirrors `fetchRecipe`'s single-row shape (`.eq('id', id).single()`).
+ */
+export async function getIngredient(id: string): Promise<Ingredient> {
+  const { data, error } = await supabase
+    .from('ingredients')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 // Two atomic writes (`ingredients` + `user_ingredient_refs`) intentionally
 // NOT wrapped in an RPC here — the ref insert is the caller's OWN row
 // (no privilege escalation involved) and tolerates duplication via the
@@ -117,7 +133,7 @@ export async function createManualIngredient(
 }
 
 // `overrides` is the dialog's fully-parsed form (`ParsedIngredient` in
-// IngredientFormFields.tsx — every key present, `null` on a sub-macro the
+// ingredientForm.ts — every key present, `null` on a sub-macro the
 // user deliberately cleared). It is NOT a partial patch merged over `product`:
 // a `??` merge here would silently discard the user's blanking whenever OFF's
 // raw value happens to be falsy-but-present (e.g. `salt_100g: 0`), writing a

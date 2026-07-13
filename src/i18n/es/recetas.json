@@ -100,7 +100,9 @@
     "choose": "Elegir {{name}}",
     "decreaseQty": "Reducir la cantidad",
     "increaseQty": "Aumentar la cantidad",
-    "add": "Añadir a la receta"
+    "add": "Añadir a la receta",
+    "notFoundTitle": "¿No encuentras lo que buscas?",
+    "create": "Crear un alimento nuevo"
   },
   "mealTypes": {
     "breakfast": "Desayuno",

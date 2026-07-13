@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { emptyForm, ingredientToForm, parseForm } from './IngredientFormFields';
+import { emptyForm, ingredientToForm, offResultToForm, parseForm } from './ingredientForm';
+import type { OFFSearchResult } from '@/lib/openfoodfacts';
 
 // Tier-1 (pure logic, no DOM): the ingredient form's string ↔ value boundary.
 //
@@ -101,5 +102,66 @@ describe('blank ↔ null round-trip', () => {
     expect(parsed!.salt_g_per_unit).toBe(1.1);
     expect(parsed!.sugar_g_per_unit).toBe(5);
     expect(parsed!.saturated_fat_g_per_unit).toBe(0.6);
+  });
+});
+
+// offResultToForm — the OFF→form mapping extracted from IngredientDialog
+// (R-33 wave 6, Task 1). It was written out TWICE inline (the off-tab pick
+// and the barcode onResolved handler); both call sites now share this one
+// function. Same U-1 null-preservation contract as ingredientToForm: OFF
+// reporting no value for a sub-macro must render as a BLANK input, never "0".
+const offProduct: OFFSearchResult = {
+  code: '5000112637922',
+  name: 'Coca-Cola',
+  brand: 'Coca-Cola',
+  thumbnailUrl: null,
+  kcalPer100g: 42,
+  proteinPer100g: 0,
+  carbsPer100g: 10.6,
+  fatPer100g: 0,
+  fiberPer100g: 0,
+  sugarPer100g: 10.6,
+  satFatPer100g: 0,
+  saltPer100g: 0.01,
+};
+
+describe('offResultToForm', () => {
+  it('maps a fully-known OFF product to string form fields, unit_type always gram', () => {
+    const form = offResultToForm(offProduct);
+    expect(form.name).toBe('Coca-Cola');
+    expect(form.brand).toBe('Coca-Cola');
+    expect(form.unit_type).toBe('gram');
+    expect(form.kcal_per_unit).toBe('42');
+    expect(form.protein_g_per_unit).toBe('0');
+    expect(form.carbs_g_per_unit).toBe('10.6');
+    expect(form.fat_g_per_unit).toBe('0');
+    expect(form.fiber_g_per_unit).toBe('0');
+    expect(form.sugar_g_per_unit).toBe('10.6');
+    expect(form.saturated_fat_g_per_unit).toBe('0');
+    expect(form.salt_g_per_unit).toBe('0.01');
+  });
+
+  it('maps a null brand to a blank string', () => {
+    expect(offResultToForm({ ...offProduct, brand: null }).brand).toBe('');
+  });
+
+  it('preserves NULL sugar/satFat/salt as blank strings, NOT "0" (U-1)', () => {
+    const form = offResultToForm({
+      ...offProduct,
+      sugarPer100g: null,
+      satFatPer100g: null,
+      saltPer100g: null,
+    });
+    expect(form.sugar_g_per_unit).toBe('');
+    expect(form.saturated_fat_g_per_unit).toBe('');
+    expect(form.salt_g_per_unit).toBe('');
+    expect(form.sugar_g_per_unit).not.toBe('0');
+    expect(form.saturated_fat_g_per_unit).not.toBe('0');
+    expect(form.salt_g_per_unit).not.toBe('0');
+  });
+
+  it('keeps a real OFF-reported 0 as "0", distinct from an unknown/null value', () => {
+    const form = offResultToForm({ ...offProduct, saltPer100g: 0 });
+    expect(form.salt_g_per_unit).toBe('0');
   });
 });

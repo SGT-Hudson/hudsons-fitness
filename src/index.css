@@ -384,6 +384,8 @@
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-exercise-frame: exercise-frame 1.6s ease-in-out infinite alternate;
+  /* The barcode scanner's laser, sweeping the 196px-tall framing window. */
+  --animate-scan-laser: scan-laser 2.2s ease-in-out infinite alternate;
 
   @keyframes accordion-down {
     from {
@@ -407,6 +409,14 @@
     }
     to {
       opacity: 1;
+    }
+  }
+  @keyframes scan-laser {
+    from {
+      transform: translateY(-72px);
+    }
+    to {
+      transform: translateY(72px);
     }
   }
 }

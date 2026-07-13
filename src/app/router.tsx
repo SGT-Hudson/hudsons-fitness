@@ -17,6 +17,9 @@ import { RecetasPage } from '@/pages/RecetasPage';
 import { RecetaDetailPage } from '@/pages/RecetaDetailPage';
 import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
+import { IngredientMethodPage } from '@/pages/IngredientMethodPage';
+import { IngredientEditorPage } from '@/pages/IngredientEditorPage';
+import { IngredientScanPage } from '@/pages/IngredientScanPage';
 import { IngredientSearchPage } from '@/pages/IngredientSearchPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
 import { SettingsPage } from '@/pages/SettingsPage';
@@ -112,14 +115,21 @@ export function AppRoutes() {
           <Route path="/recipes/:id" element={<RecetaDetailPage />} />
           <Route path="/recipes/:id/edit" element={<RecetaEditorPage />} />
           <Route path="/recipes/ingredients" element={<IngredientesPage />} />
-          {/* R-33 wave 6: the list's "nuevo ingrediente" / scan affordances point
-              here. PR-B replaces these two elements with the method picker and the
-              full-screen scanner; until then they resolve to the list with the
-              existing IngredientDialog open (the catch-all below redirects unknown
-              paths to /diary, so leaving them unrouted would silently teleport the
-              user out of Ingredientes). */}
-          <Route path="/recipes/ingredients/new" element={<IngredientesPage />} />
-          <Route path="/recipes/ingredients/scan" element={<IngredientesPage />} />
+          {/* R-33 wave 6: "¿cómo quieres añadirlo?" — manual / OpenFoodFacts /
+              barcode. Every method ends at `/new/manual` below, carrying what it
+              learned in `location.state`. */}
+          <Route path="/recipes/ingredients/new" element={<IngredientMethodPage />} />
+          {/* The full-screen viewfinder. Found ⇒ `/new/manual` carrying the OFF
+              product; not found ⇒ carrying the scanned EAN. */}
+          <Route path="/recipes/ingredients/scan" element={<IngredientScanPage />} />
+          {/* R-33 wave 6: the editor is a PAGE now (create and edit alike). The
+              method picker and the scanner both reach `/new/manual` carrying an
+              OFF product / a scanned EAN in `location.state`
+              (`IngredientEditorRouteState`). `/recipes/ingredients/:id/edit` is
+              4 segments and cannot be shadowed by `/recipes/:id/edit` (3), but
+              it IS owner-gated inside the page. */}
+          <Route path="/recipes/ingredients/new/manual" element={<IngredientEditorPage />} />
+          <Route path="/recipes/ingredients/:id/edit" element={<IngredientEditorPage />} />
           {/* D-F24 — the full-screen search, deferred out of the Diario wave. */}
           <Route path="/recipes/ingredients/search" element={<IngredientSearchPage />} />
 

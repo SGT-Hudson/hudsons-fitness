@@ -24,8 +24,17 @@ vi.mock('@/pages/RecetasPage', () => ({ RecetasPage: () => <div>RecetasPage</div
 vi.mock('@/pages/RecetaDetailPage', () => ({ RecetaDetailPage: () => <div>RecetaDetailPage</div> }));
 vi.mock('@/pages/RecetaEditorPage', () => ({ RecetaEditorPage: () => <div>RecetaEditorPage</div> }));
 vi.mock('@/pages/IngredientesPage', () => ({ IngredientesPage: () => <div>IngredientesPage</div> }));
+vi.mock('@/pages/IngredientMethodPage', () => ({
+  IngredientMethodPage: () => <div>IngredientMethodPage</div>,
+}));
+vi.mock('@/pages/IngredientEditorPage', () => ({
+  IngredientEditorPage: () => <div>IngredientEditorPage</div>,
+}));
 vi.mock('@/pages/IngredientSearchPage', () => ({
   IngredientSearchPage: () => <div>IngredientSearchPage</div>,
+}));
+vi.mock('@/pages/IngredientScanPage', () => ({
+  IngredientScanPage: () => <div>IngredientScanPage</div>,
 }));
 vi.mock('@/pages/EntrenamientoPage', () => ({ EntrenamientoPage: () => <div>EntrenamientoPage</div> }));
 vi.mock('@/pages/SessionEditorPage', () => ({ SessionEditorPage: () => <div>SessionEditorPage</div> }));
@@ -102,6 +111,52 @@ describe('AppRoutes', () => {
   it('routes /recipes/new to the recipe editor', () => {
     render(<MemoryRouter initialEntries={['/recipes/new']}><AppRoutes /></MemoryRouter>);
     expect(screen.getByText('RecetaEditorPage')).toBeInTheDocument();
+  });
+
+  // R-33 wave 6: the ingredient editor is a page. `/recipes/ingredients/:id/edit`
+  // is 4 segments and `/recipes/:id/edit` is 3, so they cannot collide — but the
+  // recipe editor sitting one path family away is exactly the shadowing mistake
+  // this pins against.
+  it('routes /recipes/ingredients/new to the method picker, not the list', () => {
+    render(
+      <MemoryRouter initialEntries={['/recipes/ingredients/new']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('IngredientMethodPage')).toBeInTheDocument();
+    expect(screen.queryByText('IngredientesPage')).toBeNull();
+  });
+
+  it('routes /recipes/ingredients/new/manual to the ingredient editor', () => {
+    render(
+      <MemoryRouter initialEntries={['/recipes/ingredients/new/manual']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('IngredientEditorPage')).toBeInTheDocument();
+  });
+
+  // Wave 6 moved the scanner off the list page (where it was a dialog tab) onto
+  // its own full-screen route. A regression here puts the user back on a bare
+  // list with no way to scan.
+  it('routes /recipes/ingredients/scan to the full-screen scanner, not the list', () => {
+    render(
+      <MemoryRouter initialEntries={['/recipes/ingredients/scan']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('IngredientScanPage')).toBeInTheDocument();
+    expect(screen.queryByText('IngredientesPage')).toBeNull();
+  });
+
+  it('routes /recipes/ingredients/:id/edit to the ingredient editor, not the recipe editor', () => {
+    render(
+      <MemoryRouter initialEntries={['/recipes/ingredients/i-1/edit']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('IngredientEditorPage')).toBeInTheDocument();
+    expect(screen.queryByText('RecetaEditorPage')).toBeNull();
   });
 
   it('routes /more to the More hub page', () => {

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
 import {
   createManualIngredient,
+  getIngredient,
   hideOwnedIngredient,
   importIngredientFromOFF,
   listIngredients,
@@ -34,6 +35,19 @@ export function useLocalIngredientSearch(query: string, limit = 15, enabled = tr
     // U-7: callers can disable the fetch (e.g. the recipe autocomplete skips the
     // empty-query search until the user types). Defaults true for other callers.
     enabled,
+  });
+}
+
+/**
+ * Single ingredient by id (R-33 wave 6 — the `/:id/edit` route). Mirrors
+ * `useRecipe`: a nullish id disables the fetch, so the edit route can call
+ * this unconditionally with `id ?? null` before it has resolved a param.
+ */
+export function useIngredient(id: string | null | undefined) {
+  return useQuery({
+    enabled: !!id,
+    queryKey: ['ingredients', 'detail', id],
+    queryFn: () => getIngredient(id!),
   });
 }
 
