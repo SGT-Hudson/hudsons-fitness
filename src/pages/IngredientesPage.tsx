@@ -23,6 +23,7 @@ import {
 } from '@/features/ingredients/ingredientFilter';
 import type { Ingredient } from '@/features/ingredients/api';
 import { canEditIngredient } from '@/features/ingredients/ownership';
+import { ingredientEditPath } from '@/features/ingredients/editorRoute';
 
 const NO_LIBRARY: ReadonlySet<string> = new Set();
 
@@ -81,7 +82,6 @@ export function IngredientesPage() {
   );
 
   const [facets, setFacets] = useState<IngredientFacet[]>([]);
-  const [editing, setEditing] = useState<Ingredient | null>(null);
 
   const pool = usePoolIngredients();
   const refs = useMyIngredientRefIds();
@@ -129,8 +129,17 @@ export function IngredientesPage() {
     hide.mutate(ing.id);
   }
 
+  // R-33 wave 6: editing is a ROUTE, not a dialog. Still a callback rather than
+  // a `<Link>` in the row: the affordance lives inside `IngredientRowMenu`'s
+  // Radix dropdown, where turning the item into a link means `asChild` + Slot
+  // (which silently stringifies a function `className`), and the `?q=` the list
+  // must carry along would then have to be threaded through three components.
+  // One `navigate` here keeps that in the page that owns the query.
+  function handleEdit(ing: Ingredient) {
+    navigate(withQuery(ingredientEditPath(ing.id)));
+  }
+
   function closeDialog() {
-    setEditing(null);
     if (routeIntent) navigate(withQuery('/recipes/ingredients'), { replace: true });
   }
 
@@ -281,7 +290,7 @@ export function IngredientesPage() {
                   ingredient={ing}
                   canEdit={canEditIngredient(ing, user?.id)}
                   inLibrary={libraryIds.has(ing.id)}
-                  onEdit={() => setEditing(ing)}
+                  onEdit={() => handleEdit(ing)}
                   onRemove={() => handleRemove(ing)}
                 />
               ))}
@@ -297,7 +306,7 @@ export function IngredientesPage() {
                 ingredients={paged}
                 libraryIds={libraryIds}
                 userId={user?.id}
-                onEdit={setEditing}
+                onEdit={handleEdit}
                 onRemove={handleRemove}
               />
             </div>
@@ -314,14 +323,16 @@ export function IngredientesPage() {
         )}
       </div>
 
-      {(routeIntent !== null || editing !== null) && (
+      {/* Create only. Editing left for the `/:id/edit` route in wave 6; `/new`
+          and `/scan` still resolve here until Tasks 4/5 give them their own
+          pages, so the create dialog stays mounted behind `routeIntent`. */}
+      {routeIntent !== null && (
         <IngredientDialog
           open
           onOpenChange={(open) => {
             if (!open) closeDialog();
           }}
-          mode={editing ? 'edit' : 'create'}
-          initial={editing}
+          mode="create"
           defaultTab={routeIntent === 'scan' ? 'barcode' : undefined}
         />
       )}

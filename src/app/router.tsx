@@ -17,6 +17,7 @@ import { RecetasPage } from '@/pages/RecetasPage';
 import { RecetaDetailPage } from '@/pages/RecetaDetailPage';
 import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
+import { IngredientEditorPage } from '@/pages/IngredientEditorPage';
 import { IngredientSearchPage } from '@/pages/IngredientSearchPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
 import { SettingsPage } from '@/pages/SettingsPage';
@@ -120,6 +121,14 @@ export function AppRoutes() {
               user out of Ingredientes). */}
           <Route path="/recipes/ingredients/new" element={<IngredientesPage />} />
           <Route path="/recipes/ingredients/scan" element={<IngredientesPage />} />
+          {/* R-33 wave 6: the editor is a PAGE now (create and edit alike). The
+              method picker and the scanner both reach `/new/manual` carrying an
+              OFF product / a scanned EAN in `location.state`
+              (`IngredientEditorRouteState`). `/recipes/ingredients/:id/edit` is
+              4 segments and cannot be shadowed by `/recipes/:id/edit` (3), but
+              it IS owner-gated inside the page. */}
+          <Route path="/recipes/ingredients/new/manual" element={<IngredientEditorPage />} />
+          <Route path="/recipes/ingredients/:id/edit" element={<IngredientEditorPage />} />
           {/* D-F24 — the full-screen search, deferred out of the Diario wave. */}
           <Route path="/recipes/ingredients/search" element={<IngredientSearchPage />} />
 

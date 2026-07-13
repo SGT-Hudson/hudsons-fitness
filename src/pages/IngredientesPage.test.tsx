@@ -258,4 +258,21 @@ describe('IngredientesPage', () => {
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(screen.getByTestId('loc')).toHaveTextContent('/recipes/ingredients?q=avena');
   });
+
+  // R-33 wave 6: editing is a route, not a dialog. Two things are pinned here —
+  // that "Editar" NAVIGATES (a dialog would leave the location untouched), and
+  // that it carries the active `?q=` with it, exactly as the create path does.
+  // `IngredientEditorPage.test.tsx` pins the way back out.
+  it('round-trips an active `?q=` into the edit route, and opens no dialog', async () => {
+    const user = userEvent.setup();
+    usePoolIngredients.mockReturnValue({ data: [pollo, avena], isLoading: false });
+    renderPage('/recipes/ingredients?q=pollo');
+
+    // `pollo` is the row I created — the only one that offers "Editar".
+    await user.click(screen.getAllByRole('button', { name: 'Acciones del ingrediente' })[0]);
+    await user.click(screen.getByRole('menuitem', { name: 'Editar' }));
+
+    expect(screen.getByTestId('loc')).toHaveTextContent('/recipes/ingredients/i-1/edit?q=pollo');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
 });

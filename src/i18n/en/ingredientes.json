@@ -55,6 +55,10 @@
     "subMacroWarning": "Sugar can't exceed total carbs, nor saturated exceed total fat — check the value."
   },
   "editor": {
+    "newTitle": "New ingredient",
+    "newSubtitle": "It will be added to the shared library",
+    "editTitle": "Edit ingredient",
+    "scannedNotFound": "Barcode {{code}} scanned: it isn't in OpenFoodFacts. Enter its values by hand (the code is not stored on a manual ingredient).",
     "identity": "Identity",
     "optional": "optional",
     "namePlaceholder": "e.g. Greek natural yogurt",

@@ -55,6 +55,10 @@
     "subMacroWarning": "El azúcar no puede superar los carbohidratos, ni las saturadas la grasa total — revisa el valor."
   },
   "editor": {
+    "newTitle": "Nuevo ingrediente",
+    "newSubtitle": "Se añadirá a la biblioteca compartida",
+    "editTitle": "Editar ingrediente",
+    "scannedNotFound": "Código {{code}} escaneado: no está en OpenFoodFacts. Introduce sus datos a mano (el código no se guarda con un ingrediente manual).",
     "identity": "Identidad",
     "optional": "opcional",
     "namePlaceholder": "Ej. Yogur natural griego",
