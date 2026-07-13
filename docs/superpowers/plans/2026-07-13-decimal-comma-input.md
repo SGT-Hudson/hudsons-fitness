@@ -45,13 +45,25 @@ Binding on every task. A violation is a failed review.
    For a field not explicitly listed in the spec: fraction-capable → `NumberField`;
    integer by definition → keeps the spinner. State the call per field.
 
-7. **The native `required` / `min` / `max` gates stop working on `type=text`** —
-   the zod schema must take over. This is deliberate and closes two known
-   defects: native `required` currently preempts the zod message with an
-   unexplained browser bubble, and `MacroField`'s hardcoded `max={100}` blocks a
-   legitimate save on a `unit_type='unit'` ingredient (where a macro can exceed
-   100 g). **Every field that loses a native gate must gain the zod equivalent** —
-   a field that silently becomes submittable-blank is a regression.
+7. **`min` / `max` / `step` die on `type=text`. `required` does NOT.**
+   (Corrected in the Task 1 review, against this plan's original claim.)
+   Empirically: `<input type="text" required>` blank still gives
+   `validity.valueMissing === true`. Only the *range* gates stop being enforced.
+   So:
+   - **Every field that loses a `min`/`max`/`step` gate must gain the zod
+     equivalent.** A field that silently accepts an out-of-range value is a
+     regression.
+   - **`required` must be removed deliberately** where the spec wants zod to own
+     the message (§3.2 defect 1: the native bubble currently preempts the app's
+     own error). ⚠️ `NumberFieldProps` only `Omit`s `type`, so a stray `required`
+     passes **straight through** — leaving it in place keeps the bubble and
+     leaves the defect unfixed *while everyone believes it is fixed*.
+   - ⚠️ **Removing `required` and fixing the blank semantics must happen in the
+     same change.** Ingredients' `nonNegNumberFromString` maps blank → **0**
+     (`Number('') === 0`), so the moment `required` comes off a macro field, a
+     blank protein/carbs/fat starts **silently saving 0 g**. The blank→0
+     transform cannot double as the required gate — an explicit zod required rule
+     must land with it.
 
 8. **`src/core/macros.ts` and `src/core/subMacros.ts` are FROZEN.**
    `fractionToPct` / `pctToFraction` (`src/lib/macros.ts`) keep owning the R-06
