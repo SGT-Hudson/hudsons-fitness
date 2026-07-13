@@ -58,10 +58,17 @@ Binding on every task. A violation is a failed review.
    percent↔fraction conversion — `parseDecimalInput` runs **before** them, never
    instead of them.
 
-9. **jsdom cannot see this bug at all.** It does not implement `type="number"`'s
-   comma-stripping, so a comma test passes in jsdom *even against the broken
-   code*. **A green suite proves nothing here.** The real-browser pass (Task 5) is
-   the only acceptance. Every task must say what it could not verify.
+9. **jsdom CAN see this bug — but only if you drive it with `userEvent`.**
+   (Corrected in Task 1, against this plan's original assumption.) `userEvent.type(field, '82,4')`
+   on a `type="number"` input yields `"824"` in jsdom — the real corruption,
+   reproduced. So a `userEvent`-driven test **does** go red against the broken
+   code and is the right way to pin every migrated field.
+   ⚠️ A test using `fireEvent.change` or setting `.value` directly **is blind to
+   it** — it bypasses the browser's sanitisation and will pass either way. Use
+   `userEvent.type`, and assert the **submitted payload / stored number**, never
+   the field's own value.
+   The real-browser pass (Task 5) is still required — for the mobile keypad, real
+   es-ES ICU, and the visual check — but it is no longer the *only* proof.
 
 10. Public repo: **no AI/Claude attribution anywhere**. Plain conventional
     commits. Any new user-facing string in ES **and** EN.
