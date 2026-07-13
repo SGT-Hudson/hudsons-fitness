@@ -148,7 +148,6 @@ export function IngredientAutocomplete({ selected, onSelect, onClear, placeholde
       <IngredientDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        mode="create"
         defaultName={query}
         onSaved={(ing) => {
           onSelect(ing);

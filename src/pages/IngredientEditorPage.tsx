@@ -18,7 +18,7 @@ import {
 import {
   emptyForm,
   type IngredientFormState,
-} from '@/features/ingredients/components/IngredientFormFields';
+} from '@/features/ingredients/ingredientForm';
 
 /**
  * The ingredient editor as a PAGE (canvas `IngredienteCrearWebV2` /

@@ -18,11 +18,10 @@ interface OFFPanelProps {
  * The OpenFoodFacts search: a field, and the products behind it.
  *
  * Presentational — the query, the debounce and `useOFFSearch` belong to whoever
- * mounts it. Two do: the method picker's OFF method (`/recipes/ingredients/new`),
- * which navigates to the editor with the picked product, and `IngredientDialog`'s
- * OFF tab (the inline create-and-select the recipe editor depends on), which
- * seeds its form with it. Lifted out of the dialog when the picker needed it —
- * one panel, not two.
+ * mounts it. One does: the method picker's OFF method
+ * (`/recipes/ingredients/new`), which navigates to the editor with the picked
+ * product. Lifted out of `IngredientDialog`'s OFF tab when the picker needed it;
+ * that tab is now the picker, and the dialog is create-only.
  */
 export function OFFSearchPanel({
   query,

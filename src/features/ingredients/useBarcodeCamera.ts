@@ -51,9 +51,9 @@ interface TorchConstraint {
 const EAN_FORMATS = ['ean_13', 'ean_8', 'upc_a'];
 
 /**
- * The scanner ENGINE, unchanged and lifted out of `BarcodeScanner` so that two
- * very different chromes can mount it: the full-screen viewfinder
- * (`IngredientScanPage`) and the dialog's inline box. Native `BarcodeDetector`
+ * The scanner ENGINE, unchanged and lifted out of the retired `BarcodeScanner`
+ * component so that the chrome around it is free to change. Its one mount today
+ * is the full-screen viewfinder (`IngredientScanPage`). Native `BarcodeDetector`
  * when the browser has one, a lazily-imported `@zxing/browser` reader when it
  * does not (iOS Safari), `isValidEan` re-validation on **every** decode (a
  * partial-frame misread must never leave this hook), and a teardown that cancels

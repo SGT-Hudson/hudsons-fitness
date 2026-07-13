@@ -6,52 +6,25 @@
   "createNoteHint": "Esto se añadirá a la biblioteca compartida. Información privada (cantidad típica para ti, recordatorios) va mejor en la nota del ingrediente en tu biblioteca, no en el nombre.",
   "newIngredient": "Nuevo ingrediente",
   "searchPlaceholder": "Buscar por nombre o marca…",
-  "tabs": {
-    "off": "Buscar (OpenFoodFacts)",
-    "manual": "Manual",
-    "barcode": "Código de barras"
-  },
   "barcode": {
-    "startScan": "Escanear con la cámara",
-    "aimHint": "Apunta al código de barras dentro del recuadro.",
-    "cameraError": "No se pudo acceder a la cámara. Escribe el código abajo.",
     "manualLabel": "Código de barras (EAN/UPC)",
     "lookup": "Buscar",
-    "looking": "Buscando…",
-    "notFound": "No está en OpenFoodFacts — pasa a Manual para introducirlo a mano.",
-    "bannerNew": "No está en Open Food Facts. Introduce sus datos manualmente.",
-    "bannerComplete": "Faltan algunos datos. Complétalos para terminar la ficha.",
-    "bannerFound": "Producto encontrado - revisa y guarda."
+    "looking": "Buscando…"
   },
   "dialog": {
     "createTitle": "Nuevo ingrediente",
-    "createSubtitle": "Busca en OpenFoodFacts o introduce los macros a mano.",
-    "editTitle": "Editar ingrediente",
-    "editSubtitle": "Los cambios afectan a la biblioteca compartida."
+    "createSubtitle": "Introduce sus macros. Al guardar se añade a la biblioteca compartida y queda seleccionado aquí."
   },
   "off": {
     "searchPlaceholder": "ej. yogur griego natural",
     "minChars": "Escribe al menos 3 caracteres para buscar.",
-    "noResults": "No se encontraron resultados.",
-    "adjustHint": "Comprueba y ajusta los macros si lo necesitas antes de guardar."
+    "noResults": "No se encontraron resultados."
   },
   "form": {
     "name": "Nombre",
     "brand": "Marca",
-    "unitType": "Unidad",
-    "unitGram": "Gramos (macros por 100 g)",
-    "unitUnit": "Unidad (macros por unidad)",
-    "macrosLabel": "Macros {{suffix}}",
     "perUnit": "por unidad",
     "per100g": "por 100 g",
-    "kcal": "Kcal",
-    "protein": "Proteína (g)",
-    "carbs": "Carbohidratos (g)",
-    "fat": "Grasa (g)",
-    "fiber": "Fibra (g)",
-    "sugar": "De los cuales azúcares (g)",
-    "satFat": "De las cuales saturadas (g)",
-    "salt": "Sal (g)",
     "subMacroWarning": "El azúcar no puede superar los carbohidratos, ni las saturadas la grasa total — revisa el valor."
   },
   "method": {

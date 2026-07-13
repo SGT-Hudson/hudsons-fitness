@@ -133,7 +133,7 @@ export async function createManualIngredient(
 }
 
 // `overrides` is the dialog's fully-parsed form (`ParsedIngredient` in
-// IngredientFormFields.tsx — every key present, `null` on a sub-macro the
+// ingredientForm.ts — every key present, `null` on a sub-macro the
 // user deliberately cleared). It is NOT a partial patch merged over `product`:
 // a `??` merge here would silently discard the user's blanking whenever OFF's
 // raw value happens to be falsy-but-present (e.g. `salt_100g: 0`), writing a

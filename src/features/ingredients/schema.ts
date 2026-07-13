@@ -3,7 +3,7 @@ import { pickFirstError, type FieldErrors } from '@/lib/zod';
 
 // Co-located zod schema for the ingredient form (D-C2/D-C3, R-09).
 //
-// Parity with the prior `parseForm` in IngredientFormFields.tsx (which the
+// Parity with the prior `parseForm` in ingredientForm.ts (which the
 // OLD dialog used as an all-or-nothing validator that, on any failure, showed
 // the single localized `t('errors.invalid')` message and never looked at
 // which field or code failed):

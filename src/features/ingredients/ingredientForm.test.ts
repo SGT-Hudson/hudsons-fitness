@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyForm, ingredientToForm, offResultToForm, parseForm } from './IngredientFormFields';
+import { emptyForm, ingredientToForm, offResultToForm, parseForm } from './ingredientForm';
 import type { OFFSearchResult } from '@/lib/openfoodfacts';
 
 // Tier-1 (pure logic, no DOM): the ingredient form's string ↔ value boundary.

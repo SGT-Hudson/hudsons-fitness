@@ -6,52 +6,25 @@
   "createNoteHint": "This will be contributed to the shared library. Private info (your typical quantity, reminders) belongs in the ingredient's note in your library, not in the name.",
   "newIngredient": "New ingredient",
   "searchPlaceholder": "Search by name or brand…",
-  "tabs": {
-    "off": "Search (OpenFoodFacts)",
-    "manual": "Manual",
-    "barcode": "Barcode"
-  },
   "barcode": {
-    "startScan": "Scan with camera",
-    "aimHint": "Aim at the barcode inside the box.",
-    "cameraError": "Couldn't access the camera. Type the code below.",
     "manualLabel": "Barcode (EAN/UPC)",
     "lookup": "Look up",
-    "looking": "Looking up…",
-    "notFound": "Not in OpenFoodFacts — switch to Manual to enter it by hand.",
-    "bannerNew": "Not in Open Food Facts. Enter its details manually.",
-    "bannerComplete": "Some values are missing. Fill them in to complete it.",
-    "bannerFound": "Product found — review and save."
+    "looking": "Looking up…"
   },
   "dialog": {
     "createTitle": "New ingredient",
-    "createSubtitle": "Search OpenFoodFacts or enter macros manually.",
-    "editTitle": "Edit ingredient",
-    "editSubtitle": "Changes affect the shared library."
+    "createSubtitle": "Enter its macros. On save it joins the shared library and is selected here."
   },
   "off": {
     "searchPlaceholder": "e.g. greek yogurt",
     "minChars": "Type at least 3 characters to search.",
-    "noResults": "No results.",
-    "adjustHint": "Review and adjust macros if needed before saving."
+    "noResults": "No results."
   },
   "form": {
     "name": "Name",
     "brand": "Brand",
-    "unitType": "Unit",
-    "unitGram": "Grams (macros per 100 g)",
-    "unitUnit": "Unit (macros per unit)",
-    "macrosLabel": "Macros {{suffix}}",
     "perUnit": "per unit",
     "per100g": "per 100 g",
-    "kcal": "Kcal",
-    "protein": "Protein (g)",
-    "carbs": "Carbs (g)",
-    "fat": "Fat (g)",
-    "fiber": "Fiber (g)",
-    "sugar": "of which sugars (g)",
-    "satFat": "of which saturated (g)",
-    "salt": "Salt (g)",
     "subMacroWarning": "Sugar can't exceed total carbs, nor saturated exceed total fat — check the value."
   },
   "method": {

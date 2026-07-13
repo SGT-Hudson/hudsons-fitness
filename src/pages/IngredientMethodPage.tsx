@@ -33,7 +33,7 @@ const SCAN = '/recipes/ingredients/scan';
  *
  * **The barcode method is two different things by pointer**, and that is not a
  * layout choice: a webcam is useless against a product barcode, so the camera is
- * gated on `(pointer: coarse)` (as `BarcodeTab` already was). Touch gets "abrir
+ * gated on `(pointer: coarse)`, as the retired barcode tab already was. Touch gets "abrir
  * cámara" → the scanner route; a desktop pointer gets the typed-EAN field inline
  * and a plain statement that scanning is mobile-only, instead of a button that
  * would open a viewfinder nobody can aim.

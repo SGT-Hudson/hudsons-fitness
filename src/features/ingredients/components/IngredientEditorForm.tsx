@@ -16,7 +16,7 @@ import {
   offResultToForm,
   parseForm,
   type IngredientFormState,
-} from './IngredientFormFields';
+} from '../ingredientForm';
 import { IngredientSourceBadge } from './IngredientSourceBadge';
 import { IngredientVerifiedCheck } from './IngredientVerifiedCheck';
 import { firstIngredientError, ingredientFormSchema } from '../schema';
@@ -171,7 +171,7 @@ export function IngredientEditorForm({
   // wrap its `onChange` — `register()` returns a fresh object every render.
   const kcalRegister = register('kcal_per_unit');
 
-  // Soft, non-blocking sanity check (kept from `IngredientFormFields`): sugar ⊂
+  // Soft, non-blocking sanity check (kept from the retired `IngredientFormFields`): sugar ⊂
   // carbs, saturated ⊂ fat — only when both sides are filled in. Never blocks.
   const exceeds = (sub: string, parent: string) =>
     sub.trim() !== '' && parent.trim() !== '' && Number(sub) > Number(parent);
