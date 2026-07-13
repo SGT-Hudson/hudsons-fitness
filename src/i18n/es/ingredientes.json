@@ -161,7 +161,27 @@
   "scan": {
     "open": "Escanear un código de barras",
     "bannerTitle": "Escanea el código de barras",
-    "bannerHint": "buscamos en OpenFoodFacts y rellenamos las macros"
+    "bannerHint": "buscamos en OpenFoodFacts y rellenamos las macros",
+    "title": "Escanear código",
+    "subtitle": "Buscamos el producto en OpenFoodFacts",
+    "close": "Cerrar el escáner",
+    "torchOn": "Encender la linterna",
+    "torchOff": "Apagar la linterna",
+    "starting": "Abriendo la cámara…",
+    "searching": "Buscando código…",
+    "aim": "Apunta al código de barras del envase",
+    "looking": "Buscando el producto…",
+    "found": "Producto encontrado",
+    "notFoundTitle": "No está en OpenFoodFacts",
+    "notFoundHint": "Nadie ha subido aún el código {{code}}. Puedes crear el ingrediente a mano con los datos del envase.",
+    "notFoundCreate": "Crearlo a mano",
+    "again": "Escanear otro código",
+    "deniedTitle": "La cámara está bloqueada",
+    "deniedHint": "Has denegado el acceso a la cámara. Actívalo en los permisos del navegador (el candado junto a la dirección) y reintenta — o escribe el código a mano.",
+    "deniedRetry": "Reintentar con la cámara",
+    "errorTitle": "No se pudo abrir la cámara",
+    "errorHint": "Este dispositivo no nos deja usarla ahora mismo. Escribe el código a mano y lo buscamos igual.",
+    "manualOpen": "Escribir código a mano"
   },
   "empty": {
     "title": "Aún no hay ingredientes",

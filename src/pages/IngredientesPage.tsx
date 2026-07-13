@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Camera, ChevronRight, Plus, Search, SearchX, Wheat, X } from 'lucide-react';
 import { RecipesTabs } from './RecipesTabs';
@@ -11,7 +11,6 @@ import { PageShell } from '@/components/layout/PageShell';
 import { PaginationBar } from '@/components/ui/PaginationBar';
 import { usePagination } from '@/hooks/usePagination';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { IngredientDialog } from '@/features/ingredients/components/IngredientDialog';
 import { IngredientFilterBar } from '@/features/ingredients/components/IngredientFilterBar';
 import { IngredientRow } from '@/features/ingredients/components/IngredientRow';
 import { IngredientTable } from '@/features/ingredients/components/IngredientTable';
@@ -35,15 +34,13 @@ const NO_LIBRARY: ReadonlySet<string> = new Set();
  * five chips whose counts must be real numbers cannot each afford a
  * `count: 'exact'` round trip per keystroke. See `listPoolIngredients`.
  *
- * `/new` is the method picker now (`IngredientMethodPage`) and `/:id/edit` the
- * editor page — this page only LINKS at them. `/scan` alone still resolves here,
- * with `IngredientDialog` open on its barcode tab, until the full-screen scanner
- * route lands; the links never move.
+ * Every affordance that leaves it is a route now — `/new` the method picker,
+ * `/scan` the full-screen viewfinder, `/:id/edit` the editor: this page only
+ * LINKS at them, and carries the active `?q=` along.
  */
 export function IngredientesPage() {
   const { t } = useTranslation('ingredientes');
   const navigate = useNavigate();
-  const { pathname } = useLocation();
   const { user } = useAuth();
 
   // The query lives in the URL (`?q=`), not in local state: the full-screen
@@ -84,11 +81,6 @@ export function IngredientesPage() {
   const pool = usePoolIngredients();
   const refs = useMyIngredientRefIds();
   const hide = useHideIngredient();
-
-  // TEMPORARY, and the scanner task's to delete: `/scan` still resolves to this
-  // page, so it still has to open the dialog on its barcode tab. `/new` is the
-  // method picker now and no longer routes here.
-  const isScanRoute = pathname.endsWith('/scan');
 
   const all = useMemo(() => pool.data ?? [], [pool.data]);
   const libraryIds = refs.data ?? NO_LIBRARY;
@@ -316,21 +308,6 @@ export function IngredientesPage() {
         )}
       </div>
 
-      {/* TEMPORARY — the last mount of IngredientDialog outside the recipe
-          editor, and the scanner task deletes it together with the `/scan`
-          route it exists for. Until then `/scan` resolves here, and a bare list
-          with no way to scan would be a worse regression than one more render of
-          the dialog. `/new` (the method picker) no longer comes through here. */}
-      {isScanRoute && (
-        <IngredientDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) navigate(withQuery('/recipes/ingredients'), { replace: true });
-          }}
-          mode="create"
-          defaultTab="barcode"
-        />
-      )}
     </PageShell>
   );
 }

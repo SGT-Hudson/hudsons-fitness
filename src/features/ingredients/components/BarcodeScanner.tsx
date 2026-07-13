@@ -1,112 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
-import { isValidEan } from '@/lib/openfoodfacts';
-import type { IScannerControls } from '@zxing/browser';
+import { useBarcodeCamera } from '../useBarcodeCamera';
 
 interface Props {
   /** Fired once with a checksum-valid EAN/UPC; the parent stops rendering us. */
   onDetected: (code: string) => void;
 }
 
-// Minimal structural type for the native BarcodeDetector (no DOM lib types
-// for it yet in our TS target). We only use what we need.
-interface NativeBarcodeDetector {
-  detect(source: CanvasImageSource): Promise<Array<{ rawValue: string }>>;
-}
-interface BarcodeDetectorCtor {
-  new (opts: { formats: string[] }): NativeBarcodeDetector;
-}
-
-// UPC-E intentionally excluded: isValidEan implements EAN-8/13 + UPC-A
-// checksums, not the UPC-E compression scheme, so a UPC-E decode would be
-// dropped downstream anyway. Restrict the detector to what we can validate.
-const EAN_FORMATS = ['ean_13', 'ean_8', 'upc_a'];
-
+/**
+ * The inline (dialog-tab) viewfinder — the pre-redesign chrome, on top of the
+ * shared engine (`useBarcodeCamera`). The full-screen scanner
+ * (`IngredientScanPage`) is the redesigned surface and mounts the same engine;
+ * this one lives only as long as `IngredientDialog`'s barcode tab does.
+ */
 export function BarcodeScanner({ onDetected }: Props) {
   const { t } = useTranslation('ingredientes');
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const stoppedRef = useRef(false);
-  const [status, setStatus] = useState<'starting' | 'scanning' | 'error'>('starting');
+  const { videoRef, status } = useBarcodeCamera(onDetected);
 
-  useEffect(() => {
-    stoppedRef.current = false;
-    let zxingControls: IScannerControls | null = null;
-    let rafId = 0;
-
-    function fire(code: string) {
-      if (stoppedRef.current) return;
-      if (!isValidEan(code)) return; // reject partial-frame misreads
-      stoppedRef.current = true;
-      stopCamera();
-      onDetected(code);
-    }
-
-    function stopCamera() {
-      if (rafId) cancelAnimationFrame(rafId);
-      zxingControls?.stop();
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-
-    async function start() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
-        });
-        if (stoppedRef.current) {
-          stream.getTracks().forEach((tr) => tr.stop());
-          return;
-        }
-        streamRef.current = stream;
-        const video = videoRef.current;
-        if (!video) return;
-        video.srcObject = stream;
-        video.setAttribute('playsinline', 'true'); // iOS Safari: inline, not fullscreen
-        video.muted = true;
-        await video.play();
-        setStatus('scanning');
-
-        const Detector = (globalThis as unknown as { BarcodeDetector?: BarcodeDetectorCtor })
-          .BarcodeDetector;
-        if (Detector) {
-          const detector = new Detector({ formats: EAN_FORMATS });
-          const tick = async () => {
-            if (stoppedRef.current || !videoRef.current) return;
-            try {
-              const found = await detector.detect(videoRef.current);
-              if (found[0]?.rawValue) {
-                fire(found[0].rawValue);
-                return;
-              }
-            } catch {
-              // transient per-frame decode error: keep polling
-            }
-            rafId = requestAnimationFrame(tick);
-          };
-          rafId = requestAnimationFrame(tick);
-        } else {
-          // iOS Safari fallback. Lazy import keeps ZXing out of the main bundle.
-          const { BrowserMultiFormatOneDReader } = await import('@zxing/browser');
-          const reader = new BrowserMultiFormatOneDReader();
-          zxingControls = await reader.decodeFromVideoElement(videoRef.current!, (result) => {
-            if (result) fire(result.getText());
-          });
-        }
-      } catch {
-        if (!stoppedRef.current) setStatus('error');
-      }
-    }
-
-    void start();
-    return () => {
-      stoppedRef.current = true;
-      stopCamera();
-    };
-  }, [onDetected]);
-
-  if (status === 'error') {
+  if (status === 'denied' || status === 'error') {
     return (
       <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground space-y-2">
         <p>{t('barcode.cameraError')}</p>

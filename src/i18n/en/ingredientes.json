@@ -161,7 +161,27 @@
   "scan": {
     "open": "Scan a barcode",
     "bannerTitle": "Scan the barcode",
-    "bannerHint": "we look it up on OpenFoodFacts and fill in the macros"
+    "bannerHint": "we look it up on OpenFoodFacts and fill in the macros",
+    "title": "Scan a barcode",
+    "subtitle": "We look the product up on OpenFoodFacts",
+    "close": "Close the scanner",
+    "torchOn": "Turn the torch on",
+    "torchOff": "Turn the torch off",
+    "starting": "Opening the camera…",
+    "searching": "Looking for a barcode…",
+    "aim": "Point at the barcode on the package",
+    "looking": "Looking the product up…",
+    "found": "Product found",
+    "notFoundTitle": "Not on OpenFoodFacts",
+    "notFoundHint": "Nobody has uploaded the code {{code}} yet. You can create the ingredient by hand from the label.",
+    "notFoundCreate": "Create it by hand",
+    "again": "Scan another code",
+    "deniedTitle": "The camera is blocked",
+    "deniedHint": "You denied access to the camera. Allow it in the browser's permissions (the padlock next to the address) and try again — or type the code by hand.",
+    "deniedRetry": "Try the camera again",
+    "errorTitle": "The camera could not be opened",
+    "errorHint": "This device will not let us use it right now. Type the code by hand and we will look it up anyway.",
+    "manualOpen": "Type the code by hand"
   },
   "empty": {
     "title": "No ingredients yet",

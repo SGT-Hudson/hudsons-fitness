@@ -33,6 +33,9 @@ vi.mock('@/pages/IngredientEditorPage', () => ({
 vi.mock('@/pages/IngredientSearchPage', () => ({
   IngredientSearchPage: () => <div>IngredientSearchPage</div>,
 }));
+vi.mock('@/pages/IngredientScanPage', () => ({
+  IngredientScanPage: () => <div>IngredientScanPage</div>,
+}));
 vi.mock('@/pages/EntrenamientoPage', () => ({ EntrenamientoPage: () => <div>EntrenamientoPage</div> }));
 vi.mock('@/pages/SessionEditorPage', () => ({ SessionEditorPage: () => <div>SessionEditorPage</div> }));
 vi.mock('@/pages/RunnerPage', () => ({ RunnerPage: () => <div>RunnerPage</div> }));
@@ -131,6 +134,19 @@ describe('AppRoutes', () => {
       </MemoryRouter>,
     );
     expect(screen.getByText('IngredientEditorPage')).toBeInTheDocument();
+  });
+
+  // Wave 6 moved the scanner off the list page (where it was a dialog tab) onto
+  // its own full-screen route. A regression here puts the user back on a bare
+  // list with no way to scan.
+  it('routes /recipes/ingredients/scan to the full-screen scanner, not the list', () => {
+    render(
+      <MemoryRouter initialEntries={['/recipes/ingredients/scan']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('IngredientScanPage')).toBeInTheDocument();
+    expect(screen.queryByText('IngredientesPage')).toBeNull();
   });
 
   it('routes /recipes/ingredients/:id/edit to the ingredient editor, not the recipe editor', () => {

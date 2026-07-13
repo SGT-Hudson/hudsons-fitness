@@ -19,6 +19,7 @@ import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
 import { IngredientMethodPage } from '@/pages/IngredientMethodPage';
 import { IngredientEditorPage } from '@/pages/IngredientEditorPage';
+import { IngredientScanPage } from '@/pages/IngredientScanPage';
 import { IngredientSearchPage } from '@/pages/IngredientSearchPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
 import { SettingsPage } from '@/pages/SettingsPage';
@@ -118,10 +119,9 @@ export function AppRoutes() {
               barcode. Every method ends at `/new/manual` below, carrying what it
               learned in `location.state`. */}
           <Route path="/recipes/ingredients/new" element={<IngredientMethodPage />} />
-          {/* Still the list (with IngredientDialog open on the barcode tab): the
-              full-screen scanner is the next task's, and an unrouted path would
-              fall to the catch-all and teleport the user to /diary. */}
-          <Route path="/recipes/ingredients/scan" element={<IngredientesPage />} />
+          {/* The full-screen viewfinder. Found ⇒ `/new/manual` carrying the OFF
+              product; not found ⇒ carrying the scanned EAN. */}
+          <Route path="/recipes/ingredients/scan" element={<IngredientScanPage />} />
           {/* R-33 wave 6: the editor is a PAGE now (create and edit alike). The
               method picker and the scanner both reach `/new/manual` carrying an
               OFF product / a scanned EAN in `location.state`
