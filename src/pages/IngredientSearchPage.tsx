@@ -7,6 +7,7 @@ import { Dialog, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { INGREDIENT_SCAN } from '@/features/ingredients/editorRoute';
 import { useLocalIngredientSearch } from '@/features/ingredients/hooks';
 import { IngredientSearchRow } from '@/features/ingredients/components/IngredientSearchRow';
 import { ingredientDisplayName, type Ingredient } from '@/features/ingredients/api';
@@ -173,7 +174,7 @@ export function IngredientSearchPage() {
                 <ChevronRight className="size-[15px] shrink-0 text-text-dim" aria-hidden="true" />
               </Link>
               <Link
-                to="/recipes/ingredients/scan"
+                to={INGREDIENT_SCAN}
                 className="flex items-center gap-2.5 rounded-[12px] border bg-card px-2.5 py-2 text-left"
               >
                 <span className="grid size-8 shrink-0 place-items-center rounded-[9px] border bg-muted text-muted-foreground">

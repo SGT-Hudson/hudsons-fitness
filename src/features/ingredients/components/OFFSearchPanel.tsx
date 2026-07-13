@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -32,16 +31,19 @@ export function OFFSearchPanel({
   onPick,
 }: OFFPanelProps) {
   const { t } = useTranslation('ingredientes');
-  const placeholder = useMemo(() => t('off.searchPlaceholder'), [t]);
 
   return (
     <div className="space-y-3">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        {/* `autoFocus` is right on both surfaces: this panel only ever mounts in
+            response to an explicit "buscar en OpenFoodFacts", and the field is
+            the whole point of it. Checked full-page at 390px and 1440px — the
+            focus lands on the field without scrolling the page. */}
         <Input
           autoFocus
           className="pl-9"
-          placeholder={placeholder}
+          placeholder={t('off.searchPlaceholder')}
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
         />

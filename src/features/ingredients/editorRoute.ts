@@ -4,6 +4,8 @@ import type { OFFSearchResult } from '@/lib/openfoodfacts';
 export const INGREDIENTS_LIST = '/recipes/ingredients';
 /** The empty editor. Everything that creates an ingredient by page lands here. */
 export const INGREDIENT_NEW_MANUAL = '/recipes/ingredients/new/manual';
+/** The full-screen viewfinder. Linked from the method picker and the search page. */
+export const INGREDIENT_SCAN = '/recipes/ingredients/scan';
 /** The loaded editor. Owner-only — `canEditIngredient` gates it. */
 export function ingredientEditPath(id: string): string {
   return `/recipes/ingredients/${id}/edit`;

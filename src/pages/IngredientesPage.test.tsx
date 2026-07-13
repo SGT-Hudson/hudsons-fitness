@@ -5,9 +5,10 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// The page (and IngredientDialog, which it still mounts for create/edit) import
-// the supabase client, which throws on module load without VITE_SUPABASE_* —
-// green locally, red in CI. Stub the client and the data hooks.
+// The page imports the supabase client, which throws on module load without
+// VITE_SUPABASE_* — green locally, red in CI. Stub the client and the data hooks.
+// (Create/edit no longer live here at all: they are routes of their own, and
+// this page only links to them.)
 vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
 
 vi.stubGlobal('matchMedia', (q: string) => ({
@@ -258,9 +259,9 @@ describe('IngredientesPage', () => {
 
   // `withQuery` carries the active `?q=` into `/new` (the method picker), and
   // the picker's cancel carries it back out — both ends, or the user loses the
-  // search they were in just by starting to create. The picker used to be this
-  // page + IngredientDialog; it is its own route now, so the round-trip is
-  // pinned across the two real pages rather than against a dialog.
+  // search they were in just by starting to create. Creating used to be a dialog
+  // this page mounted; it is its own route now, so the round-trip is pinned
+  // across the two real pages rather than against a dialog.
   it('round-trips an active `?q=` through the create route, in and out', async () => {
     const user = userEvent.setup();
     usePoolIngredients.mockReturnValue({ data: [pollo, avena], isLoading: false });

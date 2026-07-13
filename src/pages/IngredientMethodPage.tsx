@@ -12,12 +12,11 @@ import { useBarcodeLookup, useOFFSearch } from '@/features/ingredients/hooks';
 import { OFFSearchPanel } from '@/features/ingredients/components/OFFSearchPanel';
 import {
   INGREDIENT_NEW_MANUAL,
+  INGREDIENT_SCAN,
   INGREDIENTS_LIST,
   type IngredientEditorRouteState,
 } from '@/features/ingredients/editorRoute';
 import { isValidEan } from '@/lib/openfoodfacts';
-
-const SCAN = '/recipes/ingredients/scan';
 
 /**
  * `/recipes/ingredients/new` — how do you want to add it? (canvas
@@ -145,7 +144,7 @@ export function IngredientMethodPage() {
 
               {isTouchDevice ? (
                 <Link
-                  to={`${SCAN}${location.search}`}
+                  to={`${INGREDIENT_SCAN}${location.search}`}
                   className="mt-3.5 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-accent text-[14px] font-semibold text-accent-foreground"
                 >
                   <Camera className="size-4" aria-hidden="true" />
