@@ -67,8 +67,9 @@ const EAN_FORMATS = ['ean_13', 'ean_8', 'upc_a'];
  */
 export function useBarcodeCamera(onDetected: (code: string) => void): BarcodeCamera {
   const videoRef = useRef<HTMLVideoElement>(null);
+  // The ONLY thing that needs the stream across renders is the torch (it rides
+  // the live video track). The lifecycle itself is effect-local — see the effect.
   const streamRef = useRef<MediaStream | null>(null);
-  const stoppedRef = useRef(false);
   const [status, setStatus] = useState<BarcodeCameraStatus>('starting');
   const [torchAvailable, setTorchAvailable] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
@@ -82,14 +83,24 @@ export function useBarcodeCamera(onDetected: (code: string) => void): BarcodeCam
   });
 
   useEffect(() => {
-    stoppedRef.current = false;
+    // `stopped`, `stream`, `zxingControls` and `rafId` are ALL effect-local, and
+    // that is load-bearing, not stylistic. A component-level `stoppedRef` that
+    // each run resets to `false` lets an in-flight `getUserMedia` from an
+    // already-dead run pass the guard below and overwrite a single shared stream
+    // slot — one of the two streams then never gets stopped and the phone's
+    // camera light stays on for good. (Reachable in production: open the manual
+    // hatch while the permission prompt is still up, restart, then grant. And on
+    // every StrictMode double-mount in dev.) Effect-local, each run can only ever
+    // stop its own stream, and a dead run releases whatever it is handed late.
+    let stopped = false;
+    let stream: MediaStream | null = null;
     let zxingControls: IScannerControls | null = null;
     let rafId = 0;
 
     function fire(code: string) {
-      if (stoppedRef.current) return;
+      if (stopped) return;
       if (!isValidEan(code)) return; // reject partial-frame misreads
-      stoppedRef.current = true;
+      stopped = true;
       stopCamera();
       onDetectedRef.current(code);
     }
@@ -97,29 +108,35 @@ export function useBarcodeCamera(onDetected: (code: string) => void): BarcodeCam
     function stopCamera() {
       if (rafId) cancelAnimationFrame(rafId);
       zxingControls?.stop();
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
+      zxingControls = null;
+      stream?.getTracks().forEach((track) => track.stop());
+      // Only clear the shared slot if it still holds OUR stream — never yank a
+      // live run's stream out from under the torch.
+      if (streamRef.current === stream) streamRef.current = null;
+      stream = null;
     }
 
     async function start() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        const opened = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' } },
         });
-        if (stoppedRef.current) {
-          stream.getTracks().forEach((tr) => tr.stop());
+        if (stopped) {
+          opened.getTracks().forEach((tr) => tr.stop());
           return;
         }
-        streamRef.current = stream;
+        stream = opened;
+        streamRef.current = opened;
         const video = videoRef.current;
         if (!video) return;
-        video.srcObject = stream;
+        video.srcObject = opened;
         video.setAttribute('playsinline', 'true'); // iOS Safari: inline, not fullscreen
         video.muted = true;
         await video.play();
+        if (stopped) return; // torn down while `play()` was awaiting; cleanup stopped the tracks
         setStatus('scanning');
 
-        const [track] = stream.getVideoTracks();
+        const [track] = opened.getVideoTracks();
         const caps = (track?.getCapabilities?.() ?? {}) as TorchCapability;
         setTorchAvailable(Boolean(caps.torch));
 
@@ -128,7 +145,7 @@ export function useBarcodeCamera(onDetected: (code: string) => void): BarcodeCam
         if (Detector) {
           const detector = new Detector({ formats: EAN_FORMATS });
           const tick = async () => {
-            if (stoppedRef.current || !videoRef.current) return;
+            if (stopped || !videoRef.current) return;
             try {
               const found = await detector.detect(videoRef.current);
               if (found[0]?.rawValue) {
@@ -144,13 +161,21 @@ export function useBarcodeCamera(onDetected: (code: string) => void): BarcodeCam
         } else {
           // iOS Safari fallback. Lazy import keeps ZXing out of the main bundle.
           const { BrowserMultiFormatOneDReader } = await import('@zxing/browser');
+          if (stopped) return;
           const reader = new BrowserMultiFormatOneDReader();
-          zxingControls = await reader.decodeFromVideoElement(videoRef.current!, (result) => {
+          const controls = await reader.decodeFromVideoElement(videoRef.current!, (result) => {
             if (result) fire(result.getText());
           });
+          // Cleanup may have run while `decodeFromVideoElement` was awaiting: the
+          // tracks are dead by now, but the reader loop would linger unstopped.
+          if (stopped) {
+            controls.stop();
+            return;
+          }
+          zxingControls = controls;
         }
       } catch (err) {
-        if (stoppedRef.current) return;
+        if (stopped) return;
         // A refusal is a user state with a way out; everything else is a device
         // failure with none. `SecurityError` is how older Safari says "denied".
         const name = (err as DOMException | null)?.name;
@@ -160,7 +185,7 @@ export function useBarcodeCamera(onDetected: (code: string) => void): BarcodeCam
 
     void start();
     return () => {
-      stoppedRef.current = true;
+      stopped = true;
       stopCamera();
     };
   }, [attempt]);
