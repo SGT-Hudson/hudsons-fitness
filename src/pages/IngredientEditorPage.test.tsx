@@ -263,6 +263,18 @@ describe('IngredientEditorPage — /recipes/ingredients/:id/edit', () => {
     expect(screen.getByText('IngredientesPage')).toBeInTheDocument();
   });
 
+  // A query that is neither loading nor errored but holds no data (react-query
+  // pauses the fetch when offline). Rendering the editor here would mount a
+  // CREATE form at an edit URL — and its save would INSERT a second ingredient
+  // instead of updating the one the user opened.
+  it('redirects rather than render a create form when the row never arrived', () => {
+    useIngredient.mockReturnValue({ data: undefined, isLoading: false, error: null });
+    renderAt('/recipes/ingredients/i-1/edit');
+
+    expect(screen.getByText('IngredientesPage')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Nombre')).toBeNull();
+  });
+
   it('renders no editor while the row is loading', () => {
     useIngredient.mockReturnValue({ data: undefined, isLoading: true, error: null });
     renderAt('/recipes/ingredients/i-1/edit');

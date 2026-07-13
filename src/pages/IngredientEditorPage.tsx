@@ -71,15 +71,19 @@ export function IngredientEditorPage() {
   if (!isNew && query.isLoading) {
     return <div className="text-muted-foreground">{tCommon('loading')}</div>;
   }
-  if (!isNew && query.error) {
-    return <Navigate to={exitTo} replace />;
-  }
-  // Constraint 8 — a deep link (a bookmark, a typed URL; nothing in the UI links
-  // here) to a row I did not create. `updateIngredient` is a direct table write
-  // and RLS would reject it, so rendering the editor could only end in a failed
-  // save. Covers the system seeds too (`created_by_user_id` null): nobody owns
-  // them, so nobody edits them.
-  if (!isNew && ingredient && !canEditIngredient(ingredient, user?.id)) {
+  // Two ways the edit route must NOT render the editor, and one guard for both:
+  //
+  //  - **No row.** The fetch failed, or resolved to nothing, or is paused
+  //    (offline). Falling through would mount the editor with `ingredient`
+  //    undefined — i.e. a CREATE form sitting at an edit URL, whose save would
+  //    silently INSERT a second ingredient instead of updating the one the user
+  //    opened.
+  //  - **Not mine** (Constraint 8). A deep link (a bookmark, a typed URL —
+  //    nothing in the UI links here) to a row someone else created.
+  //    `updateIngredient` is a direct table write and RLS would reject it, so
+  //    the editor could only ever end in a failed save. Covers the system seeds
+  //    too (`created_by_user_id` null): nobody owns them, so nobody edits them.
+  if (!isNew && (!ingredient || !canEditIngredient(ingredient, user?.id))) {
     return <Navigate to={exitTo} replace />;
   }
 
