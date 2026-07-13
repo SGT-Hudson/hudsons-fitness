@@ -24,6 +24,9 @@ vi.mock('@/pages/RecetasPage', () => ({ RecetasPage: () => <div>RecetasPage</div
 vi.mock('@/pages/RecetaDetailPage', () => ({ RecetaDetailPage: () => <div>RecetaDetailPage</div> }));
 vi.mock('@/pages/RecetaEditorPage', () => ({ RecetaEditorPage: () => <div>RecetaEditorPage</div> }));
 vi.mock('@/pages/IngredientesPage', () => ({ IngredientesPage: () => <div>IngredientesPage</div> }));
+vi.mock('@/pages/IngredientMethodPage', () => ({
+  IngredientMethodPage: () => <div>IngredientMethodPage</div>,
+}));
 vi.mock('@/pages/IngredientEditorPage', () => ({
   IngredientEditorPage: () => <div>IngredientEditorPage</div>,
 }));
@@ -111,6 +114,16 @@ describe('AppRoutes', () => {
   // is 4 segments and `/recipes/:id/edit` is 3, so they cannot collide — but the
   // recipe editor sitting one path family away is exactly the shadowing mistake
   // this pins against.
+  it('routes /recipes/ingredients/new to the method picker, not the list', () => {
+    render(
+      <MemoryRouter initialEntries={['/recipes/ingredients/new']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('IngredientMethodPage')).toBeInTheDocument();
+    expect(screen.queryByText('IngredientesPage')).toBeNull();
+  });
+
   it('routes /recipes/ingredients/new/manual to the ingredient editor', () => {
     render(
       <MemoryRouter initialEntries={['/recipes/ingredients/new/manual']}>

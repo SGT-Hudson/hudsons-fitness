@@ -2,7 +2,7 @@ import i18n from '@/i18n';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // The page (and IngredientDialog, which it still mounts for create/edit) import
@@ -36,6 +36,7 @@ vi.mock('@/features/auth/AuthProvider', () => ({
 }));
 
 import { IngredientesPage } from './IngredientesPage';
+import { IngredientMethodPage } from './IngredientMethodPage';
 import type { Ingredient } from '@/features/ingredients/api';
 
 function ingredient(over: Partial<Ingredient> & Pick<Ingredient, 'id' | 'name'>): Ingredient {
@@ -105,6 +106,22 @@ function renderPage(initialPath = '/recipes/ingredients') {
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[initialPath]}>
         <IngredientesPage />
+        <Probe />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+/** The list AND the create route it navigates to — for the `?q=` round-trip. */
+function renderRoutes(initialPath = '/recipes/ingredients') {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path="/recipes/ingredients" element={<IngredientesPage />} />
+          <Route path="/recipes/ingredients/new" element={<IngredientMethodPage />} />
+        </Routes>
         <Probe />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -239,24 +256,30 @@ describe('IngredientesPage', () => {
     }
   });
 
-  // `withQuery` carries the active `?q=` into `/new` (routeIntent === 'create'
-  // opens IngredientDialog), and `closeDialog` carries it back out again —
-  // both ends, or the user loses their search by opening the create dialog.
-  it('round-trips an active `?q=` through the create dialog, in and out', async () => {
+  // `withQuery` carries the active `?q=` into `/new` (the method picker), and
+  // the picker's cancel carries it back out — both ends, or the user loses the
+  // search they were in just by starting to create. The picker used to be this
+  // page + IngredientDialog; it is its own route now, so the round-trip is
+  // pinned across the two real pages rather than against a dialog.
+  it('round-trips an active `?q=` through the create route, in and out', async () => {
     const user = userEvent.setup();
     usePoolIngredients.mockReturnValue({ data: [pollo, avena], isLoading: false });
-    renderPage('/recipes/ingredients?q=avena');
+    renderRoutes('/recipes/ingredients?q=avena');
 
     expect(screen.getByTestId('loc')).toHaveTextContent('/recipes/ingredients?q=avena');
 
-    // In: opening the create dialog is a navigation to `/new`, and it must
-    // not drop the query the user was already scoped to.
+    // In: "nuevo ingrediente" is a navigation to `/new`, and it must not drop
+    // the query the user was already scoped to.
     await user.click(screen.getAllByRole('link', { name: 'Nuevo ingrediente' })[0]);
     expect(screen.getByTestId('loc')).toHaveTextContent('/recipes/ingredients/new?q=avena');
+    // The picker, not the list (the subtitle rides both headers — CSS hides one).
+    expect(screen.getAllByText('¿Cómo quieres añadirlo?').length).toBeGreaterThan(0);
 
-    // Out: cancelling the dialog returns to the list, still scoped to it.
-    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    // Out: cancelling the picker returns to the list, still scoped to it.
+    // (PageShell rides `actions` on both headers — CSS shows one, jsdom sees two.)
+    await user.click(screen.getAllByRole('button', { name: 'Cancelar' })[0]);
     expect(screen.getByTestId('loc')).toHaveTextContent('/recipes/ingredients?q=avena');
+    expect(screen.getAllByText('Avena copos').length).toBeGreaterThan(0);
   });
 
   // R-33 wave 6: editing is a route, not a dialog. Two things are pinned here —

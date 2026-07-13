@@ -35,12 +35,10 @@ const NO_LIBRARY: ReadonlySet<string> = new Set();
  * five chips whose counts must be real numbers cannot each afford a
  * `count: 'exact'` round trip per keystroke. See `listPoolIngredients`.
  *
- * `/new` and `/scan` are the routes PR-B turns into the method picker and the
- * full-screen scanner. They are wired here already (so nothing in the redesigned
- * chrome points at a dead link — the router's catch-all would bounce the user to
- * the diary), and until PR-B lands they resolve to this page with the existing
- * `IngredientDialog` open on the matching tab. PR-B swaps the two `<Route>`
- * elements; the links do not move.
+ * `/new` is the method picker now (`IngredientMethodPage`) and `/:id/edit` the
+ * editor page — this page only LINKS at them. `/scan` alone still resolves here,
+ * with `IngredientDialog` open on its barcode tab, until the full-screen scanner
+ * route lands; the links never move.
  */
 export function IngredientesPage() {
   const { t } = useTranslation('ingredientes');
@@ -87,11 +85,10 @@ export function IngredientesPage() {
   const refs = useMyIngredientRefIds();
   const hide = useHideIngredient();
 
-  const routeIntent = pathname.endsWith('/new')
-    ? 'create'
-    : pathname.endsWith('/scan')
-      ? 'scan'
-      : null;
+  // TEMPORARY, and the scanner task's to delete: `/scan` still resolves to this
+  // page, so it still has to open the dialog on its barcode tab. `/new` is the
+  // method picker now and no longer routes here.
+  const isScanRoute = pathname.endsWith('/scan');
 
   const all = useMemo(() => pool.data ?? [], [pool.data]);
   const libraryIds = refs.data ?? NO_LIBRARY;
@@ -137,10 +134,6 @@ export function IngredientesPage() {
   // One `navigate` here keeps that in the page that owns the query.
   function handleEdit(ing: Ingredient) {
     navigate(withQuery(ingredientEditPath(ing.id)));
-  }
-
-  function closeDialog() {
-    if (routeIntent) navigate(withQuery('/recipes/ingredients'), { replace: true });
   }
 
   // Desktop only (it rides `actions`, which PageHeaderV2 renders and MobileTopBar
@@ -323,17 +316,19 @@ export function IngredientesPage() {
         )}
       </div>
 
-      {/* Create only. Editing left for the `/:id/edit` route in wave 6; `/new`
-          and `/scan` still resolve here until Tasks 4/5 give them their own
-          pages, so the create dialog stays mounted behind `routeIntent`. */}
-      {routeIntent !== null && (
+      {/* TEMPORARY — the last mount of IngredientDialog outside the recipe
+          editor, and the scanner task deletes it together with the `/scan`
+          route it exists for. Until then `/scan` resolves here, and a bare list
+          with no way to scan would be a worse regression than one more render of
+          the dialog. `/new` (the method picker) no longer comes through here. */}
+      {isScanRoute && (
         <IngredientDialog
           open
           onOpenChange={(open) => {
-            if (!open) closeDialog();
+            if (!open) navigate(withQuery('/recipes/ingredients'), { replace: true });
           }}
           mode="create"
-          defaultTab={routeIntent === 'scan' ? 'barcode' : undefined}
+          defaultTab="barcode"
         />
       )}
     </PageShell>

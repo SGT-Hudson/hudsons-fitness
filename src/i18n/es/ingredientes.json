@@ -54,6 +54,22 @@
     "salt": "Sal (g)",
     "subMacroWarning": "El azúcar no puede superar los carbohidratos, ni las saturadas la grasa total — revisa el valor."
   },
+  "method": {
+    "subtitle": "¿Cómo quieres añadirlo?",
+    "intro": "Elige el método más cómodo. Sea cual sea, podrás revisar y ajustar las macros antes de guardar.",
+    "manualTitle": "Añadir manualmente",
+    "manualHint": "Teclea el nombre y las macros por 100 g. Ideal para alimentos a granel o sin etiqueta.",
+    "offTitle": "Buscar en OpenFoodFacts",
+    "offHint": "Busca por nombre o marca en la base de datos abierta y rellenamos las macros por ti.",
+    "offBack": "Volver a los métodos",
+    "scanTitle": "Escanear código de barras",
+    "scanHint": "Apunta con la cámara y buscamos el producto en OpenFoodFacts.",
+    "scanOpen": "Abrir cámara",
+    "eanTitle": "Código de barras",
+    "eanHint": "Introduce el EAN del producto y lo buscamos en OpenFoodFacts.",
+    "cameraTitle": "Escanear con la cámara",
+    "cameraDesktopOnly": "solo está disponible en el móvil. En el escritorio, teclea el código a mano."
+  },
   "editor": {
     "newTitle": "Nuevo ingrediente",
     "newSubtitle": "Se añadirá a la biblioteca compartida",

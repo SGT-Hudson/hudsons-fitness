@@ -54,6 +54,22 @@
     "salt": "Salt (g)",
     "subMacroWarning": "Sugar can't exceed total carbs, nor saturated exceed total fat — check the value."
   },
+  "method": {
+    "subtitle": "How do you want to add it?",
+    "intro": "Pick whichever method suits you. Either way, you can review and adjust the macros before saving.",
+    "manualTitle": "Add manually",
+    "manualHint": "Type the name and the macros per 100 g. Ideal for unpackaged or unlabelled food.",
+    "offTitle": "Search OpenFoodFacts",
+    "offHint": "Search the open database by name or brand and we fill in the macros for you.",
+    "offBack": "Back to the methods",
+    "scanTitle": "Scan a barcode",
+    "scanHint": "Point the camera at it and we look the product up on OpenFoodFacts.",
+    "scanOpen": "Open the camera",
+    "eanTitle": "Barcode",
+    "eanHint": "Type the product's EAN and we look it up on OpenFoodFacts.",
+    "cameraTitle": "Scanning with the camera",
+    "cameraDesktopOnly": "is only available on mobile. On desktop, type the code by hand."
+  },
   "editor": {
     "newTitle": "New ingredient",
     "newSubtitle": "It will be added to the shared library",

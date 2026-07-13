@@ -17,6 +17,7 @@ import { RecetasPage } from '@/pages/RecetasPage';
 import { RecetaDetailPage } from '@/pages/RecetaDetailPage';
 import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
+import { IngredientMethodPage } from '@/pages/IngredientMethodPage';
 import { IngredientEditorPage } from '@/pages/IngredientEditorPage';
 import { IngredientSearchPage } from '@/pages/IngredientSearchPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
@@ -113,13 +114,13 @@ export function AppRoutes() {
           <Route path="/recipes/:id" element={<RecetaDetailPage />} />
           <Route path="/recipes/:id/edit" element={<RecetaEditorPage />} />
           <Route path="/recipes/ingredients" element={<IngredientesPage />} />
-          {/* R-33 wave 6: the list's "nuevo ingrediente" / scan affordances point
-              here. PR-B replaces these two elements with the method picker and the
-              full-screen scanner; until then they resolve to the list with the
-              existing IngredientDialog open (the catch-all below redirects unknown
-              paths to /diary, so leaving them unrouted would silently teleport the
-              user out of Ingredientes). */}
-          <Route path="/recipes/ingredients/new" element={<IngredientesPage />} />
+          {/* R-33 wave 6: "¿cómo quieres añadirlo?" — manual / OpenFoodFacts /
+              barcode. Every method ends at `/new/manual` below, carrying what it
+              learned in `location.state`. */}
+          <Route path="/recipes/ingredients/new" element={<IngredientMethodPage />} />
+          {/* Still the list (with IngredientDialog open on the barcode tab): the
+              full-screen scanner is the next task's, and an unrouted path would
+              fall to the catch-all and teleport the user to /diary. */}
           <Route path="/recipes/ingredients/scan" element={<IngredientesPage />} />
           {/* R-33 wave 6: the editor is a PAGE now (create and edit alike). The
               method picker and the scanner both reach `/new/manual` carrying an
