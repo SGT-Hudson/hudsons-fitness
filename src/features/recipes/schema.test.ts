@@ -121,9 +121,10 @@ describe('recipeFormSchema — prep time', () => {
 
 // The decimal-comma fix. A row quantity is fraction-capable (82,4 g of chicken),
 // so it renders as a `NumberField` (`type="text" inputMode="decimal"`) and the
-// comma reaches the schema. `servings` is deliberately NOT migrated — it keeps
-// its integer spinner — and `prepTime` is integer minutes, so `1,5` there is
-// still invalid (pinned above).
+// comma reaches the schema — as it does for `servings`, which turned out to be
+// fraction-capable too. `prepTime` is integer minutes and deliberately NOT
+// migrated: it keeps its spinner, so `1,5` there is still invalid (pinned
+// above).
 describe('recipeFormSchema — a row quantity with a decimal comma', () => {
   it('accepts 82,4 as a quantity', () => {
     expect(

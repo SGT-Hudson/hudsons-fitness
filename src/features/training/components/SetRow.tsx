@@ -2,6 +2,7 @@ import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/NumberField';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import type { CoreSessionSet } from '@/core/training';
@@ -38,7 +39,10 @@ export function SetRow({ blockIndex, setIndex, placeholder, onRemove, showRemove
   function useLast() {
     if (!placeholder) return;
     setValue(`${basePath}.reps`, Number(placeholder.reps) || 0, { shouldValidate: true });
-    setValue(`${basePath}.weight_kg`, Number(placeholder.weightKg) || 0, { shouldValidate: true });
+    // weight_kg is the raw input string now (NumberField); emit point-decimal.
+    setValue(`${basePath}.weight_kg`, String(Number(placeholder.weightKg) || 0), {
+      shouldValidate: true,
+    });
     setValue(
       `${basePath}.rpe`,
       placeholder.rpe === null || placeholder.rpe === '' ? null : Number(placeholder.rpe),
@@ -79,14 +83,13 @@ export function SetRow({ blockIndex, setIndex, placeholder, onRemove, showRemove
             {t('setRow.weightKg')}
           </Label>
         )}
-        <Input
+        {/* The one fraction-capable field in the row → NumberField
+            (`type="text" inputMode="decimal"`), so `82,4` is not silently
+            logged as an 824 kg bench. Its 0–1000 bound now lives in zod. */}
+        <NumberField
           id={`${basePath}-weight`}
-          type="number"
-          inputMode="decimal"
-          min={0}
-          step={0.5}
           placeholder={placeholder ? num(placeholder.weightKg) : ''}
-          {...register(`${basePath}.weight_kg`, { valueAsNumber: true })}
+          {...register(`${basePath}.weight_kg`)}
         />
       </div>
 
@@ -96,13 +99,16 @@ export function SetRow({ blockIndex, setIndex, placeholder, onRemove, showRemove
             {t('setRow.rpe')}
           </Label>
         )}
+        {/* RPE is an INTEGER (like the routine builder's target_rpe): it keeps
+            `type="number"` and its spinner — a whole number cannot carry a
+            decimal separator, so there is no comma to lose here. */}
         <Input
           id={`${basePath}-rpe`}
           type="number"
-          inputMode="decimal"
+          inputMode="numeric"
           min={6}
           max={10}
-          step={0.5}
+          step={1}
           placeholder={placeholder?.rpe != null ? num(placeholder.rpe) : ''}
           {...register(`${basePath}.rpe`, {
             setValueAs: (v) => {

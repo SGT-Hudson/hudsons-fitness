@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
 // thing a user types. `inputMode="decimal"` still raises the numeric keypad on
 // mobile, so nothing is lost there; the desktop spinner is — which is why this
 // component is for FRACTION-capable fields only. Integer-by-schema fields
-// (series, reps, rest seconds, servings) keep `type="number"` and its spinner.
+// (series, reps, rest seconds, prep time, RPE, warm-up %) keep `type="number"`
+// and its spinner: a whole number cannot carry a decimal separator.
 //
 // ⚠️ On `type="text"` the browser stops enforcing `required` / `min` / `max` /
 // `step`. Those are SCHEMA concerns now — this component deliberately hardcodes

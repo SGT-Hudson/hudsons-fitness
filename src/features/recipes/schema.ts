@@ -139,10 +139,10 @@ export const recipeFormSchema = z
         return;
       }
       // A quantity is fraction-capable (82,4 g of chicken), so it renders as a
-      // `NumberField` and a typed decimal comma reaches this parse. `servings`
-      // and `prepTime` above are integers — they keep their `type="number"`
-      // spinner and their integer parses (a comma there is a typo, not a
-      // decimal).
+      // `NumberField` and a typed decimal comma reaches this parse. So does
+      // `servings` (half a serving is real). `prepTime` above is integer
+      // minutes — it keeps its `type="number"` spinner and its integer parse (a
+      // comma there is a typo, not a decimal).
       const q = parseDecimalInput(row.quantity);
       if (q === null || q <= 0) {
         ctx.addIssue({

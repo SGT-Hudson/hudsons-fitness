@@ -15,7 +15,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { todayInTZ } from '@/lib/dates';
 import { ExerciseBlock } from './ExerciseBlock';
 import type { Exercise } from '../exercises/api';
-import { sessionSchema, type SessionFormValues } from '../schema';
+import {
+  sessionSchema,
+  type ParsedSessionForm,
+  type SessionFormValues,
+} from '../schema';
 import type { SaveWorkoutPayload, SessionWithSets } from '../api';
 
 interface Props {
@@ -44,10 +48,13 @@ interface Props {
   onSaved?: (sessionId: string | null) => void;
 }
 
+// `weight_kg` is the raw `NumberField` string in form state (the schema parses
+// it on submit); every other numeric here is an integer and stays a number.
+// Prefill is point-decimal `String(n)` — the schema reads a `,` or a `.` back.
 function newBlock() {
   return {
     exercise_id: '',
-    sets: [{ set_index: 1, reps: 0, weight_kg: 0, rpe: null, is_warmup: false }],
+    sets: [{ set_index: 1, reps: 0, weight_kg: '0', rpe: null, is_warmup: false }],
   } satisfies SessionFormValues['blocks'][number];
 }
 
@@ -71,7 +78,7 @@ function deriveInitialForm(
         .map((r) => ({
           set_index: r.set_index,
           reps: r.reps,
-          weight_kg: Number(r.weight_kg),
+          weight_kg: String(Number(r.weight_kg)),
           rpe: r.rpe === null ? null : Number(r.rpe),
           is_warmup: r.is_warmup,
         })),
@@ -91,7 +98,7 @@ function deriveInitialForm(
       sets: ex.sets.map((s) => ({
         set_index: s.setIndex,
         reps: s.reps ?? 0,
-        weight_kg: s.weightKg ?? 0,
+        weight_kg: String(s.weightKg ?? 0),
         rpe: s.targetRpe ?? null,
         is_warmup: s.isWarmup,
       })),
@@ -125,7 +132,7 @@ export function SessionEditor({ initial, initialExercises = {}, prefill, onSubmi
   const [error, setError] = useState<string | null>(null);
   const todayISO = todayInTZ();
 
-  const methods = useForm<SessionFormValues>({
+  const methods = useForm<SessionFormValues, unknown, ParsedSessionForm>({
     resolver: zodResolver(sessionSchema),
     defaultValues: deriveInitialForm(initial, prefill),
   });
@@ -161,7 +168,9 @@ export function SessionEditor({ initial, initialExercises = {}, prefill, onSubmi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial]);
 
-  const onValid: SubmitHandler<SessionFormValues> = async (values) => {
+  // `values` is the PARSED form: the schema has turned each weight_kg input
+  // string into a number (comma or point).
+  const onValid: SubmitHandler<ParsedSessionForm> = async (values) => {
     setError(null);
     setSubmitting(true);
     try {

@@ -2,24 +2,46 @@ import { describe, expect, it } from 'vitest';
 import { exerciseBlockSchema, sessionSchema, setSchema } from './schema';
 
 describe('setSchema', () => {
-  const valid = { set_index: 1, reps: 8, weight_kg: 70, rpe: 7, is_warmup: false };
+  // `weight_kg` is STRING-in (the raw `<input>` value) since it moved to
+  // NumberField/`type="text"`; reps, set_index and rpe are still `valueAsNumber`
+  // numbers — they are integers, where a decimal separator has no meaning.
+  const valid = { set_index: 1, reps: 8, weight_kg: '70', rpe: 7, is_warmup: false };
 
   it('accepts a valid set', () => {
     expect(setSchema.safeParse(valid).success).toBe(true);
   });
 
-  it('rejects RPE outside 6.0–10.0', () => {
-    expect(setSchema.safeParse({ ...valid, rpe: 5.5 }).success).toBe(false);
-    expect(setSchema.safeParse({ ...valid, rpe: 10.5 }).success).toBe(false);
+  it('parses weight_kg from its input string into a number', () => {
+    const parsed = setSchema.parse(valid);
+    expect(parsed.weight_kg).toBe(70);
   });
 
-  it('rejects RPE not in 0.5 steps (DB CHECK enforces this)', () => {
+  it('accepts a decimal comma in weight_kg (82,4 → 82.4)', () => {
+    const parsed = setSchema.parse({ ...valid, weight_kg: '82,4' });
+    expect(parsed.weight_kg).toBeCloseTo(82.4, 10);
+    expect(setSchema.parse({ ...valid, weight_kg: '82.4' }).weight_kg).toBeCloseTo(82.4, 10);
+  });
+
+  it('rejects a blank or unparseable weight_kg', () => {
+    expect(setSchema.safeParse({ ...valid, weight_kg: '' }).success).toBe(false);
+    expect(setSchema.safeParse({ ...valid, weight_kg: 'abc' }).success).toBe(false);
+    // Ambiguity is rejected, never guessed (no thousands-separator inference).
+    expect(setSchema.safeParse({ ...valid, weight_kg: '1,234.5' }).success).toBe(false);
+  });
+
+  it('rejects RPE outside 6–10', () => {
+    expect(setSchema.safeParse({ ...valid, rpe: 5 }).success).toBe(false);
+    expect(setSchema.safeParse({ ...valid, rpe: 11 }).success).toBe(false);
+  });
+
+  it('rejects a fractional RPE — RPE is an integer everywhere', () => {
+    expect(setSchema.safeParse({ ...valid, rpe: 6.5 }).success).toBe(false);
     expect(setSchema.safeParse({ ...valid, rpe: 6.3 }).success).toBe(false);
     expect(setSchema.safeParse({ ...valid, rpe: 7.25 }).success).toBe(false);
   });
 
-  it('accepts RPE in 0.5 steps', () => {
-    expect(setSchema.safeParse({ ...valid, rpe: 6.5 }).success).toBe(true);
+  it('accepts a whole-number RPE', () => {
+    expect(setSchema.safeParse({ ...valid, rpe: 6 }).success).toBe(true);
     expect(setSchema.safeParse({ ...valid, rpe: 9 }).success).toBe(true);
   });
 
@@ -29,7 +51,11 @@ describe('setSchema', () => {
 
   it('rejects negative reps and negative weight', () => {
     expect(setSchema.safeParse({ ...valid, reps: -1 }).success).toBe(false);
-    expect(setSchema.safeParse({ ...valid, weight_kg: -10 }).success).toBe(false);
+    expect(setSchema.safeParse({ ...valid, weight_kg: '-10' }).success).toBe(false);
+  });
+
+  it('rejects a weight above the 1000 kg bound (the gate the DOM used to own)', () => {
+    expect(setSchema.safeParse({ ...valid, weight_kg: '1001' }).success).toBe(false);
   });
 
   it('rejects non-integer reps', () => {
@@ -55,7 +81,7 @@ describe('exerciseBlockSchema', () => {
     expect(
       exerciseBlockSchema.safeParse({
         exercise_id: 'not-a-uuid',
-        sets: [{ set_index: 1, reps: 5, weight_kg: 60, rpe: null, is_warmup: false }],
+        sets: [{ set_index: 1, reps: 5, weight_kg: '60', rpe: null, is_warmup: false }],
       }).success,
     ).toBe(false);
   });
@@ -64,7 +90,7 @@ describe('exerciseBlockSchema', () => {
 describe('sessionSchema', () => {
   const validBlock = {
     exercise_id: '00000000-0000-0000-0000-000000000001',
-    sets: [{ set_index: 1, reps: 8, weight_kg: 70, rpe: 7, is_warmup: false }],
+    sets: [{ set_index: 1, reps: 8, weight_kg: '70', rpe: 7, is_warmup: false }],
   };
 
   it('requires at least one exercise block', () => {
