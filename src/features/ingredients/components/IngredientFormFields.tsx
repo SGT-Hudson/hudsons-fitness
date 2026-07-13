@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ingredientFormSchema, type IngredientFormValues } from '../schema';
+import type { OFFSearchResult } from '@/lib/openfoodfacts';
 
 // The form state is the zod schema's *input* (string-valued) shape — the
 // single source of truth now lives in ../schema.ts (D-C2/D-C3, R-09). This
@@ -229,6 +230,36 @@ export function ingredientToForm(ing: {
     saturated_fat_g_per_unit:
       ing.saturated_fat_g_per_unit == null ? '' : String(ing.saturated_fat_g_per_unit),
     salt_g_per_unit: ing.salt_g_per_unit == null ? '' : String(ing.salt_g_per_unit),
+  };
+}
+
+/**
+ * OFF search result / barcode lookup → the string-valued form (R-33 wave 6,
+ * Task 1). Extracted from `IngredientDialog`, where this exact mapping was
+ * written out twice (the off-tab pick and the barcode `onResolved` handler);
+ * both now call this one function, and it is also the seed for the `/new`
+ * route and the full-screen scanner (Tasks 3/5).
+ *
+ * `unit_type` is always `'gram'` — OFF only ever reports per-100g nutrition.
+ * Same U-1 contract as `ingredientToForm`: a sub-macro OFF has no value for
+ * (`null`) renders as a BLANK input, never `"0"` — a genuine OFF-reported 0
+ * (e.g. zero-sugar soda) is a real claim and must render as `"0"`.
+ */
+export function offResultToForm(result: OFFSearchResult): IngredientFormState {
+  return {
+    name: result.name,
+    brand: result.brand ?? '',
+    unit_type: 'gram',
+    kcal_per_unit: String(result.kcalPer100g),
+    protein_g_per_unit: String(result.proteinPer100g),
+    carbs_g_per_unit: String(result.carbsPer100g),
+    fat_g_per_unit: String(result.fatPer100g),
+    fiber_g_per_unit: String(result.fiberPer100g),
+    sugar_g_per_unit: result.sugarPer100g == null ? '' : String(result.sugarPer100g),
+    saturated_fat_g_per_unit:
+      result.satFatPer100g == null ? '' : String(result.satFatPer100g),
+    // OFF had no salt figure → blank (unknown), never "0".
+    salt_g_per_unit: result.saltPer100g == null ? '' : String(result.saltPer100g),
   };
 }
 

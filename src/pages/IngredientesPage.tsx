@@ -22,6 +22,7 @@ import {
   type IngredientFacet,
 } from '@/features/ingredients/ingredientFilter';
 import type { Ingredient } from '@/features/ingredients/api';
+import { canEditIngredient } from '@/features/ingredients/ownership';
 
 const NO_LIBRARY: ReadonlySet<string> = new Set();
 
@@ -278,7 +279,7 @@ export function IngredientesPage() {
                 <IngredientRow
                   key={ing.id}
                   ingredient={ing}
-                  canEdit={ing.created_by_user_id === user?.id}
+                  canEdit={canEditIngredient(ing, user?.id)}
                   inLibrary={libraryIds.has(ing.id)}
                   onEdit={() => setEditing(ing)}
                   onRemove={() => handleRemove(ing)}

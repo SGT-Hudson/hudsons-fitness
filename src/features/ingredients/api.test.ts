@@ -30,7 +30,10 @@ const builder = {
     return builder;
   }),
   single: vi.fn(() => Promise.resolve(insertResult)),
-  eq: vi.fn(() => builder),
+  eq: vi.fn((column: string, value: unknown) => {
+    calls.eq = [...((calls.eq as unknown[]) ?? []), [column, value]];
+    return builder;
+  }),
   upsert: vi.fn((row: unknown, opts: unknown) => {
     calls.upsertRow = row;
     calls.upsertOpts = opts;
@@ -42,6 +45,7 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 import {
+  getIngredient,
   ingredientDisplayName,
   importIngredientFromOFF,
   listPoolIngredients,
@@ -77,6 +81,30 @@ describe('listPoolIngredients', () => {
     ]);
     expect(calls.limit).toBe(1000);
     expect(rows).toEqual([{ id: '1' }]);
+  });
+});
+
+// R-33 wave 6 (Task 1): the `/:id/edit` route's single-row fetch — reading
+// the pool cache alone renders blank on a hard reload / deep link.
+describe('getIngredient', () => {
+  beforeEach(() => {
+    calls.eq = undefined;
+  });
+
+  it('fetches by id', async () => {
+    builder.single.mockImplementationOnce(() =>
+      Promise.resolve({ data: { id: 'ing-1', name: 'Arroz blanco' }, error: null }),
+    );
+    const result = await getIngredient('ing-1');
+    expect(calls.eq).toEqual([['id', 'ing-1']]);
+    expect(result).toEqual({ id: 'ing-1', name: 'Arroz blanco' });
+  });
+
+  it('throws on a Supabase error instead of returning a falsy row', async () => {
+    builder.single.mockImplementationOnce(() =>
+      Promise.resolve({ data: null, error: new Error('not found') }),
+    );
+    await expect(getIngredient('missing')).rejects.toThrow('not found');
   });
 });
 

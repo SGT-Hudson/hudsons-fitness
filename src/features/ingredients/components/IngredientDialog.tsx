@@ -18,6 +18,7 @@ import {
   emptyForm,
   IngredientFormFields,
   ingredientToForm,
+  offResultToForm,
   parseForm,
   type IngredientFormState,
 } from './IngredientFormFields';
@@ -208,21 +209,7 @@ export function IngredientDialog({
                   picked={pickedOFF}
                   onPick={(r) => {
                     setPickedOFF(r);
-                    setForm({
-                      name: r.name,
-                      brand: r.brand ?? '',
-                      unit_type: 'gram',
-                      kcal_per_unit: String(r.kcalPer100g),
-                      protein_g_per_unit: String(r.proteinPer100g),
-                      carbs_g_per_unit: String(r.carbsPer100g),
-                      fat_g_per_unit: String(r.fatPer100g),
-                      fiber_g_per_unit: String(r.fiberPer100g),
-                      sugar_g_per_unit: r.sugarPer100g == null ? '' : String(r.sugarPer100g),
-                      saturated_fat_g_per_unit:
-                        r.satFatPer100g == null ? '' : String(r.satFatPer100g),
-                      // OFF had no salt figure → blank (unknown), never "0".
-                      salt_g_per_unit: r.saltPer100g == null ? '' : String(r.saltPer100g),
-                    });
+                    setForm(offResultToForm(r));
                   }}
                 />
                 {pickedOFF && (
@@ -255,21 +242,7 @@ export function IngredientDialog({
                     // & save; "complete" (no energy value) → fill the gaps.
                     setBarcodeBanner(r.complete ? 'found' : 'complete');
                     setPickedOFF(r);
-                    setForm({
-                      name: r.name,
-                      brand: r.brand ?? '',
-                      unit_type: 'gram',
-                      kcal_per_unit: String(r.kcalPer100g),
-                      protein_g_per_unit: String(r.proteinPer100g),
-                      carbs_g_per_unit: String(r.carbsPer100g),
-                      fat_g_per_unit: String(r.fatPer100g),
-                      fiber_g_per_unit: String(r.fiberPer100g),
-                      sugar_g_per_unit: r.sugarPer100g == null ? '' : String(r.sugarPer100g),
-                      saturated_fat_g_per_unit:
-                        r.satFatPer100g == null ? '' : String(r.satFatPer100g),
-                      // OFF had no salt figure → blank (unknown), never "0".
-                      salt_g_per_unit: r.saltPer100g == null ? '' : String(r.saltPer100g),
-                    });
+                    setForm(offResultToForm(r));
                     setTab('manual');
                   }}
                   onNotFound={() => {
