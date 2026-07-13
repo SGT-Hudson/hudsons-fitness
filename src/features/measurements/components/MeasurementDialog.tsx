@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/NumberField';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useUpsertMeasurement } from '../hooks';
@@ -133,14 +134,9 @@ export function MeasurementDialog({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="weightKg">{t('fields.weightKg')}</Label>
-              <Input
+              <NumberField
                 id="weightKg"
-                type="number"
-                inputMode="decimal"
-                min={20}
-                max={400}
-                step="0.1"
+                label={t('fields.weightKg')}
                 {...register('weight_kg')}
               />
               {errors.weight_kg && (
@@ -150,14 +146,9 @@ export function MeasurementDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bodyFatPct">{t('fields.bodyFatPct')}</Label>
-              <Input
+              <NumberField
                 id="bodyFatPct"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                max={70}
-                step="0.1"
+                label={t('fields.bodyFatPct')}
                 {...register('body_fat_pct')}
               />
               {errors.body_fat_pct && (
@@ -167,14 +158,9 @@ export function MeasurementDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="musclePct">{t('fields.musclePct')}</Label>
-              <Input
+              <NumberField
                 id="musclePct"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                max={100}
-                step="0.1"
+                label={t('fields.musclePct')}
                 {...register('muscle_pct')}
               />
               {errors.muscle_pct && (
@@ -184,14 +170,9 @@ export function MeasurementDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="waterPct">{t('fields.waterPct')}</Label>
-              <Input
+              <NumberField
                 id="waterPct"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                max={100}
-                step="0.1"
+                label={t('fields.waterPct')}
                 {...register('water_pct')}
               />
               {errors.water_pct && (
