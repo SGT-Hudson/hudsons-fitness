@@ -152,10 +152,22 @@ to string-in schemas + `NumberField`.
   **`PhaseDialog`'s R-06 test ("fat % converted to a DB fraction") must be updated
   for the `valueAsNumber` removal and must still pin the conversion.**
 - **objetivos** (`ObjetivosPage`): `target_body_fat_pct`.
-- **training:** `SetRow` `weight_kg` + `rpe`; `RoutineBuilder` `target_rpe`
-  (0.5 steps) and the warm-up **percentage**. Their integer siblings
-  (`target_sets`, `target_reps_min/max`, `rest_seconds`, warm-up reps) **keep
-  `valueAsNumber` and `type="number"`** — do not touch them.
+- **training:** `SetRow` **`weight_kg`** only → `NumberField`.
+  ⚠️ **RPE is an INTEGER everywhere** (Gonzalo, 2026-07-14 — correcting this
+  plan's original "0.5 steps"). Today the app is **inconsistent**: `RoutineBuilder`'s
+  `target_rpe` is `.int()`, while `SetRow`'s logged `rpe` allows **0.5 steps**
+  (pinned by a training schema test). Align them: **tighten the logged `rpe` to
+  `.int()`** and update that test. Both RPE fields **keep `type="number"` and
+  their spinner** — an integer cannot carry a decimal separator, so there is no
+  comma bug to fix there. *(Verified safe: prod has 0 fractional RPE values out
+  of 16 — no backfill needed. The `numeric` columns stay as they are; the rule is
+  app-level.)*
+  ⚠️ **The warm-up percentage stays an INTEGER** (Gonzalo — 40/60/80% is the real
+  use; half a percent buys nothing). Keep `type="number"` + `.int()`. Do not
+  migrate it.
+  The other integer siblings (`target_sets`, `target_reps_min/max`,
+  `rest_seconds`, warm-up reps) **keep `valueAsNumber` and `type="number"`** —
+  do not touch them.
 - Each migrated field's `z.number()` becomes a string-in schema. **Its min/max/
   step validation must survive as zod rules** (Constraint 7) — e.g. RPE stays
   6–10 in 0.5 steps, `target_body_fat_pct` stays 3–50.
