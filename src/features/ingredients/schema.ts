@@ -33,6 +33,11 @@ import { pickFirstError, type FieldErrors } from '@/lib/zod';
 // changing what saves.
 const NUMBER_CODE = 'invalidNumber';
 
+/** Shared reject condition for every numeric field below: non-finite or negative. */
+function isInvalidNonNegNumber(n: number): boolean {
+  return !Number.isFinite(n) || n < 0;
+}
+
 // STRING-input → non-negative number. `z.input === string` keeps the form
 // (which doubles as the OFF-search seed / edit-prefill carrier) string-valued
 // and the RHF field type string; `z.output` is the parsed number `parseForm`
@@ -41,8 +46,7 @@ const NUMBER_CODE = 'invalidNumber';
 const nonNegNumberFromString = z
   .string()
   .superRefine((s, ctx) => {
-    const n = Number(s);
-    if (!Number.isFinite(n) || n < 0) {
+    if (isInvalidNonNegNumber(Number(s))) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: NUMBER_CODE });
     }
   })
@@ -53,8 +57,7 @@ const fiberFromString = z
   .string()
   .superRefine((s, ctx) => {
     if (s.trim() === '') return; // blank means 0 — not an error
-    const n = Number(s);
-    if (!Number.isFinite(n) || n < 0) {
+    if (isInvalidNonNegNumber(Number(s))) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: NUMBER_CODE });
     }
   })
@@ -69,8 +72,7 @@ const optionalNonNegFromString = z
   .string()
   .superRefine((s, ctx) => {
     if (s.trim() === '') return; // blank means null — not an error
-    const n = Number(s);
-    if (!Number.isFinite(n) || n < 0) {
+    if (isInvalidNonNegNumber(Number(s))) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: NUMBER_CODE });
     }
   })
