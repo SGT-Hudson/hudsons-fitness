@@ -2,6 +2,8 @@ import type { OFFSearchResult } from '@/lib/openfoodfacts';
 
 /** The Ingredientes list — where the editor exits to (there is no read view). */
 export const INGREDIENTS_LIST = '/recipes/ingredients';
+/** The method picker (manual / OpenFoodFacts / barcode). Reads `?q=` to seed the name. */
+export const INGREDIENT_NEW = '/recipes/ingredients/new';
 /** The empty editor. Everything that creates an ingredient by page lands here. */
 export const INGREDIENT_NEW_MANUAL = '/recipes/ingredients/new/manual';
 /** The full-screen viewfinder. Linked from the method picker and the search page. */

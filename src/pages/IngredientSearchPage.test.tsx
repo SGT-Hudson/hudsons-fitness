@@ -129,6 +129,20 @@ describe('IngredientSearchPage', () => {
     expect(screen.getByRole('link', { name: 'Escanear el código de barras' })).toBeInTheDocument();
   });
 
+  it('carries the failed search term into the create hatch', async () => {
+    const user = userEvent.setup();
+    renderSearch();
+
+    await user.type(screen.getByRole('textbox', { name: 'Buscar ingredientes…' }), 'yogur griego');
+
+    // The term you just failed to find is the name you are about to create:
+    // drop it here and the picker seeds a blank editor, so you retype it.
+    expect(screen.getByRole('link', { name: 'Crear un ingrediente nuevo' })).toHaveAttribute(
+      'href',
+      '/recipes/ingredients/new?q=yogur+griego',
+    );
+  });
+
   it('returns to the list scoped to the picked ingredient', async () => {
     const user = userEvent.setup();
     renderSearch();
