@@ -150,6 +150,19 @@
   --macro-g:   oklch(0.84 0.12 92);
   --macro-fib: oklch(0.70 0.10 150);
 
+  /* Body-composition series (R-33 wave 7) — ONE set for every Progreso chart
+     (the composition lines, the trend sparklines, the hero tiles). The canvas
+     contradicts itself here: the mobile artboard paints fat warm-orange and
+     muscle with the nutri accent, the web artboard's expanded sheet paints fat
+     with the accent and muscle indigo. Mobile wins (the wave's standing rule),
+     so: fat = warm orange, muscle IS the section-independent nutri green, water
+     = cool blue. --comp-muscle resolves against --nutri on the same element
+     (<html>), so the .dark override below picks it up for free — the same trick
+     --accent already uses. */
+  --comp-fat:    oklch(0.66 0.16 50);
+  --comp-muscle: var(--nutri);
+  --comp-water:  oklch(0.65 0.10 220);
+
   /* Recipe media placeholder (R-33 wave 5) — hue is supplied per-recipe by
      recipeMediaHue(); only lightness/chroma live here so the fill (and the
      centred icon) stay legible in both themes without a JS theme check. */
@@ -249,6 +262,13 @@
   --macro-c:   oklch(0.72 0.14 250);
   --macro-g:   oklch(0.80 0.14 92);
   --macro-fib: oklch(0.72 0.13 150);
+
+  /* A 1.9px chart stroke over a near-black page needs the lightness the light
+     theme's fills did not: all three series land around L≈0.73 so no line reads
+     as "the faint one". --comp-muscle is not re-declared — it points at --nutri,
+     which this block already flips. */
+  --comp-fat:   oklch(0.74 0.15 50);
+  --comp-water: oklch(0.72 0.11 220);
 
   /* Chroma goes UP as lightness comes down (as --phase-* and --nutri-soft do):
      carrying the light theme's chroma into a dark fill produced burnt browns
@@ -356,6 +376,10 @@
   --color-macro-c: var(--macro-c);
   --color-macro-g: var(--macro-g);
   --color-macro-fib: var(--macro-fib);
+
+  --color-comp-fat: var(--comp-fat);
+  --color-comp-muscle: var(--comp-muscle);
+  --color-comp-water: var(--comp-water);
 
   --color-tone-good: var(--tone-good);
   --color-tone-warn: var(--tone-warn);

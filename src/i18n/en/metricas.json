@@ -26,7 +26,7 @@
       "daysAgo": "{{count}} days ago",
       "usingValues": "using the latest value"
     },
-    "weightTrendLabel": "Weight · trend (5-day avg)",
+    "weightTrendLabel": "Weight · MA5 trend",
     "rateUnit": "kg / wk",
     "sinceStart": "{{n}} kg since the start",
     "toGoal": "{{n}} kg to goal ({{target}})",
@@ -34,7 +34,23 @@
       "onTrack": "≈ {{date}} at this pace",
       "stalled": "Not progressing toward the target at this pace",
       "wrongDirection": "Moving away from the target at this pace"
+    },
+    "path": {
+      "title": "Goal",
+      "traveled": "of the way",
+      "start": "start",
+      "today": "today",
+      "goal": "goal"
     }
+  },
+  "composition": {
+    "title": "Composition",
+    "expand": "Open the composition chart",
+    "fat": "Fat",
+    "muscle": "Muscle",
+    "water": "Water",
+    "deltaWindow": "{{days}}d",
+    "empty": "Log body fat, muscle or water to see your composition."
   },
   "list": {
     "title": "Recent measurements",
@@ -54,6 +70,8 @@
   },
   "charts": {
     "empty": "Not enough data to render the chart yet.",
+    "expand": "Expand chart",
+    "close": "Close",
     "range": {
       "label": "Time range",
       "1m": "1M",
@@ -65,18 +83,24 @@
       "title": "Weight trend",
       "raw": "Daily weight",
       "ma5": "5-day moving avg",
-      "targetLine": "goal {{n}} kg"
+      "targetLine": "goal {{n}} kg",
+      "sheetTitle": "Weight · trend",
+      "sheetSubtitle": "5-day moving avg · {{range}}"
     },
     "composition": {
       "title": "Body composition",
       "bodyFat": "Body fat %",
       "muscle": "Muscle %",
       "water": "Water %",
-      "fat": "Fat",
-      "lean": "Lean",
+      "sheetSubtitle": "Fat · muscle · water · {{range}}",
       "empty": "Log body fat, muscle or water to see this chart.",
-      "help": "Fat + lean sum to exactly 100%. Values are linearly interpolated between measurements with data.",
+      "help": "Independent (non-stacked) series: water is distributed within lean tissue, so fat, muscle and water are not disjoint partitions. Values are linearly interpolated between measurements with data.",
       "helpKg": "Kilogram decomposition derived from the logged weight. Display only — it does not feed protein or TDEE.",
+      "series": {
+        "fat": "Fat",
+        "muscle": "Muscle",
+        "water": "Water"
+      },
       "unit": {
         "label": "Unit",
         "pct": "%",
@@ -84,8 +108,8 @@
       },
       "trends": {
         "title": "Independent trends",
-        "help": "Independent (non-stacked) series: water is distributed within lean tissue, so fat/muscle/water are not disjoint partitions.",
-        "bodyFat": "Body fat trend",
+        "help": "Each series on its own, at its own scale.",
+        "fat": "Body fat trend",
         "muscle": "Muscle trend",
         "water": "Water trend"
       }
