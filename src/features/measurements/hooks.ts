@@ -11,13 +11,19 @@ import {
 } from './api';
 import { isoDate } from '@/lib/dates';
 
-export type TimeRange = '30d' | '90d' | '1y' | 'all';
+export type TimeRange = '1m' | '6m' | '1y' | 'all';
+
+/** Presentation order of the range presets (the segmented filter). */
+export const TIME_RANGES: readonly TimeRange[] = ['1m', '6m', '1y', 'all'] as const;
+
+/** The preset every chart opens on. */
+export const DEFAULT_TIME_RANGE: TimeRange = '6m';
 
 export function fromDateForRange(range: TimeRange, now: Date = new Date()): string | null {
   if (range === 'all') return null;
   const d = new Date(now);
-  if (range === '30d') d.setDate(d.getDate() - 30);
-  else if (range === '90d') d.setDate(d.getDate() - 90);
+  if (range === '1m') d.setDate(d.getDate() - 30);
+  else if (range === '6m') d.setDate(d.getDate() - 182);
   else if (range === '1y') d.setFullYear(d.getFullYear() - 1);
   return isoDate(d);
 }

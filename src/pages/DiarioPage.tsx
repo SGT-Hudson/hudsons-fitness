@@ -60,7 +60,7 @@ export function DiarioPage() {
     phaseLabel,
   } = useDayContext(date);
 
-  const smoothed = useSmoothedMeasurements('30d');
+  const smoothed = useSmoothedMeasurements('1m');
   const materialize = useMaterializePlan();
   // Quick-add chips are best-effort: loading/error silently degrade to none.
   const quickAddItems = useQuickAddRecipes().data ?? [];
