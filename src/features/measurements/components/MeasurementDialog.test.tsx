@@ -73,6 +73,30 @@ describe('MeasurementDialog (Tier-2)', () => {
     await waitFor(() => expect(mutateAsync).not.toHaveBeenCalled());
   });
 
+  // The headline case of the decimal-comma fix. A Spanish keyboard puts `,` on
+  // the numeric keypad, so `82,4` is what a user types by default for a body
+  // weight — and `<input type="number">` silently stored it as 824.
+  //
+  // ⚠️ jsdom does NOT implement `type="number"`'s comma-stripping, so this test
+  // only pins the SCHEMA half of the fix (the parser behind `requiredNumericString`).
+  // The DOM half — the field being `type="text" inputMode="decimal"` so the
+  // comma survives to JS at all — is invisible to jsdom and can only be
+  // confirmed in a real browser.
+  it('accepts a decimal comma on body weight: 82,4 → 82.4', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.type(screen.getByLabelText(i18n.t('metricas:fields.weightKg')), '82,4');
+    await user.type(screen.getByLabelText(i18n.t('metricas:fields.bodyFatPct')), '18,5');
+
+    await user.click(screen.getByRole('button', { name: i18n.t('common:save') }));
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    const payload = mutateAsync.mock.calls[0][0];
+    expect(payload.weight_kg).toBe(82.4);
+    expect(payload.body_fat_pct).toBe(18.5);
+  });
+
   it('submits the parsed payload; blank optional metrics become null', async () => {
     const user = userEvent.setup();
     setup();

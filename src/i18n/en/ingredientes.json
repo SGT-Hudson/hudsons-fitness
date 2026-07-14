@@ -173,6 +173,7 @@
   "errors": {
     "invalid": "Check the fields. Some are missing or invalid.",
     "nameRequired": "Give the ingredient a name.",
+    "numberRequired": "Calories and macros (P/C/F) are required.",
     "invalidNumber": "Check the values: they must be positive numbers."
   }
 }

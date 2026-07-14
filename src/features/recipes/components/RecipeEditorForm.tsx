@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NumberField } from '@/components/ui/NumberField';
 import { Textarea } from '@/components/ui/textarea';
+import { parseDecimalInput } from '@/lib/number';
 import { AddIngredientSheet } from './AddIngredientSheet';
 import { IngredientAutocomplete } from './IngredientAutocomplete';
 import { RecipeMacrosCard } from './RecipeMacrosCard';
@@ -146,7 +148,7 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
   });
 
   const rows = watch('rows');
-  const servingsNum = Number(watch('servings'));
+  const servingsNum = parseDecimalInput(watch('servings')) ?? 0;
   const mealTypes = watch('mealTypes') ?? [];
   const recipeName = watch('name') ?? '';
 
@@ -169,11 +171,15 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
     setValue('mealTypes', next, { shouldDirty: true });
   }
 
+  // The row quantities are raw strings and may carry a decimal comma, so the
+  // live macros read them through the same parser the schema and the save path
+  // use (`Number('82,4')` would be NaN and the row would vanish from the card).
   const macroRows = (rows ?? [])
-    .filter((r) => r.ingredient && Number(r.quantity) > 0)
+    .map((r) => ({ ...r, qty: parseDecimalInput(r.quantity) ?? 0 }))
+    .filter((r) => r.ingredient && r.qty > 0)
     .map((r) => ({
       ingredient: r.ingredient as Ingredient,
-      quantity: Number(r.quantity),
+      quantity: r.qty,
       perServing: r.per_serving,
     }));
 
@@ -279,20 +285,18 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
             />
 
             <div className="mt-1 flex flex-wrap items-start gap-x-4 gap-y-2.5">
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="recipe-servings" className={META_LABEL}>
-                  {t('form.servings')}
-                </Label>
-                <Input
-                  id="recipe-servings"
-                  type="number"
-                  inputMode="decimal"
-                  min={0.5}
-                  step="0.5"
-                  className={cn(META_INPUT, 'w-[68px]')}
-                  {...register('servings')}
-                />
-              </div>
+              {/* Half a serving is legal (the field was `min={0.5} step="0.5"`),
+                  so servings is fraction-capable — and a Spanish keyboard types
+                  `2,5`, which a `type="number"` element would have handed React
+                  as "25". Hence `NumberField`. The `min` gate went with the
+                  `type` switch; the schema's `SERVINGS_MIN` is the gate now. */}
+              <NumberField
+                id="recipe-servings"
+                label={t('form.servings')}
+                labelClassName={META_LABEL}
+                className={cn(META_INPUT, 'w-[68px]')}
+                {...register('servings')}
+              />
 
               {/* Prep time — the new field (R-33 wave 5). Deliberately NOT a
                   native `type=number` with a `max`: the browser would block the
@@ -462,25 +466,26 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
                         )}
                       </div>
 
-                      <div className="relative">
+                      {/* A quantity is fraction-capable (82,4 g), so it is a
+                          `NumberField` — `type="text" inputMode="decimal"`, the
+                          only shape in which a typed decimal comma survives to
+                          JS. Its own label is rendered here (sr-only) rather
+                          than by the field: the column header carries the visible
+                          name. `min={0}` went with the `type` switch; the
+                          schema's `rowInvalidQuantity` rule (> 0) is the gate. */}
+                      <div>
                         <Label htmlFor={`row-qty-${field.rowId}`} className="sr-only">
                           {t('form.quantityOf', { name })}
                         </Label>
-                        <Input
+                        <NumberField
                           id={`row-qty-${field.rowId}`}
-                          type="number"
-                          inputMode="decimal"
-                          step="0.1"
-                          min={0}
+                          suffix={unitSuffix}
                           autoFocus={field.rowId === justAddedRowId}
                           onFocus={() => setJustAddedRowId(null)}
                           placeholder={t('form.quantity')}
-                          className="tnum h-8 rounded-[7px] border-input bg-muted pl-2 pr-6 text-[12px] font-medium"
+                          className="h-8 rounded-[7px] border-input bg-muted pl-2 pr-6 text-[12px] font-medium"
                           {...register(`rows.${index}.quantity`)}
                         />
-                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10.5px] text-text-dim">
-                          {unitSuffix}
-                        </span>
                       </div>
 
                       {/* THE load-bearing control. `per_serving` decides how the

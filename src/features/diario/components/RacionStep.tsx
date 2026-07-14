@@ -6,7 +6,9 @@ import { ArrowLeft, Trash2, Apple, UtensilsCrossed, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NumberField } from '@/components/ui/NumberField';
 import { QuantityStepper, roundToStep } from '@/components/ui/QuantityStepper';
+import { parseDecimalInput } from '@/lib/number';
 import { cn } from '@/lib/utils';
 import { roundMacro, scale, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { ingredientDisplayName } from '@/features/ingredients/api';
@@ -15,12 +17,7 @@ import { useCreateMealLog, useUpdateMealLog, useDeleteMealLog } from '../hooks';
 import type { CreateMealLogInput, MealLogWithJoins, MealType } from '../api';
 import type { TablesUpdate } from '@/types/database';
 import type { FieldErrors } from '@/lib/zod';
-import {
-  firstMealLogError,
-  mealLogFormSchema,
-  parseOptionalNumber,
-  type MealLogFormValues,
-} from '../schema';
+import { firstMealLogError, mealLogFormSchema, type MealLogFormValues } from '../schema';
 import { MacroProjBar } from './MacroProjBar';
 import type { AddSheetSelection } from './AddToDaySheet';
 
@@ -101,8 +98,7 @@ function stepperConfig(selection: AddSheetSelection): { min: number; step: numbe
 }
 
 function parseKcalPreview(v: string): number {
-  const n = Number(v.trim());
-  return Number.isFinite(n) ? n : 0;
+  return parseDecimalInput(v) ?? 0;
 }
 
 /** This serving's macro contribution — the live projection driver. Pure math,
@@ -116,10 +112,10 @@ function projectedAdded(
   if (selection.kind === 'ingredient') return ingredientMacros(selection.ingredient, qty);
   return {
     kcal: parseKcalPreview(custom.customKcal),
-    proteinG: parseOptionalNumber(custom.customProtein) ?? 0,
-    carbsG: parseOptionalNumber(custom.customCarbs) ?? 0,
-    fatG: parseOptionalNumber(custom.customFat) ?? 0,
-    fiberG: parseOptionalNumber(custom.customFiber) ?? 0,
+    proteinG: parseDecimalInput(custom.customProtein) ?? 0,
+    carbsG: parseDecimalInput(custom.customCarbs) ?? 0,
+    fatG: parseDecimalInput(custom.customFat) ?? 0,
+    fiberG: parseDecimalInput(custom.customFiber) ?? 0,
   };
 }
 
@@ -228,11 +224,14 @@ export function RacionStep({
         void submit({
           kind: 'custom',
           name: v.customName.trim(),
-          kcal: Number(v.customKcal),
-          proteinG: parseOptionalNumber(v.customProtein),
-          carbsG: parseOptionalNumber(v.customCarbs),
-          fatG: parseOptionalNumber(v.customFat),
-          fiberG: parseOptionalNumber(v.customFiber),
+          // The schema validated these, so kcal parses; a blank sub-macro is
+          // null — UNKNOWN, never 0 (U-1). Both read the shared comma-aware
+          // parser (invariant 6), the same one the schema validated with.
+          kcal: parseDecimalInput(v.customKcal) ?? 0,
+          proteinG: parseDecimalInput(v.customProtein),
+          carbsG: parseDecimalInput(v.customCarbs),
+          fatG: parseDecimalInput(v.customFat),
+          fiberG: parseDecimalInput(v.customFiber),
         });
       },
       (errors) => {
@@ -257,11 +256,11 @@ export function RacionStep({
         void submitUpdate({
           meal_type: mealType,
           custom_name: v.customName.trim(),
-          custom_kcal: Number(v.customKcal),
-          custom_protein_g: parseOptionalNumber(v.customProtein),
-          custom_carbs_g: parseOptionalNumber(v.customCarbs),
-          custom_fat_g: parseOptionalNumber(v.customFat),
-          custom_fiber_g: parseOptionalNumber(v.customFiber),
+          custom_kcal: parseDecimalInput(v.customKcal) ?? 0,
+          custom_protein_g: parseDecimalInput(v.customProtein),
+          custom_carbs_g: parseDecimalInput(v.customCarbs),
+          custom_fat_g: parseDecimalInput(v.customFat),
+          custom_fiber_g: parseDecimalInput(v.customFiber),
         });
       },
       (errors) => {
@@ -370,72 +369,41 @@ export function RacionStep({
             <Label htmlFor="racion-custom-name">{t('fields.customName')}</Label>
             <Input id="racion-custom-name" {...customForm.register('customName')} />
           </div>
+          {/* Fraction-capable, so `NumberField` (`type="text"
+              inputMode="decimal"`): a Spanish keyboard types `30,5` and a
+              `type="number"` element would hand React "305". `min={0}` went
+              with it — the schema's `customMacroInvalid` rule is the gate now. */}
           <div className="grid grid-cols-3 gap-2.5">
-            <div className="space-y-1">
-              <Label htmlFor="racion-custom-kcal" className="text-xs">
-                {t('fields.kcal')}
-              </Label>
-              <Input
-                id="racion-custom-kcal"
-                type="number"
-                inputMode="decimal"
-                step="0.1"
-                min={0}
-                {...customForm.register('customKcal')}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="racion-custom-protein" className="text-xs">
-                {t('fields.protein')}
-              </Label>
-              <Input
-                id="racion-custom-protein"
-                type="number"
-                inputMode="decimal"
-                step="0.1"
-                min={0}
-                {...customForm.register('customProtein')}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="racion-custom-carbs" className="text-xs">
-                {t('fields.carbs')}
-              </Label>
-              <Input
-                id="racion-custom-carbs"
-                type="number"
-                inputMode="decimal"
-                step="0.1"
-                min={0}
-                {...customForm.register('customCarbs')}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="racion-custom-fat" className="text-xs">
-                {t('fields.fat')}
-              </Label>
-              <Input
-                id="racion-custom-fat"
-                type="number"
-                inputMode="decimal"
-                step="0.1"
-                min={0}
-                {...customForm.register('customFat')}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="racion-custom-fiber" className="text-xs">
-                {t('fields.fiber')}
-              </Label>
-              <Input
-                id="racion-custom-fiber"
-                type="number"
-                inputMode="decimal"
-                step="0.1"
-                min={0}
-                {...customForm.register('customFiber')}
-              />
-            </div>
+            <NumberField
+              id="racion-custom-kcal"
+              label={t('fields.kcal')}
+              labelClassName="text-xs"
+              {...customForm.register('customKcal')}
+            />
+            <NumberField
+              id="racion-custom-protein"
+              label={t('fields.protein')}
+              labelClassName="text-xs"
+              {...customForm.register('customProtein')}
+            />
+            <NumberField
+              id="racion-custom-carbs"
+              label={t('fields.carbs')}
+              labelClassName="text-xs"
+              {...customForm.register('customCarbs')}
+            />
+            <NumberField
+              id="racion-custom-fat"
+              label={t('fields.fat')}
+              labelClassName="text-xs"
+              {...customForm.register('customFat')}
+            />
+            <NumberField
+              id="racion-custom-fiber"
+              label={t('fields.fiber')}
+              labelClassName="text-xs"
+              {...customForm.register('customFiber')}
+            />
           </div>
         </div>
       )}

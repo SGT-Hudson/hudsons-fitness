@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseDecimalInput } from './number';
 
 // Shared zod helpers for the R-09 string-input form schemas (D-C2).
 //
@@ -15,15 +16,22 @@ import { z } from 'zod';
 // The DOM `<input>` value is a string. `z.input` stays `string` (so the RHF
 // field type is string and `register()` needs no `valueAsNumber`); `z.output`
 // is the numeric / null shape the submit handler ships.
+//
+// Both helpers parse via `parseDecimalInput` (invariant 6's shared boundary),
+// so a decimal COMMA is accepted: `"82,4"` → 82.4. That only reaches them
+// because the fields render as `NumberField` (`type="text" inputMode="decimal"`)
+// — a `type="number"` element strips the comma before JS sees it. What is
+// accepted changed; what BLANK means did not.
+//
+// These fields lost their native `min`/`max`/`step` gates with `type="number"`,
+// so the bounds below are now the only thing enforcing them.
 
 /**
  * Required string `<input>` value → bounded number.
  *
  * Blank (after trim) emits `requiredCode`; a non-blank value that is
- * non-finite or outside `[min, max]` emits the distinct `range` code so the
- * form can surface a range-specific message instead of the required one. The
- * accept/reject set is unchanged from the prior inline helpers; only which
- * message text is shown differs (blank → required copy, bad value → range).
+ * unparseable or outside `[min, max]` emits the distinct `range` code so the
+ * form can surface a range-specific message instead of the required one.
  */
 export const requiredNumericString = (
   min: number,
@@ -35,27 +43,28 @@ export const requiredNumericString = (
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: requiredCode });
       return;
     }
-    const n = Number(s);
-    if (!Number.isFinite(n) || n < min || n > max) {
+    const n = parseDecimalInput(s);
+    if (n === null || n < min || n > max) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'range' });
     }
-  }).transform((s) => Number(s));
+  }).transform((s) =>
+    // Non-null: the refinement above rejected every unparseable string, and a
+    // failed refinement short-circuits the transform.
+    parseDecimalInput(s) as number,
+  );
 
 /**
  * Optional string `<input>` value → bounded number | null.
  *
- * Blank or non-finite → null (passes — parity with the prior `parseOptional`).
+ * Blank or unparseable → null (passes — parity with the prior `parseOptional`).
  * Only a finite value outside `[min, max]` is rejected, with the distinct
  * `range` code so the message isn't the required copy.
  */
 export const optionalNumericString = (min: number, max: number) =>
   z
     .string()
-    .transform((s) => {
-      if (s.trim() === '') return null;
-      const n = Number(s);
-      return Number.isFinite(n) ? n : null; // non-finite → null (parseOptional parity)
-    })
+    // blank → null, unparseable → null (parseOptional parity, unchanged)
+    .transform((s) => parseDecimalInput(s))
     .superRefine((n, ctx) => {
       if (n !== null && (n < min || n > max)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'range' });

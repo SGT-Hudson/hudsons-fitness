@@ -8,11 +8,20 @@ import { firstIngredientError, ingredientFormSchema } from './schema';
 // carries STABLE issue codes (previously it relied on zod's default English
 // text, which the old dialog never surfaced — it only checked pass/fail).
 //
-// The accept/reject SET is unchanged from before this task: a blank
-// name is still the only genuinely "required" failure (kcal/protein/carbs/fat
-// blank still parses as 0 — unchanged behavior, gated today by the dialog's
-// native `required` inputs); fiber blank still means 0; sugar/satFat/salt
-// blank still means null. Only the issue MESSAGE (code) is new.
+// The decimal-comma fix then moved every numeric field onto `parseDecimalInput`
+// and every input onto `NumberField` (`type="text"`), which changed the
+// accept/reject set in exactly two ways, both deliberate:
+//
+//  - a decimal COMMA now parses (`"8,5"` → 8.5), and an ambiguous separator
+//    pair is rejected rather than guessed;
+//  - a blank kcal/protein/carbs/fat is now REJECTED (`numberRequired`). It used
+//    to parse to 0, blocked only by the inputs' native `required` — which died
+//    with `type="number"`. The blank→0 transform cannot double as that gate, so
+//    zod carries it, and a blank protein cannot save 0 g in silence.
+//
+// What blank means everywhere else is untouched: fiber blank is still 0,
+// sugar/satFat/salt blank is still null (unknown ≠ 0), garbage in a sub-macro
+// is still an error rather than a silent null.
 
 const validForm = {
   name: 'Pan',
@@ -60,10 +69,62 @@ describe('ingredientFormSchema — issue codes', () => {
     }
   });
 
-  it('a blank required macro still parses to 0 (unchanged; the dialog gates blank via native `required`)', () => {
-    const res = ingredientFormSchema.safeParse({ ...validForm, kcal_per_unit: '' });
+  // The decimal-comma fix moved these four fields to `NumberField`
+  // (`type="text"`), which drops the native `required` gate the editor's inputs
+  // carried. The blank→0 transform CANNOT double as that gate — without an
+  // explicit zod rule a blank protein would silently save 0 g. So zod owns it
+  // now, with its own code (and the app's own message, not a browser bubble).
+  it.each(['kcal_per_unit', 'protein_g_per_unit', 'carbs_g_per_unit', 'fat_g_per_unit'])(
+    'a blank %s is rejected with the numberRequired code (zod owns the gate `required` used to)',
+    (field) => {
+      const res = ingredientFormSchema.safeParse({ ...validForm, [field]: '  ' });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        const issue = res.error.issues.find((i) => i.path[0] === field);
+        expect(issue?.message).toBe('numberRequired');
+      }
+    },
+  );
+
+  // A Spanish keyboard puts `,` on the numeric keypad. The DOM half of the fix
+  // is `NumberField`; this is the schema half.
+  it('accepts a decimal comma in every numeric field, and stores the point value', () => {
+    const res = ingredientFormSchema.safeParse({
+      ...validForm,
+      kcal_per_unit: '265,5',
+      protein_g_per_unit: '9,1',
+      fiber_g_per_unit: '2,4',
+      salt_g_per_unit: '1,2',
+    });
     expect(res.success).toBe(true);
-    if (res.success) expect(res.data.kcal_per_unit).toBe(0);
+    if (res.success) {
+      expect(res.data.kcal_per_unit).toBe(265.5);
+      expect(res.data.protein_g_per_unit).toBe(9.1);
+      expect(res.data.fiber_g_per_unit).toBe(2.4);
+      expect(res.data.salt_g_per_unit).toBe(1.2);
+    }
+  });
+
+  it('rejects an ambiguous separator pair rather than guessing a thousands separator', () => {
+    const res = ingredientFormSchema.safeParse({ ...validForm, kcal_per_unit: '1,234.5' });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      const issue = res.error.issues.find((i) => i.path[0] === 'kcal_per_unit');
+      expect(issue?.message).toBe('invalidNumber');
+    }
+  });
+
+  // `MacroField` hardcoded `max={100}`, which blocked a legitimate save on a
+  // `unit_type='unit'` ingredient — 130 g of carbs in one unit is real. The
+  // gate is gone with the `type` switch and it is NOT coming back as a zod rule.
+  it('accepts a macro above 100 g (a per-unit ingredient can hold one)', () => {
+    const res = ingredientFormSchema.safeParse({
+      ...validForm,
+      unit_type: 'unit',
+      carbs_g_per_unit: '130',
+    });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.carbs_g_per_unit).toBe(130);
   });
 
   it('blank fiber still parses to 0 (unchanged)', () => {

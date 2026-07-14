@@ -141,17 +141,17 @@ describe('auto-kcal', () => {
     renderEditor();
 
     // Blank form: nothing typed, nothing derived yet.
-    expect(kcalField()).toHaveValue(0);
+    expect(kcalField()).toHaveValue('0');
     expect(autoChip()).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Proteínas'), '10');
-    await waitFor(() => expect(kcalField()).toHaveValue(40)); // 4·10
+    await waitFor(() => expect(kcalField()).toHaveValue('40')); // 4·10
 
     await user.type(screen.getByLabelText('Carbohidratos'), '20');
-    await waitFor(() => expect(kcalField()).toHaveValue(120)); // + 4·20
+    await waitFor(() => expect(kcalField()).toHaveValue('120')); // + 4·20
 
     await user.type(screen.getByLabelText('Grasas'), '5');
-    await waitFor(() => expect(kcalField()).toHaveValue(165)); // + 9·5
+    await waitFor(() => expect(kcalField()).toHaveValue('165')); // + 9·5
 
     // Still auto: the field is the derivation's, not the user's.
     expect(autoChip()).toBeInTheDocument();
@@ -161,24 +161,24 @@ describe('auto-kcal', () => {
     const user = userEvent.setup();
     renderEditor();
     await fillMacros(user);
-    await waitFor(() => expect(kcalField()).toHaveValue(165));
+    await waitFor(() => expect(kcalField()).toHaveValue('165'));
 
     await overrideKcal(user, '200');
 
     expect(autoChip()).not.toBeInTheDocument();
-    await waitFor(() => expect(kcalField()).toHaveValue(200));
+    await waitFor(() => expect(kcalField()).toHaveValue('200'));
 
     // The derivation must not claw it back on the next macro keystroke.
     await user.type(screen.getByLabelText('Proteínas'), '5'); // 10 → 105
-    await waitFor(() => expect(screen.getByLabelText('Proteínas')).toHaveValue(105));
-    expect(kcalField()).toHaveValue(200);
+    await waitFor(() => expect(screen.getByLabelText('Proteínas')).toHaveValue('105'));
+    expect(kcalField()).toHaveValue('200');
   });
 
   it('does NOT flip on a click or focus alone — only an actual keystroke does', async () => {
     const user = userEvent.setup();
     renderEditor();
     await fillMacros(user);
-    await waitFor(() => expect(kcalField()).toHaveValue(165));
+    await waitFor(() => expect(kcalField()).toHaveValue('165'));
 
     kcalField().focus();
     await user.click(kcalField());
@@ -198,7 +198,7 @@ describe('auto-kcal', () => {
 
     await user.click(screen.getByRole('button', { name: 'Volver a automático' }));
 
-    await waitFor(() => expect(kcalField()).toHaveValue(165));
+    await waitFor(() => expect(kcalField()).toHaveValue('165'));
     expect(autoChip()).toBeInTheDocument();
   });
 
@@ -207,20 +207,20 @@ describe('auto-kcal', () => {
     renderEditor({ offProduct: offResult() });
 
     // OFF says 116; Atwater over the same macros says 122. The label is the truth.
-    expect(kcalField()).toHaveValue(116);
+    expect(kcalField()).toHaveValue('116');
     expect(autoChip()).not.toBeInTheDocument();
 
     // Editing a macro must not re-derive over it either.
     await user.clear(screen.getByLabelText('Proteínas'));
     await user.type(screen.getByLabelText('Proteínas'), '5');
-    await waitFor(() => expect(screen.getByLabelText('Proteínas')).toHaveValue(5));
-    expect(kcalField()).toHaveValue(116);
+    await waitFor(() => expect(screen.getByLabelText('Proteínas')).toHaveValue('5'));
+    expect(kcalField()).toHaveValue('116');
   });
 
   it('starts MANUAL when editing a stored row (a stored kcal is just a number)', () => {
     renderEditor({ ingredient: ingredient({ source: 'manual', external_id: null }) });
 
-    expect(kcalField()).toHaveValue(116);
+    expect(kcalField()).toHaveValue('116');
     expect(autoChip()).not.toBeInTheDocument();
   });
 });
@@ -314,12 +314,99 @@ describe('the submit branch (Constraint 2)', () => {
   });
 });
 
+// The decimal-comma fix. A Spanish keyboard puts `,` on the numeric keypad, so
+// `8,5` is what a user types by default — and `<input type="number">` STRIPS the
+// comma before React sees it (`"85"`). userEvent reproduces that in jsdom, so
+// these go red against the old `type="number"` MacroField, and red again if the
+// schema stops parsing the comma. They assert the SUBMITTED PAYLOAD, never the
+// field's own value — the field's value is exactly what lies.
+describe('the decimal comma', () => {
+  it('stores 8,5 g of protein as 8.5 — and the auto-kcal derivation reads it too', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nombre'), 'Copos de avena');
+    await user.type(screen.getByLabelText('Proteínas'), '8,5');
+    await user.type(screen.getByLabelText('Carbohidratos'), '0');
+    await user.type(screen.getByLabelText('Grasas'), '0');
+    await user.click(save());
+
+    await waitFor(() => expect(createMut.mutateAsync).toHaveBeenCalledTimes(1));
+    expect(createMut.mutateAsync.mock.calls[0][0]).toMatchObject({
+      protein_g_per_unit: 8.5,
+      kcal_per_unit: 34, // 4 · 8.5 — NaN or 340 if the comma were lost
+    });
+  });
+
+  it('stores a comma typed into kcal — and typing it still flips auto → manual', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nombre'), 'Copos de avena');
+    await fillMacros(user);
+    await overrideKcal(user, '82,4');
+
+    expect(autoChip()).not.toBeInTheDocument();
+    await user.click(save());
+
+    await waitFor(() => expect(createMut.mutateAsync).toHaveBeenCalledTimes(1));
+    expect(createMut.mutateAsync.mock.calls[0][0].kcal_per_unit).toBe(82.4);
+  });
+
+  it('stores a comma typed into an optional sub-macro (1,2 g of salt)', async () => {
+    const user = userEvent.setup();
+    renderEditor({ ingredient: ingredient() });
+
+    await user.type(screen.getByLabelText('Sal'), '1,2');
+    await user.click(save());
+
+    await waitFor(() => expect(updateMut.mutateAsync).toHaveBeenCalledTimes(1));
+    expect(updateMut.mutateAsync.mock.calls[0][0].patch.salt_g_per_unit).toBe(1.2);
+  });
+});
+
+// `type="text"` drops the native `required` gate, so zod owns it now — and it
+// MUST, because a blank macro parses to 0: without this rule a blank protein
+// would save silently as 0 g.
+describe('the blank-macro gate (zod, not the browser)', () => {
+  it('blocks the save and says why when a macro is left blank', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nombre'), 'Copos de avena');
+    await user.type(screen.getByLabelText('Carbohidratos'), '58');
+    await user.type(screen.getByLabelText('Grasas'), '7');
+    // Proteínas left blank.
+    await user.click(save());
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('obligatorios');
+    expect(createMut.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('still lets a blank optional sub-macro through as null (blank = unknown, not missing)', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nombre'), 'Copos de avena');
+    await fillMacros(user);
+    await user.click(save());
+
+    await waitFor(() => expect(createMut.mutateAsync).toHaveBeenCalledTimes(1));
+    expect(createMut.mutateAsync.mock.calls[0][0]).toMatchObject({
+      sugar_g_per_unit: null,
+      saturated_fat_g_per_unit: null,
+      salt_g_per_unit: null,
+      fiber_g_per_unit: 0, // fiber's blank is a 0, not an unknown — unchanged
+    });
+  });
+});
+
 describe('salt (null = unknown, never 0)', () => {
   it('renders a null salt as a BLANK field and sends it back as null', async () => {
     const user = userEvent.setup();
     renderEditor({ ingredient: ingredient({ salt_g_per_unit: null }) });
 
-    expect(screen.getByLabelText('Sal')).toHaveValue(null);
+    expect(screen.getByLabelText('Sal')).toHaveValue('');
 
     await user.click(save());
 
@@ -331,7 +418,7 @@ describe('salt (null = unknown, never 0)', () => {
     const user = userEvent.setup();
     renderEditor({ ingredient: ingredient({ salt_g_per_unit: 0 }) });
 
-    expect(screen.getByLabelText('Sal')).toHaveValue(0);
+    expect(screen.getByLabelText('Sal')).toHaveValue('0');
 
     await user.clear(screen.getByLabelText('Sal'));
     await user.type(screen.getByLabelText('Sal'), '1.2');

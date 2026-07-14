@@ -123,8 +123,9 @@ describe('SessionEditor (Tier-2)', () => {
           created_at: '2026-05-22T10:00:02Z',
         },
         {
+          // RPE is an integer everywhere (it used to allow 0.5 steps here).
           id: 's3', session_id: 'session-1', exercise_id: '33333333-3333-3333-3333-333333333333',
-          set_index: 1, reps: 5, weight_kg: 100, rpe: 7.5, is_warmup: false,
+          set_index: 1, reps: 5, weight_kg: 100, rpe: 9, is_warmup: false,
           created_at: '2026-05-22T10:00:03Z',
         },
       ],
@@ -173,7 +174,7 @@ describe('SessionEditor (Tier-2)', () => {
       set_index: 1, // re-indexed from 1 within the squat block
       reps: 5,
       weight_kg: 100,
-      rpe: 7.5,
+      rpe: 9,
     });
 
     // Two blocks rendered — use getAllByRole (multiple matches expected).
@@ -182,6 +183,46 @@ describe('SessionEditor (Tier-2)', () => {
     ).toBeGreaterThan(0);
 
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith('saved-id'));
+  });
+
+  // The decimal-comma fix on the logged load. A Spanish keyboard puts `,` on
+  // the numeric keypad; on the old `type="number"` element the browser stripped
+  // it before RHF saw it (`82,4` → `"824"`, an 824 kg bench), and
+  // `valueAsNumber` on a real comma returns NaN. Assert the SUBMITTED PAYLOAD.
+  it('accepts a decimal comma in the logged weight: 82,4 → 82.4', async () => {
+    const user = userEvent.setup();
+    const initial: SessionWithSets = {
+      id: 'session-2',
+      user_id: 'user-1',
+      performed_on: '2026-05-22',
+      title: null,
+      notes: null,
+      program_id: null,
+      routine_id: null,
+      created_at: '2026-05-22T10:00:00Z',
+      updated_at: '2026-05-22T10:00:00Z',
+      workout_sets: [
+        {
+          id: 's1', session_id: 'session-2', exercise_id: mockExercise.id,
+          set_index: 1, reps: 8, weight_kg: 70, rpe: 7, is_warmup: false,
+          created_at: '2026-05-22T10:00:01Z',
+        },
+      ],
+    };
+
+    const { onSubmit } = renderEditor({
+      initial,
+      initialExercises: { [mockExercise.id]: mockExercise },
+    });
+
+    const weight = screen.getAllByLabelText(i18n.t('entrenamiento:setRow.weightKg'))[0];
+    await user.clear(weight);
+    await user.type(weight, '82,4');
+
+    await user.click(screen.getByRole('button', { name: i18n.t('entrenamiento:editor.save') }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0].sets[0].weight_kg).toBeCloseTo(82.4, 10);
   });
 
   it('does not submit when no exercise has been picked (zod rejects empty exercise_id)', async () => {

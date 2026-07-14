@@ -139,7 +139,8 @@
     "servingsInvalid": "Servings must be greater than 0.",
     "quantityInvalid": "Quantity must be greater than 0.",
     "customNameRequired": "Add a name.",
-    "customKcalRequired": "Calories are required."
+    "customKcalRequired": "Calories are required.",
+    "customMacroInvalid": "Calories and macros cannot be negative."
   },
   "addSheet": {
     "title": "Add to today",

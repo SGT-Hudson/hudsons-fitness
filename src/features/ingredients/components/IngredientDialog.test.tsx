@@ -140,7 +140,7 @@ describe('IngredientDialog — create-only', () => {
 
     expect(screen.getByRole('region', { name: 'Vista previa' })).toBeInTheDocument();
     await fillMacros(user);
-    await waitFor(() => expect(screen.getByLabelText('Calorías')).toHaveValue(165));
+    await waitFor(() => expect(screen.getByLabelText('Calorías')).toHaveValue('165'));
     expect(screen.getByText('auto')).toBeInTheDocument();
   });
 

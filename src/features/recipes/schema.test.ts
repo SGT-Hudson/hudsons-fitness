@@ -10,6 +10,7 @@ import {
   recipeFormSchema,
   firstRecipeError,
   PREP_TIME_MAX_MINUTES,
+  SERVINGS_MIN,
 } from './schema';
 
 const validRows = [
@@ -115,5 +116,59 @@ describe('recipeFormSchema — prep time', () => {
         prepTime: { message: 'prepTimeInvalid' },
       }),
     ).toBe('nameRequired');
+  });
+});
+
+// The decimal-comma fix. A row quantity is fraction-capable (82,4 g of chicken),
+// so it renders as a `NumberField` (`type="text" inputMode="decimal"`) and the
+// comma reaches the schema — as it does for `servings`, which turned out to be
+// fraction-capable too. `prepTime` is integer minutes and deliberately NOT
+// migrated: it keeps its spinner, so `1,5` there is still invalid (pinned
+// above).
+describe('recipeFormSchema — a row quantity with a decimal comma', () => {
+  it('accepts 82,4 as a quantity', () => {
+    expect(
+      recipeFormSchema.safeParse(
+        form({ rows: [{ ...validRows[0], quantity: '82,4' }] }),
+      ).success,
+    ).toBe(true);
+  });
+
+  it('still rejects a garbage / zero / ambiguous quantity', () => {
+    for (const quantity of ['mucho', '0', '-5', '1,234.5']) {
+      const res = recipeFormSchema.safeParse(
+        form({ rows: [{ ...validRows[0], quantity }] }),
+      );
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.issues.find((i) => i.path[0] === 'rows')?.message).toBe(
+          'rowInvalidQuantity',
+        );
+      }
+    }
+  });
+});
+
+// Servings is fraction-capable — `min={0.5} step="0.5"` on the input, and half a
+// serving is a legitimate recipe — so it is a `NumberField` like every other
+// decimal, and its `min` gate (which `type="text"` stopped enforcing) lives here.
+describe('recipeFormSchema — servings', () => {
+  it('accepts a decimal comma: 2,5 raciones', () => {
+    const res = recipeFormSchema.safeParse(form({ servings: '2,5' }));
+    expect(res.success).toBe(true);
+  });
+
+  it('accepts the half-serving floor itself', () => {
+    expect(recipeFormSchema.safeParse(form({ servings: String(SERVINGS_MIN) })).success).toBe(true);
+  });
+
+  it.each(['0', '0,2', '-1', '', 'dos', '1,234.5'])('rejects %s', (servings) => {
+    const res = recipeFormSchema.safeParse(form({ servings }));
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.error.issues.find((i) => i.path[0] === 'servings')?.message).toBe(
+        'servingsInvalid',
+      );
+    }
   });
 });

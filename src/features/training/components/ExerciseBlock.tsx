@@ -71,13 +71,13 @@ export function ExerciseBlock({ blockIndex, todayISO, initialExercise, onRemoveB
     // but stay defensive).
     const current = getValues(`blocks.${blockIndex}.sets`);
     if (!current || current.length === 0) {
-      sets.append({ set_index: 1, reps: 0, weight_kg: 0, rpe: null, is_warmup: false });
+      sets.append({ set_index: 1, reps: 0, weight_kg: '0', rpe: null, is_warmup: false });
     }
   }
 
   function appendSet() {
     const next = sets.fields.length + 1;
-    sets.append({ set_index: next, reps: 0, weight_kg: 0, rpe: null, is_warmup: false });
+    sets.append({ set_index: next, reps: 0, weight_kg: '0', rpe: null, is_warmup: false });
   }
 
   function applySuggestedLoad(nextWeightKg: number) {
@@ -85,7 +85,9 @@ export function ExerciseBlock({ blockIndex, todayISO, initialExercise, onRemoveB
     // about to commit). If all sets are already filled, append a new one.
     const all = getValues(`blocks.${blockIndex}.sets`);
     const targetIdx = (all?.length ?? 1) - 1;
-    setValue(`blocks.${blockIndex}.sets.${targetIdx}.weight_kg`, nextWeightKg, {
+    // The weight field holds the raw `NumberField` string now; the suggested
+    // load is already a number, so emit it point-decimal.
+    setValue(`blocks.${blockIndex}.sets.${targetIdx}.weight_kg`, String(nextWeightKg), {
       shouldValidate: true,
     });
   }

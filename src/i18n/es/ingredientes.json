@@ -173,6 +173,7 @@
   "errors": {
     "invalid": "Revisa los campos. Faltan datos o hay valores no válidos.",
     "nameRequired": "Escribe un nombre para el ingrediente.",
+    "numberRequired": "Las calorías y los macros (P/C/G) son obligatorios.",
     "invalidNumber": "Revisa los valores: deben ser números positivos."
   }
 }

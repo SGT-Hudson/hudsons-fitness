@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/NumberField';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -95,8 +96,11 @@ export function SettingsBiometricsPage() {
               <Input id="birthDate" type="date" max={todayInTZ()} {...form.register('birth_date')} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="heightCm">{t('biometrics.heightCm')}</Label>
-              <Input id="heightCm" type="number" inputMode="decimal" min={100} max={250} step="0.1" {...form.register('height_cm')} />
+              <NumberField
+                id="heightCm"
+                label={t('biometrics.heightCm')}
+                {...form.register('height_cm')}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="initialWeightKg">{t('biometrics.initialWeightKg')}</Label>

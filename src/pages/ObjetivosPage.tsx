@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/NumberField';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -29,10 +29,17 @@ import { PhaseDialog } from '@/features/phases/components/PhaseDialog';
 import { useLatestMeasurement } from '@/features/measurements/hooks';
 import { fractionToPct } from '@/lib/macros';
 import type { Phase, PhaseInput } from '@/features/phases/api';
-import { goalFormSchema, type GoalFormValues } from '@/features/objetivos/schema';
+import {
+  goalFormSchema,
+  type GoalFormValues,
+  type ParsedGoalForm,
+} from '@/features/objetivos/schema';
 import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
 
 type GoalForm = GoalFormValues;
+
+/** Default target body-fat % when no goal is stored yet. */
+const DEFAULT_TARGET_BF = 15;
 
 function phaseStatus(phase: Phase, today: string): 'active' | 'past' | 'upcoming' {
   if (phase.start_date > today) return 'upcoming';
@@ -70,20 +77,22 @@ export function ObjetivosPage() {
   const upsertGoal = useUpsertGoal();
   const [goalOpen, setGoalOpen] = useState(false);
 
-  const goalForm = useForm<GoalForm>({
+  const goalForm = useForm<GoalForm, unknown, ParsedGoalForm>({
     resolver: zodResolver(goalFormSchema),
-    defaultValues: { target_body_fat_pct: 15, notes: '' },
+    // The field is a `NumberField` (`type="text"`), so the form holds its raw
+    // string; the schema parses it. Prefill stays point-decimal `String(n)`.
+    defaultValues: { target_body_fat_pct: String(DEFAULT_TARGET_BF), notes: '' },
   });
 
   function openGoalDialog() {
     goalForm.reset({
-      target_body_fat_pct: goal.data?.target_body_fat_pct ?? 15,
+      target_body_fat_pct: String(goal.data?.target_body_fat_pct ?? DEFAULT_TARGET_BF),
       notes: goal.data?.notes ?? '',
     });
     setGoalOpen(true);
   }
 
-  async function handleGoalSave(values: GoalForm) {
+  async function handleGoalSave(values: ParsedGoalForm) {
     await upsertGoal.mutateAsync({
       target_body_fat_pct: values.target_body_fat_pct,
       notes: values.notes || null,
@@ -325,13 +334,9 @@ export function ObjetivosPage() {
           <form onSubmit={goalForm.handleSubmit(handleGoalSave)} className="space-y-4 py-1">
             <div className="space-y-1.5">
               <Label htmlFor="goal-bf">{t('goal.dialog.targetBf')}</Label>
-              <Input
-                type="number"
+              <NumberField
                 id="goal-bf"
-                step="0.1"
-                min="3"
-                max="50"
-                {...goalForm.register('target_body_fat_pct', { valueAsNumber: true })}
+                {...goalForm.register('target_body_fat_pct')}
               />
               {goalForm.formState.errors.target_body_fat_pct && (
                 <p className="text-xs text-destructive">{t('goal.errors.targetBf')}</p>

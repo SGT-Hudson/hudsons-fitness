@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/NumberField';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -27,9 +28,32 @@ import {
   PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM,
 } from '@/lib/macros';
 import type { Phase, PhaseInput } from '../api';
-import { phaseFormSchema, type PhaseFormValues } from '../schema';
+import { phaseFormSchema, type ParsedPhaseForm, type PhaseFormValues } from '../schema';
 
 type FormValues = PhaseFormValues;
+
+/**
+ * The four numeric fields are `NumberField`s (`type="text"`), so the form holds
+ * their raw STRING. Prefill stays point-decimal `String(n)` — accept-both,
+ * emit-point: the schema reads a `,` or a `.` back, so the round-trip is safe
+ * whatever the locale.
+ */
+function toInput(value: number): string {
+  return String(value);
+}
+
+/**
+ * Stored fraction → the percent shown in the field (R-06's `fractionToPct`
+ * still owns the conversion). Rounded to one decimal, which is the exact
+ * precision `phases.fat_pct_of_kcal` — `numeric(4,3)` — can hold: it kills the
+ * float dust (`0.275 * 100` is 27.500000000000004) without destroying the
+ * decimal itself. It used to be `Math.round`, because the field was
+ * integer-only (`step="1"`); rounding now would silently rewrite a stored
+ * 27.5 % to 28 % on the next save.
+ */
+function fatPctToInput(fraction: number): string {
+  return String(Number(fractionToPct(fraction).toFixed(1)));
+}
 
 const DEFAULTS: FormValues = {
   name: '',
@@ -37,11 +61,11 @@ const DEFAULTS: FormValues = {
   start_date: todayInTZ(),
   end_date: '',
   kcal_mode: 'absolute',
-  kcal_value: 2000,
-  protein_g_per_kg: PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM.maintenance,
-  fat_pct_input: 25,
+  kcal_value: '2000',
+  protein_g_per_kg: toInput(PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM.maintenance),
+  fat_pct_input: '25',
   fiber_mode: 'fixed_g',
-  fiber_value: 30,
+  fiber_value: '30',
   notes: '',
 };
 
@@ -77,7 +101,7 @@ export function PhaseDialog({
     reset,
     setValue,
     formState: { errors, dirtyFields },
-  } = useForm<FormValues>({
+  } = useForm<FormValues, unknown, ParsedPhaseForm>({
     resolver: zodResolver(phaseFormSchema),
     defaultValues: DEFAULTS,
   });
@@ -98,7 +122,7 @@ export function PhaseDialog({
     if (!open || notesOnly) return;
     if (dirtyFields.protein_g_per_kg) return;
     if (phase) return; // never retroactively re-anchor an existing phase
-    setValue('protein_g_per_kg', tableDefault);
+    setValue('protein_g_per_kg', toInput(tableDefault));
   }, [open, notesOnly, phase, phaseType, tableDefault, dirtyFields, setValue]);
 
   useEffect(() => {
@@ -110,11 +134,11 @@ export function PhaseDialog({
         start_date: phase.start_date,
         end_date: phase.end_date ?? '',
         kcal_mode: phase.kcal_mode as FormValues['kcal_mode'],
-        kcal_value: phase.kcal_value,
-        protein_g_per_kg: phase.protein_g_per_kg,
-        fat_pct_input: Math.round(fractionToPct(phase.fat_pct_of_kcal)),
+        kcal_value: toInput(phase.kcal_value),
+        protein_g_per_kg: toInput(phase.protein_g_per_kg),
+        fat_pct_input: fatPctToInput(phase.fat_pct_of_kcal),
         fiber_mode: phase.fiber_mode as FormValues['fiber_mode'],
-        fiber_value: phase.fiber_value,
+        fiber_value: toInput(phase.fiber_value),
         notes: phase.notes ?? '',
       });
     } else {
@@ -122,7 +146,10 @@ export function PhaseDialog({
     }
   }, [open, phase, reset]);
 
-  async function onSubmit(values: FormValues) {
+  // `values` is the PARSED form (numbers) — the schema turned each raw input
+  // string into a number via `parseDecimalInput`. `pctToFraction` still owns
+  // the R-06 percent → fraction conversion, downstream of the parse.
+  async function onSubmit(values: ParsedPhaseForm) {
     await onSave({
       name: values.name,
       phase_type: values.phase_type,
@@ -244,7 +271,7 @@ export function PhaseDialog({
 
           {/* Calories */}
           <div className="space-y-1.5">
-            <Label>{t('phases.form.kcal')}</Label>
+            <Label htmlFor="ph-kcal">{t('phases.form.kcal')}</Label>
             <div className="flex gap-2 items-center">
               <div className="w-40 shrink-0">
                 <Controller
@@ -269,14 +296,15 @@ export function PhaseDialog({
                   )}
                 />
               </div>
-              <Input
-                type="number"
-                step="any"
-                className="w-24 shrink-0"
-                readOnly={notesOnly}
-                disabled={notesOnly}
-                {...register('kcal_value', { valueAsNumber: true })}
-              />
+              <div className="w-24 shrink-0">
+                <NumberField
+                  id="ph-kcal"
+                  className="w-full"
+                  readOnly={notesOnly}
+                  disabled={notesOnly}
+                  {...register('kcal_value')}
+                />
+              </div>
               <span className="text-sm text-muted-foreground">{kcalSuffix}</span>
             </div>
             {errors.kcal_value && (
@@ -287,15 +315,11 @@ export function PhaseDialog({
           {/* Protein */}
           <div className="space-y-1.5">
             <Label htmlFor="ph-protein">{t('phases.form.protein')}</Label>
-            <Input
-              type="number"
+            <NumberField
               id="ph-protein"
-              step="0.1"
-              min="0.1"
-              max="4"
               readOnly={notesOnly}
               disabled={notesOnly}
-              {...register('protein_g_per_kg', { valueAsNumber: true })}
+              {...register('protein_g_per_kg')}
             />
             <p className="text-xs text-muted-foreground">
               {t('phases.form.proteinHelp', {
@@ -311,15 +335,11 @@ export function PhaseDialog({
           {/* Fat */}
           <div className="space-y-1.5">
             <Label htmlFor="ph-fat">{t('phases.form.fat')}</Label>
-            <Input
-              type="number"
+            <NumberField
               id="ph-fat"
-              step="1"
-              min="10"
-              max="60"
               readOnly={notesOnly}
               disabled={notesOnly}
-              {...register('fat_pct_input', { valueAsNumber: true })}
+              {...register('fat_pct_input')}
             />
             {errors.fat_pct_input && (
               <p className="text-xs text-destructive">{t('phases.form.errors.fat')}</p>
@@ -328,7 +348,7 @@ export function PhaseDialog({
 
           {/* Fiber */}
           <div className="space-y-1.5">
-            <Label>{t('phases.form.fiber')}</Label>
+            <Label htmlFor="ph-fiber">{t('phases.form.fiber')}</Label>
             <div className="flex gap-2 items-center">
               <div className="w-40 shrink-0">
                 <Controller
@@ -353,15 +373,15 @@ export function PhaseDialog({
                   )}
                 />
               </div>
-              <Input
-                type="number"
-                step="any"
-                min="0.1"
-                className="w-24 shrink-0"
-                readOnly={notesOnly}
-                disabled={notesOnly}
-                {...register('fiber_value', { valueAsNumber: true })}
-              />
+              <div className="w-24 shrink-0">
+                <NumberField
+                  id="ph-fiber"
+                  className="w-full"
+                  readOnly={notesOnly}
+                  disabled={notesOnly}
+                  {...register('fiber_value')}
+                />
+              </div>
               <span className="text-sm text-muted-foreground">{fiberSuffix}</span>
             </div>
             {errors.fiber_value && (

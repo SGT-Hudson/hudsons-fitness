@@ -122,7 +122,7 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     renderEditor('/recipes/r-1/edit');
 
     expect(screen.getByLabelText('Nombre')).toHaveValue('Pollo con arroz');
-    expect(screen.getByLabelText('Raciones')).toHaveValue(4);
+    expect(screen.getByLabelText('Raciones')).toHaveValue('4');
     expect(screen.getByLabelText('Tiempo')).toHaveValue('35');
     expect(screen.getByLabelText('Descripción')).toHaveValue('Batch cooking');
     expect(screen.getByLabelText('Instrucciones')).toHaveValue('Hornear 25 min.');
@@ -179,6 +179,57 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     expect(saveMutateAsync).not.toHaveBeenCalled();
   });
 
+  // Servings is fraction-capable too — the input has always been `min={0.5}
+  // step="0.5"`, so half a serving is a legal recipe. It was left on
+  // `type="number"` on the theory that it was an integer, which meant `2,5`
+  // still stored 25: the exact corruption this whole change exists to kill.
+  it('sends a comma-typed servings count as a decimal: 2,5 → 2.5', async () => {
+    const user = userEvent.setup();
+    renderEditor('/recipes/r-1/edit');
+
+    const servings = screen.getByLabelText('Raciones');
+    await user.clear(servings);
+    await user.type(servings, '2,5');
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0].servings).toBe(2.5);
+  });
+
+  // The `min={0.5}` the browser used to enforce, now zod's.
+  it('never sends servings below the half-serving floor — it stops at the form', async () => {
+    const user = userEvent.setup();
+    renderEditor('/recipes/r-1/edit');
+
+    await user.clear(screen.getByLabelText('Raciones'));
+    await user.type(screen.getByLabelText('Raciones'), '0,2');
+    await user.click(save());
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Las raciones deben ser al menos 0,5.',
+    );
+    expect(saveMutateAsync).not.toHaveBeenCalled();
+  });
+
+  // The decimal-comma fix, at the row quantity — the recipe editor's one
+  // fraction-capable field. `<input type="number">` strips the comma before
+  // React sees it (`82,4` → `"824"`), and the page's own `Number(...)` boundary
+  // then has to read the comma back. Asserts what reaches `save_recipe`.
+  it('sends a comma-typed row quantity as a decimal: 82,4 → 82.4', async () => {
+    const user = userEvent.setup();
+    renderEditor('/recipes/r-1/edit');
+
+    const qty = screen.getByLabelText('Cantidad de Pollo pechuga');
+    await user.clear(qty);
+    await user.type(qty, '82,4');
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0].ingredients).toEqual([
+      expect.objectContaining({ ingredient_id: 'i-1', quantity: 82.4 }),
+    ]);
+  });
+
   // The regression this task exists to fix: `initial` used to be a fresh
   // object on every render, and opening (then cancelling) the remove dialog
   // re-renders the page — which reset the form back to the saved values and
@@ -224,7 +275,7 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     expect(screen.queryByRole('button', { name: 'Quitar receta' })).toBeNull();
 
     expect(screen.getByLabelText('Nombre')).toHaveValue('Pollo con arroz (copia)');
-    expect(screen.getByLabelText('Raciones')).toHaveValue(4);
+    expect(screen.getByLabelText('Raciones')).toHaveValue('4');
     expect(screen.getByLabelText('Tiempo')).toHaveValue('35');
     expect(screen.getByLabelText('Descripción')).toHaveValue('Batch cooking');
 

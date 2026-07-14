@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseDecimalInput } from '@/lib/number';
 import { pickFirstError, type FieldErrors } from '@/lib/zod';
 import { recipeMealTypeSchema } from './mealTypes';
 
@@ -54,6 +55,14 @@ export type RecipeErrorCode = (typeof RECIPE_ERROR_ORDER)[number];
  */
 export const PREP_TIME_MAX_MINUTES = 1440;
 
+/**
+ * The smallest recipe: half a serving. This was the servings input's native
+ * `min` (`min={0.5} step="0.5"`) until the field became a `NumberField` — the
+ * browser stops enforcing `min` on `type="text"`, so the rule moved into the
+ * schema, where it should have been all along (invariant 6).
+ */
+export const SERVINGS_MIN = 0.5;
+
 /** What the prep-time string parses to: minutes, "no time recorded", or why it failed. */
 export type PrepTimeParse = number | null | 'invalid' | 'tooLarge';
 
@@ -93,8 +102,14 @@ export const recipeFormSchema = z
     if (v.name.trim() === '') {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['name'], message: 'nameRequired' });
     }
-    const servings = Number(v.servings);
-    if (!Number.isFinite(servings) || servings <= 0) {
+    // Servings is NOT an integer, whatever the column name suggests: the input
+    // has always been `min={0.5} step="0.5"` and half a serving is a legitimate
+    // recipe ("media ración"). So it is fraction-capable → a `NumberField`, and
+    // a typed decimal comma reaches this parse. The `min` gate died with
+    // `type="number"`, so it lives here now (0.5 — the input's own floor, which
+    // is stricter than the old `> 0` and so cannot let anything new through).
+    const servings = parseDecimalInput(v.servings);
+    if (servings === null || servings < SERVINGS_MIN) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['servings'],
@@ -123,8 +138,13 @@ export const recipeFormSchema = z
         });
         return;
       }
-      const q = Number(row.quantity);
-      if (!Number.isFinite(q) || q <= 0) {
+      // A quantity is fraction-capable (82,4 g of chicken), so it renders as a
+      // `NumberField` and a typed decimal comma reaches this parse. So does
+      // `servings` (half a serving is real). `prepTime` above is integer
+      // minutes — it keeps its `type="number"` spinner and its integer parse (a
+      // comma there is a typo, not a decimal).
+      const q = parseDecimalInput(row.quantity);
+      if (q === null || q <= 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['rows'],

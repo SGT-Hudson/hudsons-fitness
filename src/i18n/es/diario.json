@@ -139,7 +139,8 @@
     "servingsInvalid": "Las raciones deben ser mayores que 0.",
     "quantityInvalid": "La cantidad debe ser mayor que 0.",
     "customNameRequired": "Pon un nombre.",
-    "customKcalRequired": "Las calorías son obligatorias."
+    "customKcalRequired": "Las calorías son obligatorias.",
+    "customMacroInvalid": "Las calorías y los macros no pueden ser negativos."
   },
   "addSheet": {
     "title": "Añadir a hoy",

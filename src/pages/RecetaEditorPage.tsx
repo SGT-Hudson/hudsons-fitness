@@ -17,7 +17,8 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { useHideRecipe, useRecipe, useSaveRecipe } from '@/features/recipes/hooks';
 import { navigateToRecipeDuplicate } from '@/features/recipes/duplicate';
 import { canEditRecipe } from '@/features/recipes/ownership';
-import { parsePrepTimeMinutes } from '@/features/recipes/schema';
+import { parsePrepTimeMinutes, SERVINGS_MIN } from '@/features/recipes/schema';
+import { parseDecimalInput } from '@/lib/number';
 
 /**
  * The recipe editor (canvas `RecetaEditorWebV2` / `RecetaCrearWebV2`, and
@@ -94,17 +95,26 @@ export function RecetaEditorPage() {
       const savedId = await save.mutateAsync({
         recipeId: isNew ? null : id!,
         name: state.name.trim(),
-        servings: Number(state.servings),
+        // Fraction-capable (half servings are legal) and comma-typed, so it
+        // parses through the shared boundary like the row quantities below.
+        // The zod schema already refused anything below SERVINGS_MIN.
+        servings: parseDecimalInput(state.servings) ?? SERVINGS_MIN,
         description: state.description.trim() === '' ? null : state.description.trim(),
         instructions: state.instructions.trim() === '' ? null : state.instructions.trim(),
         mealTypes: state.mealTypes,
         prepTimeMinutes: typeof prep === 'number' ? prep : null,
+        // The quantity is a string the user typed and it may carry a decimal
+        // COMMA (a Spanish keyboard's default) — so it parses through the
+        // shared boundary (invariant 6), the same one the schema validated it
+        // with. `Number('82,4')` is NaN, which this filter would silently drop:
+        // the row would vanish from the saved recipe.
         ingredients: state.rows
-          .filter((r) => r.ingredient && Number(r.quantity) > 0)
-          .map((r, i) => ({
-            ingredient_id: r.ingredient!.id,
-            quantity: Number(r.quantity),
-            per_serving: r.per_serving,
+          .map((r) => ({ row: r, quantity: parseDecimalInput(r.quantity) ?? 0 }))
+          .filter(({ row, quantity }) => row.ingredient && quantity > 0)
+          .map(({ row, quantity }, i) => ({
+            ingredient_id: row.ingredient!.id,
+            quantity,
+            per_serving: row.per_serving,
             display_order: i,
           })),
       });
