@@ -42,6 +42,41 @@ export async function fetchRecentMeasurements(
   return data;
 }
 
+/**
+ * Every measurement from `fromDate` on (null = the whole record), newest first.
+ * The history screen needs the full range, not a head of it — `limit` is what
+ * separates this from `fetchRecentMeasurements`.
+ */
+export async function fetchMeasurementsSince(
+  userId: string,
+  fromDate: string | null,
+): Promise<BodyMeasurement[]> {
+  let query = supabase
+    .from('body_measurements')
+    .select('*')
+    .eq('user_id', userId)
+    .order('measured_on', { ascending: false });
+  if (fromDate) query = query.gte('measured_on', fromDate);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+/** The oldest measurement on record — the history footer's "inicio del registro". */
+export async function fetchFirstMeasurement(
+  userId: string,
+): Promise<BodyMeasurement | null> {
+  const { data, error } = await supabase
+    .from('body_measurements')
+    .select('*')
+    .eq('user_id', userId)
+    .order('measured_on', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function fetchLatestMeasurement(
   userId: string,
 ): Promise<BodyMeasurement | null> {

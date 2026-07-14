@@ -60,11 +60,24 @@
     "actions": "Actions",
     "deleteConfirm": "Delete this measurement? This cannot be undone."
   },
+  "history": {
+    "title": "Measurement history",
+    "open": "History",
+    "count_one": "{{count}} measurement",
+    "count_other": "{{count}} measurements",
+    "firstEver": "Record starts · {{date}} · {{weight}}",
+    "emptyTitle": "No measurements",
+    "emptyHint": "Nothing logged in this range yet. Log one to start your history."
+  },
   "dialog": {
     "newTitle": "New measurement",
     "editTitle": "Edit measurement",
     "subtitle": "Only weight is required.",
-    "prefillHint": "Pre-filled from your last measurement. Edit anything that changed."
+    "prefillHint": "Pre-filled from your last measurement. Edit anything that changed.",
+    "weightLabel": "Weight",
+    "sinceLast": "{{delta}} kg since the last one · {{date}}",
+    "optional": "optional",
+    "notePlaceholder": "Fasted, after the bathroom… (as consistent as you can)"
   },
   "errors": {
     "weightRequired": "Weight is required.",

@@ -47,6 +47,9 @@ vi.mock('@/pages/ExercisesPage', () => ({ ExercisesPage: () => <div>ExercisesPag
 vi.mock('@/pages/ExerciseDetailPage', () => ({ ExerciseDetailPage: () => <div>ExerciseDetailPage</div> }));
 vi.mock('@/pages/ProgresoPage', () => ({ ProgresoPage: () => <div>ProgresoPage</div> }));
 vi.mock('@/pages/ObjetivosPage', () => ({ ObjetivosPage: () => <div>ObjetivosPage</div> }));
+vi.mock('@/pages/MeasurementHistoryPage', () => ({
+  MeasurementHistoryPage: () => <div>MeasurementHistoryPage</div>,
+}));
 vi.mock('@/pages/SettingsPage', () => ({ SettingsPage: () => <div>SettingsPage</div> }));
 vi.mock('@/pages/MorePage', () => ({ MorePage: () => <div>MorePage</div> }));
 vi.mock('@/pages/settings/SettingsProfilePage', () => ({ SettingsProfilePage: () => <div>SettingsProfilePage</div> }));
@@ -157,6 +160,18 @@ describe('AppRoutes', () => {
     );
     expect(screen.getByText('IngredientEditorPage')).toBeInTheDocument();
     expect(screen.queryByText('RecetaEditorPage')).toBeNull();
+  });
+
+  // R-33 wave 7: the measurement archive is a route, not a dialog — and it is
+  // the only place a measurement can be deleted.
+  it('routes /progress/history to the measurement history page', () => {
+    render(
+      <MemoryRouter initialEntries={['/progress/history']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('MeasurementHistoryPage')).toBeInTheDocument();
+    expect(screen.queryByText('ProgresoPage')).toBeNull();
   });
 
   it('routes /more to the More hub page', () => {
