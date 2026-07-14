@@ -12,8 +12,13 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, type Locale } from '@/lib/dates';
-import { useSmoothedMeasurements, type TimeRange } from '../hooks';
-import { TimeRangePills } from './TimeRangePills';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import {
+  DEFAULT_TIME_RANGE,
+  TIME_RANGES,
+  useSmoothedMeasurements,
+  type TimeRange,
+} from '../hooks';
 
 interface Point {
   date: string;
@@ -24,7 +29,7 @@ interface Point {
 export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null }) {
   const { t, i18n } = useTranslation('metricas');
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
-  const [range, setRange] = useState<TimeRange>('90d');
+  const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
   const { data, isLoading } = useSmoothedMeasurements(range);
 
   const points = useMemo<Point[]>(() => {
@@ -54,7 +59,12 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-base">{t('charts.weight.title')}</CardTitle>
-        <TimeRangePills value={range} onChange={setRange} />
+        <SegmentedControl
+          ariaLabel={t('charts.range.label')}
+          options={TIME_RANGES.map((r) => ({ value: r, label: t(`charts.range.${r}`) }))}
+          value={range}
+          onChange={setRange}
+        />
       </CardHeader>
       <CardContent>
         {isLoading ? (

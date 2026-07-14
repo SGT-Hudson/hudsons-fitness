@@ -12,11 +12,16 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, type Locale } from '@/lib/dates';
-import { useSmoothedMeasurements, type TimeRange } from '../hooks';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import {
+  DEFAULT_TIME_RANGE,
+  TIME_RANGES,
+  useSmoothedMeasurements,
+  type TimeRange,
+} from '../hooks';
 import type { SmoothedMeasurement } from '../api';
 import { interpolateSeries, type Point } from '../interpolate';
 import { fatKg, leanKg, leanPct, pctToKg, type CompositionUnit } from '../composition';
-import { TimeRangePills } from './TimeRangePills';
 import { UnitToggle } from './UnitToggle';
 import { TrendChart, type TrendPoint } from './TrendChart';
 
@@ -38,7 +43,7 @@ interface StackRow {
 export function CompositionChart() {
   const { t, i18n } = useTranslation('metricas');
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
-  const [range, setRange] = useState<TimeRange>('90d');
+  const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
   const [unit, setUnit] = useState<CompositionUnit>('pct');
   const { data, isLoading } = useSmoothedMeasurements(range);
 
@@ -133,7 +138,12 @@ export function CompositionChart() {
         <CardTitle className="text-base">{t('charts.composition.title')}</CardTitle>
         <div className="flex items-center gap-2">
           <UnitToggle value={unit} onChange={setUnit} />
-          <TimeRangePills value={range} onChange={setRange} />
+          <SegmentedControl
+            ariaLabel={t('charts.range.label')}
+            options={TIME_RANGES.map((r) => ({ value: r, label: t(`charts.range.${r}`) }))}
+            value={range}
+            onChange={setRange}
+          />
         </div>
       </CardHeader>
       <CardContent>

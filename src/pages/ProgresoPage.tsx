@@ -26,7 +26,7 @@ export function ProgresoPage() {
 
   const latestQuery = useLatestMeasurement();
   const recentQuery = useRecentMeasurements(30);
-  const smoothedQuery = useSmoothedMeasurements('90d');
+  const smoothedQuery = useSmoothedMeasurements('6m');
   const activePhase = useActivePhase();
   const goal = useGoal();
 

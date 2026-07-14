@@ -147,7 +147,7 @@ export function useQuickAddMealLog() {
 // (Task 5, R-33 wave 2). Reuses the Progreso `daily_nutrition_history` fetch
 // (`fetchDailyNutritionHistory`) directly rather than its `useDailyNutritionHistory`
 // wrapper — that hook's `fromDate` is anchored to "now" via a `TimeRange`
-// ('30d'/'90d'/…), whereas this widget needs a fixed 6-day lookback from the
+// ('1m'/'6m'/…), whereas this widget needs a fixed 6-day lookback from the
 // *selected diario date* (which may itself be in the past).
 //
 // `daily_nutrition_history` is populated nightly, so it never has a row for

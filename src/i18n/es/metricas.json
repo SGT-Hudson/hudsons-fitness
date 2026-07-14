@@ -56,9 +56,9 @@
     "empty": "Aún no hay datos suficientes para mostrar la gráfica.",
     "range": {
       "label": "Rango temporal",
-      "30d": "30d",
-      "90d": "90d",
-      "1y": "1a",
+      "1m": "1M",
+      "6m": "6M",
+      "1y": "1A",
       "all": "Todo"
     },
     "weight": {

@@ -13,8 +13,12 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLatestMeasurement } from '@/features/measurements/hooks';
-import { TimeRangePills } from '@/features/measurements/components/TimeRangePills';
-import { type TimeRange } from '@/features/measurements/hooks';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import {
+  DEFAULT_TIME_RANGE,
+  TIME_RANGES,
+  type TimeRange,
+} from '@/features/measurements/hooks';
 import { useActivePhase } from '@/features/phases/hooks';
 import { computePhaseTargets } from '@/features/phases/targets';
 import { useLatestTdee } from '@/features/tdee/hooks';
@@ -78,7 +82,7 @@ interface Point {
 export function MacrosChart() {
   const { t, i18n } = useTranslation('metricas');
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
-  const [range, setRange] = useState<TimeRange>('90d');
+  const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
   const [macro, setMacro] = useState<MacroKey>('kcal');
 
   const history = useDailyNutritionHistory(range);
@@ -130,7 +134,12 @@ export function MacrosChart() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 gap-2 flex-wrap">
         <CardTitle className="text-base">{t('charts.macros.title')}</CardTitle>
-        <TimeRangePills value={range} onChange={setRange} />
+        <SegmentedControl
+          ariaLabel={t('charts.range.label')}
+          options={TIME_RANGES.map((r) => ({ value: r, label: t(`charts.range.${r}`) }))}
+          value={range}
+          onChange={setRange}
+        />
       </CardHeader>
       <CardContent className="space-y-3">
         <div

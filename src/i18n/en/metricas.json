@@ -56,9 +56,9 @@
     "empty": "Not enough data to render the chart yet.",
     "range": {
       "label": "Time range",
-      "30d": "30d",
-      "90d": "90d",
-      "1y": "1y",
+      "1m": "1M",
+      "6m": "6M",
+      "1y": "1Y",
       "all": "All"
     },
     "weight": {
