@@ -3,13 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/NumberField';
 import {
   evaluateCoach,
   type CoachContext,
   type CoachSeverity,
   type CoachSuggestion,
 } from '@/core/training';
+import { parseDecimalInput } from '@/lib/number';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -97,11 +98,13 @@ function SuggestionCard({ suggestion, onApplySuggestedLoad }: CardProps) {
           {isProgression && Number.isFinite(suggestedFromRule) && onApplySuggestedLoad && (
             <div className="mt-2 flex items-center gap-2">
               <span className="text-xs text-muted-foreground">{t('suggestedNextLoad')}</span>
-              <Input
-                type="number"
-                inputMode="decimal"
-                step={0.5}
-                min={0}
+              {/* A suggested load is a decimal (2,5 kg increments) → `NumberField`,
+                  so a typed comma survives to `parseDecimalInput` instead of being
+                  stripped into a 10× load. The `min={0}` gate went with the switch
+                  to `type="text"`; the apply handler below still enforces it. */}
+              <NumberField
+                id="coach-suggested-load"
+                aria-label={t('suggestedNextLoad')}
                 value={editable}
                 onChange={(e) => setEditable(e.target.value)}
                 className="h-8 w-24"
@@ -112,8 +115,8 @@ function SuggestionCard({ suggestion, onApplySuggestedLoad }: CardProps) {
                 variant="outline"
                 className="h-8"
                 onClick={() => {
-                  const n = Number(editable);
-                  if (Number.isFinite(n) && n >= 0) onApplySuggestedLoad(n);
+                  const n = parseDecimalInput(editable);
+                  if (n !== null && n >= 0) onApplySuggestedLoad(n);
                 }}
               >
                 {t('apply')}
