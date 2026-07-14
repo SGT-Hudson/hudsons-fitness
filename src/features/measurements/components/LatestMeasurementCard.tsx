@@ -24,12 +24,6 @@ interface Props {
   onLogToday: () => void;
   onEditToday: () => void;
   smoothed: SmoothedMeasurement[];
-  /**
-   * Kept so the page can hand its one recent-measurements query to the hero and
-   * to `CompositionCard` alike. The hero itself no longer reads it: the 7-day
-   * composition deltas moved to `CompositionCard` (R-33 wave 7).
-   */
-  recent?: BodyMeasurement[];
   phaseType?: PhaseType;
   targetBodyFatPct?: number;
 }
@@ -197,19 +191,25 @@ export function LatestMeasurementCard({
         <span className="text-cap-label">{t('latest.weightTrendLabel')}</span>
         <div className="ml-auto flex items-center gap-2">
           {rate != null && (
+            /* `whitespace-nowrap`: at 390px the chip otherwise wraps into
+               "2,8 kg /" + "sem" and squeezes the row. */
             <Badge
               variant="secondary"
-              className={cn('tabular-nums', RATE_TONE_CLASS[rateTone])}
+              className={cn('whitespace-nowrap tabular-nums', RATE_TONE_CLASS[rateTone])}
             >
               {signed(rate)} {t('latest.rateUnit')}
             </Badge>
           )}
+          {/* Mobile-only: `PageHeaderV2`'s "Nueva medición" action is CSS-hidden
+              below md, so this is the phone's affordance for the same flow. On
+              desktop both would show and the header owns it (the artboard has no
+              button in the hero). */}
           {isToday ? (
-            <Button variant="outline" size="sm" onClick={onEditToday}>
+            <Button variant="outline" size="sm" className="md:hidden" onClick={onEditToday}>
               {t('latest.editToday')}
             </Button>
           ) : (
-            <Button size="sm" onClick={onLogToday}>
+            <Button size="sm" className="md:hidden" onClick={onLogToday}>
               {t('latest.logToday')}
             </Button>
           )}

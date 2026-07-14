@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Plus } from 'lucide-react';
 import { ProgressTabs } from './ProgressTabs';
 import { PageShell } from '@/components/layout/PageShell';
+import { Button } from '@/components/ui/button';
+import { CompositionCard } from '@/features/measurements/components/CompositionCard';
 import { CompositionChart } from '@/features/measurements/components/CompositionChart';
 import { LatestMeasurementCard } from '@/features/measurements/components/LatestMeasurementCard';
 import { MeasurementDialog } from '@/features/measurements/components/MeasurementDialog';
@@ -58,6 +61,11 @@ export function ProgresoPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<BodyMeasurement | null>(null);
 
+  // The composition chart's expanded sheet. It lives here, not inside the chart,
+  // so a CompositionCard tile opens the very same sheet the chart's own expand
+  // button opens — one chart, one sheet, no second copy.
+  const [compositionExpanded, setCompositionExpanded] = useState(false);
+
   function openForToday() {
     setEditing(todayEntry);
     setDialogOpen(true);
@@ -69,45 +77,68 @@ export function ProgresoPage() {
   }
 
   return (
-    <PageShell title={t('pageTitle')}>
-    <div className="space-y-6">
-      <ProgressTabs />
+    <PageShell
+      title={t('pageTitle')}
+      subtitle={t('subtitle')}
+      /* Desktop only: PageHeaderV2 is CSS-hidden below md (see the note at
+         IngredientesPage.tsx). The mobile affordance for the same action is the
+         hero's own "Registrar hoy" / "Editar de hoy" / "Registrar primera
+         medición" button, which is in the body and opens this same dialog — so
+         mobile is not left without one, and it is not duplicated either. */
+      actions={
+        <Button onClick={openForToday}>
+          <Plus className="size-4" aria-hidden="true" />
+          {t('newMeasurement')}
+        </Button>
+      }
+    >
+      <div className="space-y-3.5">
+        <ProgressTabs />
 
-      <LatestMeasurementCard
-        latest={latestQuery.data}
-        todayEntry={todayEntry}
-        loading={latestQuery.isLoading}
-        onLogToday={openForToday}
-        onEditToday={openForToday}
-        smoothed={smoothedQuery.data ?? []}
-        recent={recentQuery.data ?? []}
-        phaseType={phaseType}
-        targetBodyFatPct={targetBodyFatPct}
-      />
+        <LatestMeasurementCard
+          latest={latestQuery.data}
+          todayEntry={todayEntry}
+          loading={latestQuery.isLoading}
+          onLogToday={openForToday}
+          onEditToday={openForToday}
+          smoothed={smoothedQuery.data ?? []}
+          phaseType={phaseType}
+          targetBodyFatPct={targetBodyFatPct}
+        />
 
-      <WeightChart targetWeightKg={targetWeightKg} />
+        <CompositionCard
+          latest={latestQuery.data}
+          recent={recentQuery.data ?? []}
+          phaseType={phaseType}
+          onExpand={() => setCompositionExpanded(true)}
+        />
 
-      <CompositionChart />
+        <WeightChart targetWeightKg={targetWeightKg} />
 
-      <MacrosChart />
+        <CompositionChart
+          expanded={compositionExpanded}
+          onExpandedChange={setCompositionExpanded}
+        />
 
-      <MeasurementsList
-        measurements={recentQuery.data ?? []}
-        loading={recentQuery.isLoading}
-        onEdit={openForEdit}
-      />
+        <MeasurementsList
+          measurements={recentQuery.data ?? []}
+          loading={recentQuery.isLoading}
+          onEdit={openForEdit}
+        />
 
-      <MeasurementDialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) setEditing(null);
-        }}
-        defaultDate={today}
-        existing={editing}
-        prefillFrom={!editing && !todayEntry ? latestQuery.data : null}
-      />
-    </div>
+        <MacrosChart />
+
+        <MeasurementDialog
+          open={dialogOpen}
+          onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) setEditing(null);
+          }}
+          defaultDate={today}
+          existing={editing}
+          prefillFrom={!editing && !todayEntry ? latestQuery.data : null}
+        />
+      </div>
     </PageShell>
   );
 }

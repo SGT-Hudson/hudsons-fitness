@@ -43,7 +43,6 @@ describe('LatestMeasurementCard', () => {
         onLogToday={() => {}}
         onEditToday={() => {}}
         smoothed={smoothed}
-        recent={[latest]}
         phaseType="cut"
         targetBodyFatPct={12}
       />,
@@ -63,7 +62,6 @@ describe('LatestMeasurementCard', () => {
         onLogToday={() => {}}
         onEditToday={() => {}}
         smoothed={smoothed}
-        recent={[latest]}
         phaseType="cut"
       />,
     );
@@ -79,7 +77,6 @@ describe('LatestMeasurementCard', () => {
         onLogToday={() => {}}
         onEditToday={() => {}}
         smoothed={smoothed}
-        recent={[latest]}
         phaseType="cut"
         targetBodyFatPct={12}
       />,

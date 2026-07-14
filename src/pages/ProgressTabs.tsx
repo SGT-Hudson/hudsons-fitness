@@ -7,7 +7,7 @@ export function ProgressTabs() {
   const { t: tObj } = useTranslation('objetivos');
   const tab = (active: boolean) =>
     cn('px-3 py-1.5 text-sm font-medium border-b-2',
-      active ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground');
+      active ? 'border-nutri text-nutri' : 'border-transparent text-muted-foreground');
   return (
     <div className="flex gap-2 border-b">
       <NavLink to="/progress" end className={({ isActive }) => tab(isActive)}>

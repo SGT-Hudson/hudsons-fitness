@@ -45,12 +45,25 @@ import {
 
 type Row = { date: string } & Record<CompositionSeriesKey, number | null>;
 
-export function CompositionChart() {
+interface Props {
+  /**
+   * Expansion state, optionally controlled: the Progreso page owns it so that a
+   * `CompositionCard` tile can open *this* chart's sheet (one chart, never a
+   * second copy). Omitted → the card keeps its own state and the expand button
+   * still works on its own.
+   */
+  expanded?: boolean;
+  onExpandedChange?: (open: boolean) => void;
+}
+
+export function CompositionChart({ expanded: expandedProp, onExpandedChange }: Props) {
   const { t, i18n } = useTranslation('metricas');
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
   const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
   const [unit, setUnit] = useState<CompositionUnit>('pct');
-  const [expanded, setExpanded] = useState(false);
+  const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
+  const expanded = expandedProp ?? uncontrolledExpanded;
+  const setExpanded: (open: boolean) => void = onExpandedChange ?? setUncontrolledExpanded;
   const { data, isLoading } = useSmoothedMeasurements(range);
 
   // Raw points keyed for the shared interpolateSeries module (reused, never

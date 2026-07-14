@@ -1,5 +1,7 @@
 {
   "pageTitle": "Progreso",
+  "subtitle": "Cuerpo y composición",
+  "newMeasurement": "Nueva medición",
   "fields": {
     "date": "Fecha",
     "weightKg": "Peso (kg)",
