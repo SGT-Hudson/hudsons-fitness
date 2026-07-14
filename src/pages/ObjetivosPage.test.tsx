@@ -19,12 +19,18 @@ vi.mock('@/features/objetivos/hooks', () => ({
 }));
 vi.mock('@/features/phases/hooks', () => ({
   usePhases: () => ({ data: [], isLoading: false }),
+  // The hero (and `useDailyTarget` behind it) reads the active phase — with no
+  // phase there is no hero, which is what this goal-dialog suite wants.
+  useActivePhase: () => ({ data: null, isLoading: false }),
   useCreatePhase: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdatePhase: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeletePhase: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock('@/features/measurements/hooks', () => ({
   useLatestMeasurement: () => ({ data: null, isLoading: false }),
+}));
+vi.mock('@/features/tdee/hooks', () => ({
+  useLatestTdee: () => ({ data: null, isLoading: false }),
 }));
 
 import { ObjetivosPage } from './ObjetivosPage';

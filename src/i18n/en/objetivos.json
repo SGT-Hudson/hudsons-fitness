@@ -40,6 +40,33 @@
       "fixed_g": "Fixed (g/day)",
       "per_1000_kcal": "Per 1000 kcal"
     },
+    "hero": {
+      "activeLabel": "Active phase",
+      "weekOf": "week {{n}} of {{total}}",
+      "weekN": "week {{n}}",
+      "weeksLeft": "{{n}} wk left",
+      "elapsed": "Phase progress",
+      "dailyTargets": "Daily targets",
+      "kcalPerDay": "kcal / day",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "fiber": "Fiber",
+      "basisLean": "Basis: lean mass · {{n}} g/kg",
+      "basisFallback": "Basis: bodyweight · 1.6 g/kg — add a body-fat % for a phase-tuned target",
+      "needsWeight": "Log a weight to see this phase's daily targets.",
+      "needsTdee": "This phase is defined as a delta on TDEE and there is no TDEE estimate yet, so its targets can't be computed."
+    },
+    "row": {
+      "kcalPerDay": "kcal / day",
+      "proteinPrefix": "protein",
+      "proteinUnit": "g/kg",
+      "status": {
+        "active": "active",
+        "upcoming": "scheduled",
+        "past": "history"
+      }
+    },
     "summary": {
       "protein": "protein",
       "proteinBasisLean": "× lean mass",

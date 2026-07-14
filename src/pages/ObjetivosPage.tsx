@@ -3,7 +3,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { ProgressTabs } from './ProgressTabs';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PageShell } from '@/components/layout/PageShell';
@@ -17,7 +17,6 @@ import {
 import { NumberField } from '@/components/ui/NumberField';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { useGoal, useUpsertGoal } from '@/features/objetivos/hooks';
 import {
   useCreatePhase,
@@ -26,15 +25,15 @@ import {
   useUpdatePhase,
 } from '@/features/phases/hooks';
 import { PhaseDialog } from '@/features/phases/components/PhaseDialog';
-import { useLatestMeasurement } from '@/features/measurements/hooks';
-import { fractionToPct } from '@/lib/macros';
+import { PhaseHeroCard } from '@/features/phases/components/PhaseHeroCard';
+import { PhaseRow } from '@/features/phases/components/PhaseRow';
 import type { Phase, PhaseInput } from '@/features/phases/api';
 import {
   goalFormSchema,
   type GoalFormValues,
   type ParsedGoalForm,
 } from '@/features/objetivos/schema';
-import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
+import { daysBetween, isoDate } from '@/lib/dates';
 
 type GoalForm = GoalFormValues;
 
@@ -68,8 +67,7 @@ function isPhaseFrozen(phase: Phase, today: string): boolean {
 }
 
 export function ObjetivosPage() {
-  const { t, i18n } = useTranslation('objetivos');
-  const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
+  const { t } = useTranslation('objetivos');
   const today = isoDate();
 
   // ── Goal ──────────────────────────────────────────────────────────────────
@@ -99,13 +97,6 @@ export function ObjetivosPage() {
     });
     setGoalOpen(false);
   }
-
-  // The protein basis is fully data-driven (D-B1), mirroring DiarioPage: a
-  // logged body-fat % on the latest measurement → lean-mass path; absent →
-  // 1.6 g/kg bodyweight fallback. Drives the phase-summary basis label so
-  // Objetivos and Diario advertise the same active basis.
-  const latestMeasurement = useLatestMeasurement();
-  const proteinBasisIsLean = latestMeasurement.data?.body_fat_pct != null;
 
   // ── Phases ─────────────────────────────────────────────────────────────────
   const phases = usePhases();
@@ -166,6 +157,9 @@ export function ObjetivosPage() {
     <div className="space-y-8">
       <ProgressTabs />
 
+      {/* ── Active phase hero ── */}
+      <PhaseHeroCard onEdit={openEditPhase} />
+
       {/* ── Goal ── */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
@@ -224,103 +218,18 @@ export function ObjetivosPage() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {sortedPhases.map((phase) => {
-              const status = phaseStatus(phase, today);
-              const isFrozen = isPhaseFrozen(phase, today);
-              return (
-                <Card key={phase.id} className={isFrozen ? 'opacity-60' : undefined}>
-                  <CardContent className="pt-4 pb-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-2 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold">{phase.name}</span>
-                          <Badge
-                            variant={
-                              status === 'active'
-                                ? 'primary'
-                                : status === 'upcoming'
-                                  ? 'secondary'
-                                  : 'outline'
-                            }
-                          >
-                            {t(`phases.${status}`)}
-                          </Badge>
-                          <Badge variant="secondary">
-                            {t(`phases.type.${phase.phase_type}`)}
-                          </Badge>
-                        </div>
-
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(phase.start_date, 'd MMM yyyy', locale)}
-                          {' → '}
-                          {phase.end_date
-                            ? formatDate(phase.end_date, 'd MMM yyyy', locale)
-                            : '∞'}
-                        </p>
-
-                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
-                          <span>
-                            {phase.kcal_mode === 'absolute' && `${phase.kcal_value} kcal`}
-                            {phase.kcal_mode === 'tdee_delta' &&
-                              `${t('phases.summary.tdeePrefix')} ${phase.kcal_value > 0 ? '+' : ''}${phase.kcal_value} kcal`}
-                          </span>
-                          <span>
-                            {phase.protein_g_per_kg} g/kg {t('phases.summary.protein')}{' '}
-                            {proteinBasisIsLean
-                              ? t('phases.summary.proteinBasisLean')
-                              : t('phases.summary.proteinBasisFallback')}
-                          </span>
-                          <span>
-                            {Math.round(fractionToPct(phase.fat_pct_of_kcal))}% {t('phases.summary.fat')}
-                          </span>
-                          <span>
-                            {phase.fiber_value}
-                            {phase.fiber_mode === 'per_1000_kcal' ? 'g/1000kcal' : 'g'}{' '}
-                            {t('phases.summary.fiber')}
-                          </span>
-                        </div>
-
-                        {phase.notes && (
-                          <p className="text-sm text-muted-foreground">{phase.notes}</p>
-                        )}
-                      </div>
-
-                      {isFrozen ? (
-                        <div className="flex gap-1 shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={t('phases.editNotes')}
-                            aria-label={t('phases.editNotes')}
-                            onClick={() => openNotesEditor(phase)}
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-1 shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditPhase(phase)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handlePhaseDelete(phase)}
-                            disabled={deletePhase.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {sortedPhases.map((phase) => (
+              <PhaseRow
+                key={phase.id}
+                phase={phase}
+                status={phaseStatus(phase, today)}
+                frozen={isPhaseFrozen(phase, today)}
+                onEdit={openEditPhase}
+                onEditNotes={openNotesEditor}
+                onDelete={(p) => void handlePhaseDelete(p)}
+                deleting={deletePhase.isPending}
+              />
+            ))}
           </div>
         )}
       </section>

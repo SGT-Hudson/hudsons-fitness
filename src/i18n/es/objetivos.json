@@ -40,6 +40,33 @@
       "fixed_g": "Fijo (g/día)",
       "per_1000_kcal": "Por 1000 kcal"
     },
+    "hero": {
+      "activeLabel": "Fase activa",
+      "weekOf": "semana {{n}} de {{total}}",
+      "weekN": "semana {{n}}",
+      "weeksLeft": "quedan {{n}} sem",
+      "elapsed": "Progreso de la fase",
+      "dailyTargets": "Objetivos diarios",
+      "kcalPerDay": "kcal / día",
+      "protein": "Proteína",
+      "carbs": "Carbos",
+      "fat": "Grasas",
+      "fiber": "Fibra",
+      "basisLean": "Base: masa magra · {{n}} g/kg",
+      "basisFallback": "Base: peso corporal · 1,6 g/kg — añade un % de grasa para un objetivo ajustado a la fase",
+      "needsWeight": "Registra un peso para ver los objetivos diarios de esta fase.",
+      "needsTdee": "Esta fase se define como delta sobre el TDEE y aún no hay estimación de TDEE, así que todavía no podemos calcular sus objetivos."
+    },
+    "row": {
+      "kcalPerDay": "kcal / día",
+      "proteinPrefix": "prot.",
+      "proteinUnit": "g/kg",
+      "status": {
+        "active": "activa",
+        "upcoming": "programada",
+        "past": "histórico"
+      }
+    },
     "summary": {
       "protein": "prot.",
       "proteinBasisLean": "× masa magra",
