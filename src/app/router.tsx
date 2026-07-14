@@ -22,6 +22,7 @@ import { IngredientEditorPage } from '@/pages/IngredientEditorPage';
 import { IngredientScanPage } from '@/pages/IngredientScanPage';
 import { IngredientSearchPage } from '@/pages/IngredientSearchPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
+import { MeasurementHistoryPage } from '@/pages/MeasurementHistoryPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { MorePage } from '@/pages/MorePage';
 import { SettingsProfilePage } from '@/pages/settings/SettingsProfilePage';
@@ -156,6 +157,10 @@ export function AppRoutes() {
               </Suspense>
             }
           />
+          {/* R-33 wave 7: sub-flows are routes, not dialogs. The full
+              month-grouped measurement archive — and the only place a
+              measurement can be deleted — is its own screen. */}
+          <Route path="/progress/history" element={<MeasurementHistoryPage />} />
           <Route path="/progress/goals" element={<ObjetivosPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/profile" element={<SettingsProfilePage />} />

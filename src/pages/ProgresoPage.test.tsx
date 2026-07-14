@@ -136,7 +136,9 @@ describe('ProgresoPage', () => {
 
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent('Nueva medición');
-    expect(screen.getByLabelText('Peso (kg)')).toBeInTheDocument();
+    // The page's guarantee is "the action opens the measurement form" — the
+    // field's exact label is MeasurementDialog's own test to pin, not this one.
+    expect(screen.getByLabelText(/Peso/)).toBeInTheDocument();
   });
 
   // The mobile affordance for the same action: the header is CSS-hidden below md,
@@ -163,13 +165,24 @@ describe('ProgresoPage', () => {
     expect(await screen.findByRole('dialog')).toHaveTextContent('Grasa · músculo · agua · 6M');
   });
 
-  it('keeps the ETA line and the editable recent-measurements list', () => {
+  it('keeps the ETA line and a row-level edit on the recent list', () => {
     renderPage();
 
     // The ETA line the hero already shipped (never stripped by the redesign).
     expect(screen.getByText(/≈/)).toBeInTheDocument();
-    // Edit/delete stay on the recent list until PR-B moves them to /progress/history.
+    // The recent card is a glance, so edit stays inline…
     expect(screen.getAllByRole('button', { name: 'Editar' }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('button', { name: 'Eliminar' }).length).toBeGreaterThan(0);
+  });
+
+  // …and delete moved to the history screen (PR-B), which the card must
+  // therefore always be able to reach. Losing this link would strand delete.
+  it('links the recent-measurements card at the full history', () => {
+    renderPage();
+
+    expect(screen.getByRole('link', { name: 'Historial' })).toHaveAttribute(
+      'href',
+      '/progress/history',
+    );
+    expect(screen.queryByRole('button', { name: 'Eliminar' })).toBeNull();
   });
 });

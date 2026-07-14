@@ -3,7 +3,9 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { toastDeleted, toastError, toastSaved } from '@/lib/toast-helpers';
 import {
   deleteMeasurement,
+  fetchFirstMeasurement,
   fetchLatestMeasurement,
+  fetchMeasurementsSince,
   fetchRecentMeasurements,
   fetchSmoothedMeasurements,
   upsertMeasurement,
@@ -31,6 +33,9 @@ export function fromDateForRange(range: TimeRange, now: Date = new Date()): stri
 const KEYS = {
   recent: (userId: string | undefined) => ['measurements', 'recent', userId] as const,
   latest: (userId: string | undefined) => ['measurements', 'latest', userId] as const,
+  first: (userId: string | undefined) => ['measurements', 'first', userId] as const,
+  range: (userId: string | undefined, fromDate: string | null) =>
+    ['measurements', 'range', userId, fromDate] as const,
   smoothed: (userId: string | undefined, fromDate: string | null) =>
     ['measurements', 'smoothed', userId, fromDate] as const,
 };
@@ -50,6 +55,27 @@ export function useLatestMeasurement() {
     enabled: !!user,
     queryKey: KEYS.latest(user?.id),
     queryFn: () => fetchLatestMeasurement(user!.id),
+  });
+}
+
+/** The full measurement history for a range (no `limit`) — `/progress/history`. */
+export function useMeasurementsInRange(range: TimeRange) {
+  const { user } = useAuth();
+  const fromDate = fromDateForRange(range);
+  return useQuery({
+    enabled: !!user,
+    queryKey: KEYS.range(user?.id, fromDate),
+    queryFn: () => fetchMeasurementsSince(user!.id, fromDate),
+  });
+}
+
+/** The oldest measurement on record, whatever the active range. */
+export function useFirstMeasurement() {
+  const { user } = useAuth();
+  return useQuery({
+    enabled: !!user,
+    queryKey: KEYS.first(user?.id),
+    queryFn: () => fetchFirstMeasurement(user!.id),
   });
 }
 

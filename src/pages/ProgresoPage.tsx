@@ -8,7 +8,7 @@ import { CompositionCard } from '@/features/measurements/components/CompositionC
 import { CompositionChart } from '@/features/measurements/components/CompositionChart';
 import { LatestMeasurementCard } from '@/features/measurements/components/LatestMeasurementCard';
 import { MeasurementDialog } from '@/features/measurements/components/MeasurementDialog';
-import { MeasurementsList } from '@/features/measurements/components/MeasurementsList';
+import { RecentMeasurementsCard } from '@/features/measurements/components/RecentMeasurementsCard';
 import { WeightChart } from '@/features/measurements/components/WeightChart';
 import { MacrosChart } from '@/features/progreso/components/MacrosChart';
 import {
@@ -120,7 +120,9 @@ export function ProgresoPage() {
           onExpandedChange={setCompositionExpanded}
         />
 
-        <MeasurementsList
+        {/* The glance: the last five. The archive — and the only place a
+            measurement can be deleted — is `/progress/history`. */}
+        <RecentMeasurementsCard
           measurements={recentQuery.data ?? []}
           loading={recentQuery.isLoading}
           onEdit={openForEdit}

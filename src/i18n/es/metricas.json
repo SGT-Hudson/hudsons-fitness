@@ -60,11 +60,24 @@
     "actions": "Acciones",
     "deleteConfirm": "¿Borrar esta medición? No se puede deshacer."
   },
+  "history": {
+    "title": "Historial de mediciones",
+    "open": "Historial",
+    "count_one": "{{count}} medición",
+    "count_other": "{{count}} mediciones",
+    "firstEver": "Inicio del registro · {{date}} · {{weight}}",
+    "emptyTitle": "Sin mediciones",
+    "emptyHint": "Aún no hay mediciones en este rango. Registra una para empezar tu historial."
+  },
   "dialog": {
     "newTitle": "Nueva medición",
     "editTitle": "Editar medición",
     "subtitle": "Solo el peso es obligatorio.",
-    "prefillHint": "Pre-rellenado con tu última medición. Edita lo que cambie."
+    "prefillHint": "Pre-rellenado con tu última medición. Edita lo que cambie.",
+    "weightLabel": "Peso",
+    "sinceLast": "{{delta}} kg desde la última · {{date}}",
+    "optional": "opcional",
+    "notePlaceholder": "En ayunas, después del baño… (lo más constante posible)"
   },
   "errors": {
     "weightRequired": "El peso es obligatorio.",
