@@ -57,6 +57,20 @@
       "needsWeight": "Registra un peso para ver los objetivos diarios de esta fase.",
       "needsTdee": "Esta fase se define como delta sobre el TDEE y aún no hay estimación de TDEE, así que todavía no podemos calcular sus objetivos."
     },
+    "scheduled": {
+      "label": "Programadas",
+      "subtitle": "Próximas fases",
+      "count_one": "{{count}} fase",
+      "count_other": "{{count}} fases"
+    },
+    "history": {
+      "title": "Historial de fases",
+      "phases_one": "{{count}} fase",
+      "phases_other": "{{count}} fases",
+      "months_one": "{{count}} mes",
+      "months_other": "{{count}} meses",
+      "seeAll": "Ver todo"
+    },
     "row": {
       "kcalPerDay": "kcal / día",
       "proteinPrefix": "prot.",

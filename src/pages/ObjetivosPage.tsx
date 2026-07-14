@@ -3,7 +3,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { ProgressTabs } from './ProgressTabs';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus } from 'lucide-react';
+import { Pencil, Plus, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PageShell } from '@/components/layout/PageShell';
@@ -26,45 +26,24 @@ import {
 } from '@/features/phases/hooks';
 import { PhaseDialog } from '@/features/phases/components/PhaseDialog';
 import { PhaseHeroCard } from '@/features/phases/components/PhaseHeroCard';
+import { PhaseHistoryBar } from '@/features/phases/components/PhaseHistoryBar';
 import { PhaseRow } from '@/features/phases/components/PhaseRow';
+import { isPhaseFrozen, phaseStatus } from '@/features/phases/status';
 import type { Phase, PhaseInput } from '@/features/phases/api';
 import {
   goalFormSchema,
   type GoalFormValues,
   type ParsedGoalForm,
 } from '@/features/objetivos/schema';
-import { daysBetween, isoDate } from '@/lib/dates';
+import { isoDate } from '@/lib/dates';
 
 type GoalForm = GoalFormValues;
 
 /** Default target body-fat % when no goal is stored yet. */
 const DEFAULT_TARGET_BF = 15;
 
-function phaseStatus(phase: Phase, today: string): 'active' | 'past' | 'upcoming' {
-  if (phase.start_date > today) return 'upcoming';
-  if (phase.end_date && phase.end_date < today) return 'past';
-  return 'active';
-}
-
-/**
- * Grace window after a phase's `end_date` during which it stays fully
- * editable and deletable. Past phases are computationally inert (no code
- * reconstructs which phase was active on a historical date — see D-A5), so
- * the freeze is a UX stance ("history is closed"), not a data invariant.
- * That justifies a forgiving late-correction window before the card freezes.
- */
-const PHASE_EDIT_GRACE_DAYS = 7;
-
-/**
- * A phase is frozen only once it ended more than PHASE_EDIT_GRACE_DAYS ago.
- * Frozen → edit/delete affordances hidden + card dimmed. The status badge
- * stays `end_date`-based (a frozen phase still reads "past"); only the
- * freeze/dim is grace-based. Notes stay editable forever regardless (D-A5).
- */
-function isPhaseFrozen(phase: Phase, today: string): boolean {
-  if (!phase.end_date || phase.end_date >= today) return false;
-  return daysBetween(phase.end_date, today) > PHASE_EDIT_GRACE_DAYS;
-}
+/** The region the history bar expands, for `aria-controls`. */
+const HISTORY_REGION_ID = 'phase-history-list';
 
 export function ObjetivosPage() {
   const { t } = useTranslation('objetivos');
@@ -109,6 +88,9 @@ export function ObjetivosPage() {
   // Notes-only mode: used for frozen (post-grace) phases — every field but
   // `notes` is read-only in the dialog (D-A5: notes editable forever).
   const [notesOnly, setNotesOnly] = useState(false);
+  // History is collapsed by default. Local state on purpose: which phases you
+  // are peeking at is a browsing detail, not something a URL should carry.
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   function openNewPhase() {
     setEditingPhase(null);
@@ -141,16 +123,44 @@ export function ObjetivosPage() {
     await deletePhase.mutateAsync(phase.id);
   }
 
-  const sortedPhases = useMemo(() => {
-    const order = { active: 0, upcoming: 1, past: 2 };
-    return [...(phases.data ?? [])].sort((a, b) => {
-      const sa = phaseStatus(a, today);
-      const sb = phaseStatus(b, today);
-      return order[sa] - order[sb] || b.start_date.localeCompare(a.start_date);
-    });
+  /**
+   * Option-B grouping (the registered artboard): what is running, what is
+   * scheduled, and what is over. `phaseStatus` is the feature's rule, not the
+   * page's — the page only decides the reading order inside each group.
+   */
+  const groups = useMemo(() => {
+    const all = phases.data ?? [];
+    const byStartDesc = (a: Phase, b: Phase) => b.start_date.localeCompare(a.start_date);
+    const byStartAsc = (a: Phase, b: Phase) => a.start_date.localeCompare(b.start_date);
+    return {
+      // Only one phase can be active (the DB's exclusion constraint), but the
+      // list stays an array so a bad row never crashes the page.
+      active: all.filter((p) => phaseStatus(p, today) === 'active').sort(byStartDesc),
+      // Scheduled reads forwards: the one you start next comes first.
+      upcoming: all.filter((p) => phaseStatus(p, today) === 'upcoming').sort(byStartAsc),
+      // History reads backwards: the most recent phase first.
+      past: all.filter((p) => phaseStatus(p, today) === 'past').sort(byStartDesc),
+    };
   }, [phases.data, today]);
 
+  const totalPhases =
+    groups.active.length + groups.upcoming.length + groups.past.length;
   const phaseBusy = createPhase.isPending || updatePhase.isPending;
+
+  function renderRow(phase: Phase) {
+    return (
+      <PhaseRow
+        key={phase.id}
+        phase={phase}
+        status={phaseStatus(phase, today)}
+        frozen={isPhaseFrozen(phase, today)}
+        onEdit={openEditPhase}
+        onEditNotes={openNotesEditor}
+        onDelete={(p) => void handlePhaseDelete(p)}
+        deleting={deletePhase.isPending}
+      />
+    );
+  }
 
   return (
     <PageShell title={t('pageTitle')} back="/progress">
@@ -165,39 +175,37 @@ export function ObjetivosPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">{t('goal.title')}</h2>
           <Button variant="outline" size="sm" onClick={openGoalDialog}>
-            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+            <Pencil className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
             {goal.data ? t('goal.edit') : t('goal.setGoal')}
           </Button>
         </div>
 
-        {goal.data ? (
-          <Card>
-            <CardContent className="pt-5 pb-4">
-              <div className="flex items-start gap-6">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                    {t('goal.targetBf')}
-                  </p>
-                  <p className="text-4xl font-bold tabular-nums">
-                    {goal.data.target_body_fat_pct}
-                    <span className="text-lg font-normal text-muted-foreground ml-1">%</span>
-                  </p>
-                </div>
-                {goal.data.notes && (
-                  <p className="text-sm text-muted-foreground border-l pl-5 py-1 self-center">
-                    {goal.data.notes}
-                  </p>
-                )}
+        <Card className="p-4 md:p-5">
+          {goal.data ? (
+            <div className="flex items-center gap-4">
+              <span
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-accent-line bg-accent-soft text-accent-ink"
+                aria-hidden="true"
+              >
+                <Target className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <span className="text-cap-label">{t('goal.targetBf')}</span>
+                <p className="tnum mt-0.5 text-[30px] font-semibold leading-none tracking-[-0.03em] md:text-[32px]">
+                  {goal.data.target_body_fat_pct}
+                  <span className="ml-1 text-base font-normal text-muted-foreground">%</span>
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardContent className="py-6">
-              <p className="text-sm text-muted-foreground">{t('goal.noGoalHint')}</p>
-            </CardContent>
-          </Card>
-        )}
+              {goal.data.notes && (
+                <p className="ml-2 min-w-0 self-center border-l pl-4 text-xs text-text-dim">
+                  {goal.data.notes}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="py-2 text-sm text-muted-foreground">{t('goal.noGoalHint')}</p>
+          )}
+        </Card>
       </section>
 
       {/* ── Phases ── */}
@@ -210,7 +218,7 @@ export function ObjetivosPage() {
           </Button>
         </div>
 
-        {phases.isLoading ? null : sortedPhases.length === 0 ? (
+        {phases.isLoading ? null : totalPhases === 0 ? (
           <Card>
             <CardContent className="py-10 text-center">
               <p className="text-sm text-muted-foreground">{t('phases.empty')}</p>
@@ -218,18 +226,44 @@ export function ObjetivosPage() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {sortedPhases.map((phase) => (
-              <PhaseRow
-                key={phase.id}
-                phase={phase}
-                status={phaseStatus(phase, today)}
-                frozen={isPhaseFrozen(phase, today)}
-                onEdit={openEditPhase}
-                onEditNotes={openNotesEditor}
-                onDelete={(p) => void handlePhaseDelete(p)}
-                deleting={deletePhase.isPending}
-              />
-            ))}
+            {groups.active.map(renderRow)}
+
+            {/* ── Programadas: always expanded, above the history ── */}
+            {groups.upcoming.length > 0 && (
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-[22px] shrink-0 items-center gap-1.5 rounded-full border border-accent-line bg-accent-soft px-2 text-[10.5px] font-medium text-accent-ink">
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
+                    {t('phases.scheduled.label')}
+                  </span>
+                  <span className="truncate text-xs font-medium text-muted-foreground">
+                    {t('phases.scheduled.subtitle')}
+                  </span>
+                  <span className="h-px flex-1 bg-border" aria-hidden="true" />
+                  <span className="tnum shrink-0 text-[11px] text-text-dim">
+                    {t('phases.scheduled.count', { count: groups.upcoming.length })}
+                  </span>
+                </div>
+                {groups.upcoming.map(renderRow)}
+              </div>
+            )}
+
+            {/* ── Historial: collapsed behind the bar ── */}
+            {groups.past.length > 0 && (
+              <div className="space-y-3 pt-1">
+                <PhaseHistoryBar
+                  phases={groups.past}
+                  open={historyOpen}
+                  onToggle={() => setHistoryOpen((o) => !o)}
+                  controls={HISTORY_REGION_ID}
+                />
+                {historyOpen && (
+                  <div id={HISTORY_REGION_ID} className="space-y-3">
+                    {groups.past.map(renderRow)}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </section>

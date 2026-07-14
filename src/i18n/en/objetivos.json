@@ -57,6 +57,20 @@
       "needsWeight": "Log a weight to see this phase's daily targets.",
       "needsTdee": "This phase is defined as a delta on TDEE and there is no TDEE estimate yet, so its targets can't be computed."
     },
+    "scheduled": {
+      "label": "Scheduled",
+      "subtitle": "Upcoming phases",
+      "count_one": "{{count}} phase",
+      "count_other": "{{count}} phases"
+    },
+    "history": {
+      "title": "Phase history",
+      "phases_one": "{{count}} phase",
+      "phases_other": "{{count}} phases",
+      "months_one": "{{count}} month",
+      "months_other": "{{count}} months",
+      "seeAll": "See all"
+    },
     "row": {
       "kcalPerDay": "kcal / day",
       "proteinPrefix": "protein",
