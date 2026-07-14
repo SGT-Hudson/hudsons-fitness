@@ -94,6 +94,12 @@
       "editTitle": "Editar fase",
       "notesOnlyTitle": "Editar notas de la fase",
       "notesOnlyHint": "Esta fase está cerrada. El resto de campos son de solo lectura; únicamente puedes actualizar las notas.",
+      "sections": {
+        "identity": "Identidad",
+        "dates": "Fechas",
+        "targets": "Objetivos",
+        "notes": "Notas"
+      },
       "name": "Nombre",
       "namePlaceholder": "ej. Corte verano 2025",
       "type": "Tipo",
@@ -119,7 +125,8 @@
         "protein": "La proteína debe ser mayor que 0.",
         "fat": "La grasa debe estar entre 10 y 60.",
         "fiberValue": "El valor debe ser mayor que 0.",
-        "dateRange": "La fecha fin debe ser posterior al inicio."
+        "dateRange": "La fecha fin debe ser posterior al inicio.",
+        "overlap": "Esta fase se solapa con otra. Ajusta las fechas (dos fases no pueden compartir ni un solo día)."
       }
     }
   }

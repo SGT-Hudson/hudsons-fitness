@@ -94,6 +94,12 @@
       "editTitle": "Edit phase",
       "notesOnlyTitle": "Edit phase notes",
       "notesOnlyHint": "This phase is closed. All other fields are read-only; you can only update the notes.",
+      "sections": {
+        "identity": "Identity",
+        "dates": "Dates",
+        "targets": "Targets",
+        "notes": "Notes"
+      },
       "name": "Name",
       "namePlaceholder": "e.g. Summer cut 2025",
       "type": "Type",
@@ -119,7 +125,8 @@
         "protein": "Protein must be greater than 0.",
         "fat": "Fat must be between 10 and 60.",
         "fiberValue": "Value must be greater than 0.",
-        "dateRange": "End date must be after start date."
+        "dateRange": "End date must be after start date.",
+        "overlap": "This phase overlaps another one. Adjust the dates (two phases cannot share even a single day)."
       }
     }
   }

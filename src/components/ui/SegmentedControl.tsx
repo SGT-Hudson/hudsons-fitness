@@ -15,6 +15,12 @@ interface Props<T extends string> {
   ariaLabel?: string;
   /** Id of an existing visible label, when the group already has one on screen. */
   labelledBy?: string;
+  /**
+   * Read-only mode: every option still SHOWS (the current value is the point —
+   * a disabled control is dimmed, never blanked), but none can be picked. Used
+   * by the phase editor's notes-only mode (R-02).
+   */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -30,6 +36,7 @@ export function SegmentedControl<T extends string>({
   onChange,
   ariaLabel,
   labelledBy,
+  disabled,
   className,
 }: Props<T>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -55,7 +62,12 @@ export function SegmentedControl<T extends string>({
       role="radiogroup"
       aria-label={ariaLabel}
       aria-labelledby={labelledBy}
-      className={cn('inline-flex gap-1 rounded-[10px] border bg-muted p-[3px]', className)}
+      aria-disabled={disabled || undefined}
+      className={cn(
+        'inline-flex gap-1 rounded-[10px] border bg-muted p-[3px]',
+        disabled && 'opacity-60',
+        className,
+      )}
     >
       {options.map((option, index) => {
         const on = option.value === value;
@@ -65,6 +77,7 @@ export function SegmentedControl<T extends string>({
             type="button"
             role="radio"
             aria-checked={on}
+            disabled={disabled}
             tabIndex={on ? 0 : -1}
             ref={(el) => {
               refs.current[index] = el;
@@ -76,6 +89,7 @@ export function SegmentedControl<T extends string>({
               on
                 ? 'border-accent-line bg-card text-accent-ink shadow-card'
                 : 'border-transparent text-text-dim hover:bg-card/60 hover:text-foreground',
+              disabled && 'cursor-not-allowed hover:bg-transparent',
             )}
           >
             {option.label}

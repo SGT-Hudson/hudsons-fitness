@@ -22,6 +22,7 @@ import { IngredientEditorPage } from '@/pages/IngredientEditorPage';
 import { IngredientScanPage } from '@/pages/IngredientScanPage';
 import { IngredientSearchPage } from '@/pages/IngredientSearchPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
+import { PhaseEditorPage } from '@/pages/PhaseEditorPage';
 import { MeasurementHistoryPage } from '@/pages/MeasurementHistoryPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { MorePage } from '@/pages/MorePage';
@@ -162,6 +163,12 @@ export function AppRoutes() {
               measurement can be deleted — is its own screen. */}
           <Route path="/progress/history" element={<MeasurementHistoryPage />} />
           <Route path="/progress/goals" element={<ObjetivosPage />} />
+          {/* R-33 wave 8: the phase editor is a PAGE now (create and edit
+              alike), not a modal. A frozen phase's notes-only mode is derived
+              from the freeze rule inside the page — deliberately NOT a route
+              flag a deep link could lie about. */}
+          <Route path="/progress/goals/phases/new" element={<PhaseEditorPage />} />
+          <Route path="/progress/goals/phases/:id/edit" element={<PhaseEditorPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/biometrics" element={<SettingsBiometricsPage />} />

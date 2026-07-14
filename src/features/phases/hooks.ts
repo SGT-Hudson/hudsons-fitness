@@ -6,10 +6,22 @@ import {
   createPhase,
   deletePhase,
   fetchActivePhase,
+  isPhaseOverlapError,
   listPhases,
   updatePhase,
   type PhaseInput,
 } from './api';
+
+/**
+ * A save that collided with another phase's dates is the ONE failure the editor
+ * can explain precisely, and it renders it inline on the date fields that caused
+ * it (`phases.form.errors.overlap`). A generic "algo ha ido mal" toast on top of
+ * that is noise — and it is the exact message this wave exists to stop shipping.
+ * Every other failure still toasts.
+ */
+function toastUnlessOverlap(err: unknown) {
+  if (!isPhaseOverlapError(err)) toastError(err);
+}
 
 const KEYS = {
   list: (userId: string | undefined) => ['phases', 'list', userId] as const,
@@ -43,7 +55,7 @@ export function useCreatePhase() {
       void qc.invalidateQueries({ queryKey: ['phases'] });
       toastCreated();
     },
-    onError: toastError,
+    onError: toastUnlessOverlap,
   });
 }
 
@@ -56,7 +68,7 @@ export function useUpdatePhase() {
       void qc.invalidateQueries({ queryKey: ['phases'] });
       toastSaved();
     },
-    onError: toastError,
+    onError: toastUnlessOverlap,
   });
 }
 
