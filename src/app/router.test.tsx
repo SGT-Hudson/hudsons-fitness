@@ -47,6 +47,7 @@ vi.mock('@/pages/ExercisesPage', () => ({ ExercisesPage: () => <div>ExercisesPag
 vi.mock('@/pages/ExerciseDetailPage', () => ({ ExerciseDetailPage: () => <div>ExerciseDetailPage</div> }));
 vi.mock('@/pages/ProgresoPage', () => ({ ProgresoPage: () => <div>ProgresoPage</div> }));
 vi.mock('@/pages/ObjetivosPage', () => ({ ObjetivosPage: () => <div>ObjetivosPage</div> }));
+vi.mock('@/pages/PhaseEditorPage', () => ({ PhaseEditorPage: () => <div>PhaseEditorPage</div> }));
 vi.mock('@/pages/MeasurementHistoryPage', () => ({
   MeasurementHistoryPage: () => <div>MeasurementHistoryPage</div>,
 }));
@@ -172,6 +173,24 @@ describe('AppRoutes', () => {
     );
     expect(screen.getByText('MeasurementHistoryPage')).toBeInTheDocument();
     expect(screen.queryByText('ProgresoPage')).toBeNull();
+  });
+
+  // R-33 wave 8: the phase editor is a route, not a dialog.
+  it('routes the phase editor (new + edit) to the editor page', () => {
+    render(
+      <MemoryRouter initialEntries={['/progress/goals/phases/new']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('PhaseEditorPage')).toBeInTheDocument();
+    expect(screen.queryByText('ObjetivosPage')).toBeNull();
+
+    render(
+      <MemoryRouter initialEntries={['/progress/goals/phases/p1/edit']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getAllByText('PhaseEditorPage').length).toBeGreaterThan(0);
   });
 
   it('routes /more to the More hub page', () => {
