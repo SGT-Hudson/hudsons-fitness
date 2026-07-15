@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { ProgressTabs } from './ProgressTabs';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -18,18 +19,13 @@ import { NumberField } from '@/components/ui/NumberField';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useGoal, useUpsertGoal } from '@/features/objetivos/hooks';
-import {
-  useCreatePhase,
-  useDeletePhase,
-  usePhases,
-  useUpdatePhase,
-} from '@/features/phases/hooks';
-import { PhaseDialog } from '@/features/phases/components/PhaseDialog';
+import { useDeletePhase, usePhases } from '@/features/phases/hooks';
 import { PhaseHeroCard } from '@/features/phases/components/PhaseHeroCard';
 import { PhaseHistoryBar } from '@/features/phases/components/PhaseHistoryBar';
 import { PhaseRow } from '@/features/phases/components/PhaseRow';
+import { PHASE_EDITOR_NEW, phaseEditorPath } from '@/features/phases/editorRoute';
 import { isPhaseFrozen, phaseStatus } from '@/features/phases/status';
-import type { Phase, PhaseInput } from '@/features/phases/api';
+import type { Phase } from '@/features/phases/api';
 import {
   goalFormSchema,
   type GoalFormValues,
@@ -47,6 +43,7 @@ const HISTORY_REGION_ID = 'phase-history-list';
 
 export function ObjetivosPage() {
   const { t } = useTranslation('objetivos');
+  const navigate = useNavigate();
   const today = isoDate();
 
   // ── Goal ──────────────────────────────────────────────────────────────────
@@ -79,43 +76,21 @@ export function ObjetivosPage() {
 
   // ── Phases ─────────────────────────────────────────────────────────────────
   const phases = usePhases();
-  const createPhase = useCreatePhase();
-  const updatePhase = useUpdatePhase();
   const deletePhase = useDeletePhase();
 
-  const [phaseOpen, setPhaseOpen] = useState(false);
-  const [editingPhase, setEditingPhase] = useState<Phase | null>(null);
-  // Notes-only mode: used for frozen (post-grace) phases — every field but
-  // `notes` is read-only in the dialog (D-A5: notes editable forever).
-  const [notesOnly, setNotesOnly] = useState(false);
   // History is collapsed by default. Local state on purpose: which phases you
   // are peeking at is a browsing detail, not something a URL should carry.
   const [historyOpen, setHistoryOpen] = useState(false);
 
+  // R-33 wave 8: the editor is a ROUTE, not a dialog. "Editar notas" on a frozen
+  // row goes to the SAME url as "editar" — the editor derives notes-only from
+  // the freeze rule itself, so there is no mode for a deep link to lie about.
   function openNewPhase() {
-    setEditingPhase(null);
-    setNotesOnly(false);
-    setPhaseOpen(true);
+    navigate(PHASE_EDITOR_NEW);
   }
 
-  function openEditPhase(phase: Phase) {
-    setEditingPhase(phase);
-    setNotesOnly(false);
-    setPhaseOpen(true);
-  }
-
-  function openNotesEditor(phase: Phase) {
-    setEditingPhase(phase);
-    setNotesOnly(true);
-    setPhaseOpen(true);
-  }
-
-  async function handlePhaseSave(input: PhaseInput) {
-    if (editingPhase) {
-      await updatePhase.mutateAsync({ id: editingPhase.id, patch: input });
-    } else {
-      await createPhase.mutateAsync(input);
-    }
+  function openPhaseEditor(phase: Phase) {
+    navigate(phaseEditorPath(phase.id));
   }
 
   async function handlePhaseDelete(phase: Phase) {
@@ -145,7 +120,6 @@ export function ObjetivosPage() {
 
   const totalPhases =
     groups.active.length + groups.upcoming.length + groups.past.length;
-  const phaseBusy = createPhase.isPending || updatePhase.isPending;
 
   function renderRow(phase: Phase) {
     return (
@@ -154,8 +128,8 @@ export function ObjetivosPage() {
         phase={phase}
         status={phaseStatus(phase, today)}
         frozen={isPhaseFrozen(phase, today)}
-        onEdit={openEditPhase}
-        onEditNotes={openNotesEditor}
+        onEdit={openPhaseEditor}
+        onEditNotes={openPhaseEditor}
         onDelete={(p) => void handlePhaseDelete(p)}
         deleting={deletePhase.isPending}
       />
@@ -168,7 +142,7 @@ export function ObjetivosPage() {
       <ProgressTabs />
 
       {/* ── Active phase hero ── */}
-      <PhaseHeroCard onEdit={openEditPhase} />
+      <PhaseHeroCard onEdit={openPhaseEditor} />
 
       {/* ── Goal ── */}
       <section className="space-y-3">
@@ -301,16 +275,6 @@ export function ObjetivosPage() {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* ── Phase dialog ── */}
-      <PhaseDialog
-        open={phaseOpen}
-        onOpenChange={setPhaseOpen}
-        phase={editingPhase}
-        onSave={handlePhaseSave}
-        busy={phaseBusy}
-        notesOnly={notesOnly}
-      />
     </div>
     </PageShell>
   );
