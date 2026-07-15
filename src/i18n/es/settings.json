@@ -7,7 +7,10 @@
     "account": "Cuenta"
   },
   "rows": {
-    "accountAndSession": "Cuenta y sesión"
+    "accountAndSession": "Cuenta y sesión",
+    "profileSub": "Nombre visible",
+    "biometricsSub": "Sexo, nacimiento, altura",
+    "accountSub": "Correo, cerrar sesión, eliminar"
   },
   "profile": {
     "title": "Perfil",
