@@ -17,7 +17,10 @@ export const ZERO_MACROS: Macros = {
   fiberG: 0,
 };
 
-function ingredientMacros(
+// Exported so the diario ración step (Task 4, R-33 wave 2) can project a
+// loose ingredient's contribution the same way computeMealLogMacros does
+// internally — same pure math, no fetch.
+export function ingredientMacros(
   ingredient: {
     unit_type: string;
     kcal_per_unit: number;
@@ -110,6 +113,20 @@ export function computeMealLogSub(log: MealLogWithJoins): SubMacros {
 
 export function sumSub(items: SubMacros[]): SubMacros {
   return items.reduce<SubMacros>((acc, s) => addSub(acc, s), ZERO_SUB);
+}
+
+// Day totals minus one entry's contribution, clamped at 0 per field. Used by
+// the add-flow edit mode (R-33 wave 2 PR-B task 5): `totals` already includes
+// the entry being edited, so the ración-step projection must subtract it to
+// get the "rest of the day" base — otherwise the edited entry double-counts.
+export function subtractMacros(a: Macros, b: Macros): Macros {
+  return {
+    kcal: Math.max(0, a.kcal - b.kcal),
+    proteinG: Math.max(0, a.proteinG - b.proteinG),
+    carbsG: Math.max(0, a.carbsG - b.carbsG),
+    fatG: Math.max(0, a.fatG - b.fatG),
+    fiberG: Math.max(0, a.fiberG - b.fiberG),
+  };
 }
 
 export function sumMacros(items: Macros[]): Macros {

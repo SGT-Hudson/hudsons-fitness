@@ -1,65 +1,88 @@
 import {
   Activity,
-  BookOpen,
+  Apple,
   CalendarDays,
+  ClipboardPen,
   Dumbbell,
-  Home,
-  LineChart,
-  NotebookText,
-  Repeat,
+  Ellipsis,
+  NotebookPen,
+  Target,
+  TrendingUp,
+  Utensils,
   type LucideIcon,
 } from 'lucide-react';
 
-export type Section = 'nutricion' | 'entreno';
-export type NavGroup = 'shared' | Section;
+export type Section = 'nutri' | 'gym';
 
 export interface NavItem {
   /** i18n key in the `nav` namespace. */
   key: string;
-  /** Route the item navigates to. */
   route: string;
-  group: NavGroup;
   icon: LucideIcon;
-  /** Appears in the mobile bottom nav. */
-  mobile: boolean;
 }
 
-export const NAV_ITEMS: NavItem[] = [
-  { key: 'home', route: '/home', group: 'shared', icon: Home, mobile: false },
-  { key: 'progress', route: '/progress', group: 'shared', icon: LineChart, mobile: true },
-  { key: 'diary', route: '/diary', group: 'nutricion', icon: NotebookText, mobile: true },
-  { key: 'planner', route: '/planner', group: 'nutricion', icon: CalendarDays, mobile: true },
-  { key: 'recipes', route: '/recipes', group: 'nutricion', icon: BookOpen, mobile: true },
-  { key: 'today', route: '/training', group: 'entreno', icon: Activity, mobile: true },
-  { key: 'routine', route: '/routine', group: 'entreno', icon: Repeat, mobile: true },
-  { key: 'exercises', route: '/exercises', group: 'entreno', icon: Dumbbell, mobile: true },
-];
+/* Canvas icon mapping (icons.jsx → lucide): Diario=NotebookPen, Plan=CalendarDays,
+ * Recetas=Utensils, Progreso=TrendingUp, Más=Ellipsis, Rutinas=ClipboardPen,
+ * Ejercicios=Dumbbell, Ingredientes=Apple, Objetivos=Target. Hoy keeps Activity
+ * (canvas glyph is custom; no icon port per spec). */
+const ITEM = {
+  diary: { key: 'diary', route: '/diary', icon: NotebookPen },
+  planner: { key: 'planner', route: '/planner', icon: CalendarDays },
+  recipes: { key: 'recipes', route: '/recipes', icon: Utensils },
+  ingredients: { key: 'ingredients', route: '/recipes/ingredients', icon: Apple },
+  today: { key: 'today', route: '/training', icon: Activity },
+  routine: { key: 'routine', route: '/routine', icon: ClipboardPen },
+  exercises: { key: 'exercises', route: '/exercises', icon: Dumbbell },
+  progress: { key: 'progress', route: '/progress', icon: TrendingUp },
+  goals: { key: 'goals', route: '/progress/goals', icon: Target },
+  more: { key: 'more', route: '/more', icon: Ellipsis },
+} satisfies Record<string, NavItem>;
 
-/** Section that owns a pathname, or null for shared/unknown routes. */
-export function sectionOf(pathname: string): Section | null {
-  const owned = NAV_ITEMS.filter((i) => i.group !== 'shared')
-    .sort((a, b) => b.route.length - a.route.length)
-    .find((i) => pathname === i.route || pathname.startsWith(`${i.route}/`));
-  return owned ? (owned.group as Section) : null;
-}
+/** Bottom-nav items per section (spec §4.1). */
+const BOTTOM_NAV: Record<Section, NavItem[]> = {
+  nutri: [ITEM.diary, ITEM.planner, ITEM.recipes, ITEM.progress, ITEM.more],
+  gym: [ITEM.today, ITEM.routine, ITEM.exercises, ITEM.progress],
+};
 
-/** Bottom-nav items for a section: its own mobile items + shared Progreso. */
 export function bottomNavItems(section: Section): NavItem[] {
-  const own = NAV_ITEMS.filter((i) => i.mobile && i.group === section);
-  const progress = NAV_ITEMS.find((i) => i.key === 'progress')!;
-  return [...own, progress];
+  return BOTTOM_NAV[section];
+}
+
+/** Route prefixes owned by a section (drives accent + which bottom bar renders). */
+const SECTION_ROUTES: Record<Section, string[]> = {
+  nutri: ['/diary', '/planner', '/recipes', '/templates'],
+  gym: ['/training', '/routine', '/exercises'],
+};
+
+/** Section that owns a pathname, or null for shared routes (/progress, /settings, /more). */
+export function sectionOf(pathname: string): Section | null {
+  for (const section of ['nutri', 'gym'] as const) {
+    if (
+      SECTION_ROUTES[section].some(
+        (r) => pathname === r || pathname.startsWith(`${r}/`),
+      )
+    ) {
+      return section;
+    }
+  }
+  return null;
 }
 
 export interface SidebarGroup {
-  group: NavGroup;
+  /** i18n key under `nav:groups.*`. */
+  key: 'nutricion' | 'entreno' | 'analisis';
+  /** Accent family for active items; null = neutral (Análisis). */
+  accent: Section | null;
   items: NavItem[];
 }
 
-/** Sidebar groups in render order: shared → nutricion → entreno. */
-export function sidebarGroups(): SidebarGroup[] {
-  const order: NavGroup[] = ['shared', 'nutricion', 'entreno'];
-  return order.map((group) => ({
-    group,
-    items: NAV_ITEMS.filter((i) => i.group === group),
-  }));
-}
+/** Web sidebar groups (canvas shell.jsx lines 20–36). */
+export const SIDEBAR_GROUPS: SidebarGroup[] = [
+  {
+    key: 'nutricion',
+    accent: 'nutri',
+    items: [ITEM.diary, ITEM.recipes, ITEM.ingredients, ITEM.planner],
+  },
+  { key: 'entreno', accent: 'gym', items: [ITEM.today, ITEM.routine, ITEM.exercises] },
+  { key: 'analisis', accent: null, items: [ITEM.progress, ITEM.goals] },
+];

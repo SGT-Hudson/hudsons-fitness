@@ -41,8 +41,8 @@ export function ExerciseOverview({
               className={cn(
                 'flex flex-1 items-center justify-between rounded-md px-3 py-2 text-sm text-left',
                 done && 'bg-muted/40 text-muted-foreground',
-                skipped && 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-                partial && 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
+                skipped && 'bg-amber-soft text-amber-ink',
+                partial && 'bg-gym-soft text-gym-ink',
                 isCurrent && 'border border-primary/50 bg-primary/10',
                 !done && !skipped && !partial && !isCurrent && 'bg-muted/30',
               )}

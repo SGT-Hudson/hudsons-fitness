@@ -43,12 +43,13 @@ describe('LatestMeasurementCard', () => {
         onLogToday={() => {}}
         onEditToday={() => {}}
         smoothed={smoothed}
-        recent={[latest]}
         phaseType="cut"
         targetBodyFatPct={12}
       />,
     );
-    expect(screen.getByText('78.7')).toBeInTheDocument();
+    // The MA5 value also appears as the "hoy" marker under the phase-path bar,
+    // so the headline is now pinned by its testid rather than by raw text.
+    expect(screen.getByTestId('weight-headline')).toHaveTextContent('78.7');
     expect(screen.getByText(/\/ ?(sem|wk)/i)).toBeInTheDocument();
   });
 
@@ -61,7 +62,6 @@ describe('LatestMeasurementCard', () => {
         onLogToday={() => {}}
         onEditToday={() => {}}
         smoothed={smoothed}
-        recent={[latest]}
         phaseType="cut"
       />,
     );
@@ -77,7 +77,6 @@ describe('LatestMeasurementCard', () => {
         onLogToday={() => {}}
         onEditToday={() => {}}
         smoothed={smoothed}
-        recent={[latest]}
         phaseType="cut"
         targetBodyFatPct={12}
       />,

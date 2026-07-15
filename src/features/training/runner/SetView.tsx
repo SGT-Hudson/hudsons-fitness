@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/NumberField';
+import { useDecimalDraft } from '@/components/ui/useDecimalDraft';
 import { cn } from '@/lib/utils';
 import type { RunnerExercise, RunnerSet } from '@/core/runner';
 import type { RestTimerView } from './useRestTimer';
@@ -61,6 +63,7 @@ export function SetView(props: Props) {
             value={set.weightKg}
             onChange={(v) => props.onEdit({ weightKg: Math.max(0, v) })}
             step={inc}
+            decimal
             valueClass={perfClass(set.weightKg, set.baselineWeightKg)}
           />
           {!set.isWarmup && (
@@ -118,22 +121,45 @@ function ReadOnly({ value }: { value: string }) {
   );
 }
 
+/**
+ * One − / field / + row. `decimal` picks the field: the weight stepper is
+ * fraction-capable, so it needs `NumberField` (`type="text"`) or a typed `82,5`
+ * would be logged as an 825 kg lift; reps are integers and keep `type="number"`
+ * with its spinner.
+ */
 function Stepper({
-  label, value, onChange, step, valueClass,
-}: { label: string; value: number; onChange: (v: number) => void; step: number; valueClass?: string }) {
+  label, value, onChange, step, decimal, valueClass,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  step: number;
+  decimal?: boolean;
+  valueClass?: string;
+}) {
+  const display = Number.isFinite(value) ? String(value) : '';
+  const draft = useDecimalDraft(display, onChange);
+  const fieldClass = cn('h-9 text-center font-semibold', valueClass);
+
   return (
     <div className="flex items-center gap-2 rounded-lg border bg-muted/20 px-2 py-1.5">
       <Button type="button" size="icon" variant="outline" className="h-8 w-8" aria-label={`${label} -`} onClick={() => onChange(round(value - step))}>
         <Minus className="h-4 w-4" />
       </Button>
-      <Input
-        type="number"
-        inputMode="decimal"
-        aria-label={label}
-        value={Number.isFinite(value) ? value : ''}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className={cn('h-9 text-center font-semibold', valueClass)}
-      />
+      {decimal ? (
+        <div className="min-w-0 flex-1">
+          <NumberField id="runner-weight" aria-label={label} className={fieldClass} {...draft} />
+        </div>
+      ) : (
+        <Input
+          type="number"
+          inputMode="numeric"
+          aria-label={label}
+          value={display}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className={fieldClass}
+        />
+      )}
       <Button type="button" size="icon" variant="outline" className="h-8 w-8" aria-label={`${label} +`} onClick={() => onChange(round(value + step))}>
         <Plus className="h-4 w-4" />
       </Button>
@@ -149,7 +175,7 @@ function round(n: number): number {
  *  more → green (beat it), less → amber (fell short), equal/unknown → neutral. */
 function perfClass(current: number, baseline: number | null): string {
   if (baseline == null) return '';
-  if (current > baseline) return 'text-[hsl(var(--primary))]';
-  if (current < baseline) return 'text-amber-400';
+  if (current > baseline) return 'text-[var(--primary)]';
+  if (current < baseline) return 'text-tone-warn';
   return '';
 }

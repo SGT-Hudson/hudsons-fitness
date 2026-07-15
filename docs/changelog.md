@@ -136,7 +136,8 @@ decision rationale in `decisions.md`.
 
 - **Muscle model (#155).** Replaced the coarse-12 `primary_muscle` taxonomy with a
   22-code fine taxonomy in 6 groups (shoulders/chest/back/arms/core/legs) + the
-  special `full_body`. New `public.muscles` table — `code` (pk), `muscle_group`
+  special `full_body` (later extended to 24 shadeable codes when #158 added `neck` +
+  `abductors`). New `public.muscles` table — `code` (pk), `muscle_group`
   (CHECK), `body_region_slug`, `display_order`, `is_full_body`; RLS read-only
   (`muscles_select_all` SELECT-true, no write policy); 23 seed rows (22 shadeable
   codes + `full_body`). It mirrors `src/core/muscles.ts` (the canonical TS structural
@@ -171,12 +172,14 @@ decision rationale in `decisions.md`.
   to the 22 fine codes + `full_body`; new block `exerciseDialog.muscleGroup.<group>`
   (6 labels); `hamstrings` relabelled "Femorales" → "Isquiosurales".
 - **Migrations + tests (#155).** `20260604120000` (muscles table + schema swap +
-  re-tag) and follow-up `20260604130000_fine_taxonomy_retag_review_fixes.sql` (an
-  expert anatomical review corrected 3 rows: Deadlift → hamstrings promoted to
-  primary; Kettlebell swing → +forearms secondary; Overhead press → +trap
-  secondary). New pgTAP suite `supabase/tests/05_muscles.test.sql` (seed
+  re-tag). New pgTAP suite `supabase/tests/05_muscles.test.sql` (seed
   completeness, anti-drift vs `core/muscles.ts`, trigger rejects unknown /
   full-body-as-secondary, every system row has ≥1 primary). See R-26 / D-F11.
+- **Retag review fix (#156).** Follow-up migration
+  `20260604130000_fine_taxonomy_retag_review_fixes.sql` (an expert anatomical review
+  corrected 3 rows: Deadlift → hamstrings promoted to primary; Kettlebell swing →
+  +forearms secondary; Overhead press → +trap secondary), shipped alongside a docs
+  reconcile to shipped state.
 
 ### 2026-05-19 → 2026-06-04 — F-1/F-2 training + nutrition batch (backfill)
 
@@ -210,9 +213,11 @@ decision rationale in `decisions.md`.
 
 ### 2026-06-03 — R-16 Tier-3 pgTAP + R-25 hide fix
 
-- **R-16 Tier-3 pgTAP suite + db-test CI job (#149/#150).** pgTAP suites `00_schema`
-  .. `05_muscles` run as a `db-test` job inside `.github/workflows/ci.yml` (uses the
-  new minimal `supabase/config.toml`, required on `develop`). Closes the "Tier-3
+- **R-16 Tier-3 pgTAP suite + db-test CI job (#148).** pgTAP suites `00_schema`
+  .. `04_rpc` (later joined by `05_muscles` from R-26) run as a `db-test` job inside
+  `.github/workflows/ci.yml` (uses the new minimal `supabase/config.toml`, required on
+  `develop`). Test-file refinements followed: **#149** repaired apply-from-zero
+  (`00_schema`); **#150** made tests `01`–`04` green on `develop`. Closes the "Tier-3
   gated" gaps noted in the earlier R-19 / R-01 entries. Only the R-22 UPDATE
   WITH-CHECK gap remains as a pgTAP todo.
 - **R-25 hide drops the reference row only (#151).** Migration
@@ -232,6 +237,52 @@ decision rationale in `decisions.md`.
   (bottom-sheet, vaul) on mobile / Radix **`Dialog`** (centered) on desktop,
   switching via `useMediaQuery('(min-width: 768px)')`. No schema or RPC change.
   See R-27.
+
+### 2026-06-08 — R-27 Project B2c — exercise browse + detail pages (Project B complete)
+
+- **Exercise browse page (B2c, #167).** The `/exercises` placeholder becomes a real
+  browse experience: debounced search, a filters `Drawer` (category / equipment /
+  level / muscle), removable applied-filter chips, a responsive `ExerciseCard` grid,
+  and **server-side pagination** (`searchExercisesPaged` — `count:'exact'` + `.range`,
+  sharing a `buildExerciseQuery` helper with the picker's search). A read-only
+  `/exercises/:id` page reuses B2b's `ExerciseDetail` (`full` density). The picker's
+  grouped muscle dropdown was extracted into a shared `MuscleSelect`. New
+  `entrenamiento` i18n: `browse.*` + `exerciseDialog.category.*` / `.level.*`. No
+  schema/RPC change.
+- **Released to `main`** via `release/2026-06-08-exercise-browse` (B2b + B2c).
+- **Live-DB backlog deploy (2026-06-08).** The Project A / B1 / B2a migrations (fine
+  taxonomy + 873-row catalog + bilingual instructions) had never been applied to the
+  live database; the 10-migration backlog was deployed in order, bringing prod to
+  **907 exercises** (873 catalog) with instructions + fine-muscle tags. See
+  operations.md "Project A / B1 / B2a backlog deploy". **Project B (R-27) complete.**
+
+### 2026-07-15 — R-33 UI redesign (design system + nutrition screens)
+
+The full nutrition-side redesign, applying the external Claude-design canvas in
+layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
+
+- **Foundation (app-wide, gym included).** Migrated to Tailwind CSS v4 (#179);
+  foundation retheme (#180) — the `tokens.css` oklch token system as the app's
+  source, self-hosted Rubik + Geist Mono, restyled shadcn primitives, a
+  hardcoded-colour sweep, and the heatmap ramp.
+- **Shell & navigation (#183).** `PageShell` frame, per-section bottom navs, the
+  `/more` hub, and the grouped desktop sidebar (web-sidebar-footer pattern).
+- **Semantic tone core (#184).** `src/core/nutritionTone.ts` replaces the old
+  `macroStatus` — the nutri/amber/gym/danger tone tokens the screens read from.
+- **Screen waves.** Diario day view + add-flow (#185/#186); Planificador day
+  view, layout pass, and flows — add drawer, copy replace/append, recipe peek
+  (#187/#188/#189); Plantillas library + template `phase_type` + save/apply and
+  the mobile-first template editor (#190/#191); Recetas list, read view, and
+  editor + `prep_time_minutes` (#192/#193); Ingredientes list, full-screen
+  search + scanner, auto-kcal, and the `salt_g_per_unit` sub-macro (#194/#195);
+  Progreso — P0 hero, three-line composition (the fat/lean stack retired), one
+  time filter, and the month-grouped history route + measurement sheet
+  (#199/#200); Objetivos page + the phase editor promoted from a modal to a
+  route with a live phase-tinted preview (#201/#202); Ajustes restyle
+  (#203). Docs reconciled to the shipped code at release (#204).
+- **Schema.** Three additive, nullable columns only — `meal_plan_templates.phase_type`,
+  `recipes.prep_time_minutes`, `ingredients.salt_g_per_unit` (with the matching
+  `save_template` / `save_recipe` args); no RLS or destructive change.
 
 ## PR table
 
@@ -279,8 +330,22 @@ decision rationale in `decisions.md`.
 | 124 | Settings — grouped-list redesign | Grouped-list / drill-in Settings redesign |
 | 127 | F-2 — exercise search-by-muscle | Muscle filter wired into the exercise picker |
 | 128 | F-2b — warm-up sets | `routine_exercises.warmup_sets` jsonb |
-| 149 | R-16 — Tier-3 pgTAP suite | pgTAP suites `00_schema`..`04_*` for RLS / RPC; closes R-19/R-01 Tier-3 gaps |
-| 150 | R-16 — db-test CI job | `db-test` job (`supabase start` + pgTAP) in `ci.yml`, required on `develop`; minimal `supabase/config.toml` |
+| 148 | R-16 — Tier-3 pgTAP suite + db-test CI job | pgTAP suites `00_schema`..`04_*` for RLS / RPC + `db-test` job (`supabase start` + pgTAP) in `ci.yml` (required on `develop`) + minimal `supabase/config.toml`; closes R-19/R-01 Tier-3 gaps |
+| 149 | R-16 — Tier-3 test refinement | Repair apply-from-zero so `db-test` runs (`00_schema.test.sql`) |
+| 150 | R-16 — Tier-3 test refinement | Make tests `01`–`04` green on `develop` |
 | 151 | R-25 — hide drops ref only | `20260603120000_r25_hide_drops_ref_only.sql` — hide drops only the reference row, pool ownership retained |
-| 155 | R-26 — fine muscle taxonomy | `public.muscles` table (22 fine codes + `full_body`, mirrors `core/muscles.ts`); `exercises.primary_muscles[]` (multi-primary) replacing singular `primary_muscle`; `validate_exercise_muscles` trigger; finer-resolution heatmap (per-primary 1.0); `MuscleTagField` grouped tri-state tagging + `<optgroup>`'d picker filter (`primary_muscles.cs.{code}`); i18n re-key to fine codes; migrations `20260604120000` + `20260604130000` retag-review fix; pgTAP `05_muscles`. See R-26 / D-F11 |
+| 155 | R-26 — fine muscle taxonomy | `public.muscles` table (22 fine codes + `full_body`, mirrors `core/muscles.ts`); `exercises.primary_muscles[]` (multi-primary) replacing singular `primary_muscle`; `validate_exercise_muscles` trigger; finer-resolution heatmap (per-primary 1.0); `MuscleTagField` grouped tri-state tagging + `<optgroup>`'d picker filter (`primary_muscles.cs.{code}`); i18n re-key to fine codes; migration `20260604120000`; pgTAP `05_muscles`. See R-26 / D-F11 |
+| 156 | R-26 — docs reconcile + retag review fix | Reconcile docs to shipped state + migration `20260604130000_fine_taxonomy_retag_review_fixes.sql` (3 anatomical re-tags: Deadlift +hamstrings primary, Kettlebell swing +forearms, Overhead press +trap) |
+| 179/180 | R-33 foundation | Tailwind CSS v4 migration; foundation retheme — `tokens.css` oklch tokens, self-hosted Rubik + Geist Mono, restyled shadcn primitives, hardcoded-colour sweep, heatmap ramp |
+| 183 | R-33 wave 0 — shell & navigation | `PageShell`, per-section bottom navs, `/more` hub, grouped desktop sidebar |
+| 184 | R-33 — semantic tone core | `src/core/nutritionTone.ts` replaces `macroStatus` (nutri/amber/gym/danger tone tokens) |
+| 185/186 | R-33 wave 2 — Diario | Day view (kcal ring, macro tiles, meal cards, weekly chart, web rail) + add-flow (AddToDaySheet, ración projection, edit/delete) |
+| 187/188/189 | R-33 wave 3 — Planificador | Day view (tone headers, meal cells, mobile week strip), layout fixes, and flows (add drawer, copy replace/append, recipe peek) |
+| 190/191 | R-33 wave 4 — Plantillas | Library + template `phase_type` + save/apply flows; mobile-first template editor (phase picker); retired the pre-redesign UI |
+| 192/193 | R-33 wave 5 — Recetas | List + new read view + `recipes.prep_time_minutes`; the Recetas editor (retiring the last pre-redesign nutrition UI) |
+| 194/195 | R-33 wave 6 — Ingredientes | List, full-screen search + scanner, auto-kcal, and the `ingredients.salt_g_per_unit` sub-macro |
+| 199/200 | R-33 wave 7 — Progreso | P0 hero, three-line composition (fat/lean stack retired), one time filter; month-grouped history route + measurement sheet |
+| 201/202 | R-33 wave 8 — Objetivos | Objetivos page (phase hero, phase-tinted rows, option-B history); phase editor promoted from modal to route with live phase-tinted preview + `23P01` overlap reason |
+| 203 | R-33 wave 9 — Ajustes | SettingsPage restyle (MorePage-consistent hero, segmented theme control, row subtitles) |
+| 204 | R-33 — release doc-reconcile | Reconcile living docs to shipped code (21 drift items across 6 shards) ahead of the batch release |
 

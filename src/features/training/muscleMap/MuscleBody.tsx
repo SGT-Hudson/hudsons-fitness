@@ -25,7 +25,7 @@ export function MuscleBody({ intensityByMuscle, max, gender, side }: Props) {
         const value = codes.reduce((sum, c) => sum + (intensityByMuscle[c] ?? 0), 0);
         const fill = codes.length > 0 ? muscleColor(value, max) : NEUTRAL_PART;
         return part.paths.map((d, di) => (
-          <path key={`${pi}-${di}`} d={d} fill={fill} stroke="#ffffff" strokeWidth={0.6} />
+          <path key={`${pi}-${di}`} d={d} fill={fill} stroke="var(--bg-elev)" strokeWidth={0.6} />
         ));
       })}
     </svg>

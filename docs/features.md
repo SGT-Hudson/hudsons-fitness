@@ -90,22 +90,24 @@ derived target weight, but only when it is computable (requires
 the above is **derived/presentational only** — never stored, never feeds
 protein/TDEE/targets; no schema, RPC, or edge function was added or changed.
 
-The composition chart's main view is a **2-series stacked
-area** of `fat%` + `lean%` (`lean% ≡ 100 − body_fat_pct`), fat at the bottom,
-with per-series linear interpolation between measurements (no extrapolation
-past the first/last point). fat%/lean% is a true disjoint partition that sums
-to exactly 100%, so the hard `0–100` Y-axis is correct and never clips.
-`muscle_pct`, `water_pct` and a `body_fat_pct` trend are rendered **below the
-stack as independent non-stacked trend charts** (a responsive grid of compact
-line cards), never folded into the 100% partition — water is distributed
-within lean tissue, so fat/muscle/water are not disjoint ratios and must not
-be stacked together. A per-chart-local `%`↔`kg` toggle (component `useState`,
-no URL/persistence — same pattern as the time-range pills) switches both the
-stack and the trends to a kilogram decomposition derived on the frontend from
-the stored `weight_kg` (`fat_kg = body_fat_pct/100 × weight`,
-`lean_kg = weight − fat_kg`, `muscle_kg`/`water_kg` analogously); the stack's
-Y-axis auto-scales in kg mode. This whole view is **presentational only** — it
-reads measurements for display and never feeds protein/TDEE/targets.
+The composition chart's main view is **three independent, non-stacked
+lines** — grasa, músculo, and agua (`body_fat_pct`, `muscle_pct`,
+`water_pct`) — each with per-series linear interpolation between measurements
+(`connectNulls`, no extrapolation past the first/last point) and a filled
+end-dot terminating each line. They are deliberately **not** stacked into a
+fat/lean partition: water is distributed within lean tissue, so the three are
+not disjoint ratios and stacking them together would be false. Because there
+is no 100% partition to anchor to, the Y-axis **domain is padded to the data**
+(±10% of the value range, clamped to `[0, 100]` in % mode) rather than the old
+hard `0–100` axis — three narrow-range series would drown in a full 0–100
+scale. Below the main chart the same three series are repeated as a responsive
+grid of compact per-series **trend cards** (`TrendChart`). A per-chart-local
+`%`↔`kg` toggle (component `useState`, no URL/persistence — same pattern as the
+time-range pills) switches both the main chart and the trend cards to a
+kilogram decomposition derived on the frontend from the stored `weight_kg`
+(`pctToKg` in `composition.ts`); the Y-axis auto-scales (unclamped) in kg mode.
+This whole view is **presentational only** — it reads measurements for display
+and never feeds protein/TDEE/targets.
 
 ## Recipes
 
@@ -188,7 +190,7 @@ the phase-aware lean-mass table `PHASE_PROTEIN_DEFAULTS_G_PER_KG_LBM`
 When no body-fat % is logged it falls back to
 `weight × PROTEIN_FALLBACK_G_PER_KG_BODYWEIGHT` (1.6 g/kg of total
 bodyweight) — the basis switches automatically on bf% presence (no manual
-toggle) and the active basis is labelled in the UI (PhaseDialog help,
+toggle) and the active basis is labelled in the UI (PhaseEditorForm help,
 ObjetivosPage phase summary, Diario targets). Existing phases keep their
 stored `protein_g_per_kg`; only new phases get table defaults at create
 time. The mild fallback under-target for a bf%-less cutter is a deliberate
@@ -214,7 +216,7 @@ phases.
 
 Past phases follow a **grace-window** model (D-A5), not a hard
 freeze-at-`end_date` cliff. The grace constant is
-`PHASE_EDIT_GRACE_DAYS = 7` in `src/pages/ObjetivosPage.tsx`:
+`PHASE_EDIT_GRACE_DAYS = 7` in `src/features/phases/status.ts`:
 
 - **In grace** (`end_date` passed, but ≤ 7 days ago): the card renders as a
   normal editable card — name, dates, macros, and notes are all editable and
@@ -223,10 +225,12 @@ freeze-at-`end_date` cliff. The grace constant is
 - **Frozen** (`end_date` more than 7 days in the past): edit/delete
   affordances are hidden and the card dims (`opacity-60`).
 - **Notes editable forever:** even on a frozen phase the `notes` field stays
-  editable via a notes-only affordance (the `PhaseDialog` opened in
-  `notesOnly` mode — every other field read-only/disabled, only `notes`
-  saveable). Retrospective annotations affect no computation, so this is
-  always allowed.
+  editable via a notes-only affordance — the `PhaseEditorPage` route
+  (`/progress/goals/phases/:id/edit`) renders `PhaseEditorForm` in `notesOnly`
+  mode (every other field read-only/disabled, only `notes` saveable).
+  `notesOnly` is not a route flag but is derived inside the page from the
+  freeze rule (`isPhaseFrozen`), so a deep link cannot bypass it.
+  Retrospective annotations affect no computation, so this is always allowed.
 
 The freeze is a UX stance ("history is closed"), **not** a data invariant —
 the inert-past-phases finding (no consumer reconstructs a historical active
@@ -323,10 +327,11 @@ rewritten `recalculate-tdee` edge function is deployed.
 
 The training area (`/training` "Hoy" planner, `/routine` + child builder routes)
 lets the user define routines, schedule them as a cycle, and run a workout
-guided. `/exercises` is a "coming soon" placeholder (`EnProgresoPage`) — there is
-no standalone exercise-catalog page; exercise creation and muscle tagging happen
-via the `ExercisePicker` → `ExerciseDialog` flow inside the routine/session
-editors.
+guided. `/exercises` is a full browse/catalog page (`ExercisesPage` — debounced
+search + equipment/category/level/muscle filters + pagination + `ExerciseCard`
+grid) and `/exercises/:id` is a real detail page (`ExerciseDetailPage`).
+Exercise creation and muscle tagging also happen via the `ExercisePicker` →
+`ExerciseDialog` flow inside the routine/session editors.
 
 - **Exercise pool & sessions (R-19 MVP).** A shared, bilingual `exercises` library
   (per-exercise `default_increment_kg`, `primary_muscles` — an array of fine
@@ -378,14 +383,15 @@ editors.
   See R-24 / D-F10.
 
 - **Fine muscle taxonomy (R-26 / D-F11, Project A — #155).** Muscles are a
-  **22-code fine taxonomy** in 6 groups plus a special `full_body`: shoulders
+  **24-code fine taxonomy** in 6 groups plus a special `full_body`: shoulders
   (`delt_front`, `delt_side`, `delt_rear`); chest (`pec_upper`, `pec_lower`); back
-  (`lat`, `trap`, `rhomboids`, `lower_back`); arms (`biceps`, `tri_long`,
+  (`lat`, `trap`, `rhomboids`, `lower_back`, `neck`); arms (`biceps`, `tri_long`,
   `tri_lateral`, `forearms`); core (`abs_upper`, `abs_lower`, `obliques`); legs
-  (`quads`, `hamstrings`, `glutes`, `adductors`, `calves`, `tibialis`). The codes
+  (`quads`, `hamstrings`, `glutes`, `adductors`, `calves`, `tibialis`,
+  `abductors`). The codes
   live in a read-only **`muscles` dictionary table** (`code` PK, `muscle_group`,
   `body_region_slug`, `display_order`, `is_full_body`; one `muscles_select_all`
-  policy, no write policy; 23 seed rows = 22 shadeable codes + `full_body`) that
+  policy, no write policy; 25 seed rows = 24 shadeable codes + `full_body`) that
   mirrors `src/core/muscles.ts`, the canonical structural source — a pgTAP
   anti-drift test guards the two against divergence. Each exercise carries
   **`primary_muscles` text[]** (one or more primary movers) and
@@ -411,8 +417,8 @@ editors.
   rows in the runner overview, the exercise picker, and the session + routine
   editors opens a bilingual step-by-step instruction panel with a start/end
   image loop. The reusable `ExerciseDetail` component adapts to a `density`
-  prop (`compact` in the popup; `full` is built but unmounted until B2c's
-  browse page). The responsive shell is a shadcn `Drawer` (bottom-sheet) on
+  prop (`compact` in the popup; `full` is mounted/live in `ExerciseDetailPage`
+  — B2c, #167). The responsive shell is a shadcn `Drawer` (bottom-sheet) on
   mobile and a Radix `Dialog` on desktop. No schema or RPC change.
 
 ## Product ideas (uncommitted)

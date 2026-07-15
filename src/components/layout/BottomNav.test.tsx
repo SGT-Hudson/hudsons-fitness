@@ -11,26 +11,35 @@ beforeEach(async () => {
 });
 
 describe('BottomNav', () => {
-  it('shows the four Nutrición tabs on a nutrición route', () => {
+  it('shows the five Nutrición tabs on a nutrición route', () => {
     render(
       <MemoryRouter initialEntries={['/diary']}>
         <BottomNav />
       </MemoryRouter>,
     );
-    for (const label of ['Diario', 'Planificador', 'Recetas', 'Progreso']) {
+    for (const label of ['Diario', 'Planificador', 'Recetas', 'Progreso', 'Más']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
-    expect(screen.queryByRole('link', { name: 'Inicio' })).toBeNull();
   });
 
-  it('shows the Entreno tabs on a training route', () => {
+  it('shows the Más link pointing to /more', () => {
+    render(
+      <MemoryRouter initialEntries={['/diary']}>
+        <BottomNav />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: 'Más' })).toHaveAttribute('href', '/more');
+  });
+
+  it('shows the four Entreno tabs on a training route with no Más', () => {
     render(
       <MemoryRouter initialEntries={['/training']}>
         <BottomNav />
       </MemoryRouter>,
     );
-    for (const label of ['Hoy', 'Rutina', 'Ejercicios', 'Progreso']) {
+    for (const label of ['Hoy', 'Rutinas', 'Ejercicios', 'Progreso']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
+    expect(screen.queryByRole('link', { name: 'Más' })).not.toBeInTheDocument();
   });
 });

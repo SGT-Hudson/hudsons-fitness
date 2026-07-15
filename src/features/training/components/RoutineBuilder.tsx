@@ -228,10 +228,15 @@ function ExerciseRow({ index, totalCount, initialExercise, onRemove, onMoveUp, o
           <Label htmlFor={rpeId} className="text-xs">
             {t('routine.targetRpe')}
           </Label>
+          {/* RPE is an integer (it is `.int()` in the schema, like the logged
+              RPE in SetRow), so the keypad must not offer a decimal separator:
+              a typed comma is stripped by `type="number"` and would arrive as
+              75 rather than 7,5 — rejected by the 6–10 bound, but only after
+              an unexplained failure. `inputMode="numeric"`, as its sibling. */}
           <Input
             id={rpeId}
             type="number"
-            inputMode="decimal"
+            inputMode="numeric"
             min={6}
             max={10}
             step={1}

@@ -1,11 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { VitePWA } from 'vite-plugin-pwa';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icon.svg'],
@@ -13,8 +15,8 @@ export default defineConfig({
         name: "Hudson's Fitness",
         short_name: 'Hudson',
         description: 'Bilingual fitness tracker — macros, recipes, meal plans, body composition.',
-        theme_color: '#16a34a',
-        background_color: '#0f172a',
+        theme_color: '#13702f',
+        background_color: '#0b0e11',
         display: 'standalone',
         start_url: '/',
         scope: '/',

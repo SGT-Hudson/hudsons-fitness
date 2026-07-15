@@ -1,43 +1,108 @@
 {
   "pageTitle": "Recetas",
+  "subtitle": "Tu biblioteca",
   "newRecipe": "Nueva receta",
   "searchPlaceholder": "Buscar receta…",
-  "view": {
-    "grid": "Vista de cuadrícula",
-    "list": "Vista de lista"
-  },
   "favorite": {
     "add": "Marcar como favorita",
     "remove": "Quitar de favoritas"
   },
+  "media": {
+    "placeholderAlt": "Receta sin foto"
+  },
   "list": {
-    "empty": "Aún no has creado ninguna receta. Pulsa \"Nueva receta\" para empezar.",
-    "noMatch": "Ninguna receta coincide con la búsqueda.",
-    "servings_one": "{{count}} ración",
-    "servings_other": "{{count}} raciones",
     "ingredients_one": "{{count}} ingrediente",
     "ingredients_other": "{{count}} ingredientes",
-    "updated": "Actualizada {{date}}",
     "removeFromLibrary": "Quitar de mi biblioteca",
     "removeConfirm": "¿Quitar la receta \"{{name}}\" de tu biblioteca? Si la creaste tú, dejará de ser editable (pasará a la biblioteca compartida anonimizada). El histórico de comidas se conserva."
+  },
+  "detail": {
+    "loading": "Cargando…",
+    "servings_one": "{{count}} ración",
+    "servings_other": "{{count}} raciones",
+    "forServings_one": "para {{count}} ración",
+    "forServings_other": "para {{count}} raciones",
+    "minutes": "{{count}} min",
+    "kcalUnit": "kcal",
+    "stats": {
+      "servings": "Raciones",
+      "time": "Tiempo",
+      "kcalPerServing": "Kcal / ración",
+      "kcalPerServingShort": "Kcal/r",
+      "ingredients": "Ingredientes",
+      "ingredientsShort": "Ingr."
+    },
+    "macrosTitle": "Macros",
+    "distribution": "Distribución calórica",
+    "ingredientsTitle": "Ingredientes",
+    "perServingChip": "por ración",
+    "instructionsTitle": "Preparación",
+    "favorite": "Favorita",
+    "addToDay": "Añadir al día",
+    "edit": "Editar receta",
+    "editShort": "Editar",
+    "notFoundTitle": "Receta no encontrada",
+    "notFoundHint": "Puede que ya no exista o que la hayas quitado de tu biblioteca.",
+    "backToList": "Volver a Recetas"
   },
   "editor": {
     "newTitle": "Nueva receta",
     "editTitle": "Editar receta",
+    "newSubtitle": "Crea una receta para tu biblioteca",
     "loading": "Cargando…",
-    "sharedLibraryHint": "Esta receta se añadirá a la biblioteca compartida. Información privada (notas, recordatorios) va mejor en la nota de la receta en tu biblioteca, no en el nombre o la descripción."
+    "sharedLibraryHint": "Esta receta se añadirá a la biblioteca compartida. Información privada (notas, recordatorios) va mejor en la nota de la receta en tu biblioteca, no en el nombre o la descripción.",
+    "remove": "Quitar receta",
+    "removeTitle": "¿Quitar esta receta de tu biblioteca?",
+    "removeConsequences": "Si la creaste tú, dejará de ser editable (pasará a la biblioteca compartida anonimizada). El histórico de comidas se conserva.",
+    "removing": "Quitando…"
   },
   "form": {
     "name": "Nombre",
+    "namePlaceholder": "Nombre de la receta",
     "servings": "Raciones",
     "description": "Descripción",
+    "descriptionPlaceholder": "Descripción breve (opcional)",
+    "prepTime": "Tiempo",
+    "prepTimePlaceholder": "— min",
     "instructions": "Instrucciones",
+    "instructionsPlaceholder": "Describe la preparación: pasos, tiempos, trucos…",
     "ingredients": "Ingredientes",
     "addRow": "Añadir ingrediente",
+    "addRowSearch": "Buscar ingrediente para añadirlo…",
     "quantity": "Cantidad",
-    "perServing": "Por ración",
+    "quantityOf": "Cantidad de {{name}}",
     "units": "ud",
-    "mealTypes": "Tipos de comida"
+    "tag": "Etiqueta",
+    "colIngredient": "Ingrediente",
+    "colQuantity": "Cantidad",
+    "colType": "Tipo",
+    "typePerServing": "por ración",
+    "typeTotal": "en total",
+    "typePerServingShort": "ración",
+    "typeTotalShort": "total",
+    "typeHint": "«En total» reparte la cantidad entre las raciones; «por ración» la cuenta entera en cada una.",
+    "removeRow": "Quitar",
+    "removeRowLabel": "Quitar {{name}} de la receta",
+    "removeRowConfirm": "¿Quitar «{{name}}»?",
+    "emptyTitle": "Aún no hay ingredientes",
+    "emptyHint": "Busca un alimento de tu base para empezar a sumar macros."
+  },
+  "addSheet": {
+    "title": "Añadir ingrediente",
+    "toRecipe": "a «{{name}}»",
+    "searchPlaceholder": "Buscar en tu base…",
+    "resultsLabel": "Resultados en tu base",
+    "prompt": "Busca un alimento de tu base para añadirlo a la receta.",
+    "grams": "gramos",
+    "units": "unidades",
+    "per100g": "100 g",
+    "perUnit": "unidad",
+    "choose": "Elegir {{name}}",
+    "decreaseQty": "Reducir la cantidad",
+    "increaseQty": "Aumentar la cantidad",
+    "add": "Añadir a la receta",
+    "notFoundTitle": "¿No encuentras lo que buscas?",
+    "create": "Crear un alimento nuevo"
   },
   "mealTypes": {
     "breakfast": "Desayuno",
@@ -47,7 +112,9 @@
     "dessert": "Postre"
   },
   "filters": {
-    "heading": "Nutrición",
+    "all": "Todas ({{count}})",
+    "favorites": "Favoritas ({{count}})",
+    "groupLabel": "Filtros",
     "highProtein": "Alto en proteína",
     "lowCarb": "Bajo en carbos",
     "lowFat": "Bajo en grasa",
@@ -60,18 +127,19 @@
     "highSatFat": "Alta grasa saturada"
   },
   "macros": {
-    "title": "Macros",
-    "label": "Macros",
+    "liveTitle": "Macros en vivo",
+    "emptyHint": "Los macros se calcularán a medida que añadas ingredientes.",
     "total": "Totales",
     "perServing": "Por ración",
-    "kcal": "Calorías",
-    "protein": "Proteína",
-    "carbs": "Carbohidratos",
-    "fat": "Grasa",
-    "fiber": "Fibra"
+    "letter": {
+      "protein": "P",
+      "carbs": "C",
+      "fat": "G"
+    }
   },
   "actions": {
-    "duplicate": "Duplicar"
+    "duplicate": "Duplicar",
+    "duplicateName": "{{name}} (copia)"
   },
   "autocomplete": {
     "placeholder": "Buscar ingrediente…",
@@ -82,9 +150,28 @@
   },
   "errors": {
     "nameRequired": "Ponle un nombre a la receta.",
-    "servingsInvalid": "Las raciones deben ser mayores que 0.",
+    "servingsInvalid": "Las raciones deben ser al menos 0,5.",
+    "prepTimeInvalid": "El tiempo de preparación debe ser un número entero de minutos mayor que 0.",
+    "prepTimeTooLarge": "El tiempo de preparación no puede superar las 24 h (1440 min).",
     "noIngredients": "Añade al menos un ingrediente.",
     "rowMissingIngredient": "Hay filas sin ingrediente seleccionado.",
     "rowInvalidQuantity": "Hay filas con cantidad inválida o vacía."
+  },
+  "sort": {
+    "label": "Ordenar por:",
+    "recent": "recientes"
+  },
+  "card": {
+    "kcalPerServing": "kcal / ración",
+    "ingredientsShort": "{{count}} ingr.",
+    "readMore": "Leer más",
+    "addToDiary": "añadir al diario",
+    "menu": "Acciones de la receta"
+  },
+  "empty": {
+    "title": "Aún no tienes recetas",
+    "hint": "Crea tu primera receta y aparecerá aquí.",
+    "noMatchTitle": "Sin resultados",
+    "noMatchHint": "Prueba a quitar algún filtro o a cambiar la búsqueda."
   }
 }

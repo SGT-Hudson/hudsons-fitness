@@ -10,7 +10,7 @@ exports[`ExerciseDetail > snapshots the full (visual-first) density layout 1`] =
     type="button"
   >
     <div
-      class="relative w-full bg-muted aspect-[4/3]"
+      class="relative w-full bg-muted aspect-4/3"
     >
       <img
         alt="Press de banca — posición inicial"
@@ -40,22 +40,22 @@ exports[`ExerciseDetail > snapshots the full (visual-first) density layout 1`] =
       class="flex flex-wrap gap-1"
     >
       <span
-        class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-md font-medium bg-secondary text-secondary-foreground"
+        class="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11px] font-medium border bg-muted text-muted-foreground border-border"
       >
         Pectoral inferior
       </span>
       <span
-        class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-md font-medium bg-secondary text-secondary-foreground"
+        class="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11px] font-medium border bg-muted text-muted-foreground border-border"
       >
         Barra
       </span>
       <span
-        class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-md font-medium border border-border text-muted-foreground"
+        class="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11px] font-medium border border-border text-muted-foreground"
       >
         Tríceps (largo)
       </span>
       <span
-        class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-md font-medium border border-border text-muted-foreground"
+        class="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11px] font-medium border border-border text-muted-foreground"
       >
         beginner
       </span>

@@ -40,6 +40,47 @@
       "fixed_g": "Fijo (g/día)",
       "per_1000_kcal": "Por 1000 kcal"
     },
+    "hero": {
+      "activeLabel": "Fase activa",
+      "weekOf": "semana {{n}} de {{total}}",
+      "weekN": "semana {{n}}",
+      "weeksLeft": "quedan {{n}} sem",
+      "elapsed": "Progreso de la fase",
+      "dailyTargets": "Objetivos diarios",
+      "kcalPerDay": "kcal / día",
+      "protein": "Proteína",
+      "carbs": "Carbos",
+      "fat": "Grasas",
+      "fiber": "Fibra",
+      "basisLean": "Base: masa magra · {{n}} g/kg",
+      "basisFallback": "Base: peso corporal · 1,6 g/kg — añade un % de grasa para un objetivo ajustado a la fase",
+      "needsWeight": "Registra un peso para ver los objetivos diarios de esta fase.",
+      "needsTdee": "Esta fase se define como delta sobre el TDEE y aún no hay estimación de TDEE, así que todavía no podemos calcular sus objetivos."
+    },
+    "scheduled": {
+      "label": "Programadas",
+      "subtitle": "Próximas fases",
+      "count_one": "{{count}} fase",
+      "count_other": "{{count}} fases"
+    },
+    "history": {
+      "title": "Historial de fases",
+      "phases_one": "{{count}} fase",
+      "phases_other": "{{count}} fases",
+      "months_one": "{{count}} mes",
+      "months_other": "{{count}} meses",
+      "seeAll": "Ver todo"
+    },
+    "row": {
+      "kcalPerDay": "kcal / día",
+      "proteinPrefix": "prot.",
+      "proteinUnit": "g/kg",
+      "status": {
+        "active": "activa",
+        "upcoming": "programada",
+        "past": "histórico"
+      }
+    },
     "summary": {
       "protein": "prot.",
       "proteinBasisLean": "× masa magra",
@@ -53,6 +94,12 @@
       "editTitle": "Editar fase",
       "notesOnlyTitle": "Editar notas de la fase",
       "notesOnlyHint": "Esta fase está cerrada. El resto de campos son de solo lectura; únicamente puedes actualizar las notas.",
+      "sections": {
+        "identity": "Identidad",
+        "dates": "Fechas",
+        "targets": "Objetivos",
+        "notes": "Notas"
+      },
       "name": "Nombre",
       "namePlaceholder": "ej. Corte verano 2025",
       "type": "Tipo",
@@ -78,7 +125,17 @@
         "protein": "La proteína debe ser mayor que 0.",
         "fat": "La grasa debe estar entre 10 y 60.",
         "fiberValue": "El valor debe ser mayor que 0.",
-        "dateRange": "La fecha fin debe ser posterior al inicio."
+        "dateRange": "La fecha fin debe ser posterior al inicio.",
+        "overlap": "Esta fase se solapa con otra. Ajusta las fechas (dos fases no pueden compartir ni un solo día)."
+      }
+    },
+    "preview": {
+      "title": "vista previa",
+      "incomplete": "Completa kcal, proteína, grasa y fibra para ver los objetivos diarios.",
+      "letter": {
+        "protein": "P",
+        "carbs": "C",
+        "fat": "G"
       }
     }
   }

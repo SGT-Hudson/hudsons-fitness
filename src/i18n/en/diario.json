@@ -37,18 +37,45 @@
     "heroRemaining": "kcal left",
     "heroToGoal": "kcal to goal",
     "heroOver": "kcal over",
-    "remainingG": "{{n}} g left",
-    "overG": "+{{n}} g over",
-    "floorMet": "✓ met +{{n}} g",
-    "fiberBelowMin": "{{n}} g below minimum",
-    "fatLow": "⚠ Low fat",
-    "fatLowHelp": "You are below the healthy fat minimum (20% of your kcal). Fat is essential for hormones and for absorbing vitamins.",
-    "fatLowHelpLabel": "Fat info",
-    "consumedOf": "{{consumed}} / {{target}} consumed"
+    "ringOf": "of {{target}} kcal",
+    "planToday": "today's plan: {{n}} kcal",
+    "macroCaptionOver": "+{{n}} g over target",
+    "macroCaptionShort": "{{n}} g short of target",
+    "macroCaptionOnTarget": "right on target",
+    "macroCaptionMargin": "{{n}} g to spare",
+    "macrosToggle": "Macros"
+  },
+  "weekly": {
+    "title": "Week",
+    "summary": "avg {{avg}} · target {{target}}",
+    "target": "target {{target}}",
+    "weekday": {
+      "mon": "M",
+      "tue": "T",
+      "wed": "W",
+      "thu": "T",
+      "fri": "F",
+      "sat": "S",
+      "sun": "S"
+    }
+  },
+  "hero": {
+    "remainingLabel": "Left today",
+    "consumed": "consumed",
+    "target": "target",
+    "tdeeLine": "TDEE {{n}} kcal · adaptive average"
+  },
+  "body": {
+    "title": "Body",
+    "lastMeasured": "last {{date}}",
+    "rateUnit": "kg / wk",
+    "register": "Log measurement",
+    "empty": "No measurements yet"
   },
   "entry": {
     "edit": "Edit entry",
-    "fromPlan": "From plan"
+    "fromPlan": "From plan",
+    "planShort": "Plan"
   },
   "tabs": {
     "recipe": "Recipe",
@@ -86,6 +113,11 @@
     "deleteConfirm": "Delete this diary entry?"
   },
   "mealSection": { "empty": "— nothing logged" },
+  "projBar": {
+    "added": "+{{n}} g",
+    "over": "↑ {{n}} g over",
+    "target": "target {{n}}"
+  },
   "copyDay": {
     "open": "Copy a day",
     "title": "Copy a day",
@@ -97,7 +129,9 @@
   "quickAdd": {
     "add": "Add {{name}}",
     "added": "{{name}} added",
-    "undo": "Undo"
+    "undo": "Undo",
+    "recommendations": "Recommendations",
+    "addRecipe": "Add recipe"
   },
   "errors": {
     "pickRecipe": "Pick a recipe.",
@@ -105,6 +139,47 @@
     "servingsInvalid": "Servings must be greater than 0.",
     "quantityInvalid": "Quantity must be greater than 0.",
     "customNameRequired": "Add a name.",
-    "customKcalRequired": "Calories are required."
+    "customKcalRequired": "Calories are required.",
+    "customMacroInvalid": "Calories and macros cannot be negative."
+  },
+  "addSheet": {
+    "title": "Add to today",
+    "editTitle": "Edit entry",
+    "subtitle": "{{date}} · {{phase}}",
+    "subtitleNoPhase": "{{date}}",
+    "close": "Close",
+    "slotLabel": "Pick a slot",
+    "slotEmpty": "empty",
+    "searchPlaceholder": "Search recipe, food…",
+    "tabs": {
+      "recent": "Recent",
+      "recipes": "Recipes",
+      "foods": "Foods"
+    },
+    "emptyRecent": "No recent meals yet.",
+    "emptyRecipes": "You have no recipes.",
+    "emptyFoodsPrompt": "Type to search foods.",
+    "emptyFoodsNoResults": "No matches.",
+    "oneServing": "1 serving",
+    "nServings": "{{n}} servings",
+    "balance": "Today's balance",
+    "balanceTarget": "target {{n}}",
+    "balanceRemaining": "kcal left",
+    "balanceConsumed": "{{n}} consumed",
+    "backToExplore": "Back to explore",
+    "toMeal": "→ {{meal}}",
+    "unitServing": "serving",
+    "unitServings": "servings",
+    "decreaseQty": "Decrease quantity",
+    "increaseQty": "Increase quantity",
+    "projRemaining": "{{n}} kcal left",
+    "projOver": "{{n}} kcal over",
+    "overAlert": "This serving puts you over today's target.",
+    "macroBalanceLabel": "Today's balance after adding",
+    "customCta": "Create custom entry",
+    "customTitle": "Custom entry",
+    "addCta": "Add to {{meal}}",
+    "saveCta": "Save changes",
+    "deleteCta": "Delete"
   }
 }

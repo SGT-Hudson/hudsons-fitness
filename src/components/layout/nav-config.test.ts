@@ -1,49 +1,45 @@
 import { describe, it, expect } from 'vitest';
-import {
-  NAV_ITEMS,
-  sectionOf,
-  bottomNavItems,
-  sidebarGroups,
-} from './nav-config';
+import { bottomNavItems, sectionOf, SIDEBAR_GROUPS } from './nav-config';
 
-describe('nav-config', () => {
-  it('every item has a route and an i18n key', () => {
-    for (const item of NAV_ITEMS) {
-      expect(item.route.startsWith('/')).toBe(true);
-      expect(item.key.length).toBeGreaterThan(0);
-    }
-  });
-
-  it('sectionOf maps section-owned routes to their section', () => {
-    expect(sectionOf('/diary')).toBe('nutricion');
-    expect(sectionOf('/diary/2026-05-21')).toBe('nutricion');
-    expect(sectionOf('/recipes/ingredients')).toBe('nutricion');
-    expect(sectionOf('/training')).toBe('entreno');
-    expect(sectionOf('/routine')).toBe('entreno');
-  });
-
-  it('sectionOf returns null for shared routes', () => {
-    expect(sectionOf('/home')).toBeNull();
-    expect(sectionOf('/progress')).toBeNull();
-    expect(sectionOf('/progress/goals')).toBeNull();
-    expect(sectionOf('/settings')).toBeNull();
-  });
-
-  it('bottom nav shows the section tabs plus shared Progreso, never Home', () => {
-    const nut = bottomNavItems('nutricion').map((i) => i.key);
-    expect(nut).toEqual(['diary', 'planner', 'recipes', 'progress']);
-    const ent = bottomNavItems('entreno').map((i) => i.key);
-    expect(ent).toEqual(['today', 'routine', 'exercises', 'progress']);
-    expect(nut).not.toContain('home');
-  });
-
-  it('sidebar groups render shared, then nutricion, then entreno', () => {
-    expect(sidebarGroups().map((g) => g.group)).toEqual([
-      'shared',
-      'nutricion',
-      'entreno',
+describe('bottomNavItems', () => {
+  it('nutri bar: diario, planificador, recetas, progreso, más', () => {
+    expect(bottomNavItems('nutri').map((i) => i.key)).toEqual([
+      'diary', 'planner', 'recipes', 'progress', 'more',
     ]);
-    const shared = sidebarGroups()[0].items.map((i) => i.key);
-    expect(shared).toEqual(['home', 'progress']);
+  });
+  it('gym bar: hoy, rutinas, ejercicios, progreso', () => {
+    expect(bottomNavItems('gym').map((i) => i.key)).toEqual([
+      'today', 'routine', 'exercises', 'progress',
+    ]);
+  });
+});
+
+describe('sectionOf', () => {
+  it.each([
+    ['/diary', 'nutri'], ['/diary/2026-07-07', 'nutri'], ['/planner', 'nutri'],
+    ['/recipes', 'nutri'], ['/recipes/ingredients', 'nutri'], ['/templates', 'nutri'],
+    ['/templates/abc', 'nutri'],
+    ['/training', 'gym'], ['/training/run', 'gym'], ['/routine', 'gym'], ['/exercises', 'gym'],
+  ])('%s → %s', (path, section) => expect(sectionOf(path)).toBe(section));
+  it.each(['/progress', '/settings', '/more'])('%s is shared (null)', (path) =>
+    expect(sectionOf(path)).toBeNull(),
+  );
+});
+
+describe('SIDEBAR_GROUPS', () => {
+  it('renders Nutrición / Entrenamiento / Análisis with the canvas items', () => {
+    expect(SIDEBAR_GROUPS.map((g) => g.key)).toEqual(['nutricion', 'entreno', 'analisis']);
+    expect(SIDEBAR_GROUPS.map((g) => g.accent)).toEqual(['nutri', 'gym', null]);
+    expect(SIDEBAR_GROUPS.map((g) => g.items.map((i) => i.key))).toEqual([
+      ['diary', 'recipes', 'ingredients', 'planner'],
+      ['today', 'routine', 'exercises'],
+      ['progress', 'goals'],
+    ]);
+  });
+  it('every item has a route and an icon', () => {
+    for (const g of SIDEBAR_GROUPS) for (const i of g.items) {
+      expect(i.route.startsWith('/')).toBe(true);
+      expect(i.icon).toBeTruthy();
+    }
   });
 });

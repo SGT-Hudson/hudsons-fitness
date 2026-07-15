@@ -27,13 +27,23 @@ export const EMPTY_RECIPE_FILTER: RecipeFilterState = {
   goals: [],
 };
 
-/** Lowercase + strip diacritics, so "pollo" matches "Pollo" and "purée" "puree". */
-export function normalizeText(s: string): string {
+/**
+ * Lowercase + strip diacritics, WITHOUT trimming — the fold `normalizeText` is
+ * built on. Exported for the one caller that cannot afford the trim: the match
+ * highlighter folds character by character to keep offsets aligned with the
+ * original string, and a `trim()` there would silently eat spaces (and shift
+ * every offset after them).
+ */
+export function foldText(s: string): string {
   return s
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim();
+    .toLowerCase();
+}
+
+/** Lowercase + strip diacritics, so "pollo" matches "Pollo" and "purée" "puree". */
+export function normalizeText(s: string): string {
+  return foldText(s).trim();
 }
 
 export function matchesRecipeFilter(recipe: FilterableRecipe, filter: RecipeFilterState): boolean {

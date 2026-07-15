@@ -1,45 +1,61 @@
 {
-  "days": {
-    "mon": "Lun",
-    "tue": "Mar",
-    "wed": "Mié",
-    "thu": "Jue",
-    "fri": "Vie",
-    "sat": "Sáb",
-    "sun": "Dom"
+  "phase": {
+    "none": "Sin fase",
+    "noneHint": "Sirve para cualquier fase",
+    "pick": "Fase de la plantilla"
   },
   "slot": {
-    "add": "Añadir receta",
-    "remove": "Quitar",
     "copy": "Copiar comida a otros días"
   },
   "copyMeal": {
     "title": "Copiar comida a otros días",
-    "entryCount": "{{count}} recetas",
-    "selectAll": "Seleccionar todos",
+    "modeReplace": "Reemplazar",
+    "modeAppend": "Añadir junto",
+    "sourceRecipes": "Se copiarán:",
+    "selectAll": "Todos",
     "willOverwrite": "se sobrescribirá",
-    "selectedCount": "{{count}} días seleccionados",
+    "summaryReplace_one": "Copiar a 1 día, reemplazando lo que haya.",
+    "summaryReplace_other": "Copiar a {{count}} días, reemplazando lo que haya.",
+    "summaryAppend_one": "Copiar a 1 día, junto a lo que ya haya.",
+    "summaryAppend_other": "Copiar a {{count}} días, junto a lo que ya haya.",
+    "pickDays": "Elige al menos un día.",
     "confirm": "Copiar"
   },
-  "picker": {
-    "addTitle": "Añadir receta",
+  "addRecipe": {
+    "title": "Añadir receta",
     "editTitle": "Editar receta",
-    "subtitle": "Elige la receta y las raciones para este hueco.",
-    "recipe": "Receta",
+    "destination": "{{day}} · {{meal}} · {{time}}",
+    "destinationNoTime": "{{day}} · {{meal}}",
+    "close": "Cerrar",
+    "search": "Buscar receta…",
+    "searchLabel": "Buscar receta",
+    "filterLabel": "Filtrar por tipo de comida",
+    "filterAll": "Todas",
+    "noResults": "Ninguna receta coincide.",
+    "empty": "Aún no tienes recetas. Crea la primera para poder planificar.",
     "servings": "Raciones",
-    "errors": {
-      "pickRecipe": "Elige una receta.",
-      "servings": "Las raciones deben ser mayores que 0."
-    }
+    "less": "Menos raciones",
+    "more": "Más raciones",
+    "perServing": "por ración",
+    "projected": "Proyectado",
+    "remaining": "quedan {{n}}",
+    "over": "+{{n}} pasado",
+    "confirmAdd": "Añadir a la comida",
+    "confirmSave": "Guardar",
+    "remove": "Quitar del plan"
   },
   "list": {
     "pageTitle": "Plantillas",
     "newTemplate": "Nueva plantilla",
+    "newTemplateHint": "desde cero",
     "description": "Las plantillas son menús reutilizables que aplicas a tu semana activa. Define el calendario una vez, varía después.",
     "empty": "Aún no tienes plantillas. Crea la primera y se podrá aplicar al planificador.",
+    "emptyFilter": "Ninguna plantilla con esta fase.",
     "deleteConfirm": "¿Borrar la plantilla \"{{name}}\"? Las semanas activas que vinieran de ella no se ven afectadas.",
-    "autoBadge": "Auto",
-    "autoBadgeTooltip": "Generada automáticamente al cerrar una semana divergente",
+    "filterLabel": "Filtrar por fase",
+    "filterAll": "Todas",
+    "saved_one": "{{count}} guardada",
+    "saved_other": "{{count}} guardadas",
     "slots_one": "{{count}} hueco",
     "slots_other": "{{count}} huecos",
     "slots": "{{count}} huecos",
@@ -63,7 +79,6 @@
   },
   "planner": {
     "pageTitle": "Planificador",
-    "weekOf": "Semana del {{date}}",
     "manageTemplates": "Plantillas",
     "applyTemplate": "Aplicar plantilla",
     "swapTemplate": "Cambiar plantilla",
@@ -76,7 +91,21 @@
       "hasTemplates": "Esta semana está vacía. Aplica una de tus plantillas para empezar.",
       "applyCta": "Aplicar plantilla",
       "createCta": "Crear primera plantilla"
-    }
+    },
+    "weekLabel": "Sem {{week}} · {{from}} → {{to}}",
+    "avgDaily": "Media diaria",
+    "avgKcal": "Media",
+    "proteinAvg": "Proteína",
+    "proteinPct": "· {{pct}} %",
+    "targetShort": "Objetivo {{n}}",
+    "kcalPerDay": "{{n}} kcal / día",
+    "todayHeading": "Hoy · {{date}}",
+    "dayHeading": "{{date}}",
+    "todayKcal": "{{consumed}} / {{target}} kcal",
+    "addMeal": "Añadir comida",
+    "mealName": { "0": "Desayuno", "1": "Comida", "2": "Merienda", "3": "Cena" },
+    "mealNameN": "Comida {{n}}",
+    "noPlanToday": "Hoy no tienes nada planificado."
   },
   "week": {
     "noSlots": "Sin comidas planificadas."
@@ -85,9 +114,9 @@
     "title": "Aplicar plantilla",
     "subtitle": "Se aplicará desde {{date}} en adelante. Los días anteriores no se tocan.",
     "template": "Plantilla",
-    "placeholder": "Elige una plantilla…",
     "noTemplates": "No tienes plantillas todavía.",
     "submit": "Aplicar",
+    "willFillLabel": "Días que se rellenarán",
     "errors": {
       "pickTemplate": "Elige una plantilla."
     }
@@ -97,22 +126,36 @@
     "subtitle": "Snapshot de los huecos actuales. Podrás reutilizarla en cualquier semana.",
     "name": "Nombre",
     "defaultName": "Plantilla — semana del {{date}}",
+    "previewLabel": "Así se verá en tu biblioteca",
     "errors": {
       "nameRequired": "Pon un nombre a la plantilla."
     }
   },
   "summary": {
     "kcalUnit": "Kcal",
-    "protein": "Prot",
-    "carbs": "Carbs",
-    "fat": "Grasa",
-    "fiber": "Fibra",
     "fatLow": "⚠ Falta grasa",
     "fatLowLabel": "Por qué falta grasa",
-    "fatLowHelpLabel": "Ayuda sobre grasa",
-    "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (20% de tus kcal). La grasa es esencial para las hormonas y para absorber vitaminas.",
-    "totalRow": "Total",
-    "emptyDay": "Día sin comidas todavía"
+    "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (0,6 g por kg de peso corporal). La grasa es esencial para las hormonas y para absorber vitaminas.",
+    "emptyDay": "Día sin comidas todavía",
+    "letter": { "protein": "P", "carbs": "C", "fat": "G", "fiber": "F" }
+  },
+  "cell": {
+    "addFirst": "añadir comida",
+    "addMore": "añadir",
+    "kcal": "kcal"
+  },
+  "peek": {
+    "title": "Receta del plan",
+    "servings_one": "{{count}} ración",
+    "servings_other": "{{count}} raciones",
+    "ingredients": "Ingredientes",
+    "instructions": "Elaboración",
+    "perServing": "Por ración",
+    "planned_one": "Planificado: {{count}} ración",
+    "planned_other": "Planificado: {{count}} raciones",
+    "open": "Abrir receta",
+    "edit": "Editar",
+    "missing": "No se pudo cargar la receta."
   },
   "shopping": {
     "open": "Lista de la compra",
@@ -137,5 +180,9 @@
     "addExtraPlaceholder": "Añadir artículo (p. ej. café)…",
     "addExtra": "Añadir artículo",
     "removeExtra": "Quitar"
+  },
+  "weekStrip": {
+    "willFill": "Se rellena",
+    "untouched": "Sin cambios"
   }
 }

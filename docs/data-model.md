@@ -12,7 +12,7 @@
 
 ## Overview
 
-Hudson's Fitness has ~25 base tables in prod, all RLS-enabled — the original 15, the 3 Training MVP tables added by R-19 and applied 2026-05-21 (`exercises`, `workout_sessions`, `workout_sets`), the 4 F-2 training tables (`routines`, `routine_exercises`, `programs`, `program_days`, live in prod since v2026-06-03 / #122), the 2 R-01 per-user reference tables (`user_ingredient_refs`, `user_recipe_refs`), and the R-26 read-only `muscles` reference dictionary (#155). The `body_measurements_smoothed` view sits on top of `body_measurements` (see Views). Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The one deliberate exception is `ingredients`, which is the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
+Hudson's Fitness has ~26 base tables in prod, all RLS-enabled — the original 15, the R-07 `tdee_state` adaptive-filter memory table, the 3 Training MVP tables added by R-19 and applied 2026-05-21 (`exercises`, `workout_sessions`, `workout_sets`), the 4 F-2 training tables (`routines`, `routine_exercises`, `programs`, `program_days`, live in prod since v2026-06-03 / #122), the 2 R-01 per-user reference tables (`user_ingredient_refs`, `user_recipe_refs`), and the R-26 read-only `muscles` reference dictionary (#155). The `body_measurements_smoothed` view sits on top of `body_measurements` (see Views). Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The deliberate exceptions are `ingredients` and `recipes` (reclassified by R-01), the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
 
 ## Tables
 
@@ -74,6 +74,7 @@ Shared across all users (crowdsourced library). `created_by_user_id = null` indi
 | `fiber_g_per_unit` | `numeric(6,2)` not null default 0 |
 | `sugar_g_per_unit` | `numeric(6,2)` null — U-1 sub-macro of carbs |
 | `saturated_fat_g_per_unit` | `numeric(6,2)` null — U-1 sub-macro of fat |
+| `salt_g_per_unit` | `numeric(6,2)` null, check `>= 0` — R-33 wave 6; null = unknown (never 0). Ingredient-level only, not aggregated into recipe/day totals |
 | `source` | `text` not null default `'manual'`, check in (`'manual'`, `'openfoodfacts'`, `'bedca'`, `'system'`) |
 | `external_id` | `text` |
 | `is_verified` | `boolean` not null default false |
@@ -82,25 +83,25 @@ Shared across all users (crowdsourced library). `created_by_user_id = null` indi
 
 Key constraints: `unique (source, external_id)` prevents duplicate API imports across all users; `ingredients_external_consistency` check ensures `external_id is null or source in ('openfoodfacts', 'bedca')`. Macros are per 100 g, or per unit when `unit_type = 'unit'`.
 
-### `recipes`
+### `recipes` (shared pool — R-01)
 
-Per-user (private), referencing the shared ingredient library. `unique (user_id, name)`.
+Shared-pool entity referencing the shared ingredient library — recipes are pooled and discoverable, owned by their creator (see Library Contribution & Lifecycle Model). R-01 renamed the owner column `user_id` → `created_by_user_id` for parity with `ingredients`, dropped the per-user `unique (user_id, name)` index (names are no longer per-user-unique under the shared pool — D-A4), and dropped the `deleted_at` soft-delete column and its two dependent partial indexes (the no-hard-delete model hides via `user_recipe_refs`, not a soft-delete flag).
 
 | Column | Type / constraint |
 |---|---|
 | `id` | `uuid` primary key default `gen_random_uuid()` |
-| `user_id` | `uuid` not null, references `profiles(id)` on delete cascade |
+| `created_by_user_id` | `uuid` not null, references `profiles(id)` on delete cascade |
 | `name` | `text` not null |
 | `servings` | `numeric(5,2)` not null default 1, check `servings > 0` |
 | `description` | `text` |
 | `instructions` | `text` |
 | `photo_url` | `text` |
 | `meal_types` | `text[]` not null default `'{}'`, check `meal_types <@ array['breakfast','lunch','snack','dinner','dessert']` — U-2 (#96); gin index `idx_recipes_meal_types` for slot filtering |
-| `deleted_at` | `timestamptz` (null = live; soft-delete marker, partial unique index `where deleted_at is null`) |
+| `prep_time_minutes` | `integer` null, check `> 0` — minutes to prepare; null = no time recorded (R-33 wave 5) |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
 
-`meal_types` tags a recipe with the meals it suits (U-2 #96, live); `save_recipe` carries it as the `p_meal_types` argument.
+`meal_types` tags a recipe with the meals it suits (U-2 #96, live); `save_recipe` carries it as the `p_meal_types` argument, and gained a trailing `p_prep_time_minutes` argument for the prep-time field (R-33 wave 5).
 
 ### `recipe_ingredients`
 
@@ -219,9 +220,12 @@ Named, reusable menus. `unique (user_id, name)`.
 | `same_schedule_all_days` | `boolean` not null default true |
 | `default_meal_times` | `time[]` not null default `array['08:00','13:00','17:00','21:00']::time[]` |
 | `is_auto_generated` | `boolean` not null default false (true when created from a divergent week at rollover) |
+| `phase_type` | `text` null, check in (`'cut'`, `'maintenance'`, `'bulk'`) — R-33 wave 4; a loose phase label (no FK to `phases`); null = serves any phase |
 | `notes` | `text` |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
+
+`phase_type` tags the template with the phase it was written for (R-33 wave 4); both `save_template` and `save_week_as_template` gained a trailing `p_phase_type` argument to carry it.
 
 ### `meal_plan_template_day_times`
 
@@ -356,24 +360,32 @@ Shared pool of exercises following the post-R-01 ingredient-pool shape: `created
 | `name_es` | `text` not null — primary Spanish name |
 | `name_en` | `text` null — optional English name |
 | `primary_muscles` | `text[]` not null default `'{}'` — one or more fine muscle codes; validated by `trg_validate_exercise_muscles` against `muscles.code` (R-26 / D-F11, #155). An exercise may have **multiple** primary movers. |
-| `secondary_muscles` | `text[]` not null default `'{}'` — fine muscle codes from the 22-code taxonomy; validated by `trg_validate_exercise_muscles` against `muscles.code WHERE NOT is_full_body` (`full_body` is **not** a valid secondary). |
-| `equipment` | `text` null, check in (`'barbell'`, `'dumbbell'`, `'kettlebell'`, `'machine'`, `'cable'`, `'bodyweight'`, `'band'`, `'other'`) |
+| `secondary_muscles` | `text[]` not null default `'{}'` — fine muscle codes from the 24-code taxonomy; validated by `trg_validate_exercise_muscles` against `muscles.code WHERE NOT is_full_body` (`full_body` is **not** a valid secondary). |
+| `equipment` | `text` null, check in (`'barbell'`, `'dumbbell'`, `'kettlebell'`, `'ez_curl_bar'`, `'machine'`, `'cable'`, `'bodyweight'`, `'band'`, `'medicine_ball'`, `'exercise_ball'`, `'foam_roller'`, `'other'`) — widened 8 → 12 by B1 (#158) |
 | `default_increment_kg` | `numeric` null, check `> 0` — used by the double-progression coach rule |
+| `level` | `text` null, check in (`'beginner'`, `'intermediate'`, `'expert'`) — free-exercise-db difficulty (B1 #158) |
+| `mechanic` | `text` null, check in (`'compound'`, `'isolation'`) — B1 #158 |
+| `force` | `text` null, check in (`'push'`, `'pull'`, `'static'`) — B1 #158 |
+| `category` | `text` null, check in (`'strength'`, `'stretching'`, `'plyometrics'`, `'powerlifting'`, `'olympic weightlifting'`, `'strongman'`, `'cardio'`) — B1 #158 |
+| `images` | `text[]` not null default `'{}'` — relative image paths from the catalog import (B1 #158) |
+| `external_id` | `text` null — import idempotency key; partial unique index `idx_exercises_external_id` where `external_id is not null` (manual/system rows keep it null) (B1 #158) |
+| `instructions_en` | `text[]` not null default `'{}'` — ordered step list; `instructions_es[i]` translates `instructions_en[i]`, equal length per row (B2a #164) |
+| `instructions_es` | `text[]` not null default `'{}'` — Spanish parallel of `instructions_en` (B2a #164) |
 | `is_verified` | `boolean` not null default false |
 | `created_by_user_id` | `uuid` null, references `auth.users(id)` on delete set null |
-| `source` | `text` not null default `'manual'`, check in (`'manual'`, `'system'`) |
+| `source` | `text` not null default `'manual'`, check in (`'manual'`, `'system'`, `'free-exercise-db'`) — `'free-exercise-db'` added by B1 (#158) for import provenance |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
 
-Trigram indexes `idx_exercises_name_es_trgm` (gin on `name_es`) and `idx_exercises_name_en_trgm` (gin on `name_en` where not null). Ships with 34 system-seed exercises (verified applied 2026-05-21).
+Trigram indexes `idx_exercises_name_es_trgm` (gin on `name_es`) and `idx_exercises_name_en_trgm` (gin on `name_en` where not null). Now ships with **~907 exercises**: the 34 Training-MVP system seeds (applied 2026-05-21) plus the 873-row free-exercise-db catalog ingested by Project B1 (#158, `source = 'free-exercise-db'`), with bilingual step-by-step instructions backfilled by Project B2a (#164). Released to main (tags v2026-06-07-exercise-catalog, v2026-06-08-exercise-browse).
 
-**Fine muscle taxonomy (R-26 / D-F11, #155).** The legacy singular `primary_muscle` column (coarse-12 inline CHECK) was **dropped** by `20260604120000_fine_muscle_taxonomy` and replaced by `primary_muscles text[]` (multiple primaries). The old inline CHECK constraints `exercises_primary_muscle_check` and `exercises_secondary_muscles_valid` were both dropped: a CHECK constraint cannot reference another table, so validation moved to the trigger `trg_validate_exercise_muscles` → function `public.validate_exercise_muscles()` (`SECURITY INVOKER`, `set search_path = public`), which asserts `primary_muscles ⊆ muscles.code` and `secondary_muscles ⊆ muscles.code WHERE NOT is_full_body`. Both columns now carry **fine** codes from the 22-code taxonomy (see `muscles`); the same codes drive the muscle-activity heatmap (`src/core/muscleVolume.ts`): each primary mover earns 1.0 per working set (stimulus is **not** conserved across a set — multiple primaries each count 1.0) and each secondary earns `SECONDARY_SET_WEIGHT = 0.5`; warm-ups are excluded and `full_body` is footnoted, never shaded.
+**Fine muscle taxonomy (R-26 / D-F11, #155).** The legacy singular `primary_muscle` column (coarse-12 inline CHECK) was **dropped** by `20260604120000_fine_muscle_taxonomy` and replaced by `primary_muscles text[]` (multiple primaries). The old inline CHECK constraints `exercises_primary_muscle_check` and `exercises_secondary_muscles_valid` were both dropped: a CHECK constraint cannot reference another table, so validation moved to the trigger `trg_validate_exercise_muscles` → function `public.validate_exercise_muscles()` (`SECURITY INVOKER`, `set search_path = public`), which asserts `primary_muscles ⊆ muscles.code` and `secondary_muscles ⊆ muscles.code WHERE NOT is_full_body`. Both columns now carry **fine** codes from the 24-code taxonomy (see `muscles`); the same codes drive the muscle-activity heatmap (`src/core/muscleVolume.ts`): each primary mover earns 1.0 per working set (stimulus is **not** conserved across a set — multiple primaries each count 1.0) and each secondary earns `SECONDARY_SET_WEIGHT = 0.5`; warm-ups are excluded and `full_body` is footnoted, never shaded.
 
 Because the app has no production users yet, #155 re-tagged all 34 system-seed rows to fine codes in place with no backfill; the follow-up migration `20260604130000_fine_taxonomy_retag_review_fixes.sql` corrected 3 rows after an expert anatomical review (Deadlift → `hamstrings` promoted to primary; Kettlebell swing → `+forearms` secondary; Overhead press → `+trap` secondary). The earlier coarse-12 F-4 retag (`20260530120000_f4_secondary_muscles`, applied 2026-05-26, when `secondary_muscles` was first added) is now historical.
 
 ### `muscles` (read-only reference dictionary — R-26 / D-F11, #155)
 
-The structural source of the fine muscle taxonomy: 23 seed rows = 22 shadeable fine codes + `full_body`. Read-only reference data, mirrors `src/core/muscles.ts` (the canonical TS structural source); a pgTAP anti-drift test (`supabase/tests/05_muscles.test.sql`) guards the two against drift. The 22 shadeable codes span 6 groups: `shoulders` (`delt_front`, `delt_side`, `delt_rear`); `chest` (`pec_upper`, `pec_lower`); `back` (`lat`, `trap`, `rhomboids`, `lower_back`); `arms` (`biceps`, `tri_long`, `tri_lateral`, `forearms`); `core` (`abs_upper`, `abs_lower`, `obliques`); `legs` (`quads`, `hamstrings`, `glutes`, `adductors`, `calves`, `tibialis`). `full_body` is special — footnoted, never shades, not a valid secondary.
+The structural source of the fine muscle taxonomy: 25 seed rows = 24 shadeable fine codes + `full_body`. Read-only reference data, mirrors `src/core/muscles.ts` (the canonical TS structural source); a pgTAP anti-drift test (`supabase/tests/05_muscles.test.sql`) guards the two against drift. The 24 shadeable codes span 6 groups: `shoulders` (`delt_front`, `delt_side`, `delt_rear`); `chest` (`pec_upper`, `pec_lower`); `back` (`lat`, `trap`, `rhomboids`, `lower_back`, `neck`); `arms` (`biceps`, `tri_long`, `tri_lateral`, `forearms`); `core` (`abs_upper`, `abs_lower`, `obliques`); `legs` (`quads`, `hamstrings`, `glutes`, `adductors`, `calves`, `tibialis`, `abductors`). `neck` (back) and `abductors` (legs) were added by Project B1 (#158, commit `771450b`); `abductors` shares the `gluteal` `body_region_slug` with `glutes`, so the gluteal region co-shades both fine codes under the current vendored art. `full_body` is special — footnoted, never shades, not a valid secondary.
 
 | Column | Type / constraint |
 |---|---|
@@ -481,7 +493,7 @@ Check constraint: `(is_rest and routine_id is null) or (not is_rest and routine_
 
 Every table is RLS-enabled.
 
-**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `recipes`, `recipe_ingredients` (via join to `recipes`), `user_ingredient_refs`, `user_recipe_refs`, `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`, `workout_sessions`, `routines`, `programs`.
+**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `user_ingredient_refs`, `user_recipe_refs`, `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`, `workout_sessions`, `routines`, `programs`.
 
 **RLS-via-parent-join pattern.** Child tables with no `user_id` column inherit authorization by joining to their parent: `workout_sets` (via `workout_sessions`), `routine_exercises` (via `routines`), `program_days` (via `programs`). Each carries SELECT / INSERT / UPDATE / DELETE policies using an `exists` subquery that checks the parent's `user_id = auth.uid()`. The UPDATE policies on `routine_exercises` and `program_days` carry both `using` and `with check` to prevent a user re-pointing a child row to another user's parent (F-2 closes this gap; `workout_sets` and `recipe_ingredients` carry `using`-only UPDATE policies — a follow-up migration is noted in R-22 to backfill them).
 
@@ -492,6 +504,13 @@ Every table is RLS-enabled.
 - DELETE: only the creator (`using (auth.uid() = created_by_user_id)`). The FK from `recipe_ingredients` is `ON DELETE RESTRICT`, which additionally blocks deletion if any user's recipe references the ingredient.
 
 Reversibility escape-hatch (D-A1): the open-SELECT model can later be tightened to `created_by_user_id = auth.uid() OR created_by_user_id IS NULL` with no schema change if the library ever needs privacy.
+
+**`recipes` (shared pool).** Same shape as `ingredients` — R-01 reclassified recipes as a shared pool (see Library Contribution & Lifecycle Model):
+- SELECT: any authenticated user reads the whole pool (`using (true)`, policy `"Recipes pool readable"`).
+- INSERT: self-tagged (`with check (auth.uid() = created_by_user_id)`).
+- UPDATE / DELETE: real-owner only — the predicate `auth.uid() = created_by_user_id AND created_by_user_id IS NOT NULL AND created_by_user_id <> LIBRARY_ANON_OWNER_ID` (anon-sentinel + null-seed write exclusions), so anonymized (creator-hidden) rows match no write policy and are never re-owned.
+
+**`recipe_ingredients` (shared-pool child, via join to `recipes`).** SELECT opens to all authenticated (`using (true)`, policy `"Recipe ingredients pool readable"`) so any recipe's lines render (essential for anon-owned recipes in the diary); INSERT / UPDATE / DELETE stay owner-gated via an `exists` subquery on the parent recipe's real-owner predicate (same anon-sentinel + null-seed exclusions).
 
 **`muscles` (read-only reference table).** A single SELECT policy `muscles_select_all` (`using (true)`) — any authenticated user reads the whole dictionary. No INSERT / UPDATE / DELETE policy: the seed data is effectively immutable to all app roles (R-26 / D-F11).
 
@@ -506,6 +525,7 @@ User-facing RPCs, all `SECURITY INVOKER` with `set search_path = public`, each a
 - `save_template`
 - `apply_template_to_week`
 - `save_week_as_template`
+- `copy_week_meal` (U-6) — copy one planned meal onto other days of the active week (atomic multi-row delete-then-insert across N target dates on `meal_plan_week_slots`; single-table, chosen for atomicity over a two-round-trip client delete+insert)
 - `materialize_plan_for_date` (R-12 / D-D6)
 
 **Training MVP (R-19, live in prod since 2026-05-21):**
@@ -516,9 +536,9 @@ User-facing RPCs, all `SECURITY INVOKER` with `set search_path = public`, each a
 - `save_program` — create-or-replace a program and its day slots (replace-children). Does NOT touch `is_active` or `anchor_date` — those are owned by `set_active_program`. INVOKER.
 - `set_active_program` — atomic active-flip: deactivates all other programs for the user then activates the target with the given `anchor_date`. Kept as an RPC (rather than client-side) because the two `UPDATE`s must be atomic with respect to the `programs_one_active_uidx` partial unique index — a gap between two client-side statements would transiently violate the constraint (D-F8). INVOKER.
 
-One cron-only exception: `apply_template_to_week_admin` is `SECURITY DEFINER` (Sprint 9), used by scheduled jobs that act across users with the service role.
+Two sanctioned `SECURITY DEFINER` exceptions — the only ones in the schema: (1) the cron-only `apply_template_to_week_admin` (Sprint 9), used by scheduled jobs that act across users with the service role; (2) `reconcile_account_delete` (R-01), account-delete reconciliation called only by the service role / edge — granted to no app-facing role.
 
-Invariant (D-C5): any operation that mutates more than one table atomically MUST be an RPC. Single-table mutations stay client-side. All user-callable RPCs must be `SECURITY INVOKER` with `set search_path = public`. `SECURITY DEFINER` is forbidden without explicit security review and a non-`public` schema home; the cron-only `apply_template_to_week_admin` is the documented exception.
+Invariant (D-C5): any operation that mutates more than one table atomically MUST be an RPC. Single-table mutations stay client-side. All user-callable RPCs must be `SECURITY INVOKER` with `set search_path = public`. `SECURITY DEFINER` is forbidden without explicit security review and a non-`public` schema home; the two documented exceptions are `apply_template_to_week_admin` (cron) and `reconcile_account_delete` (service-role/edge account-delete reconciliation).
 
 `materialize_plan_for_date` (R-12 / D-D6): `SECURITY INVOKER`, `set search_path = public`, in-RPC `date <= today` Europe/Madrid guard, backed by the partial unique index `meal_logs_user_plan_slot_uidx` with `INSERT … ON CONFLICT DO NOTHING`. It replaced the hand-mirrored client/edge materialization copies (single source = the RPC). Live in prod since 2026-05-18 (migration applied, then the calling-code PR merged).
 

@@ -292,6 +292,7 @@ export type Database = {
           name: string
           name_en: string | null
           protein_g_per_unit: number
+          salt_g_per_unit: number | null
           saturated_fat_g_per_unit: number | null
           source: string
           sugar_g_per_unit: number | null
@@ -312,6 +313,7 @@ export type Database = {
           name: string
           name_en?: string | null
           protein_g_per_unit: number
+          salt_g_per_unit?: number | null
           saturated_fat_g_per_unit?: number | null
           source?: string
           sugar_g_per_unit?: number | null
@@ -332,6 +334,7 @@ export type Database = {
           name?: string
           name_en?: string | null
           protein_g_per_unit?: number
+          salt_g_per_unit?: number | null
           saturated_fat_g_per_unit?: number | null
           source?: string
           sugar_g_per_unit?: number | null
@@ -531,6 +534,7 @@ export type Database = {
           is_auto_generated: boolean
           name: string
           notes: string | null
+          phase_type: string | null
           same_schedule_all_days: boolean
           updated_at: string
           user_id: string
@@ -542,6 +546,7 @@ export type Database = {
           is_auto_generated?: boolean
           name: string
           notes?: string | null
+          phase_type?: string | null
           same_schedule_all_days?: boolean
           updated_at?: string
           user_id: string
@@ -553,6 +558,7 @@ export type Database = {
           is_auto_generated?: boolean
           name?: string
           notes?: string | null
+          phase_type?: string | null
           same_schedule_all_days?: boolean
           updated_at?: string
           user_id?: string
@@ -909,6 +915,7 @@ export type Database = {
           meal_types: string[]
           name: string
           photo_url: string | null
+          prep_time_minutes: number | null
           servings: number
           updated_at: string
         }
@@ -921,6 +928,7 @@ export type Database = {
           meal_types?: string[]
           name: string
           photo_url?: string | null
+          prep_time_minutes?: number | null
           servings?: number
           updated_at?: string
         }
@@ -933,6 +941,7 @@ export type Database = {
           meal_types?: string[]
           name?: string
           photo_url?: string | null
+          prep_time_minutes?: number | null
           servings?: number
           updated_at?: string
         }
@@ -1324,12 +1333,14 @@ export type Database = {
     // on function args), so it emits every text arg as non-null `string`.
     // The marked args below are nullable BY DESIGN — a null create-or-update id
     // (p_recipe_id / p_template_id / p_program_id / p_routine_id / p_session_id)
-    // means "create new", and p_notes / p_title / p_performed_on / p_anchor_date
-    // are optional metadata. Restored to `string | null` so call sites stay
-    // honest instead of casting NULL to ''. Re-apply to save_recipe /
-    // save_template / save_program / save_routine / save_workout /
-    // set_active_program after any regen — see docs/conventions.md
-    // (generated-types caveats).
+    // means "create new", p_phase_type null means "no phase / clear the phase"
+    // (R-33 wave 4), p_prep_time_minutes null means "no time recorded / clear
+    // the prep time" (R-33 wave 5), and p_notes / p_title / p_performed_on /
+    // p_anchor_date are optional metadata. Restored to `… | null` so call sites
+    // stay honest instead of casting NULL to ''. Re-apply to save_recipe /
+    // save_template / save_week_as_template / save_program / save_routine /
+    // save_workout / set_active_program after any regen — see
+    // docs/conventions.md (generated-types caveats).
     Functions: {
       apply_template_to_week: {
         Args: { p_target_date: string; p_template_id: string }
@@ -1376,6 +1387,7 @@ export type Database = {
           p_instructions: string | null
           p_meal_types?: string[]
           p_name: string
+          p_prep_time_minutes?: number | null
           p_recipe_id: string | null
           p_servings: number
         }
@@ -1395,6 +1407,7 @@ export type Database = {
           p_day_times?: Json
           p_default_meal_times: string[]
           p_name: string
+          p_phase_type?: string | null
           p_same_schedule_all_days: boolean
           p_slots: Json
           p_template_id: string | null
@@ -1402,7 +1415,11 @@ export type Database = {
         Returns: string
       }
       save_week_as_template: {
-        Args: { p_name: string; p_week_id: string }
+        Args: {
+          p_name: string
+          p_phase_type?: string | null
+          p_week_id: string
+        }
         Returns: string
       }
       save_workout: {

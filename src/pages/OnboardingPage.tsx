@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/NumberField';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -143,34 +144,19 @@ export function OnboardingPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="heightCm">{t('heightCm')}</Label>
-                <Input
-                  id="heightCm"
-                  type="number"
-                  inputMode="decimal"
-                  min={100}
-                  max={250}
-                  step="0.1"
-                  {...register('height_cm')}
-                />
+                <NumberField id="heightCm" label={t('heightCm')} {...register('height_cm')} />
               </div>
               <div className="space-y-2">
+                {/* The warning sits between the label and the field, so the label
+                    stays here rather than inside the NumberField. */}
                 <Label htmlFor="initialWeightKg">{t('initialWeightKg')}</Label>
                 <div
                   role="alert"
-                  className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-200"
+                  className="rounded-md border border-transparent bg-amber-soft px-3 py-2 text-sm text-amber-ink"
                 >
                   {t('initialWeightWarning')}
                 </div>
-                <Input
-                  id="initialWeightKg"
-                  type="number"
-                  inputMode="decimal"
-                  min={20}
-                  max={400}
-                  step="0.1"
-                  {...register('initial_weight_kg')}
-                />
+                <NumberField id="initialWeightKg" {...register('initial_weight_kg')} />
               </div>
               {showRequired && <p className="text-sm text-destructive">{t('errors.required')}</p>}
               {showRange && <p className="text-sm text-destructive">{t('errors.outOfRange')}</p>}

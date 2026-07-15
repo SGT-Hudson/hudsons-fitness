@@ -19,7 +19,7 @@ export function SkipRecovery({ skipped, names, onDoExercise, indexOf, onProceed 
       <p className="text-center text-xs text-muted-foreground">{t('runner.skippedCount', { count: skipped.length })}</p>
       <div className="space-y-1">
         {skipped.map((ex) => (
-          <div key={ex.exerciseId} className="flex justify-between rounded-md bg-amber-500/10 px-3 py-2 text-sm">
+          <div key={ex.exerciseId} className="flex justify-between rounded-md bg-amber-soft px-3 py-2 text-sm">
             <span>{names[ex.exerciseId] ?? ex.exerciseId}</span>
             <Button type="button" size="sm" variant="outline" onClick={() => onDoExercise(indexOf(ex))}>
               {t('runner.doNow')}

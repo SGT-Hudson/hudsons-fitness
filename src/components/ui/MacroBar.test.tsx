@@ -10,7 +10,7 @@ function widths(container: HTMLElement): string[] {
 
 describe('MacroBar', () => {
   it('renders a single base fill when not over', () => {
-    const { container } = render(<MacroBar consumed={92} target={100} tone="budget" excess={null} />);
+    const { container } = render(<MacroBar consumed={92} target={100} tone="good" excess="neutral" />);
     expect(widths(container)).toEqual(['92%']);
     expect(container.querySelector('[data-tick="target"]')).toBeNull();
   });
@@ -28,7 +28,7 @@ describe('MacroBar', () => {
   it('renders a min-floor tick when minFloorG is given (fat low)', () => {
     // floor 44 / target 65 = 67.69%
     const { container } = render(
-      <MacroBar consumed={30} target={65} tone="fatLow" excess={null} minFloorG={44} />,
+      <MacroBar consumed={30} target={65} tone="over" excess="bad" minFloorG={44} />,
     );
     const tick = container.querySelector('[data-tick="min"]') as HTMLElement | null;
     expect(tick).not.toBeNull();
@@ -36,7 +36,15 @@ describe('MacroBar', () => {
   });
 
   it('does nothing for a non-positive target', () => {
-    const { container } = render(<MacroBar consumed={50} target={0} tone="neutral" excess={null} />);
+    const { container } = render(<MacroBar consumed={50} target={0} tone="neutral" excess="neutral" />);
     expect(widths(container)).toEqual(['0%']);
+  });
+
+  it('paints a good-tone overshoot with excess-neutral', () => {
+    // protein/fibre overshoot past target while tone stays "good": excess is neutral, not a reward colour.
+    const { container } = render(<MacroBar consumed={110} target={100} tone="good" excess="neutral" />);
+    const excessSeg = container.querySelector('[data-excess="neutral"]');
+    expect(excessSeg).not.toBeNull();
+    expect(excessSeg!.className).toMatch(/bg-excess-neutral/);
   });
 });

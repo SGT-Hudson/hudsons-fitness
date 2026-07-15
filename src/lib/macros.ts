@@ -2,6 +2,9 @@ export type FiberMode = 'fixed_g' | 'per_1000_kcal';
 export type KcalMode = 'absolute' | 'tdee_delta';
 export type PhaseType = 'cut' | 'maintenance' | 'bulk';
 
+/** Which protein basis the active target was computed on (D-B1). */
+export type ProteinBasis = 'lean' | 'fallback';
+
 export interface PhaseInputs {
   kcal_mode: KcalMode;
   kcal_value: number;

@@ -204,6 +204,246 @@ select is(
   '11111111-1111-1111-1111-111111111111'::uuid, 'hide leaves ingredient ownership with the creator');
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- R-33 wave 4 — meal_plan_templates.phase_type
+-- The column's check constraint, the phase round-trip through save_template
+-- (create / update / clear-to-null), save_week_as_template tagging what it
+-- creates, and RLS still hiding A's templates from B. The pre-existing RPC
+-- behaviour (children replaced, Monday-derived default_meal_times fallback,
+-- is_auto_generated = false, same_schedule_all_days = true) is asserted too, so
+-- the DROP-and-recreate cannot have silently changed it.
+-- ════════════════════════════════════════════════════════════════════════════
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+
+-- create, tagged 'cut', with slots + day_times (old behaviour must survive)
+select lives_ok(
+  $q$ select save_template(null, 'T cut', true, array['08:00','14:00'],
+        '[{"day_of_week":0,"meal_index":0,"recipe_id":"00000000-0000-0000-0000-0000000000c1","servings":1},
+          {"day_of_week":1,"meal_index":0,"recipe_id":"00000000-0000-0000-0000-0000000000c1","servings":2}]'::jsonb,
+        '[{"day_of_week":0,"meal_times":["08:00","14:00"]}]'::jsonb,
+        'cut') $q$,
+  'save_template tags a template with a phase');
+select is(
+  (select phase_type from meal_plan_templates where name = 'T cut'),
+  'cut', 'the phase round-trips on create');
+select is(
+  (select count(*)::int from meal_plan_template_slots s
+     join meal_plan_templates t on t.id = s.template_id where t.name = 'T cut'),
+  2, 'save_template still writes its slot children');
+select is(
+  (select count(*)::int from meal_plan_template_day_times d
+     join meal_plan_templates t on t.id = d.template_id where t.name = 'T cut'),
+  1, 'save_template still writes its day_times children');
+
+-- the other two valid phases, and no phase at all
+select lives_ok(
+  $q$ select save_template(null, 'T maint', true, array['08:00'], '[]'::jsonb, '[]'::jsonb, 'maintenance') $q$,
+  'save_template accepts maintenance');
+select lives_ok(
+  $q$ select save_template(null, 'T none', true, array['08:00'], '[]'::jsonb, '[]'::jsonb, null) $q$,
+  'save_template accepts a template with no phase');
+select is(
+  (select phase_type from meal_plan_templates where name = 'T none'),
+  null::text, 'an untagged template really has a null phase');
+
+-- the check constraint rejects anything that is not cut/maintenance/bulk
+select throws_ok(
+  $q$ select save_template(null, 'T bogus', true, array['08:00'], '[]'::jsonb, '[]'::jsonb, 'bulking') $q$,
+  '23514', null,
+  'the check constraint rejects a phase that is not cut/maintenance/bulk');
+
+-- update: re-tag, then clear back to null
+select lives_ok(
+  $q$ select save_template(
+        (select id from meal_plan_templates where name = 'T cut'),
+        'T cut', true, array['08:00','14:00'],
+        '[{"day_of_week":0,"meal_index":0,"recipe_id":"00000000-0000-0000-0000-0000000000c1","servings":1}]'::jsonb,
+        '[]'::jsonb, 'bulk') $q$,
+  'save_template re-tags an existing template');
+select is(
+  (select phase_type from meal_plan_templates where name = 'T cut'),
+  'bulk', 'the phase round-trips on update');
+select is(
+  (select count(*)::int from meal_plan_template_slots s
+     join meal_plan_templates t on t.id = s.template_id where t.name = 'T cut'),
+  1, 'save_template still replaces (not duplicates) its slot children on update');
+select is(
+  (select count(*)::int from meal_plan_template_day_times d
+     join meal_plan_templates t on t.id = d.template_id where t.name = 'T cut'),
+  0, 'save_template still clears day_times children on update');
+
+select lives_ok(
+  $q$ select save_template(
+        (select id from meal_plan_templates where name = 'T cut'),
+        'T cut', true, array['08:00','14:00'], '[]'::jsonb, '[]'::jsonb, null) $q$,
+  'save_template clears a phase back to null');
+select is(
+  (select phase_type from meal_plan_templates where name = 'T cut'),
+  null::text, 'a cleared phase really is null, not the old value');
+
+-- save_week_as_template tags what it creates, and keeps its old semantics.
+-- Week c2 (seeded above) has one slot with a null meal_time, so this also
+-- exercises the Monday-derived default_meal_times fallback.
+select lives_ok(
+  $q$ select save_week_as_template('00000000-0000-0000-0000-0000000000c2', 'From week', 'cut') $q$,
+  'save_week_as_template runs with a phase');
+select is(
+  (select phase_type from meal_plan_templates where name = 'From week'),
+  'cut', 'save_week_as_template tags the template it creates');
+select is(
+  (select is_auto_generated from meal_plan_templates where name = 'From week'),
+  false, 'save_week_as_template still hard-codes is_auto_generated = false');
+select is(
+  (select same_schedule_all_days from meal_plan_templates where name = 'From week'),
+  true, 'save_week_as_template still hard-codes same_schedule_all_days = true');
+select is(
+  (select default_meal_times from meal_plan_templates where name = 'From week'),
+  array['08:00','13:00','17:00','21:00']::time[],
+  'save_week_as_template still falls back to the default meal times');
+select is(
+  (select count(*)::int from meal_plan_template_slots s
+     join meal_plan_templates t on t.id = s.template_id where t.name = 'From week'),
+  1, 'save_week_as_template still copies the week''s slots');
+
+-- RLS is untouched: B cannot see or write A's templates. Target A's template by
+-- a fixed literal id — a subquery would be hidden from B by RLS, so save_template
+-- would receive NULL and create a new template instead of failing (same trap as
+-- the save_workout section above).
+reset role;
+insert into meal_plan_templates (id, user_id, name, phase_type) values
+  ('00000000-0000-0000-0000-0000000000e9', '11111111-1111-1111-1111-111111111111', 'A owned tpl', 'cut');
+
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
+set local role authenticated;
+select is(
+  (select count(*)::int from meal_plan_templates where name in ('T cut', 'From week', 'A owned tpl')),
+  0, 'RLS still hides A''s templates from B');
+select throws_ok(
+  $q$ select save_template(
+        '00000000-0000-0000-0000-0000000000e9', 'hijack', true,
+        array['08:00'], '[]'::jsonb, '[]'::jsonb, 'bulk') $q$,
+  'P0001', 'template not found or not owned by user',
+  'B cannot save_template into A''s template');
+select throws_ok(
+  $q$ select save_week_as_template('00000000-0000-0000-0000-0000000000c2', 'hijack week', 'bulk') $q$,
+  'P0001', 'week not found',
+  'B cannot save_week_as_template from A''s week');
+
+reset role;
+select is(
+  (select phase_type from meal_plan_templates where id = '00000000-0000-0000-0000-0000000000e9'),
+  'cut', 'A''s template phase is unchanged by B''s attempts');
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- R-33 wave 5 — recipes.prep_time_minutes
+-- The column's check constraint (positive integer minutes or null), the
+-- round-trip through save_recipe (create / update / clear-to-null), and the
+-- pre-existing RPC behaviour the DROP-and-recreate must not have changed:
+-- ownership is still enforced on update, and children are still replaced.
+-- ════════════════════════════════════════════════════════════════════════════
+reset role;
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+
+-- the check constraint, straight at the table
+select throws_ok(
+  $q$ insert into recipes (created_by_user_id, name, prep_time_minutes)
+      values ('11111111-1111-1111-1111-111111111111', 'zero prep', 0) $q$,
+  '23514', null,
+  'the check constraint rejects a prep time of 0');
+select throws_ok(
+  $q$ insert into recipes (created_by_user_id, name, prep_time_minutes)
+      values ('11111111-1111-1111-1111-111111111111', 'negative prep', -5) $q$,
+  '23514', null,
+  'the check constraint rejects a negative prep time');
+select lives_ok(
+  $q$ insert into recipes (created_by_user_id, name, prep_time_minutes)
+      values ('11111111-1111-1111-1111-111111111111', 'positive prep', 45) $q$,
+  'the check constraint accepts a positive prep time');
+select lives_ok(
+  $q$ insert into recipes (created_by_user_id, name, prep_time_minutes)
+      values ('11111111-1111-1111-1111-111111111111', 'null prep', null) $q$,
+  'the check constraint accepts a null prep time (no time recorded)');
+
+-- create through the RPC, with a prep time and the meal types still in place
+select lives_ok(
+  $q$ select save_recipe(null, 'R prep', 2, 'd', 'i',
+        '[{"ingredient_id":"00000000-0000-0000-0000-0000000000d1","quantity":100},
+          {"ingredient_id":"00000000-0000-0000-0000-0000000000d2","quantity":50}]'::jsonb,
+        array['lunch']::text[], 35) $q$,
+  'save_recipe creates a recipe with a prep time');
+select is(
+  (select prep_time_minutes from recipes where name = 'R prep'),
+  35, 'the prep time round-trips on create');
+select is(
+  (select meal_types from recipes where name = 'R prep'),
+  array['lunch']::text[], 'save_recipe still writes meal_types (U-2 behaviour survives the recreate)');
+select is(
+  (select count(*)::int from recipe_ingredients ri
+     join recipes r on r.id = ri.recipe_id where r.name = 'R prep'),
+  2, 'save_recipe still writes its ingredient children');
+
+-- create with no prep time at all (the default keeps the 7-arg call sites honest)
+select lives_ok(
+  $q$ select save_recipe(null, 'R no prep', 1, null, null, '[]'::jsonb, array['snack']::text[]) $q$,
+  'save_recipe still accepts a call that omits the prep time');
+select is(
+  (select prep_time_minutes from recipes where name = 'R no prep'),
+  null::int, 'a recipe saved without a prep time really has none');
+
+-- a bad prep time through the RPC is rejected by the constraint, not by app code
+select throws_ok(
+  $q$ select save_recipe(null, 'R bad prep', 1, null, null, '[]'::jsonb, '{}'::text[], 0) $q$,
+  '23514', null,
+  'save_recipe surfaces the check constraint for a prep time of 0');
+
+-- update: re-time, and children are still replaced (not duplicated)
+select lives_ok(
+  $q$ select save_recipe(
+        (select id from recipes where name = 'R prep'),
+        'R prep', 2, 'd', 'i',
+        '[{"ingredient_id":"00000000-0000-0000-0000-0000000000d1","quantity":120}]'::jsonb,
+        array['lunch']::text[], 50) $q$,
+  'save_recipe updates the prep time of an existing recipe');
+select is(
+  (select prep_time_minutes from recipes where name = 'R prep'),
+  50, 'the prep time round-trips on update');
+select is(
+  (select count(*)::int from recipe_ingredients ri
+     join recipes r on r.id = ri.recipe_id where r.name = 'R prep'),
+  1, 'save_recipe still replaces (not duplicates) its ingredient children on update');
+
+-- clearing back to null is a real write, not an omission
+select lives_ok(
+  $q$ select save_recipe(
+        (select id from recipes where name = 'R prep'),
+        'R prep', 2, 'd', 'i', '[]'::jsonb, array['lunch']::text[], null) $q$,
+  'save_recipe clears a prep time back to null');
+select is(
+  (select prep_time_minutes from recipes where name = 'R prep'),
+  null::int, 'a cleared prep time really is null, not the old value');
+
+-- ownership is still enforced on update. Fixed literal id: a subquery would be
+-- hidden from B by RLS, so save_recipe would receive NULL and create a new
+-- recipe instead of failing (same trap as the save_workout section above).
+reset role;
+insert into recipes (id, created_by_user_id, name, prep_time_minutes) values
+  ('00000000-0000-0000-0000-0000000000f1', '11111111-1111-1111-1111-111111111111', 'A owned recipe', 20);
+
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
+set local role authenticated;
+select throws_ok(
+  $q$ select save_recipe('00000000-0000-0000-0000-0000000000f1', 'hijack', 1, null, null,
+        '[]'::jsonb, '{}'::text[], 99) $q$,
+  'P0001', 'recipe not found or not owned by user',
+  'B cannot save_recipe into A''s recipe');
+
+reset role;
+select is(
+  (select prep_time_minutes from recipes where id = '00000000-0000-0000-0000-0000000000f1'),
+  20, 'A''s prep time is unchanged by B''s attempt');
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- reconcile_account_delete — purge refs, anonymise pool, leave others intact
 -- ════════════════════════════════════════════════════════════════════════════
 reset role;

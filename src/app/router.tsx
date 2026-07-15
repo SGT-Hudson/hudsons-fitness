@@ -7,7 +7,6 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { SignupPage } from '@/pages/SignupPage';
 import { OnboardingPage } from '@/pages/OnboardingPage';
-import { HomePage } from '@/pages/HomePage';
 import { ExercisesPage } from '@/pages/ExercisesPage';
 import { ExerciseDetailPage } from '@/pages/ExerciseDetailPage';
 import { DiarioPage } from '@/pages/DiarioPage';
@@ -15,10 +14,18 @@ import { PlanificadorPage } from '@/pages/PlanificadorPage';
 import { PlantillasPage } from '@/pages/PlantillasPage';
 import { PlantillaEditorPage } from '@/pages/PlantillaEditorPage';
 import { RecetasPage } from '@/pages/RecetasPage';
+import { RecetaDetailPage } from '@/pages/RecetaDetailPage';
 import { RecetaEditorPage } from '@/pages/RecetaEditorPage';
 import { IngredientesPage } from '@/pages/IngredientesPage';
+import { IngredientMethodPage } from '@/pages/IngredientMethodPage';
+import { IngredientEditorPage } from '@/pages/IngredientEditorPage';
+import { IngredientScanPage } from '@/pages/IngredientScanPage';
+import { IngredientSearchPage } from '@/pages/IngredientSearchPage';
 import { ObjetivosPage } from '@/pages/ObjetivosPage';
+import { PhaseEditorPage } from '@/pages/PhaseEditorPage';
+import { MeasurementHistoryPage } from '@/pages/MeasurementHistoryPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { MorePage } from '@/pages/MorePage';
 import { SettingsProfilePage } from '@/pages/settings/SettingsProfilePage';
 import { SettingsBiometricsPage } from '@/pages/settings/SettingsBiometricsPage';
 import { SettingsAccountPage } from '@/pages/settings/SettingsAccountPage';
@@ -48,7 +55,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <FullPageLoader />;
-  if (user) return <Navigate to="/home" replace />;
+  if (user) return <Navigate to="/diary" replace />;
   return <>{children}</>;
 }
 
@@ -94,8 +101,7 @@ export function AppRoutes() {
         }
       >
         <Route element={<AppLayout />}>
-          <Route index element={<Navigate to="/home" replace />} />
-          <Route path="/home" element={<HomePage />} />
+          <Route index element={<Navigate to="/diary" replace />} />
 
           {/* Nutrición */}
           <Route path="/diary" element={<DiarioPage />} />
@@ -106,8 +112,28 @@ export function AppRoutes() {
           <Route path="/templates/:id" element={<PlantillaEditorPage />} />
           <Route path="/recipes" element={<RecetasPage />} />
           <Route path="/recipes/new" element={<RecetaEditorPage />} />
-          <Route path="/recipes/:id" element={<RecetaEditorPage />} />
+          {/* R-33 wave 5: reading a recipe and editing it are different screens.
+              `/recipes/:id` is the read view; the editor moved to `/edit`. */}
+          <Route path="/recipes/:id" element={<RecetaDetailPage />} />
+          <Route path="/recipes/:id/edit" element={<RecetaEditorPage />} />
           <Route path="/recipes/ingredients" element={<IngredientesPage />} />
+          {/* R-33 wave 6: "¿cómo quieres añadirlo?" — manual / OpenFoodFacts /
+              barcode. Every method ends at `/new/manual` below, carrying what it
+              learned in `location.state`. */}
+          <Route path="/recipes/ingredients/new" element={<IngredientMethodPage />} />
+          {/* The full-screen viewfinder. Found ⇒ `/new/manual` carrying the OFF
+              product; not found ⇒ carrying the scanned EAN. */}
+          <Route path="/recipes/ingredients/scan" element={<IngredientScanPage />} />
+          {/* R-33 wave 6: the editor is a PAGE now (create and edit alike). The
+              method picker and the scanner both reach `/new/manual` carrying an
+              OFF product / a scanned EAN in `location.state`
+              (`IngredientEditorRouteState`). `/recipes/ingredients/:id/edit` is
+              4 segments and cannot be shadowed by `/recipes/:id/edit` (3), but
+              it IS owner-gated inside the page. */}
+          <Route path="/recipes/ingredients/new/manual" element={<IngredientEditorPage />} />
+          <Route path="/recipes/ingredients/:id/edit" element={<IngredientEditorPage />} />
+          {/* D-F24 — the full-screen search, deferred out of the Diario wave. */}
+          <Route path="/recipes/ingredients/search" element={<IngredientSearchPage />} />
 
           {/* Entreno */}
           <Route path="/training" element={<EntrenamientoPage />} />
@@ -132,11 +158,22 @@ export function AppRoutes() {
               </Suspense>
             }
           />
+          {/* R-33 wave 7: sub-flows are routes, not dialogs. The full
+              month-grouped measurement archive — and the only place a
+              measurement can be deleted — is its own screen. */}
+          <Route path="/progress/history" element={<MeasurementHistoryPage />} />
           <Route path="/progress/goals" element={<ObjetivosPage />} />
+          {/* R-33 wave 8: the phase editor is a PAGE now (create and edit
+              alike), not a modal. A frozen phase's notes-only mode is derived
+              from the freeze rule inside the page — deliberately NOT a route
+              flag a deep link could lie about. */}
+          <Route path="/progress/goals/phases/new" element={<PhaseEditorPage />} />
+          <Route path="/progress/goals/phases/:id/edit" element={<PhaseEditorPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/biometrics" element={<SettingsBiometricsPage />} />
           <Route path="/settings/account" element={<SettingsAccountPage />} />
+          <Route path="/more" element={<MorePage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

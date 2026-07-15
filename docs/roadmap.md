@@ -35,10 +35,22 @@ reference shard carries it (never edit the decision entry).
 - R-24 — Muscle activity heatmap (F-4)
 - R-25 — Fix hide_owned_* blocked by pool UPDATE WITH CHECK (Tier-3 finding)
 - R-26 — Fine muscle taxonomy (Project A) — 22-code model + `primary_muscles[]`
-- R-27 — Bulk exercise catalog (Project B) — design in progress
-- R-28 — Rich home dashboard + diet-completion calendar + adaptive-TDEE surface (post-V1 item 4)
-- R-29 — In-app feature-discovery onboarding (post-V1 item 5)
-- R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
+- R-27 — Bulk exercise catalog (Project B) — COMPLETE + released (2026-06-08); catalog live in prod
+- R-29 — In-app feature-discovery onboarding (post-V1 item 5) — deferred until after R-33
+- R-30 — Responsive desktop density, per-feature (REMOVED 2026-06-11 — folded into R-33)
+- R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — deferred from R-27
+- R-32 — DB-integration test tier / e2e guard for PostgREST select strings
+- R-33 — UI redesign: design system + nutrition screens — SHIPPED on develop (2026-07-15); release to main pending
+- R-34 — Gym screens redesign (blocked on gym design convergence)
+- R-35 — Shopping list from the planned week
+- R-36 — Recipe steps & photos (schema + editor + settings)
+- R-37 — Interactive TDEE calculator linked from the phase editor
+- R-38 — Progress analytics extras (adherence heatmap, ETA banner, energy balance, custom range)
+- R-39 — Measurement extras (progress photos, streak, smart-scale source toggle)
+- R-40 — cmd-K command palette (navigate-only)
+- R-41 — Planner recipe suggestions by macro fit (add-drawer V2)
+- R-42 — Per-phase default template
+- R-43 — Small verifications & leftovers (ingredient is_verified, comida libre, meal times, bell, glyphs)
 - Feature & UX family index (F-x / U-x / post-V1 items / Projects A–B) — at end
 
 ## R-00 — Baseline current schema into migrations
@@ -1032,33 +1044,30 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   live in `scripts/exercise-catalog/primary-overrides.json` (187 total) + review
   migrations `20260605120000_b1_catalog_review.sql`,
   `20260606120000_catalog_full_review.sql`, and
-  `20260606120100_catalog_hold_resolve.sql`. Remaining picker enhancements
-  (group-name text search, lay-term search aliases) deferred.
+  `20260606120100_catalog_hold_resolve.sql`.
+  **COMPLETE + RELEASED (2026-06-08).** The B2 exercise-detail UI shipped as three
+  sub-projects — B2a data foundation (#164: instruction columns + image helper),
+  B2b detail component + in-workout popup (#166), B2c `/exercises` browse page +
+  `/exercises/:id` detail page (#167) — released to `main` via
+  `release/2026-06-08-exercise-browse`. The full 10-migration backlog (fine taxonomy
+  + B1 catalog + B2a instructions) was deployed to the live DB on 2026-06-08
+  (873-exercise catalog now live in prod; see operations.md "Project A / B1 / B2a
+  backlog deploy"). **Follow-ups deferred** (not blocking; tracked as R-31): lay-term search
+  aliases; group-name text search (the browse muscle filter + name/muscle search
+  already cover the common cases); "add to session/routine" from the detail page.
 - **scope:** ingest a public-domain exercise dataset (free-exercise-db, ~873
   exercises) as idempotent seed migrations, each fine-tagged via the R-26
   taxonomy, with a tagging-accuracy verification step (anatomical source of
   truth, not by guess). Also rolled in from R-26: group-level picker filter,
   group-name text search, lay-term search aliases.
 
-## R-28 — Rich home dashboard + diet-completion calendar + adaptive-TDEE surface (post-V1 item 4)
-- **decision:** (none yet)
-- **blocked-by:** —
-- **status:** todo — `src/pages/HomePage.tsx` is an 18-line placeholder
-  ("the unified Nutrición + Entreno dashboard is item 4"); no calendar / dashboard
-  / adaptive-TDEE surface exists yet.
-- **scope:** a real Diet dashboard — a green/amber/red diet-completion calendar
-  from `daily_nutrition_history` × the active phase's targets (kcal-in-range **and**
-  protein-met → green; one of the two → amber; neither → red; tap-to-see-why);
-  surface the R-07 adaptive-TDEE expenditure estimate the app computes but never
-  shows; fold in the shipped goal-date ETA. From the post-V1 brainstorm
-  (`docs/superpowers/brainstorms/2026-05-21-post-v1-app-wide.md`, item 4 merged
-  with direction-doc "item A"). Highest daily value of the post-V1 set.
-
 ## R-29 — In-app feature-discovery onboarding (post-V1 item 5)
 - **decision:** (none yet)
-- **blocked-by:** R-28 likely (shares the home/section surface)
-- **status:** todo — only the profile-setup `OnboardingPage` exists; no
-  feature-discovery layer (no welcome modal, tour, coachmarks, or empty-state CTAs).
+- **blocked-by:** —
+- **status:** deferred (2026-06-11) — explicitly sequenced **after the R-33 UI
+  redesign**: onboarding should teach the final UI, not one about to change.
+  Only the profile-setup `OnboardingPage` exists; no feature-discovery layer
+  (no welcome modal, tour, coachmarks, or empty-state CTAs).
 - **scope:** contextual empty states (explanation + CTA) + one short welcome modal
   (esp. explaining the section split). Avoid an 8-screen wizard. Time to the
   friends-and-family invite, not before. (post-V1 brainstorm item 5.)
@@ -1066,29 +1075,216 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 ## R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
 - **decision:** (none yet)
 - **blocked-by:** —
-- **status:** partial — responsive `AppLayout` (md+ sidebar / bottom nav), the
-  grouped desktop sidebar, and the sidebar sticky fix (#121) are done; the
-  per-feature desktop **density modes** + the rich desktop home are not built.
-- **scope:** at desktop width, components opt into showing more data inline
-  (e.g. macro card also renders the day's TDEE breakdown) — not just wider
-  breakpoints. Deferred to public-launch prep. (post-V1 brainstorm item 6; the
-  U-8 visual pass.)
+- **status:** **removed (2026-06-11)** — folded into the **R-33 UI redesign**;
+  desktop density / the U-8 visual pass will be addressed there, not as a
+  standalone item. What had already landed stays (responsive `AppLayout` md+
+  sidebar / bottom nav, grouped desktop sidebar, sidebar sticky fix #121); the
+  never-built parts (per-feature density modes, rich desktop home) are now
+  R-33 scope.
+- **scope (historical):** at desktop width, components opt into showing more data
+  inline (e.g. macro card also renders the day's TDEE breakdown) — not just wider
+  breakpoints. (post-V1 brainstorm item 6; the U-8 visual pass.)
+
+## R-31 — Exercise search/browse follow-ups (deferred from Project B / R-27)
+- **decision:** (D-id at plan time)
+- **blocked-by:** none (Project B is complete + released)
+- **status:** not built — deferred, low priority.
+- **scope:** the polish items intentionally dropped from B2c to keep it focused:
+  (1) **lay-term search aliases** — a curated bilingual map (slang/lay term →
+  muscle code(s) / exercise keywords) feeding the browse + picker search, so e.g.
+  "abs"→core or "biceps"→arms surface without exact name/muscle matches;
+  (2) **group-name text search** in the picker; (3) **"add to session/routine"**
+  action from the `/exercises/:id` detail page (currently read-only — adding stays
+  the picker's job inside the runner/editors). The existing muscle filter + bilingual
+  name/muscle search cover the common cases, so these are nice-to-haves, not gaps.
+
+## R-32 — DB-integration test tier / e2e guard for PostgREST select strings
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo — promoted from a session note (decided 2026-05-24) to the
+  roadmap 2026-06-11.
+- **origin:** a planner regression shipped to prod on 2026-05-24: a bad PostgREST
+  `.select(...)` string (selected `meal_times` from `meal_plan_weeks`, which has
+  no such column) broke the planner and nothing caught it. Typecheck is blind —
+  the fetch helpers cast results `as unknown as {…}`, discarding supabase-js's
+  typed-select inference, and postgrest-js's compile-time select parser is
+  unreliable for deep nested embeds anyway. Unit tests are blind — component/hook
+  tests mock Supabase, so the real query never runs. No existing tier exercises
+  real `.select()` strings against the real schema (Tier-3 pgTAP covers
+  schema/RLS/RPC in SQL, not the client's PostgREST queries).
+- **scope:** either or both of:
+  1. An **integration test tier** running the real fetch helpers (e.g.
+     `fetchActiveWeek`) against a local Supabase — the `supabase start` + seed
+     infra already exists for Tier-3 — so bad select strings fail CI
+     deterministically.
+  2. Extend the **agent-browser e2e harness** (seeded QA user) to cover critical
+     flows (planner load + apply template) against a real backend, in the gate.
+- **standing rule until built:** any change to a PostgREST `.select(...)` string
+  must be verified against a real DB / the running app before merge — typecheck +
+  `pnpm test` are not sufficient.
+
+## R-33 — UI redesign: design system + nutrition screens
+- **decision:** (D-ids at impl time: TW4+token architecture, navigation IA,
+  Rubik, tone system + fat floor, heatmap ramp)
+- **blocked-by:** —
+- **status:** **shipped on `develop`** — spec converged 2026-07-02, execution
+  complete 2026-07-15; full spec in
+  `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md`. Promotion to
+  `main` is pending the batch release. All PRs landed: PR-1 Tailwind v4
+  migration (#179) and PR-2 foundation retheme — tokens.css, self-hosted fonts,
+  restyled shadcn primitives, hardcoded-colour sweep, heatmap ramp (#180);
+  wave 0 shell & navigation (#183); the semantic tone core (#184,
+  `src/core/nutritionTone.ts`); and the eight screen waves — Diario (#185/#186),
+  Planificador (#187/#188/#189), Plantillas (#190/#191), Recetas (#192/#193),
+  Ingredientes (#194/#195), Progreso (#199/#200), Objetivos (#201/#202),
+  Ajustes (#203).
+- **scope:** apply the external Claude-design canvas in two layers:
+  1. **Foundation retheme (app-wide, gym included):** Tailwind v4 migration;
+     `tokens.css` oklch token system as the app's source; Rubik + Geist Mono
+     self-hosted; restyled shadcn primitives; hardcoded-palette sweep;
+     `--entreno`→blue (`--gym`); heatmap ramp light→blue.
+  2. **Redesigned nutrition screens:** new shell/navigation ("dos apps en
+     una": two bottom navs + section switch + `/more` hub on mobile,
+     collapsible grouped sidebar + PageHeaderV2 on web), the phase-aware
+     semantic tone core (`src/core/nutritionTone.ts` — the only new logic),
+     and per-feature restyle waves for Diario, Planificador, Plantillas,
+     Recetas, Ingredientes, Progreso, Objetivos, Ajustes/Más (web + mobile).
+  Net-new features drawn in the artboards are **out of scope** → R-35…R-43.
+  Gym screens → **R-34**. Absorbs **R-30** and post-V1 item 4's UI-refactor
+  remainder; **R-29** (onboarding) stays sequenced after it.
+
+## R-34 — Gym screens redesign
+- **decision:** (D-id at spec time)
+- **blocked-by:** gym design convergence (canvas holes: program builder,
+  manual session editor/history detail, most web screens, exercise-filter
+  exploration V1/V2/V3, runner intermediate states)
+- **status:** todo (spawned by R-33 spec, 2026-07-02). The R-33 foundation
+  retheme already reaches gym; this item is the gym *layouts/flows*.
+- **scope:** apply the gym artboards (22 mobile) once the design closes:
+  Hoy hero card, numbered workout editor, runner enhancements (fullscreen
+  rest timer, finish modal, summary), plus artboard extras (tonnage, streaks,
+  free session, %1RM prescriptions, session share) to triage at spec time.
+
+## R-35 — Shopping list from the planned week
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** core **shipped** (#46, well before the R-33 spec). The R-33
+  restyle of the dialog is the only open work.
+- **shipped (#46):** `ShoppingListDialog` (rendered in `PlanificadorPage`) with
+  both consolidated + per-recipe views (`ShoppingView 'total' | 'byRecipe'`),
+  localStorage per-week check-off, text export/share, and manual **extra items**
+  (`appendExtra`/`ExtraItem` in `shoppingExport.ts`) — flat list until ingredient
+  categories exist.
+- **scope (open):** apply the R-33 redesign to the shopping dialog (still the
+  pre-redesign UI — the file was untouched by the R-33 Planificador waves).
+
+## R-36 — Recipe steps & photos
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** partially **shipped** — favorites and prep time landed; structured
+  steps + per-step photos + private notes remain.
+- **shipped:** recipe **favorites** (device-local; `useRecipeFavorites` in
+  `RecetasPage`/`RecetaDetailPage`, pure helpers in
+  `src/features/recipes/favorites.ts`; #32a2df4) and recipe **prep time**
+  (`recipes.prep_time_minutes` column, `save_recipe` `p_prep_time_minutes` arg,
+  validation in `src/features/recipes/schema.ts`; R-33 waves 4/5, #192).
+- **scope (open):** schema for structured/reorderable steps, per-step photos,
+  private notes; editor UI; "Fotos de los pasos" setting; photo-storage
+  decisions.
+
+## R-37 — Interactive TDEE calculator
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** Mifflin-St Jeor + Katch-McArdle with activity multipliers,
+  linked from the phase editor. Derived-only (hard invariant 5).
+
+## R-38 — Progress analytics extras
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** nutrition adherence heatmap calendar, ETA banner + projection
+  (eta.ts/trend.ts data largely exists), energy-balance visual, custom
+  date-range filter.
+
+## R-39 — Measurement extras
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** progress photo attach, measurement streak, smart-scale source
+  toggle (ties to the post-V1 scale integration).
+
+## R-40 — cmd-K command palette
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** navigate-only per the canvas decision.
+
+## R-41 — Planner recipe suggestions by macro fit
+- **decision:** (D-id at spec time)
+- **blocked-by:** R-33 (builds on the V1 add-drawer)
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** the "Añadir receta" drawer V2 — fit-scored suggestions + FitRing.
+
+## R-42 — Per-phase default template
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** pick a default meal-plan template per phase; auto-apply when
+  planning weeks of that phase.
+
+## R-43 — Small verifications & leftovers
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **scope:** ingredient verify **flow**; "comida libre" free entries; per-meal
+  times; notifications bell (ties to the notifications backlog); MealLogEntry
+  per-meal glyph set.
+- **note (R-33 wave 6, 2026-07-12):** `ingredients.is_verified` **already
+  exists** (the R-33 spec's claim that it does not was wrong) and already sorts
+  search results. Wave 6 ships the **read-only badge**. What is still open is the
+  *verify flow*: ingredients are a **shared pool**, so setting `is_verified` on a
+  row you did not create is a global claim about someone else's data, and no RLS
+  policy or RPC governs who may do it. That is a permissions decision, not a UI
+  one — hence deferred here rather than shipped with the badge.
+
+## R-44 — Ingredient category
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (deferred from R-33 wave 6 by Gonzalo, 2026-07-12)
+- **scope:** the design canvas's ingredient editor has a **Categoría** select
+  (Lácteos, …) on both platforms. There is **no `category` column**, no agreed
+  vocabulary, and nothing truthful to backfill onto the ~900 `source='system'`
+  ingredients. Cut from wave 6 deliberately: it needs a taxonomy decision (fixed
+  enum vs lookup table vs free tags), a backfill story, and a filter story on the
+  list — not just a column. Pick it up when the taxonomy question is worth
+  answering.
+
+## R-45 — Ingredient photos
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo (noted during R-33 wave 6 recon, 2026-07-12)
+- **scope:** `ingredients` has **no image column** (unlike `recipes.photo_url`).
+  OpenFoodFacts returns `image_thumb_url`, which the OFF search result list
+  renders transiently and never persists. The canvas's ingredient screens use no
+  photos either, so nothing is missing today — this exists only so the gap is
+  recorded. Rides with recipe photo upload if that ever ships.
 
 ## Feature & UX family index
 
 Cross-reference so the F-/U-/post-V1 families don't need re-deriving from specs.
-Status as of 2026-06-04. (R-xx entries above carry the detail.)
+Status as of 2026-06-11. (R-xx entries above carry the detail.)
 
 | Item | What | R-id / PR | Status |
 |---|---|---|---|
 | Project A | Fine muscle taxonomy | R-26 / #155 | done |
-| Project B | Bulk exercise catalog | R-27 | design approved, not built |
+| Project B | Bulk exercise catalog | R-27 | done |
 | F-1 | Whole-foods bilingual library | #113 | done |
 | F-2 | Training routines + cyclic planner | R-22 / #122 | done |
 | F-2b | Warm-up sets in routines | #128 | done |
 | F-3 | Guided active-workout runner | R-23 / #132–135 | done |
 | F-4 | Muscle activity heatmap | R-24 / #136,#139 | done |
-| F-5 | Micronutrient storage | — | deferred (pairs with F-1) |
+| F-5 | Micronutrient storage | — | removed (2026-06-11 — will not be implemented) |
 | U-1 | Sub-macros (sugar + saturated fat) | #95 | done |
 | U-2 | Recipe meal-type tags | #96 | done |
 | U-3 | Nutrition search filters + warning badges | #97 | done |
@@ -1096,8 +1292,8 @@ Status as of 2026-06-04. (R-xx entries above carry the detail.)
 | U-5 | Day totals vs target | #101 | done |
 | U-6 | Copy a meal across days | #116 | done |
 | U-7 | Nutrition fix batch | #98 | done |
-| U-8 | Desktop visual pass / density | R-30 | partial |
+| U-8 | Desktop visual pass / density | R-30 → R-33 | folded into R-33 |
 | post-V1 item 3 | Nutrición/Entreno section split | #91 | done |
-| post-V1 item 4 | Rich home + diet calendar + TDEE surface | R-28 | todo |
-| post-V1 item 5 | In-app onboarding | R-29 | todo |
-| post-V1 item 6 | Responsive desktop density | R-30 / U-8 | partial |
+| post-V1 item 4 | Rich home + diet calendar + TDEE surface | — | dropped (R-28 removed; UI-refactor remainder → R-33) |
+| post-V1 item 5 | In-app onboarding | R-29 | deferred until after R-33 |
+| post-V1 item 6 | Responsive desktop density | R-30 → R-33 | folded into R-33 |

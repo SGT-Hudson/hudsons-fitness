@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { pickFirstError } from '@/lib/zod';
+import { pickFirstError, type FieldErrors } from '@/lib/zod';
 
 // Co-located zod schema for the template editor form (D-C2/D-C3, R-09).
 // PlantillaEditorPage has no page feature folder; `templates` (api.ts/hooks.ts
@@ -20,6 +20,11 @@ export const templateFormSchema = z
   .object({
     name: z.string(),
     meal_times: z.array(z.string()),
+    // The template's OWN phase tag — not the user's active phase. `null` is a
+    // first-class value ("works for any phase"), never a missing one: the
+    // editor's picker offers it explicitly and `save_template` writes
+    // `p_phase_type` unconditionally, so null clears the tag.
+    phase_type: z.enum(['cut', 'maintenance', 'bulk']).nullable(),
   })
   .superRefine((v, ctx) => {
     if (v.name.trim() === '') {
@@ -36,8 +41,6 @@ export const templateFormSchema = z
 
 export type TemplateFormValues = z.infer<typeof templateFormSchema>;
 
-export function firstTemplateError(
-  errors: Record<string, { message?: string } | undefined>,
-): TemplateErrorCode | null {
+export function firstTemplateError(errors: FieldErrors): TemplateErrorCode | null {
   return pickFirstError(errors, ['name', 'meal_times'], TEMPLATE_ERROR_ORDER);
 }

@@ -1,5 +1,6 @@
 import { it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import i18n from '@/i18n';
 
 // Runner renders ExerciseOverview, which now imports ExerciseInfoButton — pulling
@@ -34,6 +35,21 @@ function state() {
 
 const names = { bench: 'Bench Press' };
 
+function renderRunner(onSave = vi.fn().mockResolvedValue('new-id')) {
+  render(
+    <Runner
+      initialState={state()}
+      names={names}
+      coachContextByExercise={{}}
+      lastTimeByExercise={{ bench: '8 × 80 kg' }}
+      onSave={onSave}
+      onExit={() => {}}
+      onSaved={vi.fn()}
+    />,
+  );
+  return onSave;
+}
+
 it('walks begin → start rest → record → finish → save with correct payload', async () => {
   const onSave = vi.fn().mockResolvedValue('new-id');
   const onSaved = vi.fn();
@@ -62,4 +78,41 @@ it('walks begin → start rest → record → finish → save with correct paylo
   expect(payload.sets).toEqual([
     { exercise_id: 'bench', set_index: 1, reps: 8, weight_kg: 80, rpe: 8, is_warmup: false },
   ]);
+});
+
+// The runner's weight fields are controlled by a NUMBER in the runner state, so
+// they are the ones the decimal-comma fix can regress in two different ways: the
+// browser stripping the comma (`82,5` → 825 kg logged), or — once the field is
+// `type="text"` — the parse-and-echo round-trip eating the comma as it is typed,
+// leaving the user unable to reach a decimal at all. Both are only visible when
+// the keystrokes are driven one at a time and the SAVED payload is asserted, so
+// these use `userEvent` (a `fireEvent.change` would bypass the browser's own
+// sanitisation and pass against the broken code).
+
+it('logs a comma-typed set weight as a decimal, not a 10× load', async () => {
+  const onSave = renderRunner();
+
+  fireEvent.click(screen.getByText('Begin'));
+  fireEvent.click(screen.getByText('Start rest'));       // READY → RESTING (fields editable)
+
+  const weight = screen.getByLabelText('Weight');
+  await userEvent.clear(weight);
+  await userEvent.type(weight, '82,5');
+  expect(weight).toHaveValue('82,5');                    // the comma survives the re-render
+
+  fireEvent.click(screen.getByText('Record set'));
+  fireEvent.click(screen.getByText('Continue'));
+  fireEvent.click(screen.getByText('Save workout'));
+
+  await vi.waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+  expect(onSave.mock.calls[0][0].sets[0].weight_kg).toBe(82.5);
+});
+
+it('leaves reps on the integer spinner — there is no comma to lose there', () => {
+  renderRunner();
+  fireEvent.click(screen.getByText('Begin'));
+  fireEvent.click(screen.getByText('Start rest'));
+
+  expect(screen.getByLabelText('Reps')).toHaveAttribute('type', 'number');
+  expect(screen.getByLabelText('Weight')).toHaveAttribute('type', 'text');
 });

@@ -67,6 +67,7 @@ describe('getProductByBarcode', () => {
       fiberPer100g: 0,
       sugarPer100g: null, // OFF omitted sugars → unknown, not 0
       satFatPer100g: null,
+      saltPer100g: null, // idem for salt
       complete: true, // OFF had an energy value
     });
   });
@@ -99,6 +100,7 @@ describe('getProductByBarcode', () => {
       fiberPer100g: 0,
       sugarPer100g: null,
       satFatPer100g: null,
+      saltPer100g: null,
       complete: false, // no energy value → "fill the gaps" path
     });
   });
@@ -118,7 +120,7 @@ describe('getProductByBarcode', () => {
     await expect(getProductByBarcode('5000112637922')).rejects.toThrow();
   });
 
-  it('maps sugar + saturated fat when OFF provides them', async () => {
+  it('maps sugar + saturated fat + salt when OFF provides them', async () => {
     mockFetch({
       status: 1,
       product: {
@@ -128,12 +130,27 @@ describe('getProductByBarcode', () => {
           'energy-kcal_100g': 480,
           sugars_100g: 28,
           'saturated-fat_100g': 9.5,
+          salt_100g: 0.68,
         },
       },
     });
     const result = await getProductByBarcode('5000112637922');
     expect(result?.sugarPer100g).toBe(28);
     expect(result?.satFatPer100g).toBe(9.5);
+    expect(result?.saltPer100g).toBe(0.68);
+  });
+
+  it('leaves salt null when OFF has the other sub-macros but not salt', async () => {
+    mockFetch({
+      status: 1,
+      product: {
+        code: '5000112637922',
+        product_name: 'Galleta sin sal declarada',
+        nutriments: { 'energy-kcal_100g': 480, sugars_100g: 28 },
+      },
+    });
+    const result = await getProductByBarcode('5000112637922');
+    expect(result?.saltPer100g).toBeNull();
   });
 });
 
@@ -152,5 +169,23 @@ describe('mapOFFNutriments', () => {
     const r = mapOFFNutriments({ sugars_100g: 9.005, 'saturated-fat_100g': 3.001 });
     expect(r.sugarPer100g).toBe(9.01);
     expect(r.satFatPer100g).toBe(3);
+  });
+
+  // R-33 wave 6 — salt joins the U-1 nullable sub-macro contract.
+  it('maps salt when OFF provides it', () => {
+    const r = mapOFFNutriments({ salt_100g: 1.2 });
+    expect(r.saltPer100g).toBe(1.2);
+  });
+  it('returns null (NOT 0) for salt when OFF omits it — a missing value is unknown, not "salt-free"', () => {
+    const r = mapOFFNutriments({ 'energy-kcal_100g': 100, sugars_100g: 9 });
+    expect(r.saltPer100g).toBeNull();
+    expect(r.saltPer100g).not.toBe(0);
+  });
+  it('keeps an explicit 0 salt as 0 (a real claim), not null', () => {
+    const r = mapOFFNutriments({ salt_100g: 0 });
+    expect(r.saltPer100g).toBe(0);
+  });
+  it('rounds salt to 2 decimals', () => {
+    expect(mapOFFNutriments({ salt_100g: 1.2345 }).saltPer100g).toBe(1.23);
   });
 });

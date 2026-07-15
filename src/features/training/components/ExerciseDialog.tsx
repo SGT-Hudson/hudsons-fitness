@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NumberField } from '@/components/ui/NumberField';
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { parseDecimalInput } from '@/lib/number';
 import {
   EQUIPMENT_VALUES,
   suggestIncrementForEquipment,
@@ -51,8 +53,13 @@ const formSchema = z.object({
       // DB CHECK: `default_increment_kg is null or default_increment_kg > 0`,
       // so 0 / negatives / non-numeric all collapse to null (bodyweight
       // exercises use null per the system seed pattern).
-      const n = Number(v.replace(',', '.'));
-      return Number.isFinite(n) && n > 0 ? n : null;
+      //
+      // This field was the app's ONLY comma-aware input — a one-off
+      // `Number(v.replace(',', '.'))` that only ever replaced the first comma.
+      // Its behaviour is what `parseDecimalInput` generalises, so it now calls
+      // the shared boundary instead of being a special case.
+      const n = parseDecimalInput(v);
+      return n !== null && n > 0 ? n : null;
     }),
 });
 
@@ -215,9 +222,8 @@ export function ExerciseDialog({ open, onOpenChange, defaultName, onCreated }: P
 
           <div className="space-y-1.5">
             <Label htmlFor="ex-increment">{t('exerciseDialog.fields.defaultIncrementKg')}</Label>
-            <Input
+            <NumberField
               id="ex-increment"
-              inputMode="decimal"
               {...register('default_increment_kg')}
               value={incrementValue}
               onChange={(e) => {

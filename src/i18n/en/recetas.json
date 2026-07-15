@@ -1,43 +1,108 @@
 {
   "pageTitle": "Recipes",
+  "subtitle": "Your library",
   "newRecipe": "New recipe",
   "searchPlaceholder": "Search recipe…",
-  "view": {
-    "grid": "Grid view",
-    "list": "List view"
-  },
   "favorite": {
     "add": "Mark as favorite",
     "remove": "Remove from favorites"
   },
+  "media": {
+    "placeholderAlt": "Recipe without a photo"
+  },
   "list": {
-    "empty": "You haven't created any recipes yet. Click \"New recipe\" to get started.",
-    "noMatch": "No recipes match your search.",
-    "servings_one": "{{count}} serving",
-    "servings_other": "{{count}} servings",
     "ingredients_one": "{{count}} ingredient",
     "ingredients_other": "{{count}} ingredients",
-    "updated": "Updated {{date}}",
     "removeFromLibrary": "Remove from my library",
     "removeConfirm": "Remove recipe \"{{name}}\" from your library? If you created it, it will no longer be editable (it becomes anonymized in the shared library). Your meal history is preserved."
+  },
+  "detail": {
+    "loading": "Loading…",
+    "servings_one": "{{count}} serving",
+    "servings_other": "{{count}} servings",
+    "forServings_one": "for {{count}} serving",
+    "forServings_other": "for {{count}} servings",
+    "minutes": "{{count}} min",
+    "kcalUnit": "kcal",
+    "stats": {
+      "servings": "Servings",
+      "time": "Time",
+      "kcalPerServing": "Kcal / serving",
+      "kcalPerServingShort": "Kcal/s",
+      "ingredients": "Ingredients",
+      "ingredientsShort": "Ingr."
+    },
+    "macrosTitle": "Macros",
+    "distribution": "Calorie split",
+    "ingredientsTitle": "Ingredients",
+    "perServingChip": "per serving",
+    "instructionsTitle": "Preparation",
+    "favorite": "Favorite",
+    "addToDay": "Add to day",
+    "edit": "Edit recipe",
+    "editShort": "Edit",
+    "notFoundTitle": "Recipe not found",
+    "notFoundHint": "It may no longer exist, or you removed it from your library.",
+    "backToList": "Back to Recipes"
   },
   "editor": {
     "newTitle": "New recipe",
     "editTitle": "Edit recipe",
+    "newSubtitle": "Create a recipe for your library",
     "loading": "Loading…",
-    "sharedLibraryHint": "This recipe will be contributed to the shared library. Private info (notes, reminders) belongs in the recipe's note in your library, not in the name or description."
+    "sharedLibraryHint": "This recipe will be contributed to the shared library. Private info (notes, reminders) belongs in the recipe's note in your library, not in the name or description.",
+    "remove": "Remove recipe",
+    "removeTitle": "Remove this recipe from your library?",
+    "removeConsequences": "If you created it, it will no longer be editable (it becomes anonymized in the shared library). Your meal history is preserved.",
+    "removing": "Removing…"
   },
   "form": {
     "name": "Name",
+    "namePlaceholder": "Recipe name",
     "servings": "Servings",
     "description": "Description",
+    "descriptionPlaceholder": "Short description (optional)",
+    "prepTime": "Time",
+    "prepTimePlaceholder": "— min",
     "instructions": "Instructions",
+    "instructionsPlaceholder": "Describe the preparation: steps, timings, tips…",
     "ingredients": "Ingredients",
     "addRow": "Add ingredient",
+    "addRowSearch": "Search for an ingredient to add it…",
     "quantity": "Quantity",
-    "perServing": "Per serving",
+    "quantityOf": "Quantity of {{name}}",
     "units": "units",
-    "mealTypes": "Meal types"
+    "tag": "Tag",
+    "colIngredient": "Ingredient",
+    "colQuantity": "Quantity",
+    "colType": "Type",
+    "typePerServing": "per serving",
+    "typeTotal": "in total",
+    "typePerServingShort": "serving",
+    "typeTotalShort": "total",
+    "typeHint": "“In total” splits the amount across the servings; “per serving” counts it in full in each one.",
+    "removeRow": "Remove",
+    "removeRowLabel": "Remove {{name}} from the recipe",
+    "removeRowConfirm": "Remove “{{name}}”?",
+    "emptyTitle": "No ingredients yet",
+    "emptyHint": "Search your ingredient base to start adding up macros."
+  },
+  "addSheet": {
+    "title": "Add ingredient",
+    "toRecipe": "to “{{name}}”",
+    "searchPlaceholder": "Search your base…",
+    "resultsLabel": "Results in your base",
+    "prompt": "Search your ingredient base to add a food to the recipe.",
+    "grams": "grams",
+    "units": "units",
+    "per100g": "100 g",
+    "perUnit": "unit",
+    "choose": "Choose {{name}}",
+    "decreaseQty": "Decrease the quantity",
+    "increaseQty": "Increase the quantity",
+    "add": "Add to the recipe",
+    "notFoundTitle": "Can't find what you're looking for?",
+    "create": "Create a new ingredient"
   },
   "mealTypes": {
     "breakfast": "Breakfast",
@@ -47,7 +112,9 @@
     "dessert": "Dessert"
   },
   "filters": {
-    "heading": "Nutrition",
+    "all": "All ({{count}})",
+    "favorites": "Favorites ({{count}})",
+    "groupLabel": "Filters",
     "highProtein": "High protein",
     "lowCarb": "Low carb",
     "lowFat": "Low fat",
@@ -60,18 +127,19 @@
     "highSatFat": "High saturated fat"
   },
   "macros": {
-    "title": "Macros",
-    "label": "Macros",
+    "liveTitle": "Live macros",
+    "emptyHint": "Macros will add up as you add ingredients.",
     "total": "Totals",
     "perServing": "Per serving",
-    "kcal": "Calories",
-    "protein": "Protein",
-    "carbs": "Carbs",
-    "fat": "Fat",
-    "fiber": "Fiber"
+    "letter": {
+      "protein": "P",
+      "carbs": "C",
+      "fat": "F"
+    }
   },
   "actions": {
-    "duplicate": "Duplicate"
+    "duplicate": "Duplicate",
+    "duplicateName": "{{name}} (copy)"
   },
   "autocomplete": {
     "placeholder": "Search ingredient…",
@@ -82,9 +150,28 @@
   },
   "errors": {
     "nameRequired": "Give your recipe a name.",
-    "servingsInvalid": "Servings must be greater than 0.",
+    "servingsInvalid": "Servings must be at least 0.5.",
+    "prepTimeInvalid": "Prep time must be a whole number of minutes greater than 0.",
+    "prepTimeTooLarge": "Prep time cannot exceed 24 h (1440 min).",
     "noIngredients": "Add at least one ingredient.",
     "rowMissingIngredient": "Some rows have no ingredient selected.",
     "rowInvalidQuantity": "Some rows have an invalid or empty quantity."
+  },
+  "sort": {
+    "label": "Sort by:",
+    "recent": "recent"
+  },
+  "card": {
+    "kcalPerServing": "kcal / serving",
+    "ingredientsShort": "{{count}} ingr.",
+    "readMore": "Read more",
+    "addToDiary": "add to diary",
+    "menu": "Recipe actions"
+  },
+  "empty": {
+    "title": "No recipes yet",
+    "hint": "Create your first recipe and it will show up here.",
+    "noMatchTitle": "No results",
+    "noMatchHint": "Try removing a filter or changing your search."
   }
 }

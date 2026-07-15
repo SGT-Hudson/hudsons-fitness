@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { addDays } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -10,10 +11,8 @@ import { useLatestTdee, useTdeeState } from '@/features/tdee/hooks';
 import { computeGoalEta } from '../eta';
 import type { BodyMeasurement, SmoothedMeasurement } from '../api';
 import {
-  compositionDelta,
   deltaTone,
   smoothedRatePerWeek,
-  type DeltaMetric,
   type DeltaTone,
   type PhaseType,
 } from '../trend';
@@ -25,15 +24,16 @@ interface Props {
   onLogToday: () => void;
   onEditToday: () => void;
   smoothed: SmoothedMeasurement[];
-  recent: BodyMeasurement[];
   phaseType?: PhaseType;
   targetBodyFatPct?: number;
 }
 
-const TONE_CLASS: Record<DeltaTone, string> = {
-  good: 'text-emerald-600 dark:text-emerald-400',
-  bad: 'text-destructive',
-  neutral: 'text-muted-foreground',
+// Phase-toned rate chip. `deltaTone` decides good/bad *for the active phase*
+// (losing in a cut is good, in a bulk it is not) — this map only paints it.
+const RATE_TONE_CLASS: Record<DeltaTone, string> = {
+  good: 'bg-accent-soft text-accent-ink border-accent-line',
+  bad: 'bg-danger-soft text-danger-ink border-danger-line',
+  neutral: '',
 };
 
 function fmt(n: number, digits = 1): string {
@@ -47,38 +47,6 @@ function signed(n: number, digits = 1): string {
   return `· ${v}`;
 }
 
-function CompStat({
-  label,
-  value,
-  delta,
-  metric,
-  phaseType,
-}: {
-  label: string;
-  value: number | null;
-  delta: number | null;
-  metric: DeltaMetric;
-  phaseType?: PhaseType;
-}) {
-  if (value === null) return null;
-  const tone =
-    delta == null ? 'neutral' : deltaTone(metric, Math.sign(delta), phaseType);
-  return (
-    <div className="space-y-0.5">
-      <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className="text-lg font-semibold tabular-nums">
-        {value}
-        <span className="text-sm font-normal text-muted-foreground ml-1">%</span>
-      </div>
-      {delta != null && (
-        <div className={cn('text-[11px] font-semibold tabular-nums', TONE_CLASS[tone])}>
-          {signed(delta)}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function LatestMeasurementCard({
   latest,
   todayEntry,
@@ -86,7 +54,6 @@ export function LatestMeasurementCard({
   onLogToday,
   onEditToday,
   smoothed,
-  recent,
   phaseType,
   targetBodyFatPct,
 }: Props) {
@@ -170,6 +137,17 @@ export function LatestMeasurementCard({
   const toGoal =
     targetWeight != null && latestMa5 != null ? latestMa5 - targetWeight : null;
 
+  // "Camino de la fase": how far the trend weight has travelled from the phase's
+  // starting weight to its target. A plain fraction of two already-derived
+  // numbers — direction-agnostic, so it reads the same in a cut and in a bulk.
+  const pathPct =
+    initial != null && targetWeight != null && latestMa5 != null && targetWeight !== initial
+      ? Math.max(
+          0,
+          Math.min(100, Math.round(((latestMa5 - initial) / (targetWeight - initial)) * 100)),
+        )
+      : null;
+
   // Goal-date ETA from the adaptive filter's own dynamics (chosen 2026-05-19:
   // the Kalman trend-weight rate). Anchored at the filter's de-noised trend
   // weight; rate = (avgIntake − expenditure)/7700. Purely derived, never
@@ -202,134 +180,145 @@ export function LatestMeasurementCard({
     }
   }
 
-  function compPoints(field: 'body_fat_pct' | 'muscle_pct' | 'water_pct') {
-    return [...recent]
-      .filter((m) => m.measured_on)
-      .sort((a, b) => (a.measured_on as string).localeCompare(b.measured_on as string))
-      .map((m) => ({ measuredOn: m.measured_on as string, value: m[field] }));
-  }
-  const bfDelta = compositionDelta(compPoints('body_fat_pct'));
-  const muscleDelta = compositionDelta(compPoints('muscle_pct'));
-  const waterDelta = compositionDelta(compPoints('water_pct'));
-
   const sinceStartStr =
     sinceStart == null
       ? null
       : `${sinceStart >= 0 ? '+' : '-'}${fmt(Math.abs(sinceStart))}`;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-        <div>
-          <CardTitle>{t('latest.title')}</CardTitle>
-          <CardDescription>
-            {isToday
-              ? t('latest.measuredToday')
-              : t('latest.measuredOn', {
-                  date: formatDate(latest.measured_on, 'd MMM yyyy', locale),
-                })}
-          </CardDescription>
+    <Card className="p-4 md:p-5">
+      <div className="flex items-center gap-2">
+        <span className="text-cap-label">{t('latest.weightTrendLabel')}</span>
+        <div className="ml-auto flex items-center gap-2">
+          {rate != null && (
+            /* `whitespace-nowrap`: at 390px the chip otherwise wraps into
+               "2,8 kg /" + "sem" and squeezes the row. */
+            <Badge
+              variant="secondary"
+              className={cn('whitespace-nowrap tabular-nums', RATE_TONE_CLASS[rateTone])}
+            >
+              {signed(rate)} {t('latest.rateUnit')}
+            </Badge>
+          )}
+          {/* Mobile-only: `PageHeaderV2`'s "Nueva medición" action is CSS-hidden
+              below md, so this is the phone's affordance for the same flow. On
+              desktop both would show and the header owns it (the artboard has no
+              button in the hero). */}
+          {isToday ? (
+            <Button variant="outline" size="sm" className="md:hidden" onClick={onEditToday}>
+              {t('latest.editToday')}
+            </Button>
+          ) : (
+            <Button size="sm" className="md:hidden" onClick={onLogToday}>
+              {t('latest.logToday')}
+            </Button>
+          )}
         </div>
-        {isToday ? (
-          <Button variant="outline" size="sm" onClick={onEditToday}>
-            {t('latest.editToday')}
-          </Button>
-        ) : (
-          <Button size="sm" onClick={onLogToday}>
-            {t('latest.logToday')}
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {!isToday && (
-          <div
-            role="status"
-            className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-200"
-          >
-            {t('latest.stale.prefix')} {staleLabel} · {t('latest.stale.usingValues')}
-          </div>
-        )}
+      </div>
 
-        {/* Weight headline (smoothed) */}
-        <div>
-          <div className="text-xs text-muted-foreground uppercase tracking-wide">
-            {t('latest.weightTrendLabel')}
-          </div>
-          <div className="flex items-baseline gap-3 mt-1">
-            <span className="text-3xl font-bold tabular-nums leading-none">
-              {latestMa5 != null ? fmt(latestMa5) : latest.weight_kg}
+      {!isToday && (
+        <div
+          role="status"
+          className="mt-3 rounded-md border border-transparent bg-amber-soft px-3 py-2 text-sm text-amber-ink"
+        >
+          {t('latest.stale.prefix')} {staleLabel} · {t('latest.stale.usingValues')}
+        </div>
+      )}
+
+      {/* MA5 weight headline — the DB view's `weight_kg_5day_avg`, never a JS average. */}
+      <div className="mt-2 flex items-baseline gap-1.5">
+        <span
+          data-testid="weight-headline"
+          className="text-[33px] font-semibold leading-none tracking-[-0.03em] tabular-nums md:text-[44px]"
+        >
+          {latestMa5 != null ? fmt(latestMa5) : latest.weight_kg}
+        </span>
+        <span className="text-xs text-text-dim md:text-[15px]">kg</span>
+      </div>
+
+      {(sinceStartStr != null || toGoal != null) && (
+        <div className="mt-1.5 text-[11px] text-muted-foreground tabular-nums">
+          {sinceStartStr != null && t('latest.sinceStart', { n: sinceStartStr })}
+          {sinceStartStr != null && toGoal != null && ' · '}
+          {toGoal != null &&
+            t('latest.toGoal', {
+              n: fmt(Math.abs(toGoal)),
+              target: targetWeight != null ? fmt(targetWeight) : '',
+            })}
+        </div>
+      )}
+
+      {etaText != null && (
+        <div className="mt-1 text-[11px] text-muted-foreground tabular-nums">{etaText}</div>
+      )}
+
+      {/* Camino de la fase — plain bar, no draggable knob (the P0 artboard dropped it). */}
+      {pathPct != null && (
+        <div className="mt-3 border-t pt-3">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-cap-label">{t('latest.path.title')}</span>
+            <span className="ml-auto text-[15px] font-semibold tracking-[-0.02em] tabular-nums">
+              {pathPct} %
             </span>
-            <span className="text-sm text-muted-foreground">kg</span>
-            {rate != null && (
-              <span
-                className={cn('text-sm font-semibold tabular-nums', TONE_CLASS[rateTone])}
-              >
-                {signed(rate)} {t('latest.rateUnit')}
-              </span>
-            )}
+            <span className="text-[10.5px] text-muted-foreground">
+              {t('latest.path.traveled')}
+            </span>
           </div>
-          {(sinceStartStr != null || toGoal != null) && (
-            <div className="text-[11px] text-muted-foreground mt-1 tabular-nums">
-              {sinceStartStr != null && t('latest.sinceStart', { n: sinceStartStr })}
-              {sinceStartStr != null && toGoal != null && ' · '}
-              {toGoal != null &&
-                t('latest.toGoal', {
-                  n: fmt(Math.abs(toGoal)),
-                  target: targetWeight != null ? fmt(targetWeight) : '',
-                })}
-            </div>
-          )}
-          {etaText != null && (
-            <div className="text-[11px] text-muted-foreground mt-1 tabular-nums">
-              {etaText}
-            </div>
-          )}
+          <div
+            className="mt-2 h-2 w-full overflow-hidden rounded-full border bg-muted"
+            role="progressbar"
+            aria-valuenow={pathPct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={t('latest.path.title')}
+          >
+            <div
+              data-testid="phase-path-fill"
+              className="h-full rounded-full bg-accent"
+              style={{ width: `${pathPct}%` }}
+            />
+          </div>
+          <div className="mt-2 flex justify-between text-[10px] text-text-dim tabular-nums">
+            <span>
+              <b className="text-foreground">{fmt(initial as number)}</b>{' '}
+              {t('latest.path.start')}
+            </span>
+            <span className="text-accent-ink">
+              <b>{fmt(latestMa5 as number)}</b> {t('latest.path.today')}
+            </span>
+            <span>
+              <b className="text-foreground">{fmt(targetWeight as number)}</b>{' '}
+              {t('latest.path.goal')}
+            </span>
+          </div>
         </div>
+      )}
 
-        {/* BMR — quiet, derived, no delta (T1b) */}
-        {bmr !== null && (
-          <>
-            <div className="flex items-baseline justify-between border-t pt-3 text-sm">
-              <span className="text-muted-foreground">{t('fields.estimatedBmr')}</span>
-              <span className="font-semibold tabular-nums">{Math.round(bmr)} kcal</span>
-            </div>
-            <p className="text-[11px] text-muted-foreground -mt-2">
-              {t('fields.estimatedBmrHelp')}
-            </p>
-          </>
-        )}
-
-        {/* Composition 3-up with phase-aware deltas */}
-        <div className="grid grid-cols-3 gap-4 border-t pt-4">
-          <CompStat
-            label={t('fields.bodyFatPct')}
-            value={latest.body_fat_pct}
-            delta={bfDelta}
-            metric="bodyFat"
-            phaseType={phaseType}
-          />
-          <CompStat
-            label={t('fields.musclePct')}
-            value={latest.muscle_pct}
-            delta={muscleDelta}
-            metric="muscle"
-            phaseType={phaseType}
-          />
-          <CompStat
-            label={t('fields.waterPct')}
-            value={latest.water_pct}
-            delta={waterDelta}
-            metric="water"
-            phaseType={phaseType}
-          />
-        </div>
-
-        {latest.notes && (
-          <p className="text-sm text-muted-foreground border-l-2 border-muted pl-3">
-            {latest.notes}
+      {/* BMR — quiet, derived, no delta (T1b) */}
+      {bmr !== null && (
+        <div className="mt-3 border-t pt-3">
+          <div className="flex items-baseline justify-between text-sm">
+            <span className="text-muted-foreground">{t('fields.estimatedBmr')}</span>
+            <span className="font-semibold tabular-nums">{Math.round(bmr)} kcal</span>
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {t('fields.estimatedBmrHelp')}
           </p>
+        </div>
+      )}
+
+      <div className="mt-3 flex items-center gap-2 border-t pt-3 text-[11px] text-muted-foreground">
+        <span className="shrink-0">
+          {isToday
+            ? t('latest.measuredToday')
+            : t('latest.measuredOn', {
+                date: formatDate(latest.measured_on, 'd MMM yyyy', locale),
+              })}
+        </span>
+        {latest.notes && (
+          <span className="min-w-0 flex-1 truncate text-text-dim">«{latest.notes}»</span>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 }

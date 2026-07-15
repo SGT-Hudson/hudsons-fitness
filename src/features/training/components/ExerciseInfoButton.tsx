@@ -3,9 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
-import { useMediaQuery } from '@/hooks/use-media-query';
+import { ResponsiveDialog } from '@/components/ui/ResponsiveDialog';
 import { useExercise } from '../exercises/hooks';
 import { ExerciseDetail } from './ExerciseDetail';
 import type { Exercise } from '../exercises/api';
@@ -28,7 +26,6 @@ interface Props {
 export function ExerciseInfoButton({ exercise, exerciseId }: Props) {
   const { t } = useTranslation('entrenamiento');
   const [open, setOpen] = useState(false);
-  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const query = useExercise(exerciseId, { enabled: open && !exercise && !!exerciseId });
   const resolved = exercise ?? query.data;
@@ -45,7 +42,7 @@ export function ExerciseInfoButton({ exercise, exerciseId }: Props) {
   ) : (
     <div role="status" className="space-y-3">
       <Skeleton className="h-6 w-2/3" />
-      <Skeleton className="aspect-[4/3] w-full" />
+      <Skeleton className="aspect-4/3 w-full" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-5/6" />
     </div>
@@ -72,21 +69,14 @@ export function ExerciseInfoButton({ exercise, exerciseId }: Props) {
   return (
     <>
       {trigger}
-      {isDesktop ? (
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogTitle className="sr-only">{t('exerciseDetail.title')}</DialogTitle>
-            {body}
-          </DialogContent>
-        </Dialog>
-      ) : (
-        <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="max-h-[85vh] overflow-y-auto p-4">
-            <DrawerTitle className="sr-only">{t('exerciseDetail.title')}</DrawerTitle>
-            {body}
-          </DrawerContent>
-        </Drawer>
-      )}
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={t('exerciseDetail.title')}
+        variant="centered"
+      >
+        {body}
+      </ResponsiveDialog>
     </>
   );
 }

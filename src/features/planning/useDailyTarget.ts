@@ -4,12 +4,14 @@ import { useLatestMeasurement } from '@/features/measurements/hooks';
 import { useLatestTdee } from '@/features/tdee/hooks';
 import { computePhaseTargets } from '@/features/phases/targets';
 import type { Macros } from '@/features/recipes/macros';
-import type { PhaseType, ProteinBasis } from '@/lib/macroStatus';
+import type { PhaseType } from '@/core/nutritionTone';
+import type { ProteinBasis } from '@/lib/macros';
 
 export interface DailyTarget {
   targets?: Macros;
   phaseType?: PhaseType;
   proteinBasis: ProteinBasis;
+  weightKg?: number;
 }
 
 /** The user's current daily macro target (phase + latest weight), shared by
@@ -35,5 +37,6 @@ export function useDailyTarget(): DailyTarget {
     targets,
     phaseType: activePhase.data?.phase_type as PhaseType | undefined,
     proteinBasis: latestMeasurement.data?.body_fat_pct != null ? 'lean' : 'fallback',
+    weightKg: latestMeasurement.data?.weight_kg ?? undefined,
   };
 }

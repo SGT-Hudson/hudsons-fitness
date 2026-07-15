@@ -40,6 +40,47 @@
       "fixed_g": "Fixed (g/day)",
       "per_1000_kcal": "Per 1000 kcal"
     },
+    "hero": {
+      "activeLabel": "Active phase",
+      "weekOf": "week {{n}} of {{total}}",
+      "weekN": "week {{n}}",
+      "weeksLeft": "{{n}} wk left",
+      "elapsed": "Phase progress",
+      "dailyTargets": "Daily targets",
+      "kcalPerDay": "kcal / day",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "fiber": "Fiber",
+      "basisLean": "Basis: lean mass · {{n}} g/kg",
+      "basisFallback": "Basis: bodyweight · 1.6 g/kg — add a body-fat % for a phase-tuned target",
+      "needsWeight": "Log a weight to see this phase's daily targets.",
+      "needsTdee": "This phase is defined as a delta on TDEE and there is no TDEE estimate yet, so its targets can't be computed."
+    },
+    "scheduled": {
+      "label": "Scheduled",
+      "subtitle": "Upcoming phases",
+      "count_one": "{{count}} phase",
+      "count_other": "{{count}} phases"
+    },
+    "history": {
+      "title": "Phase history",
+      "phases_one": "{{count}} phase",
+      "phases_other": "{{count}} phases",
+      "months_one": "{{count}} month",
+      "months_other": "{{count}} months",
+      "seeAll": "See all"
+    },
+    "row": {
+      "kcalPerDay": "kcal / day",
+      "proteinPrefix": "protein",
+      "proteinUnit": "g/kg",
+      "status": {
+        "active": "active",
+        "upcoming": "scheduled",
+        "past": "history"
+      }
+    },
     "summary": {
       "protein": "protein",
       "proteinBasisLean": "× lean mass",
@@ -53,6 +94,12 @@
       "editTitle": "Edit phase",
       "notesOnlyTitle": "Edit phase notes",
       "notesOnlyHint": "This phase is closed. All other fields are read-only; you can only update the notes.",
+      "sections": {
+        "identity": "Identity",
+        "dates": "Dates",
+        "targets": "Targets",
+        "notes": "Notes"
+      },
       "name": "Name",
       "namePlaceholder": "e.g. Summer cut 2025",
       "type": "Type",
@@ -78,7 +125,17 @@
         "protein": "Protein must be greater than 0.",
         "fat": "Fat must be between 10 and 60.",
         "fiberValue": "Value must be greater than 0.",
-        "dateRange": "End date must be after start date."
+        "dateRange": "End date must be after start date.",
+        "overlap": "This phase overlaps another one. Adjust the dates (two phases cannot share even a single day)."
+      }
+    },
+    "preview": {
+      "title": "preview",
+      "incomplete": "Fill in kcal, protein, fat and fiber to see the daily targets.",
+      "letter": {
+        "protein": "P",
+        "carbs": "C",
+        "fat": "F"
       }
     }
   }

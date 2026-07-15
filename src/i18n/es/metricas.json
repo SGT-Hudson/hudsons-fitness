@@ -1,5 +1,7 @@
 {
   "pageTitle": "Progreso",
+  "subtitle": "Cuerpo y composición",
+  "newMeasurement": "Nueva medición",
   "fields": {
     "date": "Fecha",
     "weightKg": "Peso (kg)",
@@ -26,7 +28,7 @@
       "daysAgo": "hace {{count}} días",
       "usingValues": "se usa el último valor registrado"
     },
-    "weightTrendLabel": "Peso · tendencia (media 5d)",
+    "weightTrendLabel": "Peso · tendencia MA5",
     "rateUnit": "kg / sem",
     "sinceStart": "{{n}} kg desde el inicio",
     "toGoal": "faltan {{n}} kg al objetivo ({{target}})",
@@ -34,7 +36,23 @@
       "onTrack": "≈ {{date}} a este ritmo",
       "stalled": "A este ritmo no avanzas hacia el objetivo",
       "wrongDirection": "Te estás alejando del objetivo a este ritmo"
+    },
+    "path": {
+      "title": "Objetivo",
+      "traveled": "recorrido",
+      "start": "inicio",
+      "today": "hoy",
+      "goal": "objetivo"
     }
+  },
+  "composition": {
+    "title": "Composición",
+    "expand": "Ver la gráfica de composición",
+    "fat": "Grasa",
+    "muscle": "Músculo",
+    "water": "Agua",
+    "deltaWindow": "{{days}} d",
+    "empty": "Registra grasa, músculo o agua para ver tu composición."
   },
   "list": {
     "title": "Mediciones recientes",
@@ -42,11 +60,24 @@
     "actions": "Acciones",
     "deleteConfirm": "¿Borrar esta medición? No se puede deshacer."
   },
+  "history": {
+    "title": "Historial de mediciones",
+    "open": "Historial",
+    "count_one": "{{count}} medición",
+    "count_other": "{{count}} mediciones",
+    "firstEver": "Inicio del registro · {{date}} · {{weight}}",
+    "emptyTitle": "Sin mediciones",
+    "emptyHint": "Aún no hay mediciones en este rango. Registra una para empezar tu historial."
+  },
   "dialog": {
     "newTitle": "Nueva medición",
     "editTitle": "Editar medición",
     "subtitle": "Solo el peso es obligatorio.",
-    "prefillHint": "Pre-rellenado con tu última medición. Edita lo que cambie."
+    "prefillHint": "Pre-rellenado con tu última medición. Edita lo que cambie.",
+    "weightLabel": "Peso",
+    "sinceLast": "{{delta}} kg desde la última · {{date}}",
+    "optional": "opcional",
+    "notePlaceholder": "En ayunas, después del baño… (lo más constante posible)"
   },
   "errors": {
     "weightRequired": "El peso es obligatorio.",
@@ -54,29 +85,37 @@
   },
   "charts": {
     "empty": "Aún no hay datos suficientes para mostrar la gráfica.",
+    "expand": "Ampliar gráfica",
+    "close": "Cerrar",
     "range": {
       "label": "Rango temporal",
-      "30d": "30d",
-      "90d": "90d",
-      "1y": "1a",
+      "1m": "1M",
+      "6m": "6M",
+      "1y": "1A",
       "all": "Todo"
     },
     "weight": {
       "title": "Tendencia de peso",
       "raw": "Peso diario",
       "ma5": "Media móvil 5 días",
-      "targetLine": "objetivo {{n}} kg"
+      "targetLine": "objetivo {{n}} kg",
+      "sheetTitle": "Peso · evolución",
+      "sheetSubtitle": "Media móvil 5 días · {{range}}"
     },
     "composition": {
       "title": "Composición corporal",
       "bodyFat": "% grasa",
       "muscle": "% músculo",
       "water": "% agua",
-      "fat": "Grasa",
-      "lean": "Magra",
+      "sheetSubtitle": "Grasa · músculo · agua · {{range}}",
       "empty": "Registra grasa, músculo o agua para ver esta gráfica.",
-      "help": "Grasa + magra suman exactamente el 100 %. Valores interpolados linealmente entre mediciones con datos.",
+      "help": "Series independientes (no apiladas): el agua se distribuye dentro del tejido magro, así que grasa, músculo y agua no son particiones disjuntas. Valores interpolados linealmente entre mediciones con datos.",
       "helpKg": "Descomposición en kg a partir del peso registrado. Solo informativo: no alimenta proteína ni TDEE.",
+      "series": {
+        "fat": "Grasa",
+        "muscle": "Músculo",
+        "water": "Agua"
+      },
       "unit": {
         "label": "Unidad",
         "pct": "%",
@@ -84,8 +123,8 @@
       },
       "trends": {
         "title": "Tendencias independientes",
-        "help": "Series independientes (no apiladas): el agua se distribuye dentro del tejido magro, así que grasa/músculo/agua no son particiones disjuntas.",
-        "bodyFat": "Tendencia de grasa",
+        "help": "Cada serie por separado, con su propia escala.",
+        "fat": "Tendencia de grasa",
         "muscle": "Tendencia de músculo",
         "water": "Tendencia de agua"
       }

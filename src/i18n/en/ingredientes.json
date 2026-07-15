@@ -1,72 +1,179 @@
 {
   "pageTitle": "Ingredients",
+  "subtitle": "Shared library",
+  "barcodeAction": "Barcode",
   "description": "Shared library. What you add becomes available to all users. You can only edit what you created; \"remove\" sends it to the anonymized library.",
   "createNoteHint": "This will be contributed to the shared library. Private info (your typical quantity, reminders) belongs in the ingredient's note in your library, not in the name.",
   "newIngredient": "New ingredient",
   "searchPlaceholder": "Search by name or brand…",
-  "tabs": {
-    "off": "Search (OpenFoodFacts)",
-    "manual": "Manual",
-    "barcode": "Barcode"
-  },
   "barcode": {
-    "startScan": "Scan with camera",
-    "aimHint": "Aim at the barcode inside the box.",
-    "cameraError": "Couldn't access the camera. Type the code below.",
     "manualLabel": "Barcode (EAN/UPC)",
     "lookup": "Look up",
-    "looking": "Looking up…",
-    "notFound": "Not in OpenFoodFacts — switch to Manual to enter it by hand.",
-    "bannerNew": "Not in Open Food Facts. Enter its details manually.",
-    "bannerComplete": "Some values are missing. Fill them in to complete it.",
-    "bannerFound": "Product found — review and save."
+    "looking": "Looking up…"
   },
   "dialog": {
     "createTitle": "New ingredient",
-    "createSubtitle": "Search OpenFoodFacts or enter macros manually.",
-    "editTitle": "Edit ingredient",
-    "editSubtitle": "Changes affect the shared library."
+    "createSubtitle": "Enter its macros. On save it joins the shared library and is selected here."
   },
   "off": {
     "searchPlaceholder": "e.g. greek yogurt",
     "minChars": "Type at least 3 characters to search.",
-    "noResults": "No results.",
-    "adjustHint": "Review and adjust macros if needed before saving."
+    "noResults": "No results."
   },
   "form": {
     "name": "Name",
     "brand": "Brand",
-    "unitType": "Unit",
-    "unitGram": "Grams (macros per 100 g)",
-    "unitUnit": "Unit (macros per unit)",
-    "macrosLabel": "Macros {{suffix}}",
     "perUnit": "per unit",
     "per100g": "per 100 g",
-    "kcal": "Kcal",
-    "protein": "Protein (g)",
-    "carbs": "Carbs (g)",
-    "fat": "Fat (g)",
-    "fiber": "Fiber (g)",
-    "sugar": "of which sugars (g)",
-    "satFat": "of which saturated (g)",
     "subMacroWarning": "Sugar can't exceed total carbs, nor saturated exceed total fat — check the value."
   },
+  "method": {
+    "subtitle": "How do you want to add it?",
+    "intro": "Pick whichever method suits you. Either way, you can review and adjust the macros before saving.",
+    "manualTitle": "Add manually",
+    "manualHint": "Type the name and the macros per 100 g. Ideal for unpackaged or unlabelled food.",
+    "offTitle": "Search OpenFoodFacts",
+    "offHint": "Search the open database by name or brand and we fill in the macros for you.",
+    "offBack": "Back to the methods",
+    "scanTitle": "Scan a barcode",
+    "scanHint": "Point the camera at it and we look the product up on OpenFoodFacts.",
+    "scanOpen": "Open the camera",
+    "eanTitle": "Barcode",
+    "eanHint": "Type the product's EAN and we look it up on OpenFoodFacts.",
+    "cameraTitle": "Scanning with the camera",
+    "cameraDesktopOnly": "is only available on mobile. On desktop, type the code by hand."
+  },
+  "editor": {
+    "newTitle": "New ingredient",
+    "newSubtitle": "It will be added to the shared library",
+    "editTitle": "Edit ingredient",
+    "scannedNotFound": "Barcode {{code}} scanned: it isn't in OpenFoodFacts. Enter its values by hand (the code is not stored on a manual ingredient).",
+    "identity": "Identity",
+    "optional": "optional",
+    "namePlaceholder": "e.g. Greek natural yogurt",
+    "brandPlaceholder": "Generic",
+    "baseUnit": "Base unit",
+    "baseUnitHintGram": "macros are expressed per 100 g",
+    "baseUnitHintUnit": "macros are expressed per unit",
+    "unitGram": "g",
+    "unitGramCaption": "grams",
+    "unitUnit": "unit",
+    "unitUnitCaption": "per unit",
+    "macrosGram": "Macros per 100 g",
+    "macrosUnit": "Macros per unit",
+    "kcal": "Calories",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat",
+    "sugar": "of which sugars",
+    "satFat": "of which saturates",
+    "fiber": "Fibre",
+    "salt": "Salt",
+    "autoChip": "auto",
+    "autoHint": "Calculated from protein, carbs and fat. You can override it.",
+    "backToAuto": "Back to automatic",
+    "offCaveat": "These values come from the OpenFoodFacts community; check them against your packaging.",
+    "origin": "Data source",
+    "barcode": "Barcode"
+  },
+  "preview": {
+    "title": "Preview",
+    "inLibrary": "in your library",
+    "namePlaceholder": "Ingredient name",
+    "split": "Calorie split"
+  },
   "list": {
-    "empty": "No results.",
     "perUnit": "/ unit",
     "per100g": "/ 100 g",
+    "kcalUnit": "kcal",
+    "byUnit": "per unit",
+    "generic": "generic",
+    "macrosNote": "Macros per 100 g",
+    "verified": "Verified",
+    "menu": "Ingredient actions",
     "removeFromLibrary": "Remove from my library",
     "removeConfirm": "Remove this ingredient from your library? If you created it, it will no longer be editable (it becomes anonymized in the shared library).",
-    "readOnly": "Read-only"
+    "removedToast": "Removed from your library"
+  },
+  "table": {
+    "name": "Ingredient",
+    "kcal": "kcal",
+    "protein": "prot g",
+    "carbs": "carbs g",
+    "fat": "fat g",
+    "fiber": "fiber g",
+    "source": "Origin"
+  },
+  "macros": {
+    "letter": {
+      "protein": "P",
+      "carbs": "C",
+      "fat": "F"
+    }
+  },
+  "filters": {
+    "groupLabel": "Filters",
+    "verified": "Verified",
+    "perUnit": "Per unit",
+    "base": "Base",
+    "mine": "Mine"
+  },
+  "search": {
+    "open": "Search ingredients",
+    "placeholder": "Search ingredients…",
+    "cancel": "Cancel",
+    "clear": "Clear search",
+    "results": "Results",
+    "hint": "Type to search the whole shared library.",
+    "noResults": "No results",
+    "noResultsHint": "Nothing matches “{{query}}”. Create it, or scan its barcode.",
+    "footerTitle": "Can't find what you're looking for?",
+    "create": "Create a new ingredient",
+    "scan": "Scan the barcode"
+  },
+  "scan": {
+    "open": "Scan a barcode",
+    "bannerTitle": "Scan the barcode",
+    "bannerHint": "we look it up on OpenFoodFacts and fill in the macros",
+    "title": "Scan a barcode",
+    "subtitle": "We look the product up on OpenFoodFacts",
+    "close": "Close the scanner",
+    "torchOn": "Turn the torch on",
+    "torchOff": "Turn the torch off",
+    "starting": "Opening the camera…",
+    "searching": "Looking for a barcode…",
+    "aim": "Point at the barcode on the package",
+    "looking": "Looking the product up…",
+    "found": "Product found",
+    "notFoundTitle": "Not on OpenFoodFacts",
+    "notFoundHint": "Nobody has uploaded the code {{code}} yet. You can create the ingredient by hand from the label.",
+    "notFoundCreate": "Create it by hand",
+    "again": "Scan another code",
+    "deniedTitle": "The camera is blocked",
+    "deniedHint": "You denied access to the camera. Allow it in the browser's permissions (the padlock next to the address) and try again — or type the code by hand.",
+    "deniedRetry": "Try the camera again",
+    "errorTitle": "The camera could not be opened",
+    "errorHint": "This device will not let us use it right now. Type the code by hand and we will look it up anyway.",
+    "manualOpen": "Type the code by hand"
+  },
+  "empty": {
+    "title": "No ingredients yet",
+    "hint": "Create the first one, or scan a product's barcode.",
+    "noMatchTitle": "No results",
+    "noMatchHint": "Try clearing a filter or changing your search."
   },
   "source": {
-    "system": "System ingredient",
-    "systemShort": "System",
+    "base": "Base-library ingredient",
+    "baseShort": "base",
     "openfoodfacts": "Imported from OpenFoodFacts",
+    "offShort": "O.F.F.",
     "manual": "Manual entry",
-    "manualShort": "Manual"
+    "manualShort": "manual"
   },
   "errors": {
-    "invalid": "Check the fields. Some are missing or invalid."
+    "invalid": "Check the fields. Some are missing or invalid.",
+    "nameRequired": "Give the ingredient a name.",
+    "numberRequired": "Calories and macros (P/C/F) are required.",
+    "invalidNumber": "Check the values: they must be positive numbers."
   }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computePhaseTargets } from './targets';
+import { computeDraftTargets, computePhaseTargets } from './targets';
 import type { Phase } from './api';
 
 // Tests for the thin phase-targets wrapper (D-F1 / R-16).
@@ -85,5 +85,41 @@ describe('computePhaseTargets', () => {
     );
     // kcal = 2400 - 500 = 1900
     expect(r!.kcal).toBe(1900);
+  });
+});
+
+// The editor's live-draft variant (R-33 wave 8, B2): a half-typed numeric field
+// arrives as null and must yield NO targets — never a 0 fed into the maths, and
+// never (unlike a stored row) the D-B1 protein table default.
+describe('computeDraftTargets', () => {
+  const draft = {
+    phase_type: 'maintenance',
+    kcal_mode: 'absolute',
+    kcal_value: 2000,
+    protein_g_per_kg: 2,
+    fat_pct_of_kcal: 0.3,
+    fiber_mode: 'fixed_g',
+    fiber_value: 30,
+  };
+
+  it('matches computePhaseTargets on a complete draft', () => {
+    expect(computeDraftTargets(draft, 80, 25, null)).toEqual(
+      computePhaseTargets(phase(), 80, 25, null),
+    );
+  });
+
+  it.each([
+    ['kcal_value'],
+    ['protein_g_per_kg'],
+    ['fat_pct_of_kcal'],
+    ['fiber_value'],
+  ] as const)('returns null while %s is blank', (field) => {
+    expect(computeDraftTargets({ ...draft, [field]: null }, 80, 25, null)).toBeNull();
+  });
+
+  it('returns null for a tdee_delta draft with no TDEE estimate', () => {
+    const delta = { ...draft, kcal_mode: 'tdee_delta', kcal_value: -300 };
+    expect(computeDraftTargets(delta, 80, 25, null)).toBeNull();
+    expect(computeDraftTargets(delta, 80, 25, 2500)!.kcal).toBe(2200);
   });
 });

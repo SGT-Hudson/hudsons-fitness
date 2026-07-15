@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PaginationBar } from '@/components/ui/PaginationBar';
+import { PageShell } from '@/components/layout/PageShell';
 import { usePagination } from '@/hooks/usePagination';
 import { ExerciseCard } from '@/features/training/components/ExerciseCard';
 import { ExerciseFilters } from '@/features/training/components/ExerciseFilters';
@@ -63,11 +64,9 @@ export function ExercisesPage() {
   const rows = browse.data?.rows ?? [];
 
   return (
+    <PageShell title={t('browse.title')}>
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">{t('browse.title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('browse.subtitle')}</p>
-      </div>
+      <p className="text-sm text-muted-foreground">{t('browse.subtitle')}</p>
 
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
@@ -88,7 +87,7 @@ export function ExercisesPage() {
         <ul data-testid="exercise-skeleton-grid" className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <li key={i}>
-              <Card><div className="aspect-[4/3] w-full"><Skeleton className="h-full w-full" /></div>
+              <Card><div className="aspect-4/3 w-full"><Skeleton className="h-full w-full" /></div>
                 <CardContent className="space-y-2 py-3">
                   <Skeleton className="h-4 w-2/3" /><Skeleton className="h-3 w-1/2" />
                 </CardContent>
@@ -115,5 +114,6 @@ export function ExercisesPage() {
         onPageSizeChange={setPageSize}
       />
     </div>
+    </PageShell>
   );
 }

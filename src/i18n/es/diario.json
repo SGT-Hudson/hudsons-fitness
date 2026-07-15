@@ -37,18 +37,45 @@
     "heroRemaining": "kcal restantes",
     "heroToGoal": "kcal para el objetivo",
     "heroOver": "kcal de más",
-    "remainingG": "faltan {{n}} g",
-    "overG": "+{{n}} g de más",
-    "floorMet": "✓ cubierto +{{n}} g",
-    "fiberBelowMin": "{{n}} g bajo el mínimo",
-    "fatLow": "⚠ Falta grasa",
-    "fatLowHelp": "Estás por debajo del mínimo de grasa saludable (20% de tus kcal). La grasa es esencial para las hormonas y para absorber vitaminas.",
-    "fatLowHelpLabel": "Ayuda sobre grasa",
-    "consumedOf": "{{consumed}} / {{target}} consumidas"
+    "ringOf": "de {{target}} kcal",
+    "planToday": "plan de hoy: {{n}} kcal",
+    "macroCaptionOver": "+{{n}} g sobre el objetivo",
+    "macroCaptionShort": "te faltan {{n}} g",
+    "macroCaptionOnTarget": "justo en el objetivo",
+    "macroCaptionMargin": "{{n}} g de margen",
+    "macrosToggle": "Macros"
+  },
+  "weekly": {
+    "title": "Semana",
+    "summary": "media {{avg}} · obj {{target}}",
+    "target": "obj {{target}}",
+    "weekday": {
+      "mon": "L",
+      "tue": "M",
+      "wed": "X",
+      "thu": "J",
+      "fri": "V",
+      "sat": "S",
+      "sun": "D"
+    }
+  },
+  "hero": {
+    "remainingLabel": "Restantes hoy",
+    "consumed": "consumidas",
+    "target": "objetivo",
+    "tdeeLine": "TDEE {{n}} kcal · promedio adaptativo"
+  },
+  "body": {
+    "title": "Cuerpo",
+    "lastMeasured": "última {{date}}",
+    "rateUnit": "kg / sem",
+    "register": "Registrar medición",
+    "empty": "Aún sin mediciones"
   },
   "entry": {
     "edit": "Editar entrada",
-    "fromPlan": "Del plan"
+    "fromPlan": "Del plan",
+    "planShort": "Plan"
   },
   "tabs": {
     "recipe": "Receta",
@@ -86,6 +113,11 @@
     "deleteConfirm": "¿Borrar esta entrada del diario?"
   },
   "mealSection": { "empty": "— sin registros" },
+  "projBar": {
+    "added": "+{{n}} g",
+    "over": "↑ {{n}} g de más",
+    "target": "obj {{n}}"
+  },
   "copyDay": {
     "open": "Copiar un día",
     "title": "Copiar un día",
@@ -97,7 +129,9 @@
   "quickAdd": {
     "add": "Añadir {{name}}",
     "added": "{{name}} añadido",
-    "undo": "Deshacer"
+    "undo": "Deshacer",
+    "recommendations": "Recomendaciones",
+    "addRecipe": "Añadir receta"
   },
   "errors": {
     "pickRecipe": "Selecciona una receta.",
@@ -105,6 +139,47 @@
     "servingsInvalid": "Las raciones deben ser mayores que 0.",
     "quantityInvalid": "La cantidad debe ser mayor que 0.",
     "customNameRequired": "Pon un nombre.",
-    "customKcalRequired": "Las calorías son obligatorias."
+    "customKcalRequired": "Las calorías son obligatorias.",
+    "customMacroInvalid": "Las calorías y los macros no pueden ser negativos."
+  },
+  "addSheet": {
+    "title": "Añadir a hoy",
+    "editTitle": "Editar entrada",
+    "subtitle": "{{date}} · {{phase}}",
+    "subtitleNoPhase": "{{date}}",
+    "close": "Cerrar",
+    "slotLabel": "Elegir franja",
+    "slotEmpty": "vacío",
+    "searchPlaceholder": "Buscar receta, alimento…",
+    "tabs": {
+      "recent": "Recientes",
+      "recipes": "Recetas",
+      "foods": "Alimentos"
+    },
+    "emptyRecent": "Aún no tienes comidas recientes.",
+    "emptyRecipes": "No tienes recetas.",
+    "emptyFoodsPrompt": "Escribe para buscar alimentos.",
+    "emptyFoodsNoResults": "Sin coincidencias.",
+    "oneServing": "1 ración",
+    "nServings": "{{n}} raciones",
+    "balance": "Balance de hoy",
+    "balanceTarget": "obj {{n}}",
+    "balanceRemaining": "kcal restantes",
+    "balanceConsumed": "{{n}} consumidas",
+    "backToExplore": "Volver a explorar",
+    "toMeal": "→ {{meal}}",
+    "unitServing": "ración",
+    "unitServings": "raciones",
+    "decreaseQty": "Reducir cantidad",
+    "increaseQty": "Aumentar cantidad",
+    "projRemaining": "quedan {{n}} kcal",
+    "projOver": "te pasas {{n}} kcal",
+    "overAlert": "Esta ración te lleva por encima del objetivo de hoy.",
+    "macroBalanceLabel": "Balance del día tras añadir",
+    "customCta": "Crear alimento personalizado",
+    "customTitle": "Alimento personalizado",
+    "addCta": "Añadir a {{meal}}",
+    "saveCta": "Guardar cambios",
+    "deleteCta": "Eliminar"
   }
 }

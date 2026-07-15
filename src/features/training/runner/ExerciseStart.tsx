@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Minus, Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useDecimalDraft } from '@/components/ui/useDecimalDraft';
 import { evaluateCoach, type CoachContext } from '@/core/training';
 import type { RunnerExercise } from '@/core/runner';
 
@@ -27,6 +28,8 @@ export function ExerciseStart({ exercise, exerciseName, coachContext, onSetWorki
   const working = exercise.sets.filter((s) => !s.isWarmup);
   const inc = exercise.defaultIncrementKg;
   const ww = exercise.workingWeightKg;
+  // `ww || ''` keeps the anchor blank at 0 rather than showing a bare "0".
+  const weight = useDecimalDraft(ww ? String(ww) : '', (n) => onSetWorkingWeight(Math.max(0, n)));
   const reps =
     exercise.targetRepsMin === exercise.targetRepsMax
       ? `${exercise.targetRepsMin}`
@@ -51,15 +54,20 @@ export function ExerciseStart({ exercise, exerciseName, coachContext, onSetWorki
             <Minus className="h-5 w-5" />
           </Button>
           <div className="flex items-baseline gap-1">
+            {/* The working weight is a decimal, so it must be `type="text"
+                inputMode="decimal"` — a `type="number"` element strips a typed
+                comma and would turn `82,5` into 825 kg. It stays a raw <input>
+                rather than a `NumberField`: this is the borderless 4xl anchor,
+                baseline-aligned with the "kg" beside it, and NumberField's
+                wrapper + shadcn Input styling exist for form rows, not for this.
+                The boundary that matters — `parseDecimalInput`, via
+                `useDecimalDraft` — is the shared one either way. */}
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              step={inc}
-              min={0}
               aria-label={t('runner.workingWeight')}
-              value={ww || ''}
-              onChange={(e) => onSetWorkingWeight(Math.max(0, Number(e.target.value)))}
-              className="w-24 border-0 bg-transparent p-0 text-center text-4xl font-bold tabular-nums focus:outline-none focus:ring-0"
+              {...weight}
+              className="w-24 border-0 bg-transparent p-0 text-center text-4xl font-bold tabular-nums focus:outline-hidden focus:ring-0"
             />
             <span className="text-lg font-medium text-muted-foreground">kg</span>
           </div>

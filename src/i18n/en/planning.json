@@ -1,45 +1,61 @@
 {
-  "days": {
-    "mon": "Mon",
-    "tue": "Tue",
-    "wed": "Wed",
-    "thu": "Thu",
-    "fri": "Fri",
-    "sat": "Sat",
-    "sun": "Sun"
+  "phase": {
+    "none": "No phase",
+    "noneHint": "Works for any phase",
+    "pick": "Template phase"
   },
   "slot": {
-    "add": "Add recipe",
-    "remove": "Remove",
     "copy": "Copy meal to other days"
   },
   "copyMeal": {
     "title": "Copy meal to other days",
-    "entryCount": "{{count}} recipes",
-    "selectAll": "Select all",
+    "modeReplace": "Replace",
+    "modeAppend": "Add alongside",
+    "sourceRecipes": "Copying:",
+    "selectAll": "All",
     "willOverwrite": "will be overwritten",
-    "selectedCount": "{{count}} days selected",
+    "summaryReplace_one": "Copy to 1 day, replacing what's there.",
+    "summaryReplace_other": "Copy to {{count}} days, replacing what's there.",
+    "summaryAppend_one": "Copy to 1 day, alongside what's there.",
+    "summaryAppend_other": "Copy to {{count}} days, alongside what's there.",
+    "pickDays": "Pick at least one day.",
     "confirm": "Copy"
   },
-  "picker": {
-    "addTitle": "Add recipe",
+  "addRecipe": {
+    "title": "Add recipe",
     "editTitle": "Edit recipe",
-    "subtitle": "Pick a recipe and servings for this slot.",
-    "recipe": "Recipe",
+    "destination": "{{day}} · {{meal}} · {{time}}",
+    "destinationNoTime": "{{day}} · {{meal}}",
+    "close": "Close",
+    "search": "Search recipe…",
+    "searchLabel": "Search recipe",
+    "filterLabel": "Filter by meal type",
+    "filterAll": "All",
+    "noResults": "No recipe matches.",
+    "empty": "You have no recipes yet. Create one to start planning.",
     "servings": "Servings",
-    "errors": {
-      "pickRecipe": "Pick a recipe.",
-      "servings": "Servings must be greater than 0."
-    }
+    "less": "Fewer servings",
+    "more": "More servings",
+    "perServing": "per serving",
+    "projected": "Projected",
+    "remaining": "{{n}} left",
+    "over": "+{{n}} over",
+    "confirmAdd": "Add to meal",
+    "confirmSave": "Save",
+    "remove": "Remove from plan"
   },
   "list": {
     "pageTitle": "Templates",
     "newTemplate": "New template",
+    "newTemplateHint": "from scratch",
     "description": "Templates are reusable menus you apply to your active week. Define the schedule once, vary later.",
     "empty": "No templates yet. Create one and you can apply it to the planner.",
+    "emptyFilter": "No template with this phase.",
     "deleteConfirm": "Delete template \"{{name}}\"? Active weeks already based on it won't change.",
-    "autoBadge": "Auto",
-    "autoBadgeTooltip": "Auto-generated when closing a divergent week",
+    "filterLabel": "Filter by phase",
+    "filterAll": "All",
+    "saved_one": "{{count}} saved",
+    "saved_other": "{{count}} saved",
     "slots_one": "{{count}} slot",
     "slots_other": "{{count}} slots",
     "slots": "{{count}} slots",
@@ -63,7 +79,6 @@
   },
   "planner": {
     "pageTitle": "Planner",
-    "weekOf": "Week of {{date}}",
     "manageTemplates": "Templates",
     "applyTemplate": "Apply template",
     "swapTemplate": "Swap template",
@@ -76,7 +91,21 @@
       "hasTemplates": "This week is empty. Apply one of your templates to get started.",
       "applyCta": "Apply template",
       "createCta": "Create first template"
-    }
+    },
+    "weekLabel": "Week {{week}} · {{from}} → {{to}}",
+    "avgDaily": "Daily average",
+    "avgKcal": "Average",
+    "proteinAvg": "Protein",
+    "proteinPct": "· {{pct}}%",
+    "targetShort": "Target {{n}}",
+    "kcalPerDay": "{{n}} kcal / day",
+    "todayHeading": "Today · {{date}}",
+    "dayHeading": "{{date}}",
+    "todayKcal": "{{consumed}} / {{target}} kcal",
+    "addMeal": "Add meal",
+    "mealName": { "0": "Breakfast", "1": "Lunch", "2": "Snack", "3": "Dinner" },
+    "mealNameN": "Meal {{n}}",
+    "noPlanToday": "Nothing planned for today."
   },
   "week": {
     "noSlots": "No meals planned."
@@ -85,9 +114,9 @@
     "title": "Apply template",
     "subtitle": "Applies from {{date}} onward. Earlier days are kept as-is.",
     "template": "Template",
-    "placeholder": "Pick a template…",
     "noTemplates": "You have no templates yet.",
     "submit": "Apply",
+    "willFillLabel": "Days this will fill",
     "errors": {
       "pickTemplate": "Pick a template."
     }
@@ -97,22 +126,36 @@
     "subtitle": "Snapshot the current slots. Reuse it on any week later.",
     "name": "Name",
     "defaultName": "Template — week of {{date}}",
+    "previewLabel": "How it'll look in your library",
     "errors": {
       "nameRequired": "Give the template a name."
     }
   },
   "summary": {
     "kcalUnit": "Kcal",
-    "protein": "Protein",
-    "carbs": "Carbs",
-    "fat": "Fat",
-    "fiber": "Fiber",
     "fatLow": "⚠ Low fat",
     "fatLowLabel": "Why low fat",
-    "fatLowHelpLabel": "Fat info",
-    "fatLowHelp": "You are below the healthy fat minimum (20% of your kcal). Fat is essential for hormones and for absorbing vitamins.",
-    "totalRow": "Total",
-    "emptyDay": "No meals yet"
+    "fatLowHelp": "You are below the healthy fat minimum (0.6 g per kg of bodyweight). Fat is essential for hormones and for absorbing vitamins.",
+    "emptyDay": "No meals yet",
+    "letter": { "protein": "P", "carbs": "C", "fat": "F", "fiber": "Fb" }
+  },
+  "cell": {
+    "addFirst": "add meal",
+    "addMore": "add",
+    "kcal": "kcal"
+  },
+  "peek": {
+    "title": "Recipe in the plan",
+    "servings_one": "{{count}} serving",
+    "servings_other": "{{count}} servings",
+    "ingredients": "Ingredients",
+    "instructions": "Method",
+    "perServing": "Per serving",
+    "planned_one": "Planned: {{count}} serving",
+    "planned_other": "Planned: {{count}} servings",
+    "open": "Open recipe",
+    "edit": "Edit",
+    "missing": "The recipe could not be loaded."
   },
   "shopping": {
     "open": "Shopping list",
@@ -137,5 +180,9 @@
     "addExtraPlaceholder": "Add an item (e.g. coffee)…",
     "addExtra": "Add item",
     "removeExtra": "Remove"
+  },
+  "weekStrip": {
+    "willFill": "Gets filled",
+    "untouched": "Left as-is"
   }
 }

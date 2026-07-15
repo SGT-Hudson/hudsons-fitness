@@ -6,8 +6,10 @@ import {
   toastError,
   toastSaved,
 } from '@/lib/toast-helpers';
+import type { TemplatePhase } from '@/features/templates/api';
 import {
   addWeekSlot,
+  appendWeekMeal,
   applyTemplateToWeek,
   copyWeekMeal,
   deleteWeekSlot,
@@ -51,8 +53,15 @@ export function useApplyTemplateToWeek() {
 export function useSaveWeekAsTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ weekId, name }: { weekId: string; name: string }) =>
-      saveWeekAsTemplate(weekId, name),
+    mutationFn: ({
+      weekId,
+      name,
+      phaseType,
+    }: {
+      weekId: string;
+      name: string;
+      phaseType: TemplatePhase | null;
+    }) => saveWeekAsTemplate(weekId, name, phaseType),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['templates'] });
       toastSaved();
@@ -100,6 +109,18 @@ export function useCopyWeekMeal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: copyWeekMeal,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['planner'] });
+      toastSaved();
+    },
+    onError: toastError,
+  });
+}
+
+export function useAppendWeekMeal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: appendWeekMeal,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['planner'] });
       toastSaved();
