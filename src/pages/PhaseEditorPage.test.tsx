@@ -46,6 +46,17 @@ vi.mock('@/features/phases/hooks', () => ({
   useDeletePhase: () => deleteMut,
 }));
 
+// The preview's wiring (B2): react-query hooks the harness has no provider
+// for. Fixed values keep the derived numbers deterministic — weight 80 kg,
+// bf 25 % → lean mass 60 kg; no TDEE estimate (the absolute-mode default
+// keeps the preview visible, and the delta mode's needs-TDEE state testable).
+vi.mock('@/features/measurements/hooks', () => ({
+  useLatestMeasurement: () => ({ data: { weight_kg: 80, body_fat_pct: 25 } }),
+}));
+vi.mock('@/features/tdee/hooks', () => ({
+  useLatestTdee: () => ({ data: null }),
+}));
+
 import { PhaseEditorPage } from './PhaseEditorPage';
 import type { Phase } from '@/features/phases/api';
 
@@ -501,5 +512,55 @@ describe('PhaseEditorPage — the route itself', () => {
     await waitFor(() => expect(deleteMut.mutateAsync).toHaveBeenCalledWith('p1'));
     expect(confirmSpy).toHaveBeenCalled();
     confirmSpy.mockRestore();
+  });
+});
+
+describe('PhaseEditorPage — the live preview (B2)', () => {
+  // weight 80 / bf 25 (the hook mocks) → lean 60 kg. The NEW form's defaults:
+  // 2000 kcal absolute, maintenance protein 2.0 g/kg, fat 25 %, fiber 30 g.
+  it('derives the preview from the defaults through the real macro maths', () => {
+    renderAt(NEW_ROUTE);
+
+    // kcal 2000 · protein 60×2 = 120 g · fat 2000×0.25/9 = 56 g ·
+    // carbs (2000−480−500)/4 = 255 g · fiber 30 g
+    expect(screen.getByTestId('preview-kcal')).toHaveTextContent('2000');
+    expect(screen.getByText('120 g')).toBeInTheDocument();
+    expect(screen.getByText('56 g')).toBeInTheDocument();
+    expect(screen.getByText('255 g')).toBeInTheDocument();
+  });
+
+  it('typing a comma fat percent reaches the preview as the R-06 fraction', async () => {
+    const user = userEvent.setup();
+    renderAt(NEW_ROUTE);
+
+    const fat = field('fat');
+    await user.clear(fat);
+    await user.type(fat, '27,5');
+
+    // 27,5 % → fraction 0.275 → 2000×0.275/9 = 61 g. The two corruptions this
+    // pins against: the eaten comma (275 % → schema-invalid) and the unscaled
+    // percent (27.5 → 6111 g).
+    expect(await screen.findByText('61 g')).toBeInTheDocument();
+  });
+
+  it('a blanked kcal field empties the preview to the incomplete hint — never zeros', async () => {
+    const user = userEvent.setup();
+    renderAt(NEW_ROUTE);
+
+    await user.clear(field('kcal'));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      i18n.t('objetivos:phases.preview.incomplete'),
+    );
+    expect(screen.queryByTestId('preview-kcal')).not.toBeInTheDocument();
+  });
+
+  it('renders no preview in notes-only mode', () => {
+    usePhases.mockReturnValue({ data: [frozenPhase], isLoading: false });
+    renderAt(EDIT_ROUTE);
+
+    expect(
+      screen.queryByRole('region', { name: i18n.t('objetivos:phases.preview.title') }),
+    ).not.toBeInTheDocument();
   });
 });

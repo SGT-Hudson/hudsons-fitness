@@ -128,6 +128,15 @@
         "dateRange": "End date must be after start date.",
         "overlap": "This phase overlaps another one. Adjust the dates (two phases cannot share even a single day)."
       }
+    },
+    "preview": {
+      "title": "preview",
+      "incomplete": "Fill in kcal, protein, fat and fiber to see the daily targets.",
+      "letter": {
+        "protein": "P",
+        "carbs": "C",
+        "fat": "F"
+      }
     }
   }
 }

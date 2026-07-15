@@ -9,12 +9,15 @@ import {
   PHASE_EDITOR_FORM_ID,
   type PhaseSubmitError,
 } from '@/features/phases/components/PhaseEditorForm';
+import { PhasePreview } from '@/features/phases/components/PhasePreview';
 import {
   useCreatePhase,
   useDeletePhase,
   usePhases,
   useUpdatePhase,
 } from '@/features/phases/hooks';
+import { useLatestMeasurement } from '@/features/measurements/hooks';
+import { useLatestTdee } from '@/features/tdee/hooks';
 import { isPhaseOverlapError, type PhaseInput } from '@/features/phases/api';
 import { OBJETIVOS_LIST } from '@/features/phases/editorRoute';
 import { isPhaseFrozen } from '@/features/phases/status';
@@ -45,6 +48,11 @@ export function PhaseEditorPage() {
   // — one cache entry, one invalidation.
   const phases = usePhases();
   const phase = isNew ? undefined : phases.data?.find((p) => p.id === id);
+
+  // The preview's wiring — the same three inputs `useDailyTarget` feeds the
+  // hero: latest scale weight, latest body fat, latest TDEE estimate.
+  const latestMeasurement = useLatestMeasurement();
+  const latestTdee = useLatestTdee();
 
   const createPhase = useCreatePhase();
   const updatePhase = useUpdatePhase();
@@ -160,6 +168,21 @@ export function PhaseEditorPage() {
           notesOnly={notesOnly}
           submitError={submitError}
           onSubmit={(input) => void handleSubmit(input)}
+          // B2 — the live phase-tinted preview. Hidden in notes-only mode: a
+          // frozen phase's targets are history, and today's weight would
+          // repaint them as if they were live.
+          preview={
+            notesOnly
+              ? undefined
+              : (draft) => (
+                  <PhasePreview
+                    draft={draft}
+                    weightKg={latestMeasurement.data?.weight_kg}
+                    bodyFatPct={latestMeasurement.data?.body_fat_pct}
+                    estimatedTdeeKcal={latestTdee.data?.estimated_tdee_kcal ?? null}
+                  />
+                )
+          }
         />
 
         {/* Mobile's danger action — desktop's lives in the header (the wave-5

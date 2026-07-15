@@ -128,6 +128,15 @@
         "dateRange": "La fecha fin debe ser posterior al inicio.",
         "overlap": "Esta fase se solapa con otra. Ajusta las fechas (dos fases no pueden compartir ni un solo día)."
       }
+    },
+    "preview": {
+      "title": "vista previa",
+      "incomplete": "Completa kcal, proteína, grasa y fibra para ver los objetivos diarios.",
+      "letter": {
+        "protein": "P",
+        "carbs": "C",
+        "fat": "G"
+      }
     }
   }
 }
