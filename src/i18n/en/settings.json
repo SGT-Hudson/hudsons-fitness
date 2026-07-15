@@ -7,7 +7,10 @@
     "account": "Account"
   },
   "rows": {
-    "accountAndSession": "Account & session"
+    "accountAndSession": "Account & session",
+    "profileSub": "Display name",
+    "biometricsSub": "Sex, birth date, height",
+    "accountSub": "Email, sign out, delete"
   },
   "profile": {
     "title": "Profile",
