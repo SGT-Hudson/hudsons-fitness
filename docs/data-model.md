@@ -12,7 +12,7 @@
 
 ## Overview
 
-Hudson's Fitness has ~26 base tables in prod, all RLS-enabled — the original 15, the R-07 `tdee_state` adaptive-filter memory table, the 3 Training MVP tables added by R-19 and applied 2026-05-21 (`exercises`, `workout_sessions`, `workout_sets`), the 4 F-2 training tables (`routines`, `routine_exercises`, `programs`, `program_days`, live in prod since v2026-06-03 / #122), the 2 R-01 per-user reference tables (`user_ingredient_refs`, `user_recipe_refs`), and the R-26 read-only `muscles` reference dictionary (#155). The `body_measurements_smoothed` view sits on top of `body_measurements` (see Views). Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The one deliberate exception is `ingredients`, which is the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
+Hudson's Fitness has ~26 base tables in prod, all RLS-enabled — the original 15, the R-07 `tdee_state` adaptive-filter memory table, the 3 Training MVP tables added by R-19 and applied 2026-05-21 (`exercises`, `workout_sessions`, `workout_sets`), the 4 F-2 training tables (`routines`, `routine_exercises`, `programs`, `program_days`, live in prod since v2026-06-03 / #122), the 2 R-01 per-user reference tables (`user_ingredient_refs`, `user_recipe_refs`), and the R-26 read-only `muscles` reference dictionary (#155). The `body_measurements_smoothed` view sits on top of `body_measurements` (see Views). Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The deliberate exceptions are `ingredients` and `recipes` (reclassified by R-01), the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
 
 ## Tables
 
@@ -74,6 +74,7 @@ Shared across all users (crowdsourced library). `created_by_user_id = null` indi
 | `fiber_g_per_unit` | `numeric(6,2)` not null default 0 |
 | `sugar_g_per_unit` | `numeric(6,2)` null — U-1 sub-macro of carbs |
 | `saturated_fat_g_per_unit` | `numeric(6,2)` null — U-1 sub-macro of fat |
+| `salt_g_per_unit` | `numeric(6,2)` null, check `>= 0` — R-33 wave 6; null = unknown (never 0). Ingredient-level only, not aggregated into recipe/day totals |
 | `source` | `text` not null default `'manual'`, check in (`'manual'`, `'openfoodfacts'`, `'bedca'`, `'system'`) |
 | `external_id` | `text` |
 | `is_verified` | `boolean` not null default false |
@@ -82,25 +83,25 @@ Shared across all users (crowdsourced library). `created_by_user_id = null` indi
 
 Key constraints: `unique (source, external_id)` prevents duplicate API imports across all users; `ingredients_external_consistency` check ensures `external_id is null or source in ('openfoodfacts', 'bedca')`. Macros are per 100 g, or per unit when `unit_type = 'unit'`.
 
-### `recipes`
+### `recipes` (shared pool — R-01)
 
-Per-user (private), referencing the shared ingredient library. `unique (user_id, name)`.
+Shared-pool entity referencing the shared ingredient library — recipes are pooled and discoverable, owned by their creator (see Library Contribution & Lifecycle Model). R-01 renamed the owner column `user_id` → `created_by_user_id` for parity with `ingredients`, dropped the per-user `unique (user_id, name)` index (names are no longer per-user-unique under the shared pool — D-A4), and dropped the `deleted_at` soft-delete column and its two dependent partial indexes (the no-hard-delete model hides via `user_recipe_refs`, not a soft-delete flag).
 
 | Column | Type / constraint |
 |---|---|
 | `id` | `uuid` primary key default `gen_random_uuid()` |
-| `user_id` | `uuid` not null, references `profiles(id)` on delete cascade |
+| `created_by_user_id` | `uuid` not null, references `profiles(id)` on delete cascade |
 | `name` | `text` not null |
 | `servings` | `numeric(5,2)` not null default 1, check `servings > 0` |
 | `description` | `text` |
 | `instructions` | `text` |
 | `photo_url` | `text` |
 | `meal_types` | `text[]` not null default `'{}'`, check `meal_types <@ array['breakfast','lunch','snack','dinner','dessert']` — U-2 (#96); gin index `idx_recipes_meal_types` for slot filtering |
-| `deleted_at` | `timestamptz` (null = live; soft-delete marker, partial unique index `where deleted_at is null`) |
+| `prep_time_minutes` | `integer` null, check `> 0` — minutes to prepare; null = no time recorded (R-33 wave 5) |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
 
-`meal_types` tags a recipe with the meals it suits (U-2 #96, live); `save_recipe` carries it as the `p_meal_types` argument.
+`meal_types` tags a recipe with the meals it suits (U-2 #96, live); `save_recipe` carries it as the `p_meal_types` argument, and gained a trailing `p_prep_time_minutes` argument for the prep-time field (R-33 wave 5).
 
 ### `recipe_ingredients`
 
@@ -219,9 +220,12 @@ Named, reusable menus. `unique (user_id, name)`.
 | `same_schedule_all_days` | `boolean` not null default true |
 | `default_meal_times` | `time[]` not null default `array['08:00','13:00','17:00','21:00']::time[]` |
 | `is_auto_generated` | `boolean` not null default false (true when created from a divergent week at rollover) |
+| `phase_type` | `text` null, check in (`'cut'`, `'maintenance'`, `'bulk'`) — R-33 wave 4; a loose phase label (no FK to `phases`); null = serves any phase |
 | `notes` | `text` |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
+
+`phase_type` tags the template with the phase it was written for (R-33 wave 4); both `save_template` and `save_week_as_template` gained a trailing `p_phase_type` argument to carry it.
 
 ### `meal_plan_template_day_times`
 
@@ -489,7 +493,7 @@ Check constraint: `(is_rest and routine_id is null) or (not is_rest and routine_
 
 Every table is RLS-enabled.
 
-**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `recipes`, `recipe_ingredients` (via join to `recipes`), `user_ingredient_refs`, `user_recipe_refs`, `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`, `workout_sessions`, `routines`, `programs`.
+**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `user_ingredient_refs`, `user_recipe_refs`, `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`, `workout_sessions`, `routines`, `programs`.
 
 **RLS-via-parent-join pattern.** Child tables with no `user_id` column inherit authorization by joining to their parent: `workout_sets` (via `workout_sessions`), `routine_exercises` (via `routines`), `program_days` (via `programs`). Each carries SELECT / INSERT / UPDATE / DELETE policies using an `exists` subquery that checks the parent's `user_id = auth.uid()`. The UPDATE policies on `routine_exercises` and `program_days` carry both `using` and `with check` to prevent a user re-pointing a child row to another user's parent (F-2 closes this gap; `workout_sets` and `recipe_ingredients` carry `using`-only UPDATE policies — a follow-up migration is noted in R-22 to backfill them).
 
@@ -500,6 +504,13 @@ Every table is RLS-enabled.
 - DELETE: only the creator (`using (auth.uid() = created_by_user_id)`). The FK from `recipe_ingredients` is `ON DELETE RESTRICT`, which additionally blocks deletion if any user's recipe references the ingredient.
 
 Reversibility escape-hatch (D-A1): the open-SELECT model can later be tightened to `created_by_user_id = auth.uid() OR created_by_user_id IS NULL` with no schema change if the library ever needs privacy.
+
+**`recipes` (shared pool).** Same shape as `ingredients` — R-01 reclassified recipes as a shared pool (see Library Contribution & Lifecycle Model):
+- SELECT: any authenticated user reads the whole pool (`using (true)`, policy `"Recipes pool readable"`).
+- INSERT: self-tagged (`with check (auth.uid() = created_by_user_id)`).
+- UPDATE / DELETE: real-owner only — the predicate `auth.uid() = created_by_user_id AND created_by_user_id IS NOT NULL AND created_by_user_id <> LIBRARY_ANON_OWNER_ID` (anon-sentinel + null-seed write exclusions), so anonymized (creator-hidden) rows match no write policy and are never re-owned.
+
+**`recipe_ingredients` (shared-pool child, via join to `recipes`).** SELECT opens to all authenticated (`using (true)`, policy `"Recipe ingredients pool readable"`) so any recipe's lines render (essential for anon-owned recipes in the diary); INSERT / UPDATE / DELETE stay owner-gated via an `exists` subquery on the parent recipe's real-owner predicate (same anon-sentinel + null-seed exclusions).
 
 **`muscles` (read-only reference table).** A single SELECT policy `muscles_select_all` (`using (true)`) — any authenticated user reads the whole dictionary. No INSERT / UPDATE / DELETE policy: the seed data is effectively immutable to all app roles (R-26 / D-F11).
 
@@ -514,6 +525,7 @@ User-facing RPCs, all `SECURITY INVOKER` with `set search_path = public`, each a
 - `save_template`
 - `apply_template_to_week`
 - `save_week_as_template`
+- `copy_week_meal` (U-6) — copy one planned meal onto other days of the active week (atomic multi-row delete-then-insert across N target dates on `meal_plan_week_slots`; single-table, chosen for atomicity over a two-round-trip client delete+insert)
 - `materialize_plan_for_date` (R-12 / D-D6)
 
 **Training MVP (R-19, live in prod since 2026-05-21):**

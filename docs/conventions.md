@@ -39,16 +39,14 @@ tracked in `roadmap.md`).
 - Any operation mutating more than one table atomically MUST be an RPC; single-table mutations stay client-side (D-C5).
 - All user-callable RPCs are `SECURITY INVOKER` with `set search_path = public`; `SECURITY DEFINER` is forbidden without a security review (two documented exceptions: the cron-only `apply_template_to_week_admin`, and `reconcile_account_delete` for account-delete reconciliation — granted only to `service_role` / no app-facing role) (D-C5).
 - Plan materialization is a single `SECURITY INVOKER` RPC `materialize_plan_for_date` (`set search_path = public`), DB-idempotent via a partial unique index + `ON CONFLICT DO NOTHING`, bounded to `date <= today` (Europe/Madrid); the client/edge mirrors are removed (live in prod — migration applied then calling code merged 2026-05-18) (D-D6).
-- Convert the fat fraction (and any unit/fraction) only at the form boundary via a shared helper, never inline `×100` (helper `fractionToPct`/`pctToFraction` in `src/lib/macros.ts`; the 3 inline sites use it; the DB CHECK backstop `phases_fat_pct_of_kcal_range` is applied in prod) (D-B3).
+- Convert the fat fraction (and any unit/fraction) only at the form boundary via a shared helper, never inline `×100` (helper `fractionToPct`/`pctToFraction` in `src/lib/macros.ts`; the 4 inline sites (PhaseEditorForm ×3, PhaseHeroCard) use it; the DB CHECK backstop `phases_fat_pct_of_kcal_range` is applied in prod) (D-B3).
 
 ## UI
-
-> ⚠ Changing — see R-33
 
 - Use the shadcn `Badge` component for badges (D-D1).
 - Toasts fire from the layer that owns the mutation (usually `hooks.ts`); a component owning its own mutation flow (e.g. destructive confirm dialogs) calls toast directly; pages never call toast (D-D2).
 - Success toasts only when the action is user-triggered AND low-frequency; high-frequency, background, or implicit mutations toast on error only; `useDeleteWeekSlot` is the documented success-on-slot-mutation exception (D-D3).
-- Chart time-range pills: options 30d/90d/1y/all, default 90d, per-chart independent local `useState`, no cross-chart sync, no persistence (D-D4).
+- Chart time-range pills: options 1m/6m/1y/all, default 6m, per-chart independent local `useState`, no cross-chart sync, no persistence (D-D4).
 - New overlays use shadcn primitives: `Dialog` (centered) for desktop, `Drawer` (bottom-sheet, vaul) for mobile; responsive shells switch via `useMediaQuery('(min-width: 768px)')`. Exercise images render via `buildExerciseImageUrl` in a fixed aspect-ratio box with `loading="lazy"` (B2b).
 
 ## i18n & locale

@@ -40,7 +40,7 @@ reference shard carries it (never edit the decision entry).
 - R-30 — Responsive desktop density, per-feature (REMOVED 2026-06-11 — folded into R-33)
 - R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — deferred from R-27
 - R-32 — DB-integration test tier / e2e guard for PostgREST select strings
-- R-33 — UI redesign: design system + nutrition screens (spec 2026-07-02)
+- R-33 — UI redesign: design system + nutrition screens — SHIPPED on develop (2026-07-15); release to main pending
 - R-34 — Gym screens redesign (blocked on gym design convergence)
 - R-35 — Shopping list from the planned week
 - R-36 — Recipe steps & photos (schema + editor + settings)
@@ -1127,12 +1127,17 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 - **decision:** (D-ids at impl time: TW4+token architecture, navigation IA,
   Rubik, tone system + fat floor, heatmap ramp)
 - **blocked-by:** —
-- **status:** spec done (2026-07-02) — design converged; full spec in
-  `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md`. Execution
-  pending (~12 PRs: 2 foundation + shell + tone core + 8 nutrition screen
-  waves). PR-1 (Tailwind v4 migration) and PR-2 (foundation retheme:
-  tokens.css, self-hosted fonts, restyled shadcn primitives, hardcoded-colour
-  sweep, heatmap ramp) landed on `develop` (2026-07-06).
+- **status:** **shipped on `develop`** — spec converged 2026-07-02, execution
+  complete 2026-07-15; full spec in
+  `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md`. Promotion to
+  `main` is pending the batch release. All PRs landed: PR-1 Tailwind v4
+  migration (#179) and PR-2 foundation retheme — tokens.css, self-hosted fonts,
+  restyled shadcn primitives, hardcoded-colour sweep, heatmap ramp (#180);
+  wave 0 shell & navigation (#183); the semantic tone core (#184,
+  `src/core/nutritionTone.ts`); and the eight screen waves — Diario (#185/#186),
+  Planificador (#187/#188/#189), Plantillas (#190/#191), Recetas (#192/#193),
+  Ingredientes (#194/#195), Progreso (#199/#200), Objetivos (#201/#202),
+  Ajustes (#203).
 - **scope:** apply the external Claude-design canvas in two layers:
   1. **Foundation retheme (app-wide, gym included):** Tailwind v4 migration;
      `tokens.css` oklch token system as the app's source; Rubik + Geist Mono
@@ -1162,18 +1167,30 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 
 ## R-35 — Shopping list from the planned week
 - **decision:** (D-id at spec time)
-- **blocked-by:** R-33 (Planificador wave ships the button's home)
-- **status:** todo (spawned by R-33 spec, 2026-07-02)
-- **scope:** consolidated/per-recipe views, check-off, share, extra items.
-  Flat list until ingredient categories exist.
+- **blocked-by:** —
+- **status:** core **shipped** (#46, well before the R-33 spec). The R-33
+  restyle of the dialog is the only open work.
+- **shipped (#46):** `ShoppingListDialog` (rendered in `PlanificadorPage`) with
+  both consolidated + per-recipe views (`ShoppingView 'total' | 'byRecipe'`),
+  localStorage per-week check-off, text export/share, and manual **extra items**
+  (`appendExtra`/`ExtraItem` in `shoppingExport.ts`) — flat list until ingredient
+  categories exist.
+- **scope (open):** apply the R-33 redesign to the shopping dialog (still the
+  pre-redesign UI — the file was untouched by the R-33 Planificador waves).
 
 ## R-36 — Recipe steps & photos
 - **decision:** (D-id at spec time)
 - **blocked-by:** —
-- **status:** todo (spawned by R-33 spec, 2026-07-02)
-- **scope:** schema for structured/reorderable steps, per-step photos,
-  favorites, prep time, private notes; editor UI; "Fotos de los pasos"
-  setting; photo-storage decisions.
+- **status:** partially **shipped** — favorites and prep time landed; structured
+  steps + per-step photos + private notes remain.
+- **shipped:** recipe **favorites** (device-local; `useRecipeFavorites` in
+  `RecetasPage`/`RecetaDetailPage`, pure helpers in
+  `src/features/recipes/favorites.ts`; #32a2df4) and recipe **prep time**
+  (`recipes.prep_time_minutes` column, `save_recipe` `p_prep_time_minutes` arg,
+  validation in `src/features/recipes/schema.ts`; R-33 waves 4/5, #192).
+- **scope (open):** schema for structured/reorderable steps, per-step photos,
+  private notes; editor UI; "Fotos de los pasos" setting; photo-storage
+  decisions.
 
 ## R-37 — Interactive TDEE calculator
 - **decision:** (D-id at spec time)
