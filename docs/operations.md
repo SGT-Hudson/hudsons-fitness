@@ -555,12 +555,22 @@ complete history rather than the lone Sprint-9 file.
 20260530120000_f4_secondary_muscles.sql             # applied 2026-05-30 (F-4): exercises.secondary_muscles text[] for the muscle heatmap
 20260603120000_r25_hide_drops_ref_only.sql          # applied 2026-06-03 (R-25 fix, #151): hide RPC drops the ref only
 20260604120000_fine_muscle_taxonomy.sql             # applied 2026-06-04 (R-26 / D-F11, #155): muscles table + primary_muscles[]; validate trigger
+20260604120100_b1_catalog_schema.sql                # Project B1 step 1/2: catalog-ingestion columns + widened equipment/source CHECKs + external_id unique key
+20260604120200_b1_catalog_seed.sql                  # Project B1 step 2/2: free-exercise-db catalog seed (873 exercises); generated, idempotent upsert — do not hand-edit
 20260604130000_fine_taxonomy_retag_review_fixes.sql # applied 2026-06-04 (R-26 follow-up): anatomical-review retag of 3 system rows
+20260605120000_b1_catalog_review.sql                # B1 post-import muscle-tag review: 146 PRIMARY corrections on the low-confidence rows
+20260606120000_catalog_full_review.sql              # Project B full-catalog review: 39 PRIMARY corrections on the never-flagged rows
+20260606120100_catalog_hold_resolve.sql             # full-review follow-up: resolves the 2 held-ambiguous rows (behind-the-neck push press, vertical swing)
+20260606120200_catalog_secondary_dedup.sql          # catalog cleanup: dedupe 32 rows carrying a fine code in both primary_muscles and secondary_muscles
+20260606120300_b2a_instructions_columns.sql         # B2a step 1/3: parallel index-aligned instructions_en/instructions_es text[] columns (default '{}')
+20260606120400_b2a_instructions_backfill.sql        # B2a step 3/3: generated backfill of instructions_en/instructions_es onto already-seeded rows
+20260711120000_r33_template_phase.sql               # applied (R-33 wave 4): nullable phase column on templates (no FK to phases)
+20260712120000_r33_recipe_prep_time.sql             # applied (R-33 wave 5): nullable prep-time column on recipes
+20260712130000_r33_ingredient_salt.sql              # applied (R-33 wave 6): nullable salt sub-macro on ingredients (mirrors U-1 pattern)
 ```
 
 `supabase/migrations/` in the repo is the canonical source for the full,
-authoritative sequence; this list is a curated annotation of it and may trail by
-a file or two.
+authoritative sequence; this list is a curated annotation of it.
 
 **Project A / B1 / B2a backlog deploy (executed 2026-06-08).** The fine-taxonomy,
 B1-catalog, and B2a-instruction migrations had been authored + merged + CI-validated
@@ -701,8 +711,8 @@ supabase stop --no-backup
 ```
 
 Local runs need Docker + the Supabase CLI; CI uses `supabase/setup-cli`. The
-suite (`supabase/tests/00_schema`..`06_instructions.test.sql` — the CI job globs
-`*.test.sql`, so `06` already runs) creates test users by
+suite (`supabase/tests/00_schema`..`07_ingredient_salt.test.sql` — the CI job globs
+`*.test.sql`, so every numbered file is picked up automatically) creates test users by
 inserting into `auth.users` (the `handle_new_user` trigger makes the profile)
 and switches actor with `set local role authenticated` + a
 `request.jwt.claims` GUC, so `auth.uid()` evaluates RLS exactly as in prod.

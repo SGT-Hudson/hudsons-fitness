@@ -48,8 +48,8 @@ conventional commits.
 - What the app does / flows / origin → `docs/features.md`
 - Code rules (forms, macros, toasts, UI, i18n, theme) → `docs/conventions.md`
 - CI / deploy / Supabase / cron / runbook → `docs/operations.md`
-- Why a decision was made → `docs/decisions.md` (IDs `D-A1…D-F11`)
-- What's still un-built / backlog → `docs/roadmap.md` (IDs `R-00…R-43`; F-/U-/post-V1 family index at end)
+- Why a decision was made → `docs/decisions.md` (IDs `D-A1…D-F24`)
+- What's still un-built / backlog → `docs/roadmap.md` (IDs `R-00…R-45`; F-/U-/post-V1 family index at end)
 - Shipped history → `docs/changelog.md`
 
 Rule: if it isn't needed every session, it does not belong in this file. Deep detail lives in `docs/` — load the one relevant shard on demand.
