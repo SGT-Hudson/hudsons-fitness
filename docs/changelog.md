@@ -256,6 +256,34 @@ decision rationale in `decisions.md`.
   **907 exercises** (873 catalog) with instructions + fine-muscle tags. See
   operations.md "Project A / B1 / B2a backlog deploy". **Project B (R-27) complete.**
 
+### 2026-07-15 — R-33 UI redesign (design system + nutrition screens)
+
+The full nutrition-side redesign, applying the external Claude-design canvas in
+layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
+
+- **Foundation (app-wide, gym included).** Migrated to Tailwind CSS v4 (#179);
+  foundation retheme (#180) — the `tokens.css` oklch token system as the app's
+  source, self-hosted Rubik + Geist Mono, restyled shadcn primitives, a
+  hardcoded-colour sweep, and the heatmap ramp.
+- **Shell & navigation (#183).** `PageShell` frame, per-section bottom navs, the
+  `/more` hub, and the grouped desktop sidebar (web-sidebar-footer pattern).
+- **Semantic tone core (#184).** `src/core/nutritionTone.ts` replaces the old
+  `macroStatus` — the nutri/amber/gym/danger tone tokens the screens read from.
+- **Screen waves.** Diario day view + add-flow (#185/#186); Planificador day
+  view, layout pass, and flows — add drawer, copy replace/append, recipe peek
+  (#187/#188/#189); Plantillas library + template `phase_type` + save/apply and
+  the mobile-first template editor (#190/#191); Recetas list, read view, and
+  editor + `prep_time_minutes` (#192/#193); Ingredientes list, full-screen
+  search + scanner, auto-kcal, and the `salt_g_per_unit` sub-macro (#194/#195);
+  Progreso — P0 hero, three-line composition (the fat/lean stack retired), one
+  time filter, and the month-grouped history route + measurement sheet
+  (#199/#200); Objetivos page + the phase editor promoted from a modal to a
+  route with a live phase-tinted preview (#201/#202); Ajustes restyle
+  (#203). Docs reconciled to the shipped code at release (#204).
+- **Schema.** Three additive, nullable columns only — `meal_plan_templates.phase_type`,
+  `recipes.prep_time_minutes`, `ingredients.salt_g_per_unit` (with the matching
+  `save_template` / `save_recipe` args); no RLS or destructive change.
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |
@@ -308,4 +336,16 @@ decision rationale in `decisions.md`.
 | 151 | R-25 — hide drops ref only | `20260603120000_r25_hide_drops_ref_only.sql` — hide drops only the reference row, pool ownership retained |
 | 155 | R-26 — fine muscle taxonomy | `public.muscles` table (22 fine codes + `full_body`, mirrors `core/muscles.ts`); `exercises.primary_muscles[]` (multi-primary) replacing singular `primary_muscle`; `validate_exercise_muscles` trigger; finer-resolution heatmap (per-primary 1.0); `MuscleTagField` grouped tri-state tagging + `<optgroup>`'d picker filter (`primary_muscles.cs.{code}`); i18n re-key to fine codes; migration `20260604120000`; pgTAP `05_muscles`. See R-26 / D-F11 |
 | 156 | R-26 — docs reconcile + retag review fix | Reconcile docs to shipped state + migration `20260604130000_fine_taxonomy_retag_review_fixes.sql` (3 anatomical re-tags: Deadlift +hamstrings primary, Kettlebell swing +forearms, Overhead press +trap) |
+| 179/180 | R-33 foundation | Tailwind CSS v4 migration; foundation retheme — `tokens.css` oklch tokens, self-hosted Rubik + Geist Mono, restyled shadcn primitives, hardcoded-colour sweep, heatmap ramp |
+| 183 | R-33 wave 0 — shell & navigation | `PageShell`, per-section bottom navs, `/more` hub, grouped desktop sidebar |
+| 184 | R-33 — semantic tone core | `src/core/nutritionTone.ts` replaces `macroStatus` (nutri/amber/gym/danger tone tokens) |
+| 185/186 | R-33 wave 2 — Diario | Day view (kcal ring, macro tiles, meal cards, weekly chart, web rail) + add-flow (AddToDaySheet, ración projection, edit/delete) |
+| 187/188/189 | R-33 wave 3 — Planificador | Day view (tone headers, meal cells, mobile week strip), layout fixes, and flows (add drawer, copy replace/append, recipe peek) |
+| 190/191 | R-33 wave 4 — Plantillas | Library + template `phase_type` + save/apply flows; mobile-first template editor (phase picker); retired the pre-redesign UI |
+| 192/193 | R-33 wave 5 — Recetas | List + new read view + `recipes.prep_time_minutes`; the Recetas editor (retiring the last pre-redesign nutrition UI) |
+| 194/195 | R-33 wave 6 — Ingredientes | List, full-screen search + scanner, auto-kcal, and the `ingredients.salt_g_per_unit` sub-macro |
+| 199/200 | R-33 wave 7 — Progreso | P0 hero, three-line composition (fat/lean stack retired), one time filter; month-grouped history route + measurement sheet |
+| 201/202 | R-33 wave 8 — Objetivos | Objetivos page (phase hero, phase-tinted rows, option-B history); phase editor promoted from modal to route with live phase-tinted preview + `23P01` overlap reason |
+| 203 | R-33 wave 9 — Ajustes | SettingsPage restyle (MorePage-consistent hero, segmented theme control, row subtitles) |
+| 204 | R-33 — release doc-reconcile | Reconcile living docs to shipped code (21 drift items across 6 shards) ahead of the batch release |
 
