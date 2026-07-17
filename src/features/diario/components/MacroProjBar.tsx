@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { roundMacro } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 
 export type MacroProjBarMetric = 'protein' | 'carbs' | 'fat';
 
@@ -39,6 +40,7 @@ interface Props {
  */
 export function MacroProjBar({ metric, base, added, target, className }: Props) {
   const { t } = useTranslation('diario');
+  const num = useNum();
   const total = base + added;
   const over = Math.max(0, total - target);
   const x = (v: number) => (target > 0 ? Math.min(100, (v / target) * TX) : 0);
@@ -109,7 +111,7 @@ export function MacroProjBar({ metric, base, added, target, className }: Props) 
           className="absolute -translate-x-1/2 whitespace-nowrap"
           style={{ left: `${Math.max(5, Math.min(baseX, TX - 16))}%` }}
         >
-          {roundMacro(base)}
+          {num.qty(roundMacro(base))}
         </span>
         <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${TX}%` }}>
           {t('projBar.target', { n: roundMacro(target) })}

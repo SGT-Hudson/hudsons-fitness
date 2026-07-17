@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, type Locale } from '@/lib/dates';
 import { formatDecimal } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import {
   DEFAULT_TIME_RANGE,
@@ -42,6 +43,7 @@ interface Point {
  */
 export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null }) {
   const { t, i18n } = useTranslation('metricas');
+  const num = useNum();
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
   const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
   const [expanded, setExpanded] = useState(false);
@@ -117,7 +119,7 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
               tickLine={false}
               axisLine={false}
               width={44}
-              tickFormatter={(v: number) => `${v}`}
+              tickFormatter={(v: number) => num.qty(v)}
             />
             <Tooltip
               contentStyle={TOOLTIP_STYLE}

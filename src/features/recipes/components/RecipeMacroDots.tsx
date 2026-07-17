@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 import type { Macros } from '../macros';
 
@@ -25,6 +26,7 @@ interface Props {
  */
 export function RecipeMacroDots({ macros, className }: Props) {
   const { t } = useTranslation('recetas');
+  const num = useNum();
   const items: Array<{ key: keyof typeof DOT; value: number }> = [
     { key: 'protein', value: macros.proteinG },
     { key: 'carbs', value: macros.carbsG },
@@ -36,7 +38,7 @@ export function RecipeMacroDots({ macros, className }: Props) {
       {items.map(({ key, value }) => (
         <span key={key} className="inline-flex items-center gap-1">
           <span className={cn('h-[7px] w-[7px] shrink-0 rounded-full', DOT[key])} aria-hidden="true" />
-          {t(`macros.letter.${key}`)} {Math.round(value)}g
+          {t(`macros.letter.${key}`)} {num.qty(Math.round(value))}g
         </span>
       ))}
     </div>

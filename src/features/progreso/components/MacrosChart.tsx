@@ -26,6 +26,7 @@ import { tdeeConfidenceBand } from '@/features/tdee/api';
 import type { Macros } from '@/features/recipes/macros';
 import { formatDate, type Locale } from '@/lib/dates';
 import { cn } from '@/lib/utils';
+import { useNum } from '@/hooks/useNum';
 import { useDailyNutritionHistory } from '../hooks';
 import type { DailyNutritionHistory } from '../api';
 
@@ -81,6 +82,7 @@ interface Point {
 
 export function MacrosChart() {
   const { t, i18n } = useTranslation('metricas');
+  const num = useNum();
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
   const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
   const [macro, setMacro] = useState<MacroKey>('kcal');
@@ -199,7 +201,7 @@ export function MacrosChart() {
                 <YAxis
                   tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                   width={48}
-                  tickFormatter={(v: number) => `${Math.round(v)}`}
+                  tickFormatter={(v: number) => num.qty(Math.round(v))}
                 />
                 <Tooltip
                   contentStyle={{
@@ -210,7 +212,7 @@ export function MacrosChart() {
                   }}
                   labelFormatter={(d: string) => formatDate(d, 'd MMM yyyy', locale)}
                   formatter={(value: number, name: string) => [
-                    `${Math.round(value)}${unitSuffix}`,
+                    `${num.qty(Math.round(value))}${unitSuffix}`,
                     name,
                   ]}
                 />
@@ -225,7 +227,7 @@ export function MacrosChart() {
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
-                      value: `${t('charts.macros.target')}: ${Math.round(targetValue)}${unitSuffix}`,
+                      value: `${t('charts.macros.target')}: ${num.qty(Math.round(targetValue))}${unitSuffix}`,
                       position: 'insideTopRight',
                       fontSize: 11,
                       fill: 'var(--primary)',

@@ -128,6 +128,12 @@ describe('formatDecimal', () => {
     expect(formatDecimal(82.4, { lang: 'de' })).toBe('82,4');
     expect(formatDecimal(82.4, { lang: 'es-ES' })).toBe('82,4');
   });
+
+  it('a nullish lang falls back to es-ES instead of crashing', () => {
+    // A component may format before i18n has a language, or under a bare
+    // `useTranslation` mock — the formatter must not throw on undefined.
+    expect(formatDecimal(82.4, { lang: undefined as unknown as string })).toBe('82,4');
+  });
 });
 
 // The natural-quantity formatter: locale separator, but variable decimals with

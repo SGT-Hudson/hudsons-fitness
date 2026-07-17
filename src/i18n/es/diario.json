@@ -38,17 +38,17 @@
     "heroToGoal": "kcal para el objetivo",
     "heroOver": "kcal de más",
     "ringOf": "de {{target}} kcal",
-    "planToday": "plan de hoy: {{n}} kcal",
-    "macroCaptionOver": "+{{n}} g sobre el objetivo",
-    "macroCaptionShort": "te faltan {{n}} g",
+    "planToday": "plan de hoy: {{n, number}} kcal",
+    "macroCaptionOver": "+{{n, number}} g sobre el objetivo",
+    "macroCaptionShort": "te faltan {{n, number}} g",
     "macroCaptionOnTarget": "justo en el objetivo",
-    "macroCaptionMargin": "{{n}} g de margen",
+    "macroCaptionMargin": "{{n, number}} g de margen",
     "macrosToggle": "Macros"
   },
   "weekly": {
     "title": "Semana",
-    "summary": "media {{avg}} · obj {{target}}",
-    "target": "obj {{target}}",
+    "summary": "media {{avg, number}} · obj {{target, number}}",
+    "target": "obj {{target, number}}",
     "weekday": {
       "mon": "L",
       "tue": "M",
@@ -63,7 +63,7 @@
     "remainingLabel": "Restantes hoy",
     "consumed": "consumidas",
     "target": "objetivo",
-    "tdeeLine": "TDEE {{n}} kcal · promedio adaptativo"
+    "tdeeLine": "TDEE {{n, number}} kcal · promedio adaptativo"
   },
   "body": {
     "title": "Cuerpo",
@@ -114,9 +114,9 @@
   },
   "mealSection": { "empty": "— sin registros" },
   "projBar": {
-    "added": "+{{n}} g",
-    "over": "↑ {{n}} g de más",
-    "target": "obj {{n}}"
+    "added": "+{{n, number}} g",
+    "over": "↑ {{n, number}} g de más",
+    "target": "obj {{n, number}}"
   },
   "copyDay": {
     "open": "Copiar un día",
@@ -161,19 +161,19 @@
     "emptyFoodsPrompt": "Escribe para buscar alimentos.",
     "emptyFoodsNoResults": "Sin coincidencias.",
     "oneServing": "1 ración",
-    "nServings": "{{n}} raciones",
+    "nServings": "{{n, number}} raciones",
     "balance": "Balance de hoy",
-    "balanceTarget": "obj {{n}}",
+    "balanceTarget": "obj {{n, number}}",
     "balanceRemaining": "kcal restantes",
-    "balanceConsumed": "{{n}} consumidas",
+    "balanceConsumed": "{{n, number}} consumidas",
     "backToExplore": "Volver a explorar",
     "toMeal": "→ {{meal}}",
     "unitServing": "ración",
     "unitServings": "raciones",
     "decreaseQty": "Reducir cantidad",
     "increaseQty": "Aumentar cantidad",
-    "projRemaining": "quedan {{n}} kcal",
-    "projOver": "te pasas {{n}} kcal",
+    "projRemaining": "quedan {{n, number}} kcal",
+    "projOver": "te pasas {{n, number}} kcal",
     "overAlert": "Esta ración te lleva por encima del objetivo de hoy.",
     "macroBalanceLabel": "Balance del día tras añadir",
     "customCta": "Crear alimento personalizado",

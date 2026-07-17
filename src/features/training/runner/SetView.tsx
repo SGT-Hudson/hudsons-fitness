@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { NumberField } from '@/components/ui/NumberField';
 import { useDecimalDraft } from '@/components/ui/useDecimalDraft';
 import { cn } from '@/lib/utils';
+import { useNum } from '@/hooks/useNum';
 import type { RunnerExercise, RunnerSet } from '@/core/runner';
 import type { RestTimerView } from './useRestTimer';
 import { RestTimerBand } from './RestTimerBand';
@@ -32,6 +33,7 @@ interface Props {
 export function SetView(props: Props) {
   const { exercise, set, setOrdinal, phase, timer, lastTimeLabel } = props;
   const { t } = useTranslation('entrenamiento');
+  const num = useNum();
   const editing = phase === 'resting';
   const inc = exercise.defaultIncrementKg;
   const hasRecordedWorkingSet = exercise.sets.some((s) => s.recorded && !s.isWarmup);
@@ -73,7 +75,7 @@ export function SetView(props: Props) {
       ) : (
         <>
           <ReadOnly value={`${set.reps} ${t('runner.repsShort')}`} />
-          <ReadOnly value={`${set.weightKg} kg`} />
+          <ReadOnly value={`${num.qty(set.weightKg)} kg`} />
         </>
       )}
 

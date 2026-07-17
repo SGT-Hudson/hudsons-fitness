@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, type Locale } from '@/lib/dates';
 import { formatDecimal } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import {
   DEFAULT_TIME_RANGE,
@@ -59,6 +60,7 @@ interface Props {
 
 export function CompositionChart({ expanded: expandedProp, onExpandedChange }: Props) {
   const { t, i18n } = useTranslation('metricas');
+  const num = useNum();
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
   const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
   const [unit, setUnit] = useState<CompositionUnit>('pct');
@@ -185,7 +187,7 @@ export function CompositionChart({ expanded: expandedProp, onExpandedChange }: P
             tickLine={false}
             axisLine={false}
             width={44}
-            tickFormatter={(v: number) => (isKg ? `${v}` : `${v}%`)}
+            tickFormatter={(v: number) => (isKg ? num.qty(v) : `${num.qty(v)}%`)}
           />
           <Tooltip
             contentStyle={TOOLTIP_STYLE}

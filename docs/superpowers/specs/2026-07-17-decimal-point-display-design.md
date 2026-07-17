@@ -197,11 +197,13 @@ both locales, and skipping them keeps i18next plural keys untouched.
   `es/` and `en/`. One special case — `planner.kcalPerDay` passes a
   pre-stringified `+N`; change the call site (`WeekSummaryCard`) to pass the raw
   number and the JSON to `{{n, number(signDisplay: exceptZero)}}`.
-- Category B/C (raw JSX): `useNum()` — `num.qty(x)` for natural numbers
-  (macros, weights, %, rpe — preserves the no-trailing-zero look), `num.int(x)`
-  for kcal/volume (adds locale grouping ≥1000). Delete the ad-hoc `formatMacro`
-  string helper; recharts axis `tickFormatter`s format via `formatDecimal` with
-  the component's `locale`.
+- Category B/C (raw JSX): wrap in `useNum()`'s `num.qty(x)` — natural formatting
+  that localizes the separator, preserves the displayed precision (no forced
+  trailing zeros), AND groups ≥1000. One rule for every B/C site; no
+  fixed-digit changes anywhere (the 15 fixed-digit weight sites are already
+  done). Delete the ad-hoc `formatMacro` string helper (→ `num.qty`); recharts
+  axis `tickFormatter`s format via `num.qty`/`formatQuantity` with the active
+  language.
 
 **Guard:** an eslint rule flags raw number rendering so the class can't return —
 `roundMacro(...)`/`Math.round(...)` directly inside JSX, bare

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
+import { useNum } from '@/hooks/useNum';
 import { ingredientDisplayName, type Ingredient } from '../api';
-import { formatMacro } from './IngredientMacroDots';
 import { IngredientSourceBadge } from './IngredientSourceBadge';
 import { IngredientVerifiedCheck } from './IngredientVerifiedCheck';
 import { IngredientRowMenu } from './IngredientRowMenu';
@@ -28,6 +28,7 @@ interface Props {
  */
 export function IngredientTable({ ingredients, libraryIds, userId, onEdit, onRemove }: Props) {
   const { t, i18n } = useTranslation('ingredientes');
+  const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   // The fixed tracks below sum to 520px; `min-w` keeps a readable name column on
@@ -77,19 +78,19 @@ export function IngredientTable({ ingredients, libraryIds, userId, onEdit, onRem
               </span>
             </td>
             <td className="tnum px-2 py-2.5 text-right font-medium">
-              {formatMacro(ing.kcal_per_unit)}
+              {num.qty(ing.kcal_per_unit, 1)}
             </td>
             <td className="tnum px-2 py-2.5 text-right text-muted-foreground">
-              {formatMacro(ing.protein_g_per_unit)}
+              {num.qty(ing.protein_g_per_unit, 1)}
             </td>
             <td className="tnum px-2 py-2.5 text-right text-muted-foreground">
-              {formatMacro(ing.carbs_g_per_unit)}
+              {num.qty(ing.carbs_g_per_unit, 1)}
             </td>
             <td className="tnum px-2 py-2.5 text-right text-muted-foreground">
-              {formatMacro(ing.fat_g_per_unit)}
+              {num.qty(ing.fat_g_per_unit, 1)}
             </td>
             <td className="tnum px-2 py-2.5 text-right text-muted-foreground">
-              {formatMacro(ing.fiber_g_per_unit)}
+              {num.qty(ing.fiber_g_per_unit, 1)}
             </td>
             <td className="px-2 py-2.5">
               <IngredientSourceBadge source={ing.source} />

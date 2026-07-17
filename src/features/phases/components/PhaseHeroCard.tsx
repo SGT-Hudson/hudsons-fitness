@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { PhaseChip } from '@/components/ui/PhaseChip';
 import { useDailyTarget } from '@/features/planning/useDailyTarget';
 import { fractionToPct } from '@/lib/macros';
+import { useNum } from '@/hooks/useNum';
 import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
 import type { PhaseType } from '@/core/nutritionTone';
 import { useActivePhase } from '../hooks';
@@ -34,6 +35,7 @@ interface Props {
  */
 export function PhaseHeroCard({ onEdit }: Props) {
   const { t, i18n } = useTranslation('objetivos');
+  const num = useNum();
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
   const activePhase = useActivePhase();
   const { targets, weightKg, proteinBasis } = useDailyTarget();
@@ -75,14 +77,14 @@ export function PhaseHeroCard({ onEdit }: Props) {
     targets == null
       ? []
       : [
-          { key: 'protein', value: `${targets.proteinG} g` },
-          { key: 'carbs', value: `${targets.carbsG} g` },
+          { key: 'protein', value: `${num.qty(targets.proteinG)} g` },
+          { key: 'carbs', value: `${num.qty(targets.carbsG)} g` },
           {
             key: 'fat',
             // R-06: the column is a fraction — `fractionToPct` owns the boundary.
-            value: `${targets.fatG} g · ${Math.round(fractionToPct(phase.fat_pct_of_kcal))} %`,
+            value: `${num.qty(targets.fatG)} g · ${num.qty(Math.round(fractionToPct(phase.fat_pct_of_kcal)))} %`,
           },
-          { key: 'fiber', value: `${targets.fiberG} g` },
+          { key: 'fiber', value: `${num.qty(targets.fiberG)} g` },
         ];
 
   return (

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { KcalRing } from './KcalRing';
 import { MacroGrid } from './MacroGrid';
 import { roundMacro, type Macros, type SubMacros } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 import type { PartialSub } from '@/core/subMacros';
 import type { TdeeConfidence } from '@/features/tdee/api';
 import { classify, essentialFatFloorG, type Tone, type PhaseType } from '@/core/nutritionTone';
@@ -28,6 +29,7 @@ interface Props {
 /** Secondary "of which" line: sugar / saturated fat, honest about missing data. */
 function SubMacroLine({ label, part }: { label: string; part: PartialSub }) {
   const { t } = useTranslation('diario');
+  const num = useNum();
   const incomplete = part.missing > 0;
   const qualifier = t('totals.subPartial', { count: part.missing });
   return (
@@ -39,7 +41,7 @@ function SubMacroLine({ label, part }: { label: string; part: PartialSub }) {
         ) : (
           <>
             {incomplete && '≥ '}
-            {roundMacro(part.known)} g
+            {num.qty(roundMacro(part.known))} g
             {incomplete && <span className="ml-1">· {qualifier}</span>}
           </>
         )}
@@ -68,6 +70,7 @@ export function DayTotalsCard({
   planKcal,
 }: Props) {
   const { t } = useTranslation('diario');
+  const num = useNum();
 
   const proteinNote =
     targets && proteinBasis
@@ -105,7 +108,7 @@ export function DayTotalsCard({
           <div className="flex flex-col items-center gap-2 pb-4 mb-4 border-b">
             <KcalRing consumed={roundMacro(totals.kcal)} target={roundMacro(targets!.kcal)} phase={phaseType} />
             <div className={cn('text-xs uppercase tracking-wide tabular-nums', TEXT_TONE[hero.tone])}>
-              {hero.value} {hero.label}
+              {num.qty(hero.value)} {hero.label}
             </div>
             {!!planKcal && planKcal > 0 && (
               <div className="text-[11px] text-muted-foreground tabular-nums">

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, type Locale } from '@/lib/dates';
 import { formatDecimal } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import {
   detectPRsForExercise,
   e1rmTrendForExercise,
@@ -20,6 +21,7 @@ interface Props {
 
 export function ExerciseHistory({ exerciseId, exerciseName }: Props) {
   const { t, i18n } = useTranslation('entrenamiento');
+  const num = useNum();
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
   const history = useExerciseHistory(exerciseId);
 
@@ -97,7 +99,7 @@ export function ExerciseHistory({ exerciseId, exerciseName }: Props) {
                   {formatDecimal(p.e1rm, { lang: locale, digits: 1 })} kg
                 </Badge>
                 <span className="text-muted-foreground tabular-nums">
-                  {p.reps}× {p.weightKg} kg
+                  {p.reps}× {num.qty(p.weightKg)} kg
                 </span>
                 <span className="text-xs text-muted-foreground ml-auto">
                   {formatDate(p.performedOn, 'd MMM yyyy', locale)}
@@ -136,11 +138,11 @@ export function ExerciseHistory({ exerciseId, exerciseName }: Props) {
                       >
                         <span className="text-muted-foreground w-6 text-xs">{s.setIndex}</span>
                         <span>
-                          {String(s.reps)} × {String(s.weightKg)} kg
+                          {String(s.reps)} × {num.qty(Number(s.weightKg))} kg
                         </span>
                         {s.rpe !== null && s.rpe !== '' && (
                           <span className="text-xs text-muted-foreground">
-                            @ {String(s.rpe)}
+                            @ {num.qty(Number(s.rpe))}
                           </span>
                         )}
                         {s.isWarmup && (

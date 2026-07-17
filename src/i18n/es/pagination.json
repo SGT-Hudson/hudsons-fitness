@@ -1,5 +1,5 @@
 {
-  "summary": "{{from}}–{{to}} de {{total}}",
+  "summary": "{{from, number}}–{{to, number}} de {{total, number}}",
   "prev": "Anterior",
   "next": "Siguiente",
   "perPage": "Por página"

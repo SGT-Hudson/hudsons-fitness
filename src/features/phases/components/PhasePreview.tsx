@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { PhaseChip } from '@/components/ui/PhaseChip';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 import type { PhaseType } from '@/core/nutritionTone';
 import { computeDraftTargets } from '../targets';
@@ -42,6 +43,7 @@ interface Props {
  */
 export function PhasePreview({ draft, weightKg, bodyFatPct, estimatedTdeeKcal }: Props) {
   const { t } = useTranslation('objetivos');
+  const num = useNum();
 
   const phaseType = draft.phase_type as PhaseType;
   const complete =
@@ -170,7 +172,7 @@ export function PhasePreview({ draft, weightKg, bodyFatPct, estimatedTdeeKcal }:
                   <dt className="text-[10px] uppercase tracking-[0.05em] text-text-dim">
                     {t(`phases.hero.${m.key}`)}
                   </dt>
-                  <dd className="tnum mt-0.5 text-[13px] font-semibold">{m.grams} g</dd>
+                  <dd className="tnum mt-0.5 text-[13px] font-semibold">{num.qty(m.grams)} g</dd>
                 </div>
               ))}
             </dl>

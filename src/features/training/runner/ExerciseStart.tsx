@@ -3,6 +3,7 @@ import { Minus, Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDecimalDraft } from '@/components/ui/useDecimalDraft';
 import { evaluateCoach, type CoachContext } from '@/core/training';
+import { useNum } from '@/hooks/useNum';
 import type { RunnerExercise } from '@/core/runner';
 
 interface Props {
@@ -22,6 +23,7 @@ function round(n: number): number {
  *  Begin button pinned to the bottom. (spec §2 frame 2, §5.2) */
 export function ExerciseStart({ exercise, exerciseName, coachContext, onSetWorkingWeight, onBegin }: Props) {
   const { t } = useTranslation('entrenamiento');
+  const num = useNum();
   const tc = useTranslation('coach').t;
   const top = coachContext ? evaluateCoach(coachContext)[0] ?? null : null;
   const warmups = exercise.sets.filter((s) => s.isWarmup);
@@ -95,7 +97,7 @@ export function ExerciseStart({ exercise, exerciseName, coachContext, onSetWorki
         <div className="space-y-1">
           {warmups.map((w) => (
             <div key={w.setIndex} className="flex justify-between rounded-md bg-muted/40 px-2 py-1 text-sm">
-              <span>{t('runner.warmup')} · {w.weightKg || '—'} kg</span>
+              <span>{t('runner.warmup')} · {w.weightKg ? num.qty(w.weightKg) : '—'} kg</span>
               <span>× {w.reps}</span>
             </div>
           ))}

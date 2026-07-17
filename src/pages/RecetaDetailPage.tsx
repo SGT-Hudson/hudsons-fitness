@@ -21,6 +21,7 @@ import { toRecipeMealTypes } from '@/features/recipes/mealTypes';
 import { useRecipeFavorites } from '@/features/recipes/useFavorites';
 import { RecipeMacrosCard } from '@/features/recipes/components/RecipeMacrosCard';
 import { RecipeMediaPlaceholder } from '@/features/recipes/components/RecipeMediaPlaceholder';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 
 /**
@@ -43,6 +44,7 @@ export function RecetaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('recetas');
+  const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   const { data: recipe, isLoading, isError } = useRecipe(id);
@@ -108,7 +110,7 @@ export function RecetaDetailPage() {
       key: 'servings',
       label: t('detail.stats.servings'),
       short: t('detail.stats.servings'),
-      value: String(recipe.servings),
+      value: num.qty(recipe.servings),
     },
     ...(recipe.prep_time_minutes != null
       ? [
@@ -124,7 +126,7 @@ export function RecetaDetailPage() {
       key: 'kcal',
       label: t('detail.stats.kcalPerServing'),
       short: t('detail.stats.kcalPerServingShort'),
-      value: String(Math.round(perServing.kcal)),
+      value: num.qty(Math.round(perServing.kcal)),
     },
     {
       key: 'ingredients',
@@ -324,7 +326,7 @@ export function RecetaDetailPage() {
                     </span>
                   )}
                   <span className="tnum min-w-16 shrink-0 text-right text-[12.5px] text-muted-foreground">
-                    {Number(ri.quantity)}{' '}
+                    {num.qty(Number(ri.quantity))}{' '}
                     {ri.ingredient.unit_type === 'unit' ? t('form.units') : 'g'}
                   </span>
                 </li>

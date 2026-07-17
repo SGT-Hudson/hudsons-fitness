@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { roundMacro } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 import { computeMealLogMacros, sumMacros } from '../macros';
 import type { MealLogWithJoins, MealType } from '../api';
 import type { QuickAddItem } from '../quickAdd';
@@ -27,6 +28,7 @@ export function MealSection({
   onEdit,
 }: Props) {
   const { t } = useTranslation('diario');
+  const num = useNum();
   const subtotal =
     items.length > 0
       ? roundMacro(sumMacros(items.map(computeMealLogMacros)).kcal)
@@ -40,7 +42,7 @@ export function MealSection({
         <span className="text-xs text-muted-foreground tabular-nums">
           {subtotal != null ? (
             <>
-              <span className="font-medium text-foreground">{subtotal}</span> kcal
+              <span className="font-medium text-foreground">{num.qty(subtotal)}</span> kcal
             </>
           ) : (
             t('mealSection.empty')

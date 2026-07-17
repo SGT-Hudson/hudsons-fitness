@@ -20,6 +20,7 @@ import { deltaTone, type DeltaTone, type PhaseType } from '@/features/measuremen
 import { useActivePhase } from '@/features/phases/hooks';
 import { formatDate, isoDate, type Locale } from '@/lib/dates';
 import { formatDecimal } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 
 /**
@@ -66,6 +67,7 @@ function formatKg(weightKg: number, lang: string): string {
 export function MeasurementHistoryPage() {
   const { t, i18n } = useTranslation('metricas');
   const { t: tCommon } = useTranslation('common');
+  const num = useNum();
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   const activePhase = useActivePhase();
@@ -133,7 +135,7 @@ export function MeasurementHistoryPage() {
                         {m.weight_kg == null ? '—' : `${formatKg(m.weight_kg, locale)} kg`}
                       </span>
                       <span className="tnum w-[52px] text-right text-[11px] text-text-dim">
-                        {m.body_fat_pct == null ? '—' : `${m.body_fat_pct} %`}
+                        {m.body_fat_pct == null ? '—' : `${num.qty(m.body_fat_pct)} %`}
                       </span>
                       <span
                         data-testid={`history-delta-${m.id}`}

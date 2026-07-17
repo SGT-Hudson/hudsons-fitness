@@ -57,7 +57,9 @@ interface FormatDecimalOptions {
 }
 
 function localeFor(lang: string): 'en-US' | 'es-ES' {
-  return lang.startsWith('en') ? 'en-US' : 'es-ES';
+  // Nullish-safe: a component may format before i18n has a language (or in a
+  // test with a bare `useTranslation` mock). Default to the app's base locale.
+  return lang?.startsWith('en') ? 'en-US' : 'es-ES';
 }
 
 /**

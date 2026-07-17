@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { ChevronRight } from 'lucide-react';
 import { HighlightedText } from '@/components/ui/HighlightedText';
+import { useNum } from '@/hooks/useNum';
 import { ingredientDisplayName, type Ingredient } from '../api';
-import { IngredientMacroDots, formatMacro } from './IngredientMacroDots';
+import { IngredientMacroDots } from './IngredientMacroDots';
 import { IngredientSourceBadge } from './IngredientSourceBadge';
 import { IngredientVerifiedCheck } from './IngredientVerifiedCheck';
 
@@ -25,6 +26,7 @@ interface Props {
  */
 export function IngredientSearchRow({ ingredient, query, onSelect }: Props) {
   const { t, i18n } = useTranslation('ingredientes');
+  const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const perUnit = ingredient.unit_type === 'unit';
   const name = ingredientDisplayName(ingredient, lang);
@@ -54,7 +56,7 @@ export function IngredientSearchRow({ ingredient, query, onSelect }: Props) {
 
       <div className="flex flex-col items-end leading-[1.2]">
         <span className="tnum text-[12.5px] font-medium">
-          {formatMacro(ingredient.kcal_per_unit)}
+          {num.qty(ingredient.kcal_per_unit, 1)}
         </span>
         <span className="text-[9.5px] text-text-dim">
           {t('list.kcalUnit')} {perUnit ? t('list.perUnit') : t('list.per100g')}

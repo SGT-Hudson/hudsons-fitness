@@ -8,16 +8,16 @@
   "apply": "Aplicar",
   "rules": {
     "doubleProgression": {
-      "headline": "Has hecho {{sessions}} sesiones a {{weightKg}} kg × {{targetReps}} reps con RPE ≤ {{rpeMax}}. Sube a {{nextWeightKg}} kg en la próxima."
+      "headline": "Has hecho {{sessions}} sesiones a {{weightKg, number}} kg × {{targetReps}} reps con RPE ≤ {{rpeMax, number}}. Sube a {{nextWeightKg, number}} kg en la próxima."
     },
     "repProgression": {
-      "headline": "Has subido de {{repsFirst}} a {{repsLast}} reps a {{weightKg}} kg en {{sessions}} sesiones. Sube a {{nextWeightKg}} kg en la próxima."
+      "headline": "Has subido de {{repsFirst}} a {{repsLast}} reps a {{weightKg, number}} kg en {{sessions}} sesiones. Sube a {{nextWeightKg, number}} kg en la próxima."
     },
     "flatE1rmDeload": {
-      "headline": "Tu 1RM estimado lleva {{sessions}} sesiones plano (±{{spreadKg}} kg). Considera una semana de descarga."
+      "headline": "Tu 1RM estimado lleva {{sessions}} sesiones plano (±{{spreadKg, number}} kg). Considera una semana de descarga."
     },
     "rpeClimbingFatigue": {
-      "headline": "El RPE sube de {{rpeFirst}} a {{rpeLast}} a {{weightKg}} kg en {{sessions}} sesiones — fatiga acumulándose. Considera bajar la carga a {{suggestedWeightKg}} kg."
+      "headline": "El RPE sube de {{rpeFirst, number}} a {{rpeLast, number}} a {{weightKg, number}} kg en {{sessions}} sesiones — fatiga acumulándose. Considera bajar la carga a {{suggestedWeightKg, number}} kg."
     },
     "muscleRecency": {
       "headline": "Llevas {{daysSince}} días sin entrenar {{primaryMuscle}}.",

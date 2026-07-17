@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight } from 'lucide-react';
+import { useNum } from '@/hooks/useNum';
 import { toRecipeMealTypes } from '../mealTypes';
 import type { RecipeListItem } from '../api';
 import { RecipeMediaPlaceholder } from './RecipeMediaPlaceholder';
@@ -35,6 +36,7 @@ interface Props {
  */
 export function RecipeCard({ recipe, favorite, canEdit, onToggleFavorite, onRemove }: Props) {
   const { t } = useTranslation('recetas');
+  const num = useNum();
   const mealTypes = toRecipeMealTypes(recipe.meal_types);
 
   return (
@@ -79,7 +81,7 @@ export function RecipeCard({ recipe, favorite, canEdit, onToggleFavorite, onRemo
 
         <div className="flex items-baseline gap-1">
           <span className="tnum text-[18px] font-semibold tracking-[-0.02em]">
-            {Math.round(recipe.perServing.kcal)}
+            {num.qty(Math.round(recipe.perServing.kcal))}
           </span>
           <span className="text-[10.5px] text-text-dim">{t('card.kcalPerServing')}</span>
         </div>

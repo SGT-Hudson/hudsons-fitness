@@ -9,7 +9,9 @@ import { formatDecimal, formatQuantity } from '@/lib/number';
  *
  * - `dec(n, digits=1)` — fixed fraction digits (weights, macros, percentages).
  * - `int(n)` — no decimals, locale grouping (kcal, counts).
- * - `qty(n)` — natural quantity, trailing zeros trimmed (servings, grams).
+ * - `qty(n, maxDigits=3)` — natural quantity, trailing zeros trimmed (servings,
+ *   grams). Pass `maxDigits: 1` for the compact ingredient-table figures that
+ *   used to round via `formatMacro`.
  */
 export function useNum() {
   const { i18n } = useTranslation();
@@ -17,6 +19,6 @@ export function useNum() {
   return {
     dec: (n: number, digits = 1) => formatDecimal(n, { lang, digits }),
     int: (n: number) => formatDecimal(n, { lang, digits: 0 }),
-    qty: (n: number) => formatQuantity(n, { lang }),
+    qty: (n: number, maxDigits?: number) => formatQuantity(n, { lang, maxDigits }),
   };
 }

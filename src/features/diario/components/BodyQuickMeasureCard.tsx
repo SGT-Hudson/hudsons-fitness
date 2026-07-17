@@ -7,6 +7,7 @@ import { MeasurementDialog } from '@/features/measurements/components/Measuremen
 import { deltaTone, type DeltaTone, type PhaseType } from '@/features/measurements/trend';
 import { formatDate, isoDate, type Locale } from '@/lib/dates';
 import { formatDecimal } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import type { BodyMeasurement } from '@/features/measurements/api';
 
 const TONE_CLASS: Record<DeltaTone, string> = {
@@ -37,6 +38,7 @@ function signedRate(n: number, lang: string): string {
  */
 export function BodyQuickMeasureCard({ latest, rate, phaseType }: Props) {
   const { t, i18n } = useTranslation('diario');
+  const num = useNum();
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
   const [open, setOpen] = useState(false);
   const tone: DeltaTone =
@@ -58,7 +60,7 @@ export function BodyQuickMeasureCard({ latest, rate, phaseType }: Props) {
       {latest?.weight_kg != null ? (
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-semibold tabular-nums tracking-tight">
-            {latest.weight_kg}
+            {num.qty(latest.weight_kg)}
           </span>
           <span className="text-xs text-text-dim">kg</span>
           {rate != null && (

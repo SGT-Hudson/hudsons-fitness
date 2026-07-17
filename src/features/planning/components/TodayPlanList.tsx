@@ -3,6 +3,7 @@ import { Copy, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { mealLabelKey } from '@/features/planning/weekSummary';
 import { add, roundMacro, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 import type { PlannerCellEntry } from './PlannerMealCell';
 
 export interface TodayMeal {
@@ -23,16 +24,17 @@ interface Props {
 /** P · C · G triad under a recipe row — macro identity colours, not tone. */
 function MacroTriad({ entryId, macros }: { entryId: string; macros: Macros }) {
   const { t } = useTranslation('planning');
+  const num = useNum();
   return (
     <div data-triad={entryId} className="tnum mt-0.5 flex items-baseline gap-2 text-[10px]">
       <span className="text-macro-p">
-        {roundMacro(macros.proteinG)} <span className="opacity-70">{t('summary.letter.protein')}</span>
+        {num.qty(roundMacro(macros.proteinG))} <span className="opacity-70">{t('summary.letter.protein')}</span>
       </span>
       <span className="text-macro-c">
-        {roundMacro(macros.carbsG)} <span className="opacity-70">{t('summary.letter.carbs')}</span>
+        {num.qty(roundMacro(macros.carbsG))} <span className="opacity-70">{t('summary.letter.carbs')}</span>
       </span>
       <span className="text-macro-g">
-        {roundMacro(macros.fatG)} <span className="opacity-70">{t('summary.letter.fat')}</span>
+        {num.qty(roundMacro(macros.fatG))} <span className="opacity-70">{t('summary.letter.fat')}</span>
       </span>
     </div>
   );
@@ -52,6 +54,7 @@ export function TodayPlanList({
   className,
 }: Props) {
   const { t } = useTranslation('planning');
+  const num = useNum();
   const nextFreeMeal = meals.find((m) => m.entries.length === 0) ?? meals[meals.length - 1];
 
   function mealLabel(mealIndex: number): string {
@@ -77,7 +80,7 @@ export function TodayPlanList({
                 <span className="tnum text-[9.5px] text-text-dim">{meal.mealTime.slice(0, 5)}</span>
               )}
               <span className="tnum ml-auto text-[13px] font-semibold">
-                {roundMacro(total.kcal)}
+                {num.qty(roundMacro(total.kcal))}
               </span>
               {meal.entries.length > 0 && (
                 <button
@@ -104,13 +107,13 @@ export function TodayPlanList({
                   <div className="truncate text-[12.5px] font-medium">
                     {e.recipe_name}
                     {e.servings !== 1 && (
-                      <span className="tnum ml-1 text-[11px] text-text-dim">×{e.servings}</span>
+                      <span className="tnum ml-1 text-[11px] text-text-dim">×{num.qty(e.servings)}</span>
                     )}
                   </div>
                   <MacroTriad entryId={e.id} macros={e.macros} />
                 </div>
                 <span className="tnum text-[11.5px] text-muted-foreground">
-                  {roundMacro(e.macros.kcal)}
+                  {num.qty(roundMacro(e.macros.kcal))}
                 </span>
               </button>
             ))}
