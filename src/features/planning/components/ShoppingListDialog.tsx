@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClipboardCopy, EyeOff, Plus, RotateCcw, Share2, X } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ClipboardCopy,
+  EyeOff,
+  Plus,
+  RotateCcw,
+  Share2,
+  ShoppingCart,
+  X,
+} from 'lucide-react';
+import { ResponsiveDialog } from '@/components/ui/ResponsiveDialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/input';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { useWeekShopping } from '@/features/planner/hooks';
@@ -67,6 +72,11 @@ function qtyLabel(qty: number, unitType: string, unitWord: string): string {
   }`;
 }
 
+// A checked row shrinks a hair and centres, the canvas's signature check-off
+// gesture. Shared by the aggregated list and the manual extras below it.
+const ROW_BASE =
+  'mx-auto flex w-full items-center gap-3 rounded-[10px] border border-border bg-card px-3.5 py-2.5 transition-[width] duration-300 ease-out';
+
 export function ShoppingListDialog({ open, onOpenChange, weekStart }: Props) {
   const { t } = useTranslation('planning');
   const query = useWeekShopping(weekStart, open);
@@ -92,6 +102,7 @@ export function ShoppingListDialog({ open, onOpenChange, weekStart }: Props) {
       setShowStaples(false);
       setExtras(loadExtras(weekStart));
       setExtraInput('');
+      setView('total');
     }
   }, [open, weekStart]);
 
@@ -155,6 +166,11 @@ export function ShoppingListDialog({ open, onOpenChange, weekStart }: Props) {
     ? allTotals
     : allTotals.filter((i) => !staples.has(i.ingredientId));
 
+  const totalItems = visibleTotals.length + extras.length;
+  const doneItems =
+    visibleTotals.filter((i) => checked.has(i.ingredientId)).length +
+    extras.filter((e) => checked.has(e.id)).length;
+
   function buildShareText(): string {
     return formatShoppingListText({
       title: t('shopping.title'),
@@ -200,274 +216,326 @@ export function ShoppingListDialog({ open, onOpenChange, weekStart }: Props) {
 
   const isLoading = query.isLoading;
   const isEmpty = !isLoading && recipes.length === 0;
+  const showChrome = !isLoading && !isEmpty;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('shopping.title')}</DialogTitle>
-          <DialogDescription>{t('shopping.subtitle')}</DialogDescription>
-        </DialogHeader>
-
-        {isLoading ? (
-          <div className="space-y-2 py-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-8 w-full" />
-            ))}
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t('shopping.title')}
+      variant="panel"
+    >
+      {({ isMobile }) => (
+        <>
+          <div className="flex shrink-0 items-start gap-2.5 px-4.5 pb-3 pt-1">
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-[18px] font-semibold">
+                {t('shopping.title')}
+              </h2>
+              <p className="text-[11.5px] leading-snug text-muted-foreground">
+                {t('shopping.subtitle')}
+              </p>
+            </div>
+            {showChrome && (
+              <Badge variant="secondary" className="tnum mt-0.5 shrink-0">
+                {t('shopping.itemCount', { count: totalItems })}
+              </Badge>
+            )}
+            {isMobile && (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-[30px] w-[30px] shrink-0 rounded-[9px] text-muted-foreground"
+                aria-label={t('addRecipe.close')}
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
+              </Button>
+            )}
           </div>
-        ) : isEmpty ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            {t('shopping.empty')}
-          </p>
-        ) : (
-          <>
-            <div className="flex items-center justify-between gap-2">
-              <div className="inline-flex rounded-md border bg-background p-0.5">
-                {(['total', 'byRecipe'] as const).map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setView(v)}
-                    className={cn(
-                      'px-3 py-1 text-sm rounded-sm transition-colors',
-                      view === v
-                        ? 'bg-secondary'
-                        : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    {t(v === 'total' ? 'shopping.viewTotal' : 'shopping.viewByRecipe')}
-                  </button>
+
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-muted px-4.5 py-3">
+            {isLoading ? (
+              <div className="flex flex-col gap-1.5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full rounded-[10px]" />
                 ))}
               </div>
-              {view === 'total' && (
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void handleShare()}
-                  >
-                    <Share2 className="h-4 w-4" />
-                    {t('shopping.share')}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void handleCopy()}
-                  >
-                    <ClipboardCopy className="h-4 w-4" />
-                    {t('shopping.copy')}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={checked.size === 0}
-                    onClick={() => setChecked(new Set())}
-                  >
-                    {t('shopping.clearChecked')}
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {view === 'total' ? (
-              <div className="max-h-[55vh] overflow-y-auto">
-                <ul className="divide-y">
-                  {visibleTotals.map((item) => {
-                    const isChecked = checked.has(item.ingredientId);
-                    const isStaple = staples.has(item.ingredientId);
-                    return (
-                      <li
-                        key={item.ingredientId}
-                        className={cn(
-                          'flex items-center gap-2 py-2 px-1',
-                          isChecked && 'opacity-50',
-                          isStaple && 'opacity-60',
-                        )}
-                      >
-                        <label className="flex flex-1 min-w-0 items-center gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 shrink-0 accent-primary"
-                            checked={isChecked}
-                            onChange={() => toggleChecked(item.ingredientId)}
-                          />
-                          <span
-                            className={cn(
-                              'flex-1 min-w-0 truncate text-sm',
-                              isChecked && 'line-through',
-                            )}
-                          >
-                            {item.name}
-                            {item.brand ? (
-                              <span className="text-muted-foreground">
-                                {' '}
-                                · {item.brand}
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
-                            {qtyLabel(item.totalQuantity, item.unitType, t('shopping.unit'))}
-                          </span>
-                        </label>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 shrink-0"
-                          aria-label={
-                            isStaple
-                              ? t('shopping.unmarkStaple')
-                              : t('shopping.markStaple')
-                          }
-                          aria-pressed={isStaple}
-                          title={
-                            isStaple
-                              ? t('shopping.unmarkStaple')
-                              : t('shopping.markStaple')
-                          }
-                          onClick={() => toggleStaple(item.ingredientId)}
-                        >
-                          {isStaple ? (
-                            <RotateCcw className="h-3.5 w-3.5" />
-                          ) : (
-                            <EyeOff className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      </li>
-                    );
-                  })}
-                </ul>
-                {hiddenCount > 0 && (
-                  <button
-                    type="button"
-                    className="mt-2 text-xs text-muted-foreground hover:text-foreground underline"
-                    onClick={() => setShowStaples((s) => !s)}
-                  >
-                    {showStaples
-                      ? t('shopping.hideStaples')
-                      : t('shopping.showStaples', { count: hiddenCount })}
-                  </button>
-                )}
-
-                <div className="mt-4 border-t pt-3">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                    {t('shopping.extrasTitle')}
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      value={extraInput}
-                      onChange={(e) => setExtraInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddExtra();
-                        }
-                      }}
-                      placeholder={t('shopping.addExtraPlaceholder')}
-                      className="h-9"
-                    />
+            ) : isEmpty ? (
+              <EmptyState icon={ShoppingCart} title={t('shopping.empty')} />
+            ) : (
+              <>
+                <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
+                  <SegmentedControl
+                    ariaLabel={t('shopping.viewLabel')}
+                    options={[
+                      { value: 'total', label: t('shopping.viewTotal') },
+                      { value: 'byRecipe', label: t('shopping.viewByRecipe') },
+                    ]}
+                    value={view}
+                    onChange={setView}
+                  />
+                  {view === 'total' && checked.size > 0 && (
                     <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      className="h-9 w-9 shrink-0"
-                      aria-label={t('shopping.addExtra')}
-                      disabled={extraInput.trim() === ''}
-                      onClick={handleAddExtra}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-[12px] text-text-dim"
+                      onClick={() => setChecked(new Set())}
                     >
-                      <Plus className="h-4 w-4" />
+                      {t('shopping.clearChecked')}
                     </Button>
-                  </div>
-                  {extras.length > 0 && (
-                    <ul className="divide-y mt-1">
-                      {extras.map((e) => {
-                        const isChecked = checked.has(e.id);
+                  )}
+                </div>
+
+                {view === 'total' ? (
+                  <div className="space-y-4">
+                    <ul className="flex flex-col gap-1.5">
+                      {visibleTotals.map((item) => {
+                        const isChecked = checked.has(item.ingredientId);
+                        const isStaple = staples.has(item.ingredientId);
                         return (
                           <li
-                            key={e.id}
+                            key={item.ingredientId}
                             className={cn(
-                              'flex items-center gap-2 py-2 px-1',
-                              isChecked && 'opacity-50',
+                              ROW_BASE,
+                              isChecked && 'w-[94%]',
+                              isStaple && !isChecked && 'opacity-70',
                             )}
                           >
-                            <label className="flex flex-1 min-w-0 items-center gap-3 cursor-pointer">
+                            <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                               <input
                                 type="checkbox"
-                                className="h-4 w-4 shrink-0 accent-primary"
+                                className="h-[18px] w-[18px] shrink-0 rounded-[6px] accent-accent"
                                 checked={isChecked}
-                                onChange={() => toggleChecked(e.id)}
+                                onChange={() => toggleChecked(item.ingredientId)}
                               />
                               <span
                                 className={cn(
-                                  'flex-1 min-w-0 truncate text-sm',
-                                  isChecked && 'line-through',
+                                  'min-w-0 flex-1 truncate text-[14px] font-medium',
+                                  isChecked
+                                    ? 'text-text-dim line-through'
+                                    : 'text-foreground',
                                 )}
                               >
-                                {e.name}
+                                {item.name}
+                                {item.brand ? (
+                                  <span className="font-normal text-muted-foreground">
+                                    {' '}
+                                    · {item.brand}
+                                  </span>
+                                ) : null}
+                              </span>
+                              <span
+                                className={cn(
+                                  'tnum shrink-0 rounded-[7px] border border-border bg-muted px-2.5 py-0.5 text-[12.5px] font-medium',
+                                  isChecked
+                                    ? 'text-text-dim line-through'
+                                    : 'text-muted-foreground',
+                                )}
+                              >
+                                {qtyLabel(
+                                  item.totalQuantity,
+                                  item.unitType,
+                                  t('shopping.unit'),
+                                )}
                               </span>
                             </label>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 shrink-0"
-                              aria-label={t('shopping.removeExtra')}
-                              onClick={() => handleRemoveExtra(e.id)}
+                              className="h-7 w-7 shrink-0 rounded-[8px] text-text-dim"
+                              aria-label={
+                                isStaple
+                                  ? t('shopping.unmarkStaple')
+                                  : t('shopping.markStaple')
+                              }
+                              aria-pressed={isStaple}
+                              title={
+                                isStaple
+                                  ? t('shopping.unmarkStaple')
+                                  : t('shopping.markStaple')
+                              }
+                              onClick={() => toggleStaple(item.ingredientId)}
                             >
-                              <X className="h-3.5 w-3.5" />
+                              {isStaple ? (
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              ) : (
+                                <EyeOff className="h-3.5 w-3.5" />
+                              )}
                             </Button>
                           </li>
                         );
                       })}
                     </ul>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="max-h-[55vh] overflow-y-auto space-y-4">
-                {recipes.map((r) => (
-                  <div key={r.recipeId}>
-                    <div className="flex items-baseline justify-between gap-2">
-                      <h3 className="font-semibold text-sm truncate">
-                        {r.recipeName}
-                      </h3>
-                      <span className="shrink-0 text-xs font-medium">
-                        {t('shopping.cook', { count: r.batches })}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground tabular-nums">
-                      {t('shopping.yield', {
-                        produced: r.producedServings,
-                        consumed: r.consumedServings,
-                        leftover: r.leftoverServings,
-                      })}
-                    </p>
-                    <ul className="mt-1 divide-y border-t">
-                      {r.ingredients.map((ing) => (
-                        <li
-                          key={ing.ingredientId}
-                          className="flex items-center gap-3 py-1.5 text-sm"
+
+                    {hiddenCount > 0 && (
+                      <button
+                        type="button"
+                        className="text-[11px] text-text-dim underline hover:text-foreground"
+                        onClick={() => setShowStaples((s) => !s)}
+                      >
+                        {showStaples
+                          ? t('shopping.hideStaples')
+                          : t('shopping.showStaples', { count: hiddenCount })}
+                      </button>
+                    )}
+
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">
+                        {t('shopping.extrasTitle')}
+                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          value={extraInput}
+                          onChange={(e) => setExtraInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddExtra();
+                            }
+                          }}
+                          placeholder={t('shopping.addExtraPlaceholder')}
+                          className="h-9"
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          className="h-9 w-9 shrink-0"
+                          aria-label={t('shopping.addExtra')}
+                          disabled={extraInput.trim() === ''}
+                          onClick={handleAddExtra}
                         >
-                          <span className="flex-1 min-w-0 truncate">
-                            {ing.name}
-                            {ing.brand ? (
-                              <span className="text-muted-foreground">
-                                {' '}
-                                · {ing.brand}
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className="shrink-0 tabular-nums text-muted-foreground">
-                            {qtyLabel(ing.quantity, ing.unitType, t('shopping.unit'))}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {extras.length > 0 && (
+                        <ul className="flex flex-col gap-1.5">
+                          {extras.map((e) => {
+                            const isChecked = checked.has(e.id);
+                            return (
+                              <li
+                                key={e.id}
+                                className={cn(ROW_BASE, isChecked && 'w-[94%]')}
+                              >
+                                <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                                  <input
+                                    type="checkbox"
+                                    className="h-[18px] w-[18px] shrink-0 rounded-[6px] accent-accent"
+                                    checked={isChecked}
+                                    onChange={() => toggleChecked(e.id)}
+                                  />
+                                  <span
+                                    className={cn(
+                                      'min-w-0 flex-1 truncate text-[14px] font-medium',
+                                      isChecked
+                                        ? 'text-text-dim line-through'
+                                        : 'text-foreground',
+                                    )}
+                                  >
+                                    {e.name}
+                                  </span>
+                                  <Badge
+                                    variant="accent"
+                                    className="h-[18px] shrink-0 px-[7px] text-[9.5px]"
+                                  >
+                                    {t('shopping.extraTag')}
+                                  </Badge>
+                                </label>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 shrink-0 rounded-[8px] text-text-dim"
+                                  aria-label={t('shopping.removeExtra')}
+                                  onClick={() => handleRemoveExtra(e.id)}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
+                ) : (
+                  <div className="space-y-3">
+                    {recipes.map((r) => (
+                      <div
+                        key={r.recipeId}
+                        className="space-y-2 rounded-[14px] border border-border bg-card p-3"
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <h3 className="min-w-0 truncate text-[13px] font-semibold">
+                            {r.recipeName}
+                          </h3>
+                          <Badge variant="accent" className="tnum shrink-0">
+                            {t('shopping.cook', { count: r.batches })}
+                          </Badge>
+                        </div>
+                        <p className="tnum text-[11px] text-text-dim">
+                          {t('shopping.yield', {
+                            produced: r.producedServings,
+                            consumed: r.consumedServings,
+                            leftover: r.leftoverServings,
+                          })}
+                        </p>
+                        <ul className="divide-y border-t border-border">
+                          {r.ingredients.map((ing) => (
+                            <li
+                              key={ing.ingredientId}
+                              className="flex items-center gap-3 py-1.5 text-[13px]"
+                            >
+                              <span className="min-w-0 flex-1 truncate">
+                                {ing.name}
+                                {ing.brand ? (
+                                  <span className="text-muted-foreground">
+                                    {' '}
+                                    · {ing.brand}
+                                  </span>
+                                ) : null}
+                              </span>
+                              <span className="tnum shrink-0 text-muted-foreground">
+                                {qtyLabel(
+                                  ing.quantity,
+                                  ing.unitType,
+                                  t('shopping.unit'),
+                                )}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+          </div>
+
+          {showChrome && view === 'total' && (
+            <div className="flex shrink-0 items-center gap-2 border-t border-border px-4.5 py-3">
+              <span className="tnum text-[12px] text-text-dim">
+                {t('shopping.bought', { done: doneItems, total: totalItems })}
+              </span>
+              <span className="flex-1" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleCopy()}
+              >
+                <ClipboardCopy className="h-4 w-4" />
+                {t('shopping.copy')}
+              </Button>
+              <Button size="sm" onClick={() => void handleShare()}>
+                <Share2 className="h-4 w-4" />
+                {t('shopping.share')}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+    </ResponsiveDialog>
   );
 }
