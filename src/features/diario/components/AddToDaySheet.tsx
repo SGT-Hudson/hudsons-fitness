@@ -7,6 +7,7 @@ import { ResponsiveDialog } from '@/components/ui/ResponsiveDialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatDate, type Locale } from '@/lib/dates';
 import { roundMacro, computeRecipeMacros, type Macros } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 import { useRecipes } from '@/features/recipes/hooks';
 import { useLocalIngredientSearch } from '@/features/ingredients/hooks';
 import { ingredientDisplayName, type Ingredient } from '@/features/ingredients/api';
@@ -143,6 +144,7 @@ export function AddToDaySheet({
 }: Props) {
   const { t, i18n } = useTranslation('diario');
   const { t: tIngredientes } = useTranslation('ingredientes');
+  const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
 
@@ -428,7 +430,7 @@ export function AddToDaySheet({
           {targets ? (
             <>
               <span className="tabular-nums text-lg font-semibold tracking-tight">
-                {Math.round(targets.kcal - totals.kcal)}
+                {num.qty(Math.round(targets.kcal - totals.kcal))}
               </span>
               <span className="text-[11.5px] text-muted-foreground">
                 {t('addSheet.balanceRemaining')}

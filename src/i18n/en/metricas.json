@@ -81,7 +81,7 @@
   },
   "errors": {
     "weightRequired": "Weight is required.",
-    "outOfRange": "Must be between {{min}} and {{max}}."
+    "outOfRange": "Must be between {{min, number}} and {{max, number}}."
   },
   "charts": {
     "empty": "Not enough data to render the chart yet.",

@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (k: string, o?: { count?: number }) => (o?.count != null ? `${k}:${o.count}` : k),
+    i18n: { language: 'es' },
   }),
 }));
 vi.mock('@/features/profile/hooks', () => ({ useProfile: () => ({ data: { sex: 'female' } }) }));

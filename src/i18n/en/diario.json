@@ -38,17 +38,17 @@
     "heroToGoal": "kcal to goal",
     "heroOver": "kcal over",
     "ringOf": "of {{target}} kcal",
-    "planToday": "today's plan: {{n}} kcal",
-    "macroCaptionOver": "+{{n}} g over target",
-    "macroCaptionShort": "{{n}} g short of target",
+    "planToday": "today's plan: {{n, number}} kcal",
+    "macroCaptionOver": "+{{n, number}} g over target",
+    "macroCaptionShort": "{{n, number}} g short of target",
     "macroCaptionOnTarget": "right on target",
-    "macroCaptionMargin": "{{n}} g to spare",
+    "macroCaptionMargin": "{{n, number}} g to spare",
     "macrosToggle": "Macros"
   },
   "weekly": {
     "title": "Week",
-    "summary": "avg {{avg}} · target {{target}}",
-    "target": "target {{target}}",
+    "summary": "avg {{avg, number}} · target {{target, number}}",
+    "target": "target {{target, number}}",
     "weekday": {
       "mon": "M",
       "tue": "T",
@@ -63,7 +63,7 @@
     "remainingLabel": "Left today",
     "consumed": "consumed",
     "target": "target",
-    "tdeeLine": "TDEE {{n}} kcal · adaptive average"
+    "tdeeLine": "TDEE {{n, number}} kcal · adaptive average"
   },
   "body": {
     "title": "Body",
@@ -114,9 +114,9 @@
   },
   "mealSection": { "empty": "— nothing logged" },
   "projBar": {
-    "added": "+{{n}} g",
-    "over": "↑ {{n}} g over",
-    "target": "target {{n}}"
+    "added": "+{{n, number}} g",
+    "over": "↑ {{n, number}} g over",
+    "target": "target {{n, number}}"
   },
   "copyDay": {
     "open": "Copy a day",
@@ -161,19 +161,19 @@
     "emptyFoodsPrompt": "Type to search foods.",
     "emptyFoodsNoResults": "No matches.",
     "oneServing": "1 serving",
-    "nServings": "{{n}} servings",
+    "nServings": "{{n, number}} servings",
     "balance": "Today's balance",
-    "balanceTarget": "target {{n}}",
+    "balanceTarget": "target {{n, number}}",
     "balanceRemaining": "kcal left",
-    "balanceConsumed": "{{n}} consumed",
+    "balanceConsumed": "{{n, number}} consumed",
     "backToExplore": "Back to explore",
     "toMeal": "→ {{meal}}",
     "unitServing": "serving",
     "unitServings": "servings",
     "decreaseQty": "Decrease quantity",
     "increaseQty": "Increase quantity",
-    "projRemaining": "{{n}} kcal left",
-    "projOver": "{{n}} kcal over",
+    "projRemaining": "{{n, number}} kcal left",
+    "projOver": "{{n, number}} kcal over",
     "overAlert": "This serving puts you over today's target.",
     "macroBalanceLabel": "Today's balance after adding",
     "customCta": "Create custom entry",

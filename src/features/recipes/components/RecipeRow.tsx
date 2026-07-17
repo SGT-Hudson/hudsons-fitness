@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
+import { useNum } from '@/hooks/useNum';
 import type { RecipeListItem } from '../api';
 import { RecipeMediaPlaceholder } from './RecipeMediaPlaceholder';
 import { RecipeMacroDots } from './RecipeMacroDots';
@@ -37,6 +38,7 @@ export function RecipeRow({
   onAddToDay,
 }: Props) {
   const { t } = useTranslation('recetas');
+  const num = useNum();
 
   return (
     <article className="relative flex min-h-[96px] overflow-hidden rounded-[14px] border bg-card">
@@ -75,7 +77,7 @@ export function RecipeRow({
 
         <div className="flex items-baseline gap-1">
           <span className="tnum text-[16px] font-semibold tracking-[-0.02em]">
-            {Math.round(recipe.perServing.kcal)}
+            {num.qty(Math.round(recipe.perServing.kcal))}
           </span>
           <span className="tnum text-[10px] text-text-dim">
             {t('card.kcalPerServing')} · {t('card.ingredientsShort', { count: recipe.ingredient_count })}

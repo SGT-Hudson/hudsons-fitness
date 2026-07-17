@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRecipe } from '@/features/recipes/hooks';
 import { computeRecipeMacros, roundMacro } from '@/features/recipes/macros';
 import { ingredientDisplayName } from '@/features/ingredients/api';
+import { useNum } from '@/hooks/useNum';
 
 interface Props {
   open: boolean;
@@ -44,6 +45,7 @@ export function RecipePeek({
   onEdit,
 }: Props) {
   const { t, i18n } = useTranslation('planning');
+  const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const { data: recipe, isLoading } = useRecipe(recipeId);
 
@@ -125,22 +127,22 @@ export function RecipePeek({
                     </span>
                   </div>
                   <div className="tnum text-[26px] font-semibold tracking-tight">
-                    {roundMacro(perServing.kcal)}
+                    {num.qty(roundMacro(perServing.kcal))}
                     <span className="ml-1 text-[12px] font-normal text-muted-foreground">
                       {t('summary.kcalUnit')}
                     </span>
                   </div>
                   <div className="tnum flex items-baseline gap-3 text-[12px]">
                     <span className="text-macro-p">
-                      {roundMacro(perServing.proteinG)}{' '}
+                      {num.qty(roundMacro(perServing.proteinG))}{' '}
                       <span className="opacity-70">{t('summary.letter.protein')}</span>
                     </span>
                     <span className="text-macro-c">
-                      {roundMacro(perServing.carbsG)}{' '}
+                      {num.qty(roundMacro(perServing.carbsG))}{' '}
                       <span className="opacity-70">{t('summary.letter.carbs')}</span>
                     </span>
                     <span className="text-macro-g">
-                      {roundMacro(perServing.fatG)}{' '}
+                      {num.qty(roundMacro(perServing.fatG))}{' '}
                       <span className="opacity-70">{t('summary.letter.fat')}</span>
                     </span>
                   </div>
@@ -156,7 +158,7 @@ export function RecipePeek({
                         key={ri.id}
                         className="tnum flex items-baseline gap-1.5 text-[13px]"
                       >
-                        <span className="font-medium">{ri.quantity}</span>
+                        <span className="font-medium">{num.qty(Number(ri.quantity))}</span>
                         <span className="text-muted-foreground">{ri.ingredient.unit_type}</span>
                         <span>{ingredientDisplayName(ri.ingredient, lang)}</span>
                       </li>

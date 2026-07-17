@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
+import { useNum } from '@/hooks/useNum';
 import { ingredientDisplayName, type Ingredient } from '../api';
-import { IngredientMacroDots, formatMacro } from './IngredientMacroDots';
+import { IngredientMacroDots } from './IngredientMacroDots';
 import { IngredientSourceBadge } from './IngredientSourceBadge';
 import { IngredientVerifiedCheck } from './IngredientVerifiedCheck';
 import { IngredientRowMenu } from './IngredientRowMenu';
@@ -23,6 +24,7 @@ interface Props {
  */
 export function IngredientRow({ ingredient, canEdit, inLibrary, onEdit, onRemove }: Props) {
   const { t, i18n } = useTranslation('ingredientes');
+  const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const perUnit = ingredient.unit_type === 'unit';
 
@@ -46,7 +48,7 @@ export function IngredientRow({ ingredient, canEdit, inLibrary, onEdit, onRemove
       </div>
 
       <div className="flex flex-col items-end leading-[1.2]">
-        <span className="tnum text-[12.5px] font-medium">{formatMacro(ingredient.kcal_per_unit)}</span>
+        <span className="tnum text-[12.5px] font-medium">{num.qty(ingredient.kcal_per_unit, 1)}</span>
         <span className="text-[9.5px] text-text-dim">
           {t('list.kcalUnit')} {perUnit ? t('list.perUnit') : t('list.per100g')}
         </span>

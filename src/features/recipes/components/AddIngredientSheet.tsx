@@ -9,6 +9,7 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useLocalIngredientSearch } from '@/features/ingredients/hooks';
 import { IngredientDialog } from '@/features/ingredients/components/IngredientDialog';
 import { ingredientDisplayName, type Ingredient } from '@/features/ingredients/api';
+import { useNum } from '@/hooks/useNum';
 import { rowContribution, roundMacro } from '../macros';
 import { cn } from '@/lib/utils';
 
@@ -58,6 +59,7 @@ interface Props {
 export function AddIngredientSheet({ open, onOpenChange, recipeName, onAdd }: Props) {
   const { t, i18n } = useTranslation('recetas');
   const { t: tCommon } = useTranslation('common');
+  const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   const [query, setQuery] = useState('');
@@ -223,7 +225,7 @@ export function AddIngredientSheet({ open, onOpenChange, recipeName, onAdd }: Pr
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[12.5px] font-semibold">{name}</span>
                         <span className="tnum block truncate text-[11px] text-text-dim">
-                          {[ing.brand, `${ing.kcal_per_unit} kcal · ${perLabel}`]
+                          {[ing.brand, `${num.qty(ing.kcal_per_unit)} kcal · ${perLabel}`]
                             .filter(Boolean)
                             .join(' · ')}
                         </span>
@@ -248,7 +250,7 @@ export function AddIngredientSheet({ open, onOpenChange, recipeName, onAdd }: Pr
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[12.5px] font-semibold">{name}</p>
                         <p className="tnum truncate text-[11px] text-text-dim">
-                          {ing.kcal_per_unit} kcal · {perLabel}
+                          {num.qty(ing.kcal_per_unit)} kcal · {perLabel}
                         </p>
                       </div>
                       <Check className="size-4 shrink-0 text-accent" aria-hidden="true" />
@@ -267,7 +269,7 @@ export function AddIngredientSheet({ open, onOpenChange, recipeName, onAdd }: Pr
                         />
                         <div className="flex flex-1 flex-col items-end gap-0.5">
                           <span className="tnum text-[17px] font-semibold text-accent-ink">
-                            +{addedKcal}{' '}
+                            +{num.qty(addedKcal)}{' '}
                             <span className="text-[11px] font-normal">{t('detail.kcalUnit')}</span>
                           </span>
                         </div>

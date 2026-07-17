@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { MacroBar } from '@/components/ui/MacroBar';
 import { roundMacro } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 import { classify, type Metric, type PhaseType, type Tone } from '@/core/nutritionTone';
 
 /** The four macro tile metrics — kcal has its own hero (`KcalRing`), not a tile. */
@@ -55,6 +56,7 @@ interface Props {
  */
 export function MacroTile({ metric, consumed, target, unit, floorG, phase, className }: Props) {
   const { t } = useTranslation('diario');
+  const num = useNum();
   const s = classify(
     metric,
     consumed,
@@ -98,11 +100,11 @@ export function MacroTile({ metric, consumed, target, unit, floorG, phase, class
       </div>
       <div className="flex items-baseline gap-1">
         <span className={cn('text-[22px] font-semibold tabular-nums leading-none', TEXT_TONE[s.tone])}>
-          {roundMacro(consumed)}
+          {num.qty(roundMacro(consumed))}
         </span>
         {hasTarget && (
           <span className="text-xs text-muted-foreground">
-            / {roundMacro(target!)} {unit}
+            / {num.qty(roundMacro(target!))} {unit}
           </span>
         )}
       </div>

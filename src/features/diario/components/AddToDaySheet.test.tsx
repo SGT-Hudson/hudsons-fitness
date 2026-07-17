@@ -394,7 +394,7 @@ describe('AddToDaySheet', () => {
       expect(screen.getByText('1252')).toBeInTheDocument();
       expect(screen.getByText('+1 g')).toBeInTheDocument();
       expect(screen.getByText('+14 g')).toBeInTheDocument();
-      expect(screen.getByText('+0.2 g')).toBeInTheDocument();
+      expect(screen.getByText('+0,2 g')).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: 'Añadir a Desayuno' }));
 

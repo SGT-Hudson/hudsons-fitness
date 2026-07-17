@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { roundMacro } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 import type { MealType } from '../api';
 
@@ -22,6 +23,7 @@ interface Props {
  */
 export function MealSlotSelector({ value, onChange, subtotals }: Props) {
   const { t } = useTranslation('diario');
+  const num = useNum();
 
   return (
     <div
@@ -60,7 +62,7 @@ export function MealSlotSelector({ value, onChange, subtotals }: Props) {
                 selected ? 'text-accent-ink' : 'text-muted-foreground',
               )}
             >
-              {kcal ? roundMacro(kcal) : t('addSheet.slotEmpty')}
+              {kcal ? num.qty(roundMacro(kcal)) : t('addSheet.slotEmpty')}
             </span>
           </button>
         );

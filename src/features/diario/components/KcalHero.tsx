@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { classify, type PhaseType, type Tone } from '@/core/nutritionTone';
 import { roundMacro } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 import type { TdeeConfidence } from '@/features/tdee/api';
 
 // Same tone→token map as DayTotalsCard/MacroTile (per-component convention).
@@ -41,6 +42,7 @@ export function KcalHero({
   tdeeConfidence,
 }: Props) {
   const { t } = useTranslation('diario');
+  const num = useNum();
   const s = classify('kcal', consumed, target, phaseType);
   const remaining = Math.max(0, roundMacro(s.remaining));
   const pct = target > 0 ? Math.min(100, (consumed / target) * 100) : 0;
@@ -78,17 +80,17 @@ export function KcalHero({
             TEXT_TONE[s.tone],
           )}
         >
-          {remaining}
+          {num.qty(remaining)}
         </span>
         <span className="text-base text-muted-foreground">kcal</span>
       </div>
 
       <div className="mt-3.5 mb-1.5 flex justify-between text-xs text-muted-foreground tabular-nums">
         <span>
-          <b className="text-foreground">{roundMacro(consumed)}</b> {t('hero.consumed')}
+          <b className="text-foreground">{num.qty(roundMacro(consumed))}</b> {t('hero.consumed')}
         </span>
         <span>
-          <b className="text-foreground">{roundMacro(target)}</b> {t('hero.target')}
+          <b className="text-foreground">{num.qty(roundMacro(target))}</b> {t('hero.target')}
         </span>
       </div>
       <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">

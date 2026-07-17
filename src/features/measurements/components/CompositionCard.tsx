@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Maximize2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { formatDecimal } from '@/lib/number';
 import type { BodyMeasurement } from '../api';
 import {
   compositionDelta,
@@ -34,8 +35,8 @@ const TONE_CLASS: Record<DeltaTone, string> = {
   neutral: 'text-text-dim',
 };
 
-function signed(n: number, digits = 1): string {
-  const v = Math.abs(n).toFixed(digits);
+function signed(n: number, lang: string, digits = 1): string {
+  const v = formatDecimal(Math.abs(n), { lang, digits });
   if (n > 0) return `↑ ${v}`;
   if (n < 0) return `↓ ${v}`;
   return `· ${v}`;
@@ -56,7 +57,8 @@ interface Props {
  * (`compositionDelta` + `deltaTone`) — nothing is recomputed here.
  */
 export function CompositionCard({ latest, recent, phaseType, onExpand }: Props) {
-  const { t } = useTranslation('metricas');
+  const { t, i18n } = useTranslation('metricas');
+  const lang = i18n.language;
 
   function deltaFor(field: CompField): number | null {
     return compositionDelta(
@@ -117,7 +119,7 @@ export function CompositionCard({ latest, recent, phaseType, onExpand }: Props) 
                       TONE_CLASS[tone],
                     )}
                   >
-                    {signed(delta)} · {t('composition.deltaWindow', { days: TREND_LOOKBACK_DAYS })}
+                    {signed(delta, lang)} · {t('composition.deltaWindow', { days: TREND_LOOKBACK_DAYS })}
                   </span>
                 )}
               </>

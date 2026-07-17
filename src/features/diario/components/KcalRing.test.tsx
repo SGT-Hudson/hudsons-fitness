@@ -1,7 +1,15 @@
-import '@/i18n';
-import { describe, it, expect } from 'vitest';
+import i18n from '@/i18n';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { render } from '@testing-library/react';
 import { KcalRing } from './KcalRing';
+
+// Pin Spanish: the ring now formats kcal in the active language, and es-ES
+// grouping only kicks in at 5+ digits (so typical kcal render ungrouped). In
+// English these 4-digit values would group ('1,180'), which is not what this
+// test asserts.
+beforeAll(async () => {
+  await i18n.changeLanguage('es');
+});
 
 const SIZE = 118;
 const STROKE = 11;

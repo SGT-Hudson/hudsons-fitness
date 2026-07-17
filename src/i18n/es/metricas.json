@@ -81,7 +81,7 @@
   },
   "errors": {
     "weightRequired": "El peso es obligatorio.",
-    "outOfRange": "Debe estar entre {{min}} y {{max}}."
+    "outOfRange": "Debe estar entre {{min, number}} y {{max, number}}."
   },
   "charts": {
     "empty": "Aún no hay datos suficientes para mostrar la gráfica.",

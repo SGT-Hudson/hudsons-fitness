@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { formatDecimal } from '@/lib/number';
 import { MUSCLE_CODES, type MuscleCode } from '@/core/muscleVolume';
 import { useProfile } from '@/features/profile/hooks';
 import { MuscleBody } from './MuscleBody';
@@ -16,7 +17,8 @@ function emptyByMuscle(): Record<MuscleCode, number> {
 }
 
 export function MuscleActivityView() {
-  const { t } = useTranslation('entrenamiento');
+  const { t, i18n } = useTranslation('entrenamiento');
+  const lang = i18n.language;
   const { data: profile } = useProfile();
   const [win, setWin] = useState<MuscleWindow>('30d');
   // Default follows the profile's sex once it loads; a manual toggle overrides it.
@@ -96,7 +98,7 @@ export function MuscleActivityView() {
                     style={{ background: muscleColor(v, max) }}
                   />
                   <span className="flex-1">{t(`exerciseDialog.muscle.${m}`)}</span>
-                  <strong>{Number.isInteger(v) ? v : v.toFixed(1)}</strong>
+                  <strong>{formatDecimal(v, { lang, digits: Number.isInteger(v) ? 0 : 1 })}</strong>
                   <span className="text-muted-foreground">{t('muscleMap.setsUnit')}</span>
                 </li>
               ))}

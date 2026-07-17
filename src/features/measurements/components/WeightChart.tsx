@@ -14,6 +14,8 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, type Locale } from '@/lib/dates';
+import { formatDecimal } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import {
   DEFAULT_TIME_RANGE,
@@ -41,6 +43,7 @@ interface Point {
  */
 export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null }) {
   const { t, i18n } = useTranslation('metricas');
+  const num = useNum();
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
   const [range, setRange] = useState<TimeRange>(DEFAULT_TIME_RANGE);
   const [expanded, setExpanded] = useState(false);
@@ -116,13 +119,13 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
               tickLine={false}
               axisLine={false}
               width={44}
-              tickFormatter={(v: number) => `${v}`}
+              tickFormatter={(v: number) => num.qty(v)}
             />
             <Tooltip
               contentStyle={TOOLTIP_STYLE}
               labelFormatter={(d: string) => formatDate(d, 'd MMM yyyy', locale)}
               formatter={(value: number, name: string) => [
-                `${value.toFixed(2)} kg`,
+                `${formatDecimal(value, { lang: locale, digits: 2 })} kg`,
                 name === 'ma5' ? t('charts.weight.ma5') : t('charts.weight.raw'),
               ]}
             />
@@ -133,7 +136,9 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
                 strokeDasharray="5 4"
                 strokeOpacity={0.6}
                 label={{
-                  value: t('charts.weight.targetLine', { n: targetWeightKg.toFixed(1) }),
+                  value: t('charts.weight.targetLine', {
+                    n: formatDecimal(targetWeightKg, { lang: locale, digits: 1 }),
+                  }),
                   position: 'insideTopRight',
                   fontSize: 9.5,
                   fill: 'var(--accent-ink)',

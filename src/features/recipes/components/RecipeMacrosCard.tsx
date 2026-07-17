@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Zap } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 import type { Macros } from '../macros';
 
@@ -34,6 +35,7 @@ function MacroColumn({
   empty: boolean;
 }) {
   const { t } = useTranslation('recetas');
+  const num = useNum();
   const grams: Array<{ key: 'protein' | 'carbs' | 'fat'; value: number; dot: string }> = [
     { key: 'protein', value: macros.proteinG, dot: MACRO_DOT[0] },
     { key: 'carbs', value: macros.carbsG, dot: MACRO_DOT[1] },
@@ -74,7 +76,7 @@ function MacroColumn({
               {t(`macros.letter.${key}`)}
             </span>
             <b className={cn('font-semibold', empty && 'text-text-dim')}>
-              {empty ? '— g' : `${Math.round(value)}g`}
+              {empty ? '— g' : `${num.qty(Math.round(value))}g`}
             </b>
           </div>
         ))}
@@ -103,6 +105,7 @@ function MacroColumn({
  */
 export function RecipeMacrosCard({ total, perServing, title, empty = false, className }: Props) {
   const { t } = useTranslation('recetas');
+  const num = useNum();
 
   const kcalFromP = total.proteinG * 4;
   const kcalFromC = total.carbsG * 4;
@@ -156,7 +159,7 @@ export function RecipeMacrosCard({ total, perServing, title, empty = false, clas
                   className={cn('h-[6px] w-[6px] shrink-0 rounded-full', dot)}
                   aria-hidden="true"
                 />
-                {t(`macros.letter.${key}`)} {Math.round(pct)}%
+                {t(`macros.letter.${key}`)} {num.qty(Math.round(pct))}%
               </span>
             ))}
           </div>

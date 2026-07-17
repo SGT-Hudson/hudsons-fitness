@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useNum } from '@/hooks/useNum';
 import type { OFFSearchResult } from '@/lib/openfoodfacts';
 
 interface OFFPanelProps {
@@ -31,6 +32,7 @@ export function OFFSearchPanel({
   onPick,
 }: OFFPanelProps) {
   const { t } = useTranslation('ingredientes');
+  const num = useNum();
 
   return (
     <div className="space-y-3">
@@ -88,7 +90,7 @@ export function OFFSearchPanel({
                     )}
                   </div>
                   <div className="text-sm tabular-nums text-muted-foreground shrink-0">
-                    {r.kcalPer100g} kcal
+                    {num.qty(r.kcalPer100g)} kcal
                   </div>
                 </button>
               </li>

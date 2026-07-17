@@ -10,9 +10,9 @@ describe('KcalHero', () => {
     const bar = screen.getByTestId('kcal-hero-bar');
     const pct = (1568 / 2180) * 100;
     expect(bar).toHaveStyle({ width: `${pct}%` });
-    // consumed / target row
-    expect(screen.getByText('1568')).toBeInTheDocument();
-    expect(screen.getByText('2180')).toBeInTheDocument();
+    // consumed / target row (en-US groups 4-digit values)
+    expect(screen.getByText('1,568')).toBeInTheDocument();
+    expect(screen.getByText('2,180')).toBeInTheDocument();
   });
 
   it('clamps remaining to 0 and the bar to 100% when over target', () => {
@@ -32,7 +32,7 @@ describe('KcalHero', () => {
       />,
     );
     expect(screen.getByText('Corte')).toBeInTheDocument();
-    expect(screen.getByText(/TDEE 2480 kcal/)).toBeInTheDocument();
+    expect(screen.getByText(/TDEE 2,480 kcal/)).toBeInTheDocument();
   });
 
   it('low TDEE confidence swaps the micro-line for the approximate-target note', () => {
@@ -46,6 +46,6 @@ describe('KcalHero', () => {
       />,
     );
     expect(screen.getByText(/calentamiento|warming up/i)).toBeInTheDocument();
-    expect(screen.queryByText(/TDEE 2480 kcal/)).toBeNull();
+    expect(screen.queryByText(/TDEE 2,480 kcal/)).toBeNull();
   });
 });

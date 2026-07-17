@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { useNum } from '@/hooks/useNum';
 import {
   useQuickAddMealLog,
   deleteMealLog,
@@ -29,6 +30,7 @@ function truncateName(name: string): string {
 
 export function QuickAddStrip({ mealType, date, items, onAddRecipe }: Props) {
   const { t } = useTranslation('diario');
+  const num = useNum();
   const quickAdd = useQuickAddMealLog();
   const qc = useQueryClient();
 
@@ -68,7 +70,7 @@ export function QuickAddStrip({ mealType, date, items, onAddRecipe }: Props) {
                 <Plus className="h-3 w-3" />
                 {truncateName(it.name)}
                 <span className="tabular-nums text-accent-ink">
-                  · {it.kcalPerServing}
+                  · {num.qty(it.kcalPerServing)}
                 </span>
               </button>
             ))}

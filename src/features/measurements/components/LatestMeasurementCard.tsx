@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
+import { formatDecimal } from '@/lib/number';
 import { computeTargetWeightKg, estimatedBmr } from '@/lib/macros';
 import { useProfile } from '@/features/profile/hooks';
 import { useLatestTdee, useTdeeState } from '@/features/tdee/hooks';
@@ -36,12 +37,12 @@ const RATE_TONE_CLASS: Record<DeltaTone, string> = {
   neutral: '',
 };
 
-function fmt(n: number, digits = 1): string {
-  return n.toFixed(digits);
+function fmt(n: number, lang: string, digits = 1): string {
+  return formatDecimal(n, { lang, digits });
 }
 
-function signed(n: number, digits = 1): string {
-  const v = fmt(Math.abs(n), digits);
+function signed(n: number, lang: string, digits = 1): string {
+  const v = fmt(Math.abs(n), lang, digits);
   if (n > 0) return `↑ ${v}`;
   if (n < 0) return `↓ ${v}`;
   return `· ${v}`;
@@ -183,7 +184,7 @@ export function LatestMeasurementCard({
   const sinceStartStr =
     sinceStart == null
       ? null
-      : `${sinceStart >= 0 ? '+' : '-'}${fmt(Math.abs(sinceStart))}`;
+      : `${sinceStart >= 0 ? '+' : '-'}${fmt(Math.abs(sinceStart), locale)}`;
 
   return (
     <Card className="p-4 md:p-5">
@@ -197,7 +198,7 @@ export function LatestMeasurementCard({
               variant="secondary"
               className={cn('whitespace-nowrap tabular-nums', RATE_TONE_CLASS[rateTone])}
             >
-              {signed(rate)} {t('latest.rateUnit')}
+              {signed(rate, locale)} {t('latest.rateUnit')}
             </Badge>
           )}
           {/* Mobile-only: `PageHeaderV2`'s "Nueva medición" action is CSS-hidden
@@ -231,7 +232,7 @@ export function LatestMeasurementCard({
           data-testid="weight-headline"
           className="text-[33px] font-semibold leading-none tracking-[-0.03em] tabular-nums md:text-[44px]"
         >
-          {latestMa5 != null ? fmt(latestMa5) : latest.weight_kg}
+          {latestMa5 != null ? fmt(latestMa5, locale) : latest.weight_kg != null ? fmt(latest.weight_kg, locale) : latest.weight_kg}
         </span>
         <span className="text-xs text-text-dim md:text-[15px]">kg</span>
       </div>
@@ -242,8 +243,8 @@ export function LatestMeasurementCard({
           {sinceStartStr != null && toGoal != null && ' · '}
           {toGoal != null &&
             t('latest.toGoal', {
-              n: fmt(Math.abs(toGoal)),
-              target: targetWeight != null ? fmt(targetWeight) : '',
+              n: fmt(Math.abs(toGoal), locale),
+              target: targetWeight != null ? fmt(targetWeight, locale) : '',
             })}
         </div>
       )}
@@ -258,7 +259,7 @@ export function LatestMeasurementCard({
           <div className="flex items-baseline gap-1.5">
             <span className="text-cap-label">{t('latest.path.title')}</span>
             <span className="ml-auto text-[15px] font-semibold tracking-[-0.02em] tabular-nums">
-              {pathPct} %
+              {fmt(pathPct, locale, 0)} %
             </span>
             <span className="text-[10.5px] text-muted-foreground">
               {t('latest.path.traveled')}
@@ -280,14 +281,14 @@ export function LatestMeasurementCard({
           </div>
           <div className="mt-2 flex justify-between text-[10px] text-text-dim tabular-nums">
             <span>
-              <b className="text-foreground">{fmt(initial as number)}</b>{' '}
+              <b className="text-foreground">{fmt(initial as number, locale)}</b>{' '}
               {t('latest.path.start')}
             </span>
             <span className="text-accent-ink">
-              <b>{fmt(latestMa5 as number)}</b> {t('latest.path.today')}
+              <b>{fmt(latestMa5 as number, locale)}</b> {t('latest.path.today')}
             </span>
             <span>
-              <b className="text-foreground">{fmt(targetWeight as number)}</b>{' '}
+              <b className="text-foreground">{fmt(targetWeight as number, locale)}</b>{' '}
               {t('latest.path.goal')}
             </span>
           </div>
@@ -299,7 +300,7 @@ export function LatestMeasurementCard({
         <div className="mt-3 border-t pt-3">
           <div className="flex items-baseline justify-between text-sm">
             <span className="text-muted-foreground">{t('fields.estimatedBmr')}</span>
-            <span className="font-semibold tabular-nums">{Math.round(bmr)} kcal</span>
+            <span className="font-semibold tabular-nums">{fmt(bmr, locale, 0)} kcal</span>
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">
             {t('fields.estimatedBmrHelp')}

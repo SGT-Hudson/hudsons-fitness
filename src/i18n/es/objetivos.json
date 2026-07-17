@@ -52,7 +52,7 @@
       "carbs": "Carbos",
       "fat": "Grasas",
       "fiber": "Fibra",
-      "basisLean": "Base: masa magra · {{n}} g/kg",
+      "basisLean": "Base: masa magra · {{n, number}} g/kg",
       "basisFallback": "Base: peso corporal · 1,6 g/kg — añade un % de grasa para un objetivo ajustado a la fase",
       "needsWeight": "Registra un peso para ver los objetivos diarios de esta fase.",
       "needsTdee": "Esta fase se define como delta sobre el TDEE y aún no hay estimación de TDEE, así que todavía no podemos calcular sus objetivos."
@@ -110,7 +110,7 @@
       "kcalValueFixed": "kcal/día",
       "kcalValueDelta": "kcal (+ superávit)",
       "protein": "Proteína (g/kg masa magra)",
-      "proteinHelp": "Sobre masa magra (peso × (1 − % grasa)). Por defecto para «{{type}}»: {{default}} g/kg de masa magra. Si no hay % de grasa registrado, se usa 1,6 g/kg de peso total.",
+      "proteinHelp": "Sobre masa magra (peso × (1 − % grasa)). Por defecto para «{{type}}»: {{default, number}} g/kg de masa magra. Si no hay % de grasa registrado, se usa 1,6 g/kg de peso total.",
       "fat": "Grasa (% de kcal)",
       "fiber": "Fibra",
       "fiberMode": "Modo",

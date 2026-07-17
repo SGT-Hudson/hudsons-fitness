@@ -11,6 +11,8 @@ import { normalizeText } from '@/features/recipes/recipeFilter';
 import { roundMacro, scale, type Macros } from '@/features/recipes/macros';
 import { classify, type PhaseType, type Tone } from '@/core/nutritionTone';
 import { formatDate, type Locale } from '@/lib/dates';
+import { formatQuantity } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 import { RECIPE_MEAL_TYPES, type RecipeMealType } from '@/features/recipes/mealTypes';
 import { projectDay } from '../addRecipe';
@@ -124,6 +126,7 @@ export function AddRecipeDrawer({
 }: Props) {
   const { t, i18n } = useTranslation('planning');
   const { t: tRecetas } = useTranslation('recetas');
+  const num = useNum();
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
   const recipes = useRecipes();
 
@@ -196,7 +199,7 @@ export function AddRecipeDrawer({
     onAdd(picked.id, picked.name, servings);
   }
 
-  const servingsLabel = new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'es-ES').format(servings);
+  const servingsLabel = formatQuantity(servings, { lang: locale });
 
   // Only the mobile Drawer needs a close button — the desktop Dialog draws its own.
   function renderHeader(showClose: boolean) {
@@ -319,21 +322,21 @@ export function AddRecipeDrawer({
                     <div className="truncate text-[12.5px] font-medium">{r.name}</div>
                     <div className="tnum mt-0.5 flex items-baseline gap-2 text-[10px]">
                       <span className="text-macro-p">
-                        {roundMacro(r.perServing.proteinG)}{' '}
+                        {num.qty(roundMacro(r.perServing.proteinG))}{' '}
                         <span className="opacity-70">{t('summary.letter.protein')}</span>
                       </span>
                       <span className="text-macro-c">
-                        {roundMacro(r.perServing.carbsG)}{' '}
+                        {num.qty(roundMacro(r.perServing.carbsG))}{' '}
                         <span className="opacity-70">{t('summary.letter.carbs')}</span>
                       </span>
                       <span className="text-macro-g">
-                        {roundMacro(r.perServing.fatG)}{' '}
+                        {num.qty(roundMacro(r.perServing.fatG))}{' '}
                         <span className="opacity-70">{t('summary.letter.fat')}</span>
                       </span>
                     </div>
                   </div>
                   <span className="tnum shrink-0 text-[11.5px] text-muted-foreground">
-                    {roundMacro(r.perServing.kcal)}
+                    {num.qty(roundMacro(r.perServing.kcal))}
                   </span>
                 </button>
               );
@@ -346,7 +349,7 @@ export function AddRecipeDrawer({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-semibold">{picked.name}</p>
                   <p className="tnum text-[10.5px] text-text-dim">
-                    {roundMacro(picked.perServing.kcal)} · {t('addRecipe.perServing')}
+                    {num.qty(roundMacro(picked.perServing.kcal))} · {t('addRecipe.perServing')}
                   </p>
                 </div>
                 <div className="flex h-9 shrink-0 items-stretch overflow-hidden rounded-xl border border-border bg-card">
@@ -385,11 +388,11 @@ export function AddRecipeDrawer({
                     )}
                     data-testid="projected-kcal"
                   >
-                    {roundMacro(projection.projected.kcal)}
+                    {num.qty(roundMacro(projection.projected.kcal))}
                   </span>
                   {targets && (
                     <span className="tnum text-[11px] text-muted-foreground">
-                      / {roundMacro(targets.kcal)}
+                      / {num.qty(roundMacro(targets.kcal))}
                     </span>
                   )}
                 </div>

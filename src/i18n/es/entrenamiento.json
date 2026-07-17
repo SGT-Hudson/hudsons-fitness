@@ -81,7 +81,7 @@
     "prs": "Récords personales",
     "pastSessions": "Sesiones anteriores",
     "warmup": "Calent.",
-    "volume": "Volumen: {{kg}} kg"
+    "volume": "Volumen: {{kg, number}} kg"
   },
   "exerciseDialog": {
     "title": "Nuevo ejercicio",
@@ -282,7 +282,7 @@
     "seriesShort": "series",
     "begin": "Empezar",
     "exerciseDone": "{{name}} completado",
-    "completeSummary": "{{sets}} series · {{volume}} kg de volumen",
+    "completeSummary": "{{sets}} series · {{volume, number}} kg de volumen",
     "addSet": "+ Añadir otra serie",
     "upNext": "Siguiente",
     "jumpToExercise": "Ir a otro ejercicio",
@@ -320,7 +320,7 @@
     "title": "RPE — Esfuerzo percibido",
     "subtitle": "Cuántas repeticiones te quedaban en reserva.",
     "explainLabel": "¿Qué es el RPE?",
-    "target": "objetivo {{value}}",
+    "target": "objetivo {{value, number}}",
     "anchor": { "10": "ninguna", "9": "1 más", "8": "2 más", "7": "3–4 más", "6": "fácil" },
     "anchorInline": { "6": "fácil", "6.5": "", "7": "3–4 reps en reserva", "7.5": "", "8": "2 reps en reserva", "8.5": "", "9": "1 rep en reserva", "9.5": "", "10": "sin reps en reserva" }
   }

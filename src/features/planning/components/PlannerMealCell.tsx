@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Copy, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { add, roundMacro, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 
 export interface PlannerCellEntry {
   id: string;
@@ -39,6 +40,7 @@ export function PlannerMealCell({
   className,
 }: Props) {
   const { t } = useTranslation('planning');
+  const num = useNum();
   const empty = entries.length === 0;
   const cell = entries.reduce<Macros>((acc, e) => add(acc, e.macros), ZERO_MACROS);
 
@@ -89,7 +91,7 @@ export function PlannerMealCell({
                 </span>
                 <span className="min-w-0 truncate font-medium">{e.recipe_name}</span>
                 {e.servings !== 1 && (
-                  <span className="tnum shrink-0 text-[10px] text-text-dim">×{e.servings}</span>
+                  <span className="tnum shrink-0 text-[10px] text-text-dim">×{num.qty(e.servings)}</span>
                 )}
               </button>
             ))}
@@ -107,17 +109,17 @@ export function PlannerMealCell({
 
           <div className="tnum mt-auto flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 border-t pt-1 text-[10px] text-text-dim">
             <span>
-              <b className="font-medium text-muted-foreground">{roundMacro(cell.kcal)}</b>{' '}
+              <b className="font-medium text-muted-foreground">{num.qty(roundMacro(cell.kcal))}</b>{' '}
               {t('cell.kcal')}
             </span>
             <span>
-              {roundMacro(cell.proteinG)} <span className="opacity-65">{t('summary.letter.protein')}</span>
+              {num.qty(roundMacro(cell.proteinG))} <span className="opacity-65">{t('summary.letter.protein')}</span>
             </span>
             <span>
-              {roundMacro(cell.carbsG)} <span className="opacity-65">{t('summary.letter.carbs')}</span>
+              {num.qty(roundMacro(cell.carbsG))} <span className="opacity-65">{t('summary.letter.carbs')}</span>
             </span>
             <span>
-              {roundMacro(cell.fatG)} <span className="opacity-65">{t('summary.letter.fat')}</span>
+              {num.qty(roundMacro(cell.fatG))} <span className="opacity-65">{t('summary.letter.fat')}</span>
             </span>
           </div>
         </>

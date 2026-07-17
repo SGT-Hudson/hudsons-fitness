@@ -11,6 +11,7 @@ import { QuantityStepper, roundToStep } from '@/components/ui/QuantityStepper';
 import { parseDecimalInput } from '@/lib/number';
 import { cn } from '@/lib/utils';
 import { roundMacro, scale, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 import { ingredientDisplayName } from '@/features/ingredients/api';
 import { ingredientMacros } from '../macros';
 import { useCreateMealLog, useUpdateMealLog, useDeleteMealLog } from '../hooks';
@@ -141,6 +142,7 @@ export function RacionStep({
   editing,
 }: Props) {
   const { t } = useTranslation('diario');
+  const num = useNum();
   const create = useCreateMealLog();
   const update = useUpdateMealLog();
   const del = useDeleteMealLog();
@@ -338,11 +340,11 @@ export function RacionStep({
                 over && 'text-amber-ink',
               )}
             >
-              {roundMacro(projectedKcal)}
+              {num.qty(roundMacro(projectedKcal))}
             </span>
             {targets && (
               <span className={cn('text-xs', over ? 'text-amber-ink' : 'text-muted-foreground')}>
-                / {roundMacro(targets.kcal)}
+                / {num.qty(roundMacro(targets.kcal))}
               </span>
             )}
           </div>
