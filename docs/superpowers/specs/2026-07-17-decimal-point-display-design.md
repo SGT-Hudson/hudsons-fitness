@@ -148,6 +148,71 @@ committing to the thread-through.)
   points. (Charts are canvas/SVG — jsdom can't see them; a real-browser pass is
   required per the jsdom-CSS lesson.)
 
+## Scope expansion — the full sweep (2026-07-17, after the browser pass)
+
+The real-browser pass (QA user, Spanish) confirmed the 15 migrated sites now
+render commas — **and** revealed the symptom is broader than the `toFixed` /
+hardcoded-`es-ES` subset this spec first scoped. On the same screens, numbers
+still show a **point** because they are interpolated **raw**: `{roundMacro(x)}`
+in JSX, and numbers passed into `t('key', { n })` (i18next's `{{n}}` prints the
+JS number verbatim). Examples caught live: `79.9`, `2200.4 kcal`,
+`+17.6 g sobre el objetivo`, `83.7 kg`, `17.5%` — all points, beside the
+correctly-migrated `↑ 4,32 kg / sem` and `objetivo 80,3 kg`.
+
+Shipping only the 15 sites would leave comma and point numbers side by side.
+Approved (Gonzalo, 2026-07-17): **expand this thread to a full display-locale
+sweep + an eslint guard against regressions.**
+
+### Mechanism (both proven)
+
+- **Category A — numbers inside `t()`**: fixed purely in the JSON. i18next 23's
+  built-in Intl formatter binds to the active `lng`, so changing a placeholder
+  `{{x}}` → `{{x, number}}` (in BOTH `es/` and `en/`) auto-localizes it — no
+  call-site code changes. Fixed decimals use
+  `{{x, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}`. Verified:
+  `{{n, number}}` → `82,4` (es) / `82.4` (en); grouping `12.345` / `12,345`.
+- **Category B — raw JSX `{number}`**: route through a `useNum()` hook that binds
+  `formatDecimal` / `formatQuantity` to `i18n.language`, e.g.
+  `{num.dec(roundMacro(x))}`. The hook lives beside the formatters.
+
+### Guard
+
+An eslint rule (`no-restricted-syntax` or a small custom rule) flags the raw
+patterns — `roundMacro(...)` directly inside a JSXExpressionContainer, bare
+`Intl.NumberFormat` / `.toLocaleString(` outside `src/lib/number.ts` — so the
+point-in-Spanish class cannot silently reappear. Exact rule finalized against
+the enumerated surface.
+
+### Execution
+
+**Filter (minimal root-cause):** localize only numbers where the separator can
+actually differ — **decimals** (weights, macro grams, rates, %, g/kg, rpe) and
+**integers that can reach ≥1000** (kcal, TDEE, training volume, pagination
+total). **Skip pure small-integer counts** (<1000: sets, servings, weeks, days,
+meals, ingredients, minutes) — `{{count}}`/`{{n}}` there renders identically in
+both locales, and skipping them keeps i18next plural keys untouched.
+
+**Rules:**
+- Category A (numbers in `t()`): JSON `{{var}}` → `{{var, number}}` in BOTH
+  `es/` and `en/`. One special case — `planner.kcalPerDay` passes a
+  pre-stringified `+N`; change the call site (`WeekSummaryCard`) to pass the raw
+  number and the JSON to `{{n, number(signDisplay: exceptZero)}}`.
+- Category B/C (raw JSX): `useNum()` — `num.qty(x)` for natural numbers
+  (macros, weights, %, rpe — preserves the no-trailing-zero look), `num.int(x)`
+  for kcal/volume (adds locale grouping ≥1000). Delete the ad-hoc `formatMacro`
+  string helper; recharts axis `tickFormatter`s format via `formatDecimal` with
+  the component's `locale`.
+
+**Guard:** an eslint rule flags raw number rendering so the class can't return —
+`roundMacro(...)`/`Math.round(...)` directly inside JSX, bare
+`.toLocaleString(`/`new Intl.NumberFormat` outside `src/lib/number.ts`.
+
+Executed with subagents partitioned by feature area (one JSON pass; code by
+diario / planning+templates / training+coach+progreso / phases+measurements+
+recipes+ingredients+pages). Each agent updates its area's tests. The main
+session then runs typecheck + full `pnpm test`, adds the eslint guard, and does
+the second browser pass — never trusting the subagents' own green.
+
 ## Out of scope
 
 - The input boundary (`parseDecimalInput`) — already correct, untouched.

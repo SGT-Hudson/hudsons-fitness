@@ -1,0 +1,22 @@
+import { useTranslation } from 'react-i18next';
+import { formatDecimal, formatQuantity } from '@/lib/number';
+
+/**
+ * Bind the shared number formatters to the active i18n language, for raw JSX
+ * number rendering (`{num.dec(roundMacro(x))}`). This is the JSX-side partner to
+ * i18next's `{{x, number}}` interpolation: use `{{x, number}}` for numbers that
+ * live inside a translated string, and this hook for numbers rendered directly.
+ *
+ * - `dec(n, digits=1)` — fixed fraction digits (weights, macros, percentages).
+ * - `int(n)` — no decimals, locale grouping (kcal, counts).
+ * - `qty(n)` — natural quantity, trailing zeros trimmed (servings, grams).
+ */
+export function useNum() {
+  const { i18n } = useTranslation();
+  const lang = i18n.language;
+  return {
+    dec: (n: number, digits = 1) => formatDecimal(n, { lang, digits }),
+    int: (n: number) => formatDecimal(n, { lang, digits: 0 }),
+    qty: (n: number) => formatQuantity(n, { lang }),
+  };
+}
