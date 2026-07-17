@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, type Locale } from '@/lib/dates';
+import { formatDecimal } from '@/lib/number';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import {
   DEFAULT_TIME_RANGE,
@@ -122,7 +123,7 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
               contentStyle={TOOLTIP_STYLE}
               labelFormatter={(d: string) => formatDate(d, 'd MMM yyyy', locale)}
               formatter={(value: number, name: string) => [
-                `${value.toFixed(2)} kg`,
+                `${formatDecimal(value, { lang: locale, digits: 2 })} kg`,
                 name === 'ma5' ? t('charts.weight.ma5') : t('charts.weight.raw'),
               ]}
             />
@@ -133,7 +134,9 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
                 strokeDasharray="5 4"
                 strokeOpacity={0.6}
                 label={{
-                  value: t('charts.weight.targetLine', { n: targetWeightKg.toFixed(1) }),
+                  value: t('charts.weight.targetLine', {
+                    n: formatDecimal(targetWeightKg, { lang: locale, digits: 1 }),
+                  }),
                   position: 'insideTopRight',
                   fontSize: 9.5,
                   fill: 'var(--accent-ink)',

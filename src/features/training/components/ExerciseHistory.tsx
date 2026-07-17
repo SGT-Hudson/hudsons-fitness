@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, type Locale } from '@/lib/dates';
+import { formatDecimal } from '@/lib/number';
 import {
   detectPRsForExercise,
   e1rmTrendForExercise,
@@ -93,7 +94,7 @@ export function ExerciseHistory({ exerciseId, exerciseName }: Props) {
                 className="flex items-center gap-2 text-sm"
               >
                 <Badge variant="outline" className="tabular-nums">
-                  {p.e1rm.toFixed(1)} kg
+                  {formatDecimal(p.e1rm, { lang: locale, digits: 1 })} kg
                 </Badge>
                 <span className="text-muted-foreground tabular-nums">
                   {p.reps}× {p.weightKg} kg

@@ -10,6 +10,7 @@ import {
   YAxis,
 } from 'recharts';
 import { formatDate, type Locale } from '@/lib/dates';
+import { formatDecimal } from '@/lib/number';
 import type { CompositionUnit } from '../composition';
 
 export interface TrendPoint {
@@ -78,7 +79,10 @@ export function TrendChart({ title, points, color, unit, locale }: Props) {
                   fontSize: 12,
                 }}
                 labelFormatter={(d: string) => formatDate(d, 'd MMM yyyy', locale)}
-                formatter={(value: number) => [`${value.toFixed(1)}${suffix}`, title]}
+                formatter={(value: number) => [
+                  `${formatDecimal(value, { lang: locale, digits: 1 })}${suffix}`,
+                  title,
+                ]}
               />
               <Line
                 type="monotone"

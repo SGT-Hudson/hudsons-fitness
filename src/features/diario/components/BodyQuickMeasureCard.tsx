@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { MeasurementDialog } from '@/features/measurements/components/MeasurementDialog';
 import { deltaTone, type DeltaTone, type PhaseType } from '@/features/measurements/trend';
 import { formatDate, isoDate, type Locale } from '@/lib/dates';
+import { formatDecimal } from '@/lib/number';
 import type { BodyMeasurement } from '@/features/measurements/api';
 
 const TONE_CLASS: Record<DeltaTone, string> = {
@@ -22,8 +23,8 @@ interface Props {
   phaseType?: PhaseType;
 }
 
-function signedRate(n: number): string {
-  const v = Math.abs(n).toFixed(2);
+function signedRate(n: number, lang: string): string {
+  const v = formatDecimal(Math.abs(n), { lang, digits: 2 });
   if (n > 0) return `↑ ${v}`;
   if (n < 0) return `↓ ${v}`;
   return `· ${v}`;
@@ -67,7 +68,7 @@ export function BodyQuickMeasureCard({ latest, rate, phaseType }: Props) {
                 TONE_CLASS[tone],
               )}
             >
-              {signedRate(rate)} {t('body.rateUnit')}
+              {signedRate(rate, locale)} {t('body.rateUnit')}
             </span>
           )}
         </div>

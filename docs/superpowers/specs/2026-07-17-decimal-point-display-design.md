@@ -67,7 +67,26 @@ Behaviour:
   module-level helpers where hooks are unavailable. Callers pass
   `i18n.language`, exactly as the codebase already threads `locale`/`lang`.
 
-Integer/grouping-only cases (kcal, servings, quantities) use `digits: 0`.
+### The quantity formatter — `formatQuantity(n, { lang, maxDigits=3 })`
+
+Discovered during implementation: servings, grams and unidades are **natural**
+quantities — whole or fractional (`1`, `1,5`, `0,25`), with trailing zeros
+**trimmed**. `formatDecimal`'s fixed digits would round `1,5 → 2` at `digits:0`,
+so these need an up-to-N-digits partner that preserves the existing
+`Intl.NumberFormat(locale)` (default) behaviour those sites already had:
+
+```ts
+export function formatQuantity(n: number, opts: { lang: string; maxDigits?: number }): string;
+```
+
+Split rule: **fixed decimal place → `formatDecimal`** (kg/kcal columns that must
+align); **natural quantity → `formatQuantity`** (a step control's readout).
+`localeFor` is shared by both — still one locale-mapping site.
+
+- `formatDecimal(_, { digits: 0 })` — kcal only, and only because kcal reaches
+  the ring already `roundMacro`-ed to an integer (fixed-0 == natural there).
+- `formatQuantity` — servings (AddRecipeDrawer), the `QuantityStepper` readout,
+  and `describeMealLog`'s servings/grams detail.
 
 ### Call sites (15 total)
 

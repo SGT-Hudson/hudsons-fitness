@@ -11,6 +11,7 @@ import { normalizeText } from '@/features/recipes/recipeFilter';
 import { roundMacro, scale, type Macros } from '@/features/recipes/macros';
 import { classify, type PhaseType, type Tone } from '@/core/nutritionTone';
 import { formatDate, type Locale } from '@/lib/dates';
+import { formatQuantity } from '@/lib/number';
 import { cn } from '@/lib/utils';
 import { RECIPE_MEAL_TYPES, type RecipeMealType } from '@/features/recipes/mealTypes';
 import { projectDay } from '../addRecipe';
@@ -196,7 +197,7 @@ export function AddRecipeDrawer({
     onAdd(picked.id, picked.name, servings);
   }
 
-  const servingsLabel = new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'es-ES').format(servings);
+  const servingsLabel = formatQuantity(servings, { lang: locale });
 
   // Only the mobile Drawer needs a close button — the desktop Dialog draws its own.
   function renderHeader(showClose: boolean) {

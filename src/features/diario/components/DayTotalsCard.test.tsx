@@ -1,7 +1,14 @@
-import '@/i18n';
-import { describe, it, expect } from 'vitest';
+import i18n from '@/i18n';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DayTotalsCard } from './DayTotalsCard';
+
+// Pin Spanish: the KcalRing now formats kcal in the active language, and es-ES
+// leaves 4-digit values ungrouped ('1180'). Without this the ambient test
+// language (en) would group them ('1,180') and the assertions below would miss.
+beforeAll(async () => {
+  await i18n.changeLanguage('es');
+});
 
 const Z = { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0 };
 

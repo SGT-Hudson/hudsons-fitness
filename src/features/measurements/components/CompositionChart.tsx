@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, type Locale } from '@/lib/dates';
+import { formatDecimal } from '@/lib/number';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import {
   DEFAULT_TIME_RANGE,
@@ -190,7 +191,7 @@ export function CompositionChart({ expanded: expandedProp, onExpandedChange }: P
             contentStyle={TOOLTIP_STYLE}
             labelFormatter={(d: string) => formatDate(d, 'd MMM yyyy', locale)}
             formatter={(value: number, name: string) => [
-              `${value.toFixed(1)}${suffix}`,
+              `${formatDecimal(value, { lang: locale, digits: 1 })}${suffix}`,
               seriesLabel(name as CompositionSeriesKey),
             ]}
           />

@@ -54,7 +54,7 @@ describe('WeightChart', () => {
     const target = container.querySelector('.recharts-reference-line-line');
     expect(target).not.toBeNull();
     expect(target).toHaveAttribute('stroke-dasharray', '5 4');
-    expect(screen.getByText(/objetivo 74\.5 kg/)).toBeInTheDocument();
+    expect(screen.getByText(/objetivo 74,5 kg/)).toBeInTheDocument();
   });
 
   it('omits the reference line when there is no target weight', () => {

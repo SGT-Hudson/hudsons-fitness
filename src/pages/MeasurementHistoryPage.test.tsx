@@ -103,8 +103,8 @@ describe('MeasurementHistoryPage', () => {
   it('shows the delta of each row against the previous measurement', () => {
     renderPage();
 
-    expect(screen.getByTestId('history-delta-m3')).toHaveTextContent('-0.4'); // 79.0 − 79.4
-    expect(screen.getByTestId('history-delta-m2')).toHaveTextContent('-0.6'); // 79.4 − 80.0
+    expect(screen.getByTestId('history-delta-m3')).toHaveTextContent('-0,4'); // 79.0 − 79.4
+    expect(screen.getByTestId('history-delta-m2')).toHaveTextContent('-0,6'); // 79.4 − 80.0
     expect(screen.getByTestId('history-delta-m1')).toHaveTextContent('—'); // oldest
   });
 
@@ -118,7 +118,7 @@ describe('MeasurementHistoryPage', () => {
     renderPage();
 
     // One decimal everywhere, so the weights line up down the column.
-    expect(screen.getByText(/Inicio del registro/)).toHaveTextContent('80.0 kg');
+    expect(screen.getByText(/Inicio del registro/)).toHaveTextContent('80,0 kg');
   });
 
   // Edit and delete were on the flat `MeasurementsList` this screen retires.

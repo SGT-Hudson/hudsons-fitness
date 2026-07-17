@@ -12,9 +12,9 @@ interface Props {
 }
 
 export function MealLogEntry({ log, onEdit }: Props) {
-  const { t } = useTranslation('diario');
+  const { t, i18n } = useTranslation('diario');
   const macros = computeMealLogMacros(log);
-  const desc = describeMealLog(log);
+  const desc = describeMealLog(log, i18n.language);
   // R-01: `recipes.deleted_at` is gone. Anon-owned (creator-hidden)
   // recipes still resolve via the open pool SELECT — no "recipe deleted"
   // distinction surfaces here anymore; historical entries render normally
