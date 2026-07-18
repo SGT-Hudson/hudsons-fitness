@@ -164,8 +164,7 @@
     "prepTimeTooLarge": "El tiempo de preparación no puede superar las 24 h (1440 min).",
     "noIngredients": "Añade al menos un ingrediente.",
     "rowMissingIngredient": "Hay filas sin ingrediente seleccionado.",
-    "rowInvalidQuantity": "Hay filas con cantidad inválida o vacía.",
-    "stepEmpty": "Hay un paso vacío. Escríbelo o bórralo."
+    "rowInvalidQuantity": "Hay filas con cantidad inválida o vacía."
   },
   "sort": {
     "label": "Ordenar por:",

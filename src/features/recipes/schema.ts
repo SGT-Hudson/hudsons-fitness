@@ -46,7 +46,6 @@ export const RECIPE_ERROR_ORDER = [
   'noIngredients',
   'rowMissingIngredient',
   'rowInvalidQuantity',
-  'stepEmpty',
 ] as const;
 
 export type RecipeErrorCode = (typeof RECIPE_ERROR_ORDER)[number];
@@ -161,12 +160,6 @@ export const recipeFormSchema = z
         return;
       }
     }
-    for (const step of v.steps) {
-      if (step.text.trim() === '') {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['steps'], message: 'stepEmpty' });
-        return;
-      }
-    }
   });
 
 export type RecipeFormValues = z.infer<typeof recipeFormSchema>;
@@ -176,5 +169,5 @@ export type RecipeFormValues = z.infer<typeof recipeFormSchema>;
  * Returns the legacy error code (the component maps it to `t('errors.<code>')`).
  */
 export function firstRecipeError(errors: FieldErrors): RecipeErrorCode | null {
-  return pickFirstError(errors, ['name', 'servings', 'prepTime', 'rows', 'steps'], RECIPE_ERROR_ORDER);
+  return pickFirstError(errors, ['name', 'servings', 'prepTime', 'rows'], RECIPE_ERROR_ORDER);
 }

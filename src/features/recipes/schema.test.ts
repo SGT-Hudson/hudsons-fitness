@@ -185,13 +185,14 @@ describe('steps', () => {
     expect(res.success).toBe(true);
   });
 
-  it('rejects a step whose text is empty or whitespace-only', () => {
+  // A blank step is not a validation failure any more: the owner decided a
+  // blank step holds nothing worth blocking the save over — it is silently
+  // dropped (and the rest renumbered) by the payload builder in
+  // RecetaEditorPage.tsx instead. The schema just has to get out of the way.
+  it('accepts a step whose text is empty or whitespace-only — it is dropped at save time, not rejected', () => {
     for (const text of ['', '   ']) {
       const res = recipeFormSchema.safeParse(form({ steps: [{ stepId: 's1', text }] }));
-      expect(res.success).toBe(false);
-      if (!res.success) {
-        expect(res.error.issues.find((i) => i.path[0] === 'steps')?.message).toBe('stepEmpty');
-      }
+      expect(res.success).toBe(true);
     }
   });
 });

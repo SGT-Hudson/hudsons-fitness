@@ -310,6 +310,31 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     );
   });
 
+  // R-36 product decision: a blank step no longer blocks the save (the zod
+  // rule that rejected it is gone) — it is silently dropped, and the steps
+  // that survive renumber contiguously from 0. This also pins that the save
+  // actually goes through now, where it used to be blocked.
+  it('drops a blank step at save time and renumbers the remaining steps contiguously', async () => {
+    const user = userEvent.setup();
+    useRecipe.mockReturnValue({ data: recipe({ recipe_steps: [] }), isLoading: false, error: null });
+    renderEditor('/recipes/r-1/edit');
+
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 1'), 'primero');
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 2'), '   ');
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 3'), 'tercero');
+
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0].steps).toEqual([
+      { text: 'primero', display_order: 0 },
+      { text: 'tercero', display_order: 1 },
+    ]);
+  });
+
   // The regression this task exists to fix: `initial` used to be a fresh
   // object on every render, and opening (then cancelling) the remove dialog
   // re-renders the page — which reset the form back to the saved values and
