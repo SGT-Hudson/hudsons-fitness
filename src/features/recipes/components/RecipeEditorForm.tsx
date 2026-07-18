@@ -16,6 +16,7 @@ import { RecipeMediaPlaceholder } from './RecipeMediaPlaceholder';
 import { RecipeStepsField } from './RecipeStepsField';
 import { ingredientDisplayName, type Ingredient } from '@/features/ingredients/api';
 import type { RecipeWithIngredients } from '../api';
+import { newRowId } from '../ids';
 import { computeRecipeMacros } from '../macros';
 import {
   firstRecipeError,
@@ -34,12 +35,6 @@ import { cn } from '@/lib/utils';
  * the buttons while this component keeps the form state.
  */
 export const RECIPE_EDITOR_FORM_ID = 'recipe-editor';
-
-let rowIdCounter = 0;
-export function newRowId() {
-  rowIdCounter += 1;
-  return `row-${Date.now()}-${rowIdCounter}`;
-}
 
 // EditorRow / EditorState are now the zod schema's value shape (D-C2/R-09).
 // Kept as named exports because RecetaEditorPage builds/maps them.

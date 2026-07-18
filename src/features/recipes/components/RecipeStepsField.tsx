@@ -3,7 +3,7 @@ import { useFieldArray, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { newRowId } from './RecipeEditorForm';
+import { newRowId } from '../ids';
 import type { EditorState } from './RecipeEditorForm';
 
 /**

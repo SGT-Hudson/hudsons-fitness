@@ -116,8 +116,9 @@ export function RecetaEditorPage() {
             per_serving: row.per_serving,
             display_order: i,
           })),
-        // R-36: blank steps are filtered here too (belt-and-braces — the zod
-        // schema already refuses to submit one), and `display_order` is the
+        // R-36 / D-F26: the zod schema deliberately ACCEPTS blank steps (the
+        // save is never blocked on one) — this filter is what actually drops
+        // them, not a redundant belt-and-braces check. `display_order` is the
         // index AFTER filtering, so a blank step in the middle leaves no gap
         // in the saved sequence.
         steps: state.steps

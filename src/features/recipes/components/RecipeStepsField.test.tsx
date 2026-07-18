@@ -1,12 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormProvider, useForm } from 'react-hook-form';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-// RecipeStepsField imports newRowId from RecipeEditorForm, which pulls in
-// '../api' -> '@/lib/supabase', which throws at module scope without env vars
-// (green-local/red-CI trap otherwise — see RecipeEditorForm.test.tsx).
-vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import i18n from '@/i18n';
 import { RecipeStepsField } from './RecipeStepsField';
