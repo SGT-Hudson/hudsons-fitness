@@ -66,9 +66,10 @@ select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-1111111
 set local role authenticated;
 
 select lives_ok(
-  $q$ select save_recipe(null, 'R', 2, 'd', 'i',
+  $q$ select save_recipe(null, 'R', 2, 'd',
         '[{"ingredient_id":"00000000-0000-0000-0000-0000000000d1","quantity":100},
-          {"ingredient_id":"00000000-0000-0000-0000-0000000000d2","quantity":50}]'::jsonb) $q$,
+          {"ingredient_id":"00000000-0000-0000-0000-0000000000d2","quantity":50}]'::jsonb,
+        '[]'::jsonb) $q$,
   'A save_recipe create succeeds');
 select is(
   (select count(*)::int from recipes where created_by_user_id = '11111111-1111-1111-1111-111111111111' and name = 'R'),
@@ -87,8 +88,9 @@ select is(
 select lives_ok(
   $q$ select save_recipe(
         (select id from recipes where created_by_user_id = '11111111-1111-1111-1111-111111111111' and name = 'R'),
-        'R', 2, 'd', 'i',
-        '[{"ingredient_id":"00000000-0000-0000-0000-0000000000d1","quantity":120}]'::jsonb) $q$,
+        'R', 2, 'd',
+        '[{"ingredient_id":"00000000-0000-0000-0000-0000000000d1","quantity":120}]'::jsonb,
+        '[]'::jsonb) $q$,
   'A save_recipe replace succeeds');
 select is(
   (select count(*)::int from recipe_ingredients ri
@@ -367,10 +369,10 @@ select lives_ok(
 
 -- create through the RPC, with a prep time and the meal types still in place
 select lives_ok(
-  $q$ select save_recipe(null, 'R prep', 2, 'd', 'i',
+  $q$ select save_recipe(null, 'R prep', 2, 'd',
         '[{"ingredient_id":"00000000-0000-0000-0000-0000000000d1","quantity":100},
           {"ingredient_id":"00000000-0000-0000-0000-0000000000d2","quantity":50}]'::jsonb,
-        array['lunch']::text[], 35) $q$,
+        '[]'::jsonb, array['lunch']::text[], 35) $q$,
   'save_recipe creates a recipe with a prep time');
 select is(
   (select prep_time_minutes from recipes where name = 'R prep'),
@@ -385,7 +387,7 @@ select is(
 
 -- create with no prep time at all (the default keeps the 7-arg call sites honest)
 select lives_ok(
-  $q$ select save_recipe(null, 'R no prep', 1, null, null, '[]'::jsonb, array['snack']::text[]) $q$,
+  $q$ select save_recipe(null, 'R no prep', 1, null, '[]'::jsonb, '[]'::jsonb, array['snack']::text[]) $q$,
   'save_recipe still accepts a call that omits the prep time');
 select is(
   (select prep_time_minutes from recipes where name = 'R no prep'),
@@ -393,7 +395,7 @@ select is(
 
 -- a bad prep time through the RPC is rejected by the constraint, not by app code
 select throws_ok(
-  $q$ select save_recipe(null, 'R bad prep', 1, null, null, '[]'::jsonb, '{}'::text[], 0) $q$,
+  $q$ select save_recipe(null, 'R bad prep', 1, null, '[]'::jsonb, '[]'::jsonb, '{}'::text[], 0) $q$,
   '23514', null,
   'save_recipe surfaces the check constraint for a prep time of 0');
 
@@ -401,9 +403,9 @@ select throws_ok(
 select lives_ok(
   $q$ select save_recipe(
         (select id from recipes where name = 'R prep'),
-        'R prep', 2, 'd', 'i',
+        'R prep', 2, 'd',
         '[{"ingredient_id":"00000000-0000-0000-0000-0000000000d1","quantity":120}]'::jsonb,
-        array['lunch']::text[], 50) $q$,
+        '[]'::jsonb, array['lunch']::text[], 50) $q$,
   'save_recipe updates the prep time of an existing recipe');
 select is(
   (select prep_time_minutes from recipes where name = 'R prep'),
@@ -417,7 +419,7 @@ select is(
 select lives_ok(
   $q$ select save_recipe(
         (select id from recipes where name = 'R prep'),
-        'R prep', 2, 'd', 'i', '[]'::jsonb, array['lunch']::text[], null) $q$,
+        'R prep', 2, 'd', '[]'::jsonb, '[]'::jsonb, array['lunch']::text[], null) $q$,
   'save_recipe clears a prep time back to null');
 select is(
   (select prep_time_minutes from recipes where name = 'R prep'),
@@ -433,8 +435,8 @@ insert into recipes (id, created_by_user_id, name, prep_time_minutes) values
 select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
 set local role authenticated;
 select throws_ok(
-  $q$ select save_recipe('00000000-0000-0000-0000-0000000000f1', 'hijack', 1, null, null,
-        '[]'::jsonb, '{}'::text[], 99) $q$,
+  $q$ select save_recipe('00000000-0000-0000-0000-0000000000f1', 'hijack', 1, null,
+        '[]'::jsonb, '[]'::jsonb, '{}'::text[], 99) $q$,
   'P0001', 'recipe not found or not owned by user',
   'B cannot save_recipe into A''s recipe');
 

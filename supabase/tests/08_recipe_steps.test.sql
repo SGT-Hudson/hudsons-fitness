@@ -63,5 +63,37 @@ with d as (
 )
 select is(count(*)::int, 0, 'B''s DELETE against A''s steps removes nothing') from d;
 
+-- ── save_recipe replaces the whole step set, in array order ──────────────────
+select is(
+  (select count(*)::int from information_schema.columns
+    where table_schema = 'public' and table_name = 'recipes'
+      and column_name = 'instructions'),
+  0, 'recipes.instructions column is gone');
+
+select public.save_recipe(
+  '00000000-0000-0000-0000-0000000000b1',
+  'B recipe', 2, null,
+  '[]'::jsonb,
+  '[{"text":"paso uno","display_order":0},{"text":"paso dos","display_order":1}]'::jsonb
+);
+
+select is(
+  (select array_agg(text order by display_order) from public.recipe_steps
+     where recipe_id = '00000000-0000-0000-0000-0000000000b1'),
+  array['paso uno', 'paso dos'],
+  'save_recipe inserts steps in display_order');
+
+select public.save_recipe(
+  '00000000-0000-0000-0000-0000000000b1',
+  'B recipe', 2, null,
+  '[]'::jsonb,
+  '[{"text":"unico","display_order":0}]'::jsonb
+);
+
+select is(
+  (select count(*)::int from public.recipe_steps
+     where recipe_id = '00000000-0000-0000-0000-0000000000b1'),
+  1, 'save_recipe delete-and-reinserts the step set rather than appending');
+
 select * from finish();
 rollback;
