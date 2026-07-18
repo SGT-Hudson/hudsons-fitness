@@ -541,3 +541,19 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **Why:** half the search's value (jumping to an ingredient's page) had no destination until the Ingredientes wave existed; building a degraded version first, then reworking it, would have been wasted motion. In the event the wave chose not to build a detail page at all, so the "degraded" list jump is what shipped. Logging is fully served by `AddToDaySheet`, so nothing was blocked by the deferral.
 
 **Status:** shipped · R-33 Ingredientes wave 6 (PR #194, `77ada79`); pick lands on the scoped list, no ingredient detail page built
+
+## D-F25 — R-36 `recipe_steps` starts empty; the old `instructions` free text is not migrated
+
+**Ruling:** The migration that adds `recipe_steps` and drops `recipes.instructions` does not backfill: every existing recipe starts with zero steps, and whatever free text was in `instructions` is gone once the column is dropped.
+
+**Why:** the app has no production users yet, so there is no real instructions text to preserve — writing a migration step to parse free text into ordered step rows would be effort spent protecting data that doesn't exist. Simplest correct migration for the actual state of the world.
+
+**Status:** decided · done (R-36, migration `20260718100100_r36_save_recipe_steps.sql`)
+
+## D-F26 — R-36 blank recipe steps are dropped at save, not rejected
+
+**Ruling:** A step left blank (or whitespace-only) is silently skipped when the recipe is saved — both `save_recipe`'s insert (`where coalesce(btrim(item->>'text'), '') <> ''`) and the client's payload builder filter it out and renumber `display_order` contiguously. The save is never blocked on it.
+
+**Why:** an early draft rejected the save with a validation error on a blank step. That was reversed: a blank step holds nothing worth losing, so blocking the save on it was friction with no benefit — the editor already had a filter-and-renumber path ready (previously dead code, since the zod schema rejected the save before it could run).
+
+**Status:** decided · done (R-36, `fix(recipes): drop blank steps at save instead of rejecting the save`)

@@ -94,14 +94,13 @@ Shared-pool entity referencing the shared ingredient library — recipes are poo
 | `name` | `text` not null |
 | `servings` | `numeric(5,2)` not null default 1, check `servings > 0` |
 | `description` | `text` |
-| `instructions` | `text` |
 | `photo_url` | `text` |
 | `meal_types` | `text[]` not null default `'{}'`, check `meal_types <@ array['breakfast','lunch','snack','dinner','dessert']` — U-2 (#96); gin index `idx_recipes_meal_types` for slot filtering |
 | `prep_time_minutes` | `integer` null, check `> 0` — minutes to prepare; null = no time recorded (R-33 wave 5) |
 | `created_at` | `timestamptz` not null default `now()` |
 | `updated_at` | `timestamptz` not null default `now()` |
 
-`meal_types` tags a recipe with the meals it suits (U-2 #96, live); `save_recipe` carries it as the `p_meal_types` argument, and gained a trailing `p_prep_time_minutes` argument for the prep-time field (R-33 wave 5).
+`meal_types` tags a recipe with the meals it suits (U-2 #96, live); `save_recipe` carries it as the `p_meal_types` argument, and gained a trailing `p_prep_time_minutes` argument for the prep-time field (R-33 wave 5). R-36 dropped `instructions` (the old free-text steps column) — steps are now the structured `recipe_steps` child table below, and `save_recipe` takes `p_steps jsonb` instead of the old `p_instructions text`.
 
 ### `recipe_ingredients`
 
@@ -119,6 +118,20 @@ Join rows from a recipe to the shared ingredient library. Index `idx_recipe_ingr
 
 `per_serving = true` means the quantity is added per serving served (e.g. rice in a curry) rather than scaled across servings.
 
+### `recipe_steps` (R-36)
+
+Ordered step text for a recipe — replaces the dropped `recipes.instructions` free-text column. Index `idx_recipe_steps_recipe` on `(recipe_id, display_order)`.
+
+| Column | Type / constraint |
+|---|---|
+| `id` | `uuid` primary key default `gen_random_uuid()` |
+| `recipe_id` | `uuid` not null, references `recipes(id)` on delete cascade |
+| `display_order` | `integer` not null default 0 |
+| `text` | `text` not null |
+| `created_at` | `timestamptz` not null default `now()` |
+
+`save_recipe` replace-children's this table alongside `recipe_ingredients` on every save (delete then reinsert from `p_steps`, ordered by the payload's `display_order`). Blank/whitespace-only steps are skipped at insert (D-F26) — dropped silently, not rejected — and `recipe_steps` starts empty for every existing recipe: R-36 did not migrate the old `instructions` text into steps (D-F25).
+
 ### `user_ingredient_refs` (R-01)
 
 Per-user reference rows that compose the live Library model (see Library Contribution & Lifecycle Model). One row = one ingredient in a user's library; "my library" is the set of my reference rows. Private notes live here, never on the shared pool item — the structural PII firewall. `unique (user_id, ingredient_id)`.
@@ -134,7 +147,7 @@ Per-user reference rows that compose the live Library model (see Library Contrib
 
 ### `user_recipe_refs` (R-01)
 
-Per-user reference rows for recipes — the recipe-layer counterpart of `user_ingredient_refs`. One row = one recipe in a user's library; hide = delete the caller's reference row (`hide_owned_recipe`), the pooled recipe is untouched. `unique (user_id, recipe_id)`.
+Per-user reference rows for recipes — the recipe-layer counterpart of `user_ingredient_refs`. One row = one recipe in a user's library; hide = delete the caller's reference row (`hide_owned_recipe`), the pooled recipe is untouched. `unique (user_id, recipe_id)`. `note` is live (R-36) — a private per-user note editable from the recipe detail page's notes card for any recipe in the caller's library, including recipes they did not create; read and written by a plain single-table `update … eq('recipe_id', …)`, not an RPC, since the table's own `auth.uid() = user_id` RLS already scopes it.
 
 | Column | Type / constraint |
 |---|---|
@@ -512,6 +525,8 @@ Reversibility escape-hatch (D-A1): the open-SELECT model can later be tightened 
 
 **`recipe_ingredients` (shared-pool child, via join to `recipes`).** SELECT opens to all authenticated (`using (true)`, policy `"Recipe ingredients pool readable"`) so any recipe's lines render (essential for anon-owned recipes in the diary); INSERT / UPDATE / DELETE stay owner-gated via an `exists` subquery on the parent recipe's real-owner predicate (same anon-sentinel + null-seed exclusions).
 
+**`recipe_steps` (shared-pool child, via join to `recipes`; R-36).** Same shape as `recipe_ingredients`: SELECT opens to all authenticated (`using (true)`, policy `"Recipe steps pool readable"`); INSERT / DELETE are owner-gated via an `exists` subquery on the parent recipe's real-owner predicate (same anon-sentinel + null-seed exclusions). The UPDATE policy carries both `using` and `with check`, written with identical expressions. This is explicit intent, not a closed gap: under Postgres, an UPDATE policy with no `WITH CHECK` already applies its `USING` expression to the new row, so `recipe_ingredients`'s `using`-only UPDATE policy is equally protected today (see the R-22 note above) — the explicit pair on `recipe_steps` only guards against a future edit that narrows `USING` without updating `WITH CHECK` in step, which would otherwise silently stop covering the new row.
+
 **`muscles` (read-only reference table).** A single SELECT policy `muscles_select_all` (`using (true)`) — any authenticated user reads the whole dictionary. No INSERT / UPDATE / DELETE policy: the seed data is effectively immutable to all app roles (R-26 / D-F11).
 
 The repo is public, so RLS is the sole security boundary — there is no server-side application tier in front of the database.
@@ -521,7 +536,7 @@ The repo is public, so RLS is the sole security boundary — there is no server-
 User-facing RPCs, all `SECURITY INVOKER` with `set search_path = public`, each atomic across multiple tables:
 
 **Nutrition / meal planning (live in prod):**
-- `save_recipe`
+- `save_recipe` — create-or-replace a recipe with its ingredients and steps (replace-children on both `recipe_ingredients` and `recipe_steps`). Still 8 args; R-36 dropped `p_instructions text` and added `p_steps jsonb` in its place (old signature explicitly `drop function`-ed first, since the arg-list change would otherwise register an ambiguous overload). INVOKER.
 - `save_template`
 - `apply_template_to_week`
 - `save_week_as_template`
