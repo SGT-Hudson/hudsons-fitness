@@ -21,6 +21,7 @@ import { toRecipeMealTypes } from '@/features/recipes/mealTypes';
 import { useRecipeFavorites } from '@/features/recipes/useFavorites';
 import { RecipeMacrosCard } from '@/features/recipes/components/RecipeMacrosCard';
 import { RecipeMediaPlaceholder } from '@/features/recipes/components/RecipeMediaPlaceholder';
+import { RecipeNotesCard } from '@/features/recipes/components/RecipeNotesCard';
 import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 
@@ -371,6 +372,12 @@ export function RecetaDetailPage() {
               )}
             </Card>
           )}
+
+          {/* R-36: private per-user note. Self-gates on library membership
+              (renders null unless I hold a ref to this recipe), so no
+              ownership/membership condition is added around it here — a
+              pooled recipe I did not create is still annotatable. */}
+          <RecipeNotesCard recipeId={recipe.id} />
 
           {/* Mobile action bar (the artboard's footer): the two things you do
               with a recipe you are reading. "Editar" is in the back header. */}

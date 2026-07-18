@@ -25,6 +25,15 @@ vi.mock('@/features/diario/hooks', async (importActual) => ({
   useMealLogsForDay: () => ({ data: [], isLoading: false }),
 }));
 
+// R-36: the notes card is Supabase-backed (its own hooks + queries) and
+// separately tested; the page test only asserts it is mounted with the right
+// recipeId, so it is mocked to keep this test off the network.
+vi.mock('@/features/recipes/components/RecipeNotesCard', () => ({
+  RecipeNotesCard: ({ recipeId }: { recipeId: string }) => (
+    <div data-testid="notes-card">{recipeId}</div>
+  ),
+}));
+
 import { RecetaDetailPage } from './RecetaDetailPage';
 import type { Ingredient } from '@/features/ingredients/api';
 import type { RecipeWithIngredients } from '@/features/recipes/api';
@@ -328,6 +337,13 @@ describe('RecetaDetailPage', () => {
 
     expect(screen.getAllByRole('button', { name: 'Favorita' }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: 'Añadir al día' }).length).toBeGreaterThan(0);
+  });
+
+  it('mounts the private notes card for the recipe', async () => {
+    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    renderPage();
+
+    expect(await screen.findByTestId('notes-card')).toHaveTextContent(recipe().id);
   });
 
   it('shows a not-found state when the recipe cannot be loaded', () => {

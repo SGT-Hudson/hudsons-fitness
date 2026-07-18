@@ -21,6 +21,12 @@ on conflict (id) do nothing;
 insert into public.recipe_steps (recipe_id, display_order, text) values
   ('00000000-0000-0000-0000-0000000000a1', 0, 'A step one');
 
+-- R-36: A's private note on A's own recipe ref (PII firewall regression seed).
+insert into public.user_recipe_refs (user_id, recipe_id, note) values
+  ('11111111-1111-1111-1111-111111111111',
+   '00000000-0000-0000-0000-0000000000a1', 'nota privada de A')
+on conflict (user_id, recipe_id) do nothing;
+
 -- shape
 select has_column('public', 'recipe_steps', 'display_order', 'display_order column exists');
 select col_type_is('public', 'recipe_steps', 'text', 'text', 'text column is text');
@@ -118,6 +124,16 @@ select is(
      where recipe_id = '00000000-0000-0000-0000-0000000000b1'),
   array['real step'],
   'save_recipe drops blank/whitespace-only steps');
+
+-- R-36: regression guard on the PII firewall — B still has no membership row
+-- for A's recipe, so B's (RLS-scoped) view of user_recipe_refs cannot surface
+-- A's private note, even though B can freely SELECT A's recipe/steps (shared
+-- pool). This locks down EXISTING `user_recipe_refs` RLS rather than asserting
+-- new behaviour.
+select is(
+  (select count(*)::int from public.user_recipe_refs
+     where recipe_id = '00000000-0000-0000-0000-0000000000a1'),
+  0, 'B cannot see A''s recipe ref, so cannot read A''s private note');
 
 select * from finish();
 rollback;
