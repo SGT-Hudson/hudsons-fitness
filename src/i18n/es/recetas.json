@@ -45,7 +45,10 @@
     "editShort": "Editar",
     "notFoundTitle": "Receta no encontrada",
     "notFoundHint": "Puede que ya no exista o que la hayas quitado de tu biblioteca.",
-    "backToList": "Volver a Recetas"
+    "backToList": "Volver a Recetas",
+    "notesTitle": "Mis notas",
+    "notesPlaceholder": "Anota tus ajustes: menos sal, 5 min más…",
+    "notesSaved": "Guardado"
   },
   "editor": {
     "newTitle": "Nueva receta",

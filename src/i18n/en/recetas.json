@@ -45,7 +45,10 @@
     "editShort": "Edit",
     "notFoundTitle": "Recipe not found",
     "notFoundHint": "It may no longer exist, or you removed it from your library.",
-    "backToList": "Back to Recipes"
+    "backToList": "Back to Recipes",
+    "notesTitle": "My notes",
+    "notesPlaceholder": "Jot down your tweaks: less salt, 5 more minutes…",
+    "notesSaved": "Saved"
   },
   "editor": {
     "newTitle": "New recipe",
