@@ -533,7 +533,7 @@ The repo is public, so RLS is the sole security boundary — there is no server-
 
 ## RPCs
 
-User-facing RPCs, all `SECURITY INVOKER` with `set search_path = public`, each atomic across multiple tables:
+User-facing RPCs, all `SECURITY INVOKER`, each atomic across multiple tables. Search-path pinning is not uniform: most set `search_path = public`, but several — including both `save_recipe` (R-36) and earlier ones (`save_recipe_ref`, `u2_recipe_meal_types`, `r33_template_phase`, `r33_recipe_prep_time`, the R-00 baseline set) — use the stricter `set search_path to ''` with every table reference fully qualified (`public.recipes`, not `recipes`). Both styles are INVOKER-safe; the empty-path form is pre-existing drift from the nominal convention below, not a R-36 regression.
 
 **Nutrition / meal planning (live in prod):**
 - `save_recipe` — create-or-replace a recipe with its ingredients and steps (replace-children on both `recipe_ingredients` and `recipe_steps`). Still 8 args; R-36 dropped `p_instructions text` and added `p_steps jsonb` in its place (old signature explicitly `drop function`-ed first, since the arg-list change would otherwise register an ambiguous overload). INVOKER.
