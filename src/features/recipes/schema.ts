@@ -33,6 +33,11 @@ const rowSchema = z.object({
   per_serving: z.boolean(),
 });
 
+const stepSchema = z.object({
+  stepId: z.string(),
+  text: z.string(),
+});
+
 export const RECIPE_ERROR_ORDER = [
   'nameRequired',
   'servingsInvalid',
@@ -41,6 +46,7 @@ export const RECIPE_ERROR_ORDER = [
   'noIngredients',
   'rowMissingIngredient',
   'rowInvalidQuantity',
+  'stepEmpty',
 ] as const;
 
 export type RecipeErrorCode = (typeof RECIPE_ERROR_ORDER)[number];
@@ -91,7 +97,9 @@ export const recipeFormSchema = z
     name: z.string(),
     servings: z.string(),
     description: z.string(),
-    instructions: z.string(),
+    // R-36: structured steps replace the old free-text `instructions` column.
+    // An empty list is valid — not every recipe needs a method.
+    steps: z.array(stepSchema).default([]),
     // R-33 wave 5: optional prep time in minutes (empty = no time recorded).
     prepTime: z.string().default(''),
     rows: z.array(rowSchema),
@@ -153,6 +161,12 @@ export const recipeFormSchema = z
         return;
       }
     }
+    for (const step of v.steps) {
+      if (step.text.trim() === '') {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['steps'], message: 'stepEmpty' });
+        return;
+      }
+    }
   });
 
 export type RecipeFormValues = z.infer<typeof recipeFormSchema>;
@@ -162,5 +176,5 @@ export type RecipeFormValues = z.infer<typeof recipeFormSchema>;
  * Returns the legacy error code (the component maps it to `t('errors.<code>')`).
  */
 export function firstRecipeError(errors: FieldErrors): RecipeErrorCode | null {
-  return pickFirstError(errors, ['name', 'servings', 'prepTime', 'rows'], RECIPE_ERROR_ORDER);
+  return pickFirstError(errors, ['name', 'servings', 'prepTime', 'rows', 'steps'], RECIPE_ERROR_ORDER);
 }

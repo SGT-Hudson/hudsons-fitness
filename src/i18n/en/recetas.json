@@ -155,7 +155,8 @@
     "prepTimeTooLarge": "Prep time cannot exceed 24 h (1440 min).",
     "noIngredients": "Add at least one ingredient.",
     "rowMissingIngredient": "Some rows have no ingredient selected.",
-    "rowInvalidQuantity": "Some rows have an invalid or empty quantity."
+    "rowInvalidQuantity": "Some rows have an invalid or empty quantity.",
+    "stepEmpty": "A step is empty. Write it or remove it."
   },
   "sort": {
     "label": "Sort by:",
