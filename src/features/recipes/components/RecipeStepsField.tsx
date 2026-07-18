@@ -17,7 +17,12 @@ import type { EditorState } from './RecipeEditorForm';
 export function RecipeStepsField() {
   const { t } = useTranslation('recetas');
   const { control, register } = useFormContext<EditorState>();
-  const { fields, append, remove, swap } = useFieldArray<EditorState>({
+  // The explicit second generic pins this field array to `steps`. Without it,
+  // TS infers `TFieldArrayName` as the union of every array path on
+  // `EditorState`, and `fields` widens to `EditorRow | { stepId: string; text:
+  // string }` — losing `stepId` on every read. Same fix as `RecipeEditorForm`'s
+  // `rows` field array.
+  const { fields, append, remove, swap } = useFieldArray<EditorState, 'steps'>({
     control,
     name: 'steps',
   });

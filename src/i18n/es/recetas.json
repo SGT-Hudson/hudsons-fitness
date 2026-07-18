@@ -69,8 +69,6 @@
     "descriptionPlaceholder": "Descripción breve (opcional)",
     "prepTime": "Tiempo",
     "prepTimePlaceholder": "— min",
-    "instructions": "Instrucciones",
-    "instructionsPlaceholder": "Describe la preparación: pasos, tiempos, trucos…",
     "steps": "Pasos",
     "stepNumber": "Paso {{number}}",
     "stepPlaceholder": "Describe este paso…",
