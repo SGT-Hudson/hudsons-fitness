@@ -36,7 +36,7 @@ import { cn } from '@/lib/utils';
 export const RECIPE_EDITOR_FORM_ID = 'recipe-editor';
 
 let rowIdCounter = 0;
-function newRowId() {
+export function newRowId() {
   rowIdCounter += 1;
   return `row-${Date.now()}-${rowIdCounter}`;
 }
