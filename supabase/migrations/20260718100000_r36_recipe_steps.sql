@@ -7,8 +7,9 @@
 -- parent recipe's real creator — the LIBRARY_ANON_OWNER_ID sentinel owns the
 -- seeded library and must never count as a writer.
 --
--- Unlike recipe_ingredients (gap R-22), the UPDATE policy carries a WITH CHECK,
--- so a row cannot be re-pointed into someone else's recipe.
+-- The UPDATE policy's WITH CHECK is identical to USING, written explicitly
+-- for intent and to guard against future USING narrowing, which would otherwise
+-- silently stop covering the new row.
 
 create table if not exists public.recipe_steps (
   id            uuid primary key default gen_random_uuid(),

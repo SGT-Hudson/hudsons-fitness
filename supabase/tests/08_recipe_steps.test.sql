@@ -1,8 +1,8 @@
 -- Tier-3 / R-36 — RLS isolation on recipe_steps (ownership via a join to the
 -- parent recipe). Recipes are a shared pool (R-01): SELECT is open to every
--- authenticated user, writes are gated on the parent's real creator. Unlike
--- recipe_ingredients (gap R-22), the UPDATE policy carries a WITH CHECK from
--- day one, so the re-point assertion here is a hard assertion, not a todo.
+-- authenticated user, writes are gated on the parent's real creator. The UPDATE
+-- policy's WITH CHECK is identical to USING, written explicitly for intent and
+-- to guard against future USING narrowing.
 
 begin;
 select * from no_plan();
