@@ -166,14 +166,18 @@ export function RecipePeek({
                   </ul>
                 </div>
 
-                {recipe.instructions && (
+                {recipe.recipe_steps.length > 0 && (
                   <div className="space-y-1.5">
                     <h3 className="text-[12px] font-semibold uppercase tracking-wide text-text-dim">
                       {t('peek.instructions')}
                     </h3>
-                    <p className="whitespace-pre-line text-[13px] text-foreground">
-                      {recipe.instructions}
-                    </p>
+                    <ol className="list-decimal space-y-1 pl-4 text-[13px] text-foreground">
+                      {recipe.recipe_steps.map((step) => (
+                        <li key={step.id} className="whitespace-pre-line">
+                          {step.text}
+                        </li>
+                      ))}
+                    </ol>
                   </div>
                 )}
               </>

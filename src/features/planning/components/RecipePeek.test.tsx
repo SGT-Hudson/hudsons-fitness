@@ -14,7 +14,13 @@ const recipe = {
   id: 'r1',
   name: 'Lentejas estofadas',
   servings: 4,
-  instructions: 'Sofríe la verdura. Añade las lentejas. Cuece 30 min.',
+  recipe_steps: [] as Array<{
+    id: string;
+    recipe_id: string;
+    display_order: number;
+    text: string;
+    created_at: string;
+  }>,
   recipe_ingredients: [
     {
       id: 'ri1', recipe_id: 'r1', ingredient_id: 'i1', quantity: 400, per_serving: false,
@@ -66,15 +72,23 @@ describe('RecipePeek', () => {
     expect(screen.getByText(/400/)).toBeInTheDocument();
   });
 
-  it('shows the instructions when the recipe has them', () => {
+  it('lists the recipe steps', () => {
+    recipeQuery = {
+      data: {
+        ...recipe,
+        recipe_steps: [
+          { id: 's1', recipe_id: 'r1', display_order: 0, text: 'sofreir', created_at: '' },
+        ],
+      },
+      isLoading: false,
+    };
     renderPeek();
-    expect(screen.getByText(/Sofríe la verdura/)).toBeInTheDocument();
+    expect(screen.getByText('sofreir')).toBeInTheDocument();
   });
 
-  it('omits the instructions block when the recipe has none', () => {
-    recipeQuery = { data: { ...recipe, instructions: null }, isLoading: false };
-    renderPeek();
-    expect(screen.queryByText(/Sofríe la verdura/)).toBeNull();
+  it('omits the steps block when the recipe has none', () => {
+    renderPeek(); // base fixture's recipe_steps is []
+    expect(screen.queryByText('Elaboración')).toBeNull();
   });
 
   it('links out to the full recipe', () => {
