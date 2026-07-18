@@ -68,7 +68,6 @@ function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredient
     created_at: '2026-06-01T00:00:00.000Z',
     created_by_user_id: 'u-1',
     description: 'Batch cooking',
-    instructions: 'Hornear 25 min.',
     meal_types: ['lunch'],
     name: 'Pollo con arroz',
     photo_url: null,
@@ -85,6 +84,15 @@ function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredient
         display_order: 0,
         created_at: '2026-06-01T00:00:00.000Z',
         ingredient: ingredient(),
+      },
+    ],
+    recipe_steps: [
+      {
+        id: 'st-1',
+        recipe_id: 'r-1',
+        display_order: 0,
+        text: 'Hornear 25 min.',
+        created_at: '2026-06-01T00:00:00.000Z',
       },
     ],
     ...over,
@@ -125,7 +133,7 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     expect(screen.getByLabelText('Raciones')).toHaveValue('4');
     expect(screen.getByLabelText('Tiempo')).toHaveValue('35');
     expect(screen.getByLabelText('Descripción')).toHaveValue('Batch cooking');
-    expect(screen.getByLabelText('Instrucciones')).toHaveValue('Hornear 25 min.');
+    expect(screen.getByLabelText('Paso 1')).toHaveValue('Hornear 25 min.');
   });
 
   // THE regression this whole thread exists to prevent.
@@ -228,6 +236,32 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     expect(saveMutateAsync.mock.calls[0][0].ingredients).toEqual([
       expect.objectContaining({ ingredient_id: 'i-1', quantity: 82.4 }),
     ]);
+  });
+
+  // R-36: `recipe_steps` replaces the old free-text `instructions` column —
+  // the payload must carry the visible order as `display_order`, not
+  // whatever order the steps happened to be created in.
+  it('sends steps with display_order matching the visible order', async () => {
+    const user = userEvent.setup();
+    useRecipe.mockReturnValue({ data: recipe({ recipe_steps: [] }), isLoading: false, error: null });
+    renderEditor('/recipes/r-1/edit');
+
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 1'), 'primero');
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 2'), 'segundo');
+
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        steps: [
+          { text: 'primero', display_order: 0 },
+          { text: 'segundo', display_order: 1 },
+        ],
+      }),
+    );
   });
 
   // The regression this task exists to fix: `initial` used to be a fresh

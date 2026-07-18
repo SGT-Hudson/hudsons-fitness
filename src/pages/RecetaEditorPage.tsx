@@ -100,7 +100,6 @@ export function RecetaEditorPage() {
         // The zod schema already refused anything below SERVINGS_MIN.
         servings: parseDecimalInput(state.servings) ?? SERVINGS_MIN,
         description: state.description.trim() === '' ? null : state.description.trim(),
-        instructions: state.instructions.trim() === '' ? null : state.instructions.trim(),
         mealTypes: state.mealTypes,
         prepTimeMinutes: typeof prep === 'number' ? prep : null,
         // The quantity is a string the user typed and it may carry a decimal
@@ -117,6 +116,14 @@ export function RecetaEditorPage() {
             per_serving: row.per_serving,
             display_order: i,
           })),
+        // R-36: blank steps are filtered here too (belt-and-braces — the zod
+        // schema already refuses to submit one), and `display_order` is the
+        // index AFTER filtering, so a blank step in the middle leaves no gap
+        // in the saved sequence.
+        steps: state.steps
+          .map((s) => s.text.trim())
+          .filter((text) => text !== '')
+          .map((text, i) => ({ text, display_order: i })),
       });
       // After a successful save (create OR edit) land on the recipe's read
       // view — the thing you were making. The RPC returns the id, so this works
