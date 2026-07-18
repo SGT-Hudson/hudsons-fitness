@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,17 +24,20 @@ export function RecipeNotesCard({ recipeId }: { recipeId: string }) {
   const save = useSaveRecipeNote();
   const [draft, setDraft] = useState('');
   const [saved, setSaved] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (data) setDraft(data.note);
+    // Skip reseeding while the field is focused: a save's invalidation
+    // refetch resolves after the user has already clicked back in and kept
+    // typing, and would otherwise clobber their in-progress text.
+    if (data && document.activeElement !== textareaRef.current) setDraft(data.note);
   }, [data]);
 
   if (isLoading || !data?.exists) return null;
 
   function handleBlur() {
     if (draft.trim() === (data?.note ?? '').trim()) return;
-    save.mutate({ recipeId, note: draft });
-    setSaved(true);
+    save.mutate({ recipeId, note: draft }, { onSuccess: () => setSaved(true) });
   }
 
   return (
@@ -49,6 +52,7 @@ export function RecipeNotesCard({ recipeId }: { recipeId: string }) {
       </div>
       <div className="py-3">
         <Textarea
+          ref={textareaRef}
           rows={3}
           aria-label={t('detail.notesTitle')}
           placeholder={t('detail.notesPlaceholder')}
