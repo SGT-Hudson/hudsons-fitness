@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       _r01_recipes_owner_backup: {
@@ -905,13 +880,44 @@ export type Database = {
           },
         ]
       }
+      recipe_steps: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          recipe_id: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          recipe_id: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          recipe_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_steps_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
           created_at: string
           created_by_user_id: string
           description: string | null
           id: string
-          instructions: string | null
           meal_types: string[]
           name: string
           photo_url: string | null
@@ -924,7 +930,6 @@ export type Database = {
           created_by_user_id: string
           description?: string | null
           id?: string
-          instructions?: string | null
           meal_types?: string[]
           name: string
           photo_url?: string | null
@@ -937,7 +942,6 @@ export type Database = {
           created_by_user_id?: string
           description?: string | null
           id?: string
-          instructions?: string | null
           meal_types?: string[]
           name?: string
           photo_url?: string | null
@@ -1384,12 +1388,12 @@ export type Database = {
         Args: {
           p_description: string | null
           p_ingredients: Json
-          p_instructions: string | null
           p_meal_types?: string[]
           p_name: string
           p_prep_time_minutes?: number | null
           p_recipe_id: string | null
           p_servings: number
+          p_steps?: Json
         }
         Returns: string
       }
@@ -1566,9 +1570,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
