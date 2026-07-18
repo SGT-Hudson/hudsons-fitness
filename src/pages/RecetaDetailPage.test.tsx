@@ -192,16 +192,21 @@ describe('RecetaDetailPage', () => {
     renderPage();
 
     expect(screen.getAllByText('Preparación').length).toBeGreaterThan(0);
-    const items = await screen.findAllByRole('listitem');
-    expect(items.some((li) => li.textContent?.includes('primero'))).toBe(true);
-    expect(items.some((li) => li.textContent?.includes('segundo'))).toBe(true);
+    await screen.findAllByRole('listitem');
+
+    // Scoped to the steps card: the ingredients list above also renders <li>s.
+    const card = screen.getByText('primero').closest('[data-slot="steps"]')! as HTMLElement;
+
+    // DOM order, not just presence — ties each text to ITS position so a
+    // reversed render (or any other reordering) fails this assertion.
+    const items = within(card).getAllByRole('listitem');
+    expect(items.map((li) => li.textContent)).toEqual([
+      expect.stringContaining('primero'),
+      expect.stringContaining('segundo'),
+    ]);
 
     // Numbered by position, not by the step's own data.
-    const card = screen.getByText('primero').closest('[data-slot="steps"]')!;
-    expect(within(card as HTMLElement).getAllByText(/^\d+$/).map((n) => n.textContent)).toEqual([
-      '1',
-      '2',
-    ]);
+    expect(within(card).getAllByText(/^\d+$/).map((n) => n.textContent)).toEqual(['1', '2']);
   });
 
   // R-01 shared pool: a non-owner has nothing actionable to do about missing
