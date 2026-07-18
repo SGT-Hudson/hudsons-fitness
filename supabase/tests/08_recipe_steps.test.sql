@@ -15,11 +15,17 @@ on conflict (id) do nothing;
 
 insert into public.recipes (id, name, servings, created_by_user_id) values
   ('00000000-0000-0000-0000-0000000000a1', 'A recipe', 2, '11111111-1111-1111-1111-111111111111'),
-  ('00000000-0000-0000-0000-0000000000b1', 'B recipe', 2, '22222222-2222-2222-2222-222222222222')
+  ('00000000-0000-0000-0000-0000000000b1', 'B recipe', 2, '22222222-2222-2222-2222-222222222222'),
+  -- sentinel-owned (LIBRARY_ANON_OWNER_ID, R-01): a hidden/anonymised pool
+  -- recipe. Nobody — not even an authenticated user with no other stake in
+  -- it — may write its steps; a policy that dropped the sentinel clause
+  -- would let this recipe's steps be silently hijacked.
+  ('00000000-0000-0000-0000-0000000000c1', 'Anon recipe', 2, '00000000-0000-0000-0000-00000000a0a0')
 on conflict (id) do nothing;
 
 insert into public.recipe_steps (recipe_id, display_order, text) values
-  ('00000000-0000-0000-0000-0000000000a1', 0, 'A step one');
+  ('00000000-0000-0000-0000-0000000000a1', 0, 'A step one'),
+  ('00000000-0000-0000-0000-0000000000c1', 0, 'Anon step');
 
 -- R-36: A's private note on A's own recipe ref (PII firewall regression seed).
 insert into public.user_recipe_refs (user_id, recipe_id, note) values
@@ -68,6 +74,60 @@ with d as (
    where recipe_id = '00000000-0000-0000-0000-0000000000a1' returning 1
 )
 select is(count(*)::int, 0, 'B''s DELETE against A''s steps removes nothing') from d;
+
+-- ── the sentinel (anon-owned) recipe is writable by nobody ───────────────────
+-- The interesting attacker here is not B (B already fails the plain
+-- `r.created_by_user_id = auth.uid()` match, sentinel clause or not) — it's a
+-- session whose OWN auth.uid() equals the sentinel value itself. For that
+-- session `r.created_by_user_id = auth.uid()` would MATCH (both sides equal
+-- the sentinel uuid): the explicit `<> '00000000-0000-0000-0000-00000000a0a0'`
+-- clause is the only thing still blocking it, so a policy that dropped that
+-- clause would let this recipe's steps be silently hijacked. A real login can
+-- never carry this `sub` (R-01: the value is provably not a
+-- `gen_random_uuid()` output), but the R-01 anon seed's `auth.users` row for
+-- it makes the JWT claim well-formed enough for RLS to evaluate here.
+select set_config('request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-00000000a0a0","role":"authenticated"}', true);
+set local role authenticated;
+
+select throws_ok(
+  $q$ insert into recipe_steps (recipe_id, display_order, text)
+      values ('00000000-0000-0000-0000-0000000000c1', 1, 'intruder') $q$,
+  '42501', NULL, 'the sentinel session cannot INSERT a step into the sentinel-owned recipe');
+
+with u as (
+  update recipe_steps set text = 'hijacked'
+   where recipe_id = '00000000-0000-0000-0000-0000000000c1' returning 1
+)
+select is(count(*)::int, 0, 'the sentinel session cannot UPDATE a step of the sentinel-owned recipe') from u;
+
+with d as (
+  delete from recipe_steps
+   where recipe_id = '00000000-0000-0000-0000-0000000000c1' returning 1
+)
+select is(count(*)::int, 0, 'the sentinel session''s DELETE against the sentinel-owned recipe''s steps removes nothing') from d;
+
+-- ── owner can still mutate its own steps (act as A) ───────────────────────────
+select set_config('request.jwt.claims',
+  '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+
+with u as (
+  update recipe_steps set text = 'A step one, edited'
+   where recipe_id = '00000000-0000-0000-0000-0000000000a1' returning 1
+)
+select is(count(*)::int, 1, 'A can UPDATE its own recipe''s steps') from u;
+
+with d as (
+  delete from recipe_steps
+   where recipe_id = '00000000-0000-0000-0000-0000000000a1' returning 1
+)
+select is(count(*)::int, 1, 'A can DELETE its own recipe''s steps') from d;
+
+-- back to B for the save_recipe block below (its calls target B's own recipe)
+select set_config('request.jwt.claims',
+  '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
+set local role authenticated;
 
 -- ── save_recipe replaces the whole step set, in array order ──────────────────
 select is(
