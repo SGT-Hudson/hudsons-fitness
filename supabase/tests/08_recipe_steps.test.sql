@@ -70,11 +70,15 @@ select is(
       and column_name = 'instructions'),
   0, 'recipes.instructions column is gone');
 
+-- JSON array order deliberately differs from display_order: if the RPC ever
+-- hardcoded display_order (dropping the payload's values, so every row ties
+-- at 0), array_agg would fall back to insertion order and coincidentally
+-- match an in-order payload. Out-of-order input closes that hole.
 select public.save_recipe(
   '00000000-0000-0000-0000-0000000000b1',
   'B recipe', 2, null,
   '[]'::jsonb,
-  '[{"text":"paso uno","display_order":0},{"text":"paso dos","display_order":1}]'::jsonb
+  '[{"text":"paso dos","display_order":1},{"text":"paso uno","display_order":0}]'::jsonb
 );
 
 select is(
@@ -82,6 +86,12 @@ select is(
      where recipe_id = '00000000-0000-0000-0000-0000000000b1'),
   array['paso uno', 'paso dos'],
   'save_recipe inserts steps in display_order');
+
+select is(
+  (select array_agg(display_order order by display_order) from public.recipe_steps
+     where recipe_id = '00000000-0000-0000-0000-0000000000b1'),
+  array[0, 1],
+  'save_recipe stores the payload''s display_order values, not a hardcoded one');
 
 select public.save_recipe(
   '00000000-0000-0000-0000-0000000000b1',
@@ -94,6 +104,20 @@ select is(
   (select count(*)::int from public.recipe_steps
      where recipe_id = '00000000-0000-0000-0000-0000000000b1'),
   1, 'save_recipe delete-and-reinserts the step set rather than appending');
+
+-- whitespace-only step text is dropped, not stored as an empty step
+select public.save_recipe(
+  '00000000-0000-0000-0000-0000000000b1',
+  'B recipe', 2, null,
+  '[]'::jsonb,
+  '[{"text":"real step","display_order":0},{"text":"   ","display_order":1}]'::jsonb
+);
+
+select is(
+  (select array_agg(text order by display_order) from public.recipe_steps
+     where recipe_id = '00000000-0000-0000-0000-0000000000b1'),
+  array['real step'],
+  'save_recipe drops blank/whitespace-only steps');
 
 select * from finish();
 rollback;
