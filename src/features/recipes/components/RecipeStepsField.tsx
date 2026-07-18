@@ -43,7 +43,7 @@ export function RecipeStepsField() {
               size="icon"
               className="h-7 w-7"
               disabled={i === 0}
-              aria-label={t('form.moveStepUp')}
+              aria-label={t('form.moveStepUp', { number: i + 1 })}
               onClick={() => swap(i, i - 1)}
             >
               <ArrowUp className="h-3.5 w-3.5" />
@@ -54,7 +54,7 @@ export function RecipeStepsField() {
               size="icon"
               className="h-7 w-7"
               disabled={i === fields.length - 1}
-              aria-label={t('form.moveStepDown')}
+              aria-label={t('form.moveStepDown', { number: i + 1 })}
               onClick={() => swap(i, i + 1)}
             >
               <ArrowDown className="h-3.5 w-3.5" />
@@ -64,7 +64,7 @@ export function RecipeStepsField() {
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-text-dim"
-              aria-label={t('form.removeStep')}
+              aria-label={t('form.removeStep', { number: i + 1 })}
               onClick={() => remove(i)}
             >
               <X className="h-3.5 w-3.5" />
