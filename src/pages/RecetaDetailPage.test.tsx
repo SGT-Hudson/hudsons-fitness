@@ -57,7 +57,10 @@ function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredient
     created_by_user_id: 'me',
     servings: 4,
     description: null,
-    instructions: 'Dora el pollo.\nAñade el arroz.',
+    recipe_steps: [
+      { id: 'step-1', recipe_id: 'r-1', display_order: 0, text: 'Dora el pollo.', created_at: '' },
+      { id: 'step-2', recipe_id: 'r-1', display_order: 1, text: 'Añade el arroz.', created_at: '' },
+    ],
     meal_types: ['lunch'],
     prep_time_minutes: 35,
     recipe_ingredients: [
@@ -173,35 +176,56 @@ describe('RecetaDetailPage', () => {
     expect(screen.getAllByText('35 min').length).toBeGreaterThan(0);
   });
 
-  // R-36 will bring structured steps; until then the single `instructions`
-  // column is ONE step, line breaks preserved — never split into fake steps.
-  it('renders the instructions as a single numbered step', () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
-    renderPage();
-
-    expect(screen.getAllByText('Preparación').length).toBeGreaterThan(0);
-
-    const text = screen.getByText(/Dora el pollo\./);
-    // Both lines live in the same step node — the text keeps its own breaks.
-    expect(text.textContent).toContain('Añade el arroz.');
-
-    // The card holds exactly one numbered step, and it is "1": the second line
-    // must not be promoted into a step "2".
-    const card = text.closest('[data-slot="instructions"]')!;
-    expect(within(card as HTMLElement).getAllByText(/^\d+$/).map((n) => n.textContent)).toEqual([
-      '1',
-    ]);
-  });
-
-  it('omits the preparación card when the recipe has no instructions', () => {
+  // R-36: structured steps render as a real numbered <ol>, in `display_order`
+  // (fetchRecipe already sorts — the page must not re-sort).
+  it('renders steps as an ordered, numbered list', async () => {
     useRecipeMock.mockReturnValue({
-      data: recipe({ instructions: null }),
+      data: recipe({
+        recipe_steps: [
+          { id: 's1', recipe_id: 'r-1', display_order: 0, text: 'primero', created_at: '' },
+          { id: 's2', recipe_id: 'r-1', display_order: 1, text: 'segundo', created_at: '' },
+        ],
+      }),
       isLoading: false,
       isError: false,
     });
     renderPage();
 
-    expect(screen.queryByText('Preparación')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Preparación').length).toBeGreaterThan(0);
+    const items = await screen.findAllByRole('listitem');
+    expect(items.some((li) => li.textContent?.includes('primero'))).toBe(true);
+    expect(items.some((li) => li.textContent?.includes('segundo'))).toBe(true);
+
+    // Numbered by position, not by the step's own data.
+    const card = screen.getByText('primero').closest('[data-slot="steps"]')!;
+    expect(within(card as HTMLElement).getAllByText(/^\d+$/).map((n) => n.textContent)).toEqual([
+      '1',
+      '2',
+    ]);
+  });
+
+  // R-01 shared pool: a non-owner has nothing actionable to do about missing
+  // steps, so the whole card disappears rather than showing an empty state.
+  it('hides the steps card entirely for a non-owner when there are no steps', () => {
+    useRecipeMock.mockReturnValue({
+      data: recipe({ created_by_user_id: 'someone-else', recipe_steps: [] }),
+      isLoading: false,
+      isError: false,
+    });
+    renderPage();
+
+    expect(screen.queryByText(/preparación/i)).not.toBeInTheDocument();
+  });
+
+  it('shows an empty state to the owner when there are no steps', () => {
+    useRecipeMock.mockReturnValue({
+      data: recipe({ recipe_steps: [] }),
+      isLoading: false,
+      isError: false,
+    });
+    renderPage();
+
+    expect(screen.getByText(/aún no hay pasos/i)).toBeInTheDocument();
   });
 
   it('routes the edit action to the editor for a recipe I created', () => {

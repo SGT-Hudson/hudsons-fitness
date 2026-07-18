@@ -37,6 +37,8 @@
     "ingredientsTitle": "Ingredientes",
     "perServingChip": "por ración",
     "instructionsTitle": "Preparación",
+    "noStepsTitle": "Aún no hay pasos",
+    "noStepsHint": "Añade la preparación paso a paso.",
     "favorite": "Favorita",
     "addToDay": "Añadir al día",
     "edit": "Editar receta",

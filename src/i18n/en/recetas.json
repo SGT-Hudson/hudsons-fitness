@@ -37,6 +37,8 @@
     "ingredientsTitle": "Ingredients",
     "perServingChip": "per serving",
     "instructionsTitle": "Preparation",
+    "noStepsTitle": "No steps yet",
+    "noStepsHint": "Add the method step by step.",
     "favorite": "Favorite",
     "addToDay": "Add to day",
     "edit": "Edit recipe",
