@@ -32,10 +32,9 @@ insert into programs (id, user_id, name) values
   ('00000000-0000-0000-0000-0000000000a3', '11111111-1111-1111-1111-111111111111', 'Program A'),
   ('00000000-0000-0000-0000-0000000000b3', '22222222-2222-2222-2222-222222222222', 'Program B');
 
--- B-owned child rows (used by the re-point tests) + one A-owned set (SELECT denial)
+-- One A-owned set, for the SELECT-denial assertion below.
 insert into workout_sets (id, session_id, exercise_id, set_index, reps, weight_kg) values
-  ('00000000-0000-0000-0000-0000000000ca', '00000000-0000-0000-0000-00000000005a', '00000000-0000-0000-0000-0000000000e1', 1, 5, 100),
-  ('00000000-0000-0000-0000-0000000000cb', '00000000-0000-0000-0000-00000000005b', '00000000-0000-0000-0000-0000000000e1', 1, 5, 100);
+  ('00000000-0000-0000-0000-0000000000ca', '00000000-0000-0000-0000-00000000005a', '00000000-0000-0000-0000-0000000000e1', 1, 5, 100);
 insert into recipe_ingredients (recipe_id, ingredient_id, quantity) values
   ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000d1', 100);
 insert into routine_exercises (routine_id, exercise_id, position, target_sets, target_reps_min, target_reps_max) values
