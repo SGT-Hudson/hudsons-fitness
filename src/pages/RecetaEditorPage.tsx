@@ -71,25 +71,34 @@ export function RecetaEditorPage() {
   const duplicateState = (location.state as { duplicate?: EditorState } | null)?.duplicate;
   const emptyInitial = useMemo(() => duplicateState ?? emptyEditorState(), [duplicateState]);
 
+  // Leaving the editor (back / cancel) returns you where you came from: the read
+  // view of the recipe you were editing, or the list when creating a new one.
+  // Declared before the early returns — the failure state needs it too.
+  const exitTo = isNew ? '/recipes' : `/recipes/${id}`;
+
   if (!isNew && recipeQuery.isLoading) {
     return <div className="text-muted-foreground">{t('editor.loading')}</div>;
   }
   if (!isNew && recipeQuery.isError) {
     // This used to `<Navigate to="/recipes" replace />` — the user's edit
     // vanished with no explanation whenever the load failed.
+    // Inside the shell, like the three sibling screens: a failure state with no
+    // header leaves the user with no title and no way back but the nav bar.
     return (
-      <QueryErrorState
-        error={recipeQuery.error}
-        notFound={
-          <div className="space-y-3 py-10 text-center">
-            <p className="text-sm text-muted-foreground">{t('detail.notFoundTitle')}</p>
-            <Button asChild variant="outline">
-              <Link to="/recipes">{t('detail.backToList')}</Link>
-            </Button>
-          </div>
-        }
-        onRetry={() => void recipeQuery.refetch()}
-      />
+      <PageShell title={t('editor.editTitle')} back={exitTo}>
+        <QueryErrorState
+          error={recipeQuery.error}
+          notFound={
+            <div className="space-y-3 py-10 text-center">
+              <p className="text-sm text-muted-foreground">{t('detail.notFoundTitle')}</p>
+              <Button asChild variant="outline">
+                <Link to="/recipes">{t('detail.backToList')}</Link>
+              </Button>
+            </div>
+          }
+          onRetry={() => void recipeQuery.refetch()}
+        />
+      </PageShell>
     );
   }
   // A non-owner deep link (a bookmark, a typed URL — nothing in the UI links
@@ -169,10 +178,6 @@ export function RecetaEditorPage() {
       setRemoveOpen(false);
     }
   }
-
-  // Leaving the editor (back / cancel) returns you where you came from: the read
-  // view of the recipe you were editing, or the list when creating a new one.
-  const exitTo = isNew ? '/recipes' : `/recipes/${id}`;
 
   const actions = (
     <>

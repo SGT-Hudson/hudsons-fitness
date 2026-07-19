@@ -436,6 +436,23 @@ describe('RecetaEditorPage — load failure', () => {
     expect(await screen.findByText(i18n.t('common:errors.loadFailedTitle'))).toBeInTheDocument();
     expect(screen.queryByText('lista')).not.toBeInTheDocument();
   });
+
+  it('keeps the page shell, so the failure state has a title and a way back', async () => {
+    // Without the shell this state renders bare: no header, no back arrow, and
+    // only the bottom nav to escape with — unlike the three sibling screens.
+    useRecipe.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    });
+    renderEditor('/recipes/r-1/edit');
+
+    await screen.findByText(i18n.t('common:errors.loadFailedTitle'));
+    // PageShell renders its title in both the mobile and desktop headers.
+    expect(screen.getAllByText(i18n.t('recetas:editor.editTitle')).length).toBeGreaterThan(0);
+  });
 });
 
 // Task 3, item 2: nothing in the UI links to `/recipes/:id/edit` for a recipe
