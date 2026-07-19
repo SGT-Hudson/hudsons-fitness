@@ -24,7 +24,7 @@
     "reload": "Reload",
     "boundary": {
       "title": "Something went wrong",
-      "body": "An unexpected error occurred. Reload the page or go back.",
+      "body": "An unexpected error occurred. You can retry, or go back home.",
       "home": "Home"
     }
   },

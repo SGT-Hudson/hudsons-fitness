@@ -24,7 +24,7 @@
     "reload": "Recargar",
     "boundary": {
       "title": "Algo ha ido mal",
-      "body": "Se ha producido un error inesperado. Recarga la página o vuelve atrás.",
+      "body": "Se ha producido un error inesperado. Puedes reintentar o volver al inicio.",
       "home": "Inicio"
     }
   },
