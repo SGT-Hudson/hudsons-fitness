@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Copy, ListOrdered, Pencil, Plus, Star, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageShell } from '@/components/layout/PageShell';
 import { TodayAddToDaySheet } from '@/features/diario/components/TodayAddToDaySheet';
 import type { AddSheetSelection } from '@/features/diario/components/AddToDaySheet';
 import { useMealLogsForDay } from '@/features/diario/hooks';
 import { isoDate } from '@/lib/dates';
+import { classifyError } from '@/lib/errors';
 import { ingredientDisplayName } from '@/features/ingredients/api';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useRecipe } from '@/features/recipes/hooks';
@@ -45,10 +47,11 @@ export function RecetaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('recetas');
+  const { t: tCommon } = useTranslation('common');
   const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
-  const { data: recipe, isLoading, isError } = useRecipe(id);
+  const { data: recipe, isLoading, isError, error, refetch } = useRecipe(id);
   const { user } = useAuth();
   const { isFavorite, toggle: toggleFavorite } = useRecipeFavorites();
   const [addOpen, setAddOpen] = useState(false);
@@ -75,19 +78,45 @@ export function RecetaDetailPage() {
     );
   }
 
-  if (isError || !recipe || !id) {
+  // A missing id is a malformed URL, not a fetch result — there is nothing to
+  // report about a request that was never made.
+  if (!id) {
+    return <Navigate to="/recipes" replace />;
+  }
+
+  const notFoundState = (
+    <EmptyState
+      icon={Utensils}
+      title={t('detail.notFoundTitle')}
+      hint={t('detail.notFoundHint')}
+      action={
+        <Button asChild variant="outline">
+          <Link to="/recipes">{t('detail.backToList')}</Link>
+        </Button>
+      }
+    />
+  );
+
+  if (isError) {
+    const notFound = classifyError(error) === 'notFound';
+    return (
+      <PageShell
+        title={notFound ? t('detail.notFoundTitle') : tCommon('errors.loadFailedTitle')}
+        back="/recipes"
+      >
+        <QueryErrorState
+          error={error}
+          notFound={notFoundState}
+          onRetry={() => void refetch()}
+        />
+      </PageShell>
+    );
+  }
+
+  if (!recipe) {
     return (
       <PageShell title={t('detail.notFoundTitle')} back="/recipes">
-        <EmptyState
-          icon={Utensils}
-          title={t('detail.notFoundTitle')}
-          hint={t('detail.notFoundHint')}
-          action={
-            <Button asChild variant="outline">
-              <Link to="/recipes">{t('detail.backToList')}</Link>
-            </Button>
-          }
-        />
+        {notFoundState}
       </PageShell>
     );
   }

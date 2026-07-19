@@ -135,7 +135,13 @@ describe('RecetaDetailPage', () => {
   // PageShell mounts the mobile header AND the desktop one (CSS hides one), so
   // the name is in the DOM twice — hence getAllBy* throughout.
   it('renders the recipe name, its macros and its ingredients', () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    useRecipeMock.mockReturnValue({
+      data: recipe(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     renderPage();
 
     expect(screen.getAllByText('Pollo con arroz').length).toBeGreaterThan(0);
@@ -162,6 +168,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ prep_time_minutes: null }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -178,6 +186,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ prep_time_minutes: 35 }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -197,6 +207,8 @@ describe('RecetaDetailPage', () => {
       }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -225,6 +237,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ created_by_user_id: 'someone-else', recipe_steps: [] }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -236,6 +250,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ recipe_steps: [] }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -243,7 +259,13 @@ describe('RecetaDetailPage', () => {
   });
 
   it('routes the edit action to the editor for a recipe I created', () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    useRecipeMock.mockReturnValue({
+      data: recipe(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     renderPage();
 
     const editLinks = screen.getAllByRole('link', { name: /Editar/ });
@@ -259,6 +281,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ created_by_user_id: 'someone-else' }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -276,7 +300,13 @@ describe('RecetaDetailPage', () => {
   // This button on the read view is how that capability survives; it is
   // offered on ANY recipe, owned or not (unlike "editar").
   it('offers Duplicar for a recipe I created', () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    useRecipeMock.mockReturnValue({
+      data: recipe(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     renderPage();
 
     expect(screen.getAllByRole('button', { name: 'Duplicar' }).length).toBeGreaterThan(0);
@@ -287,6 +317,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ created_by_user_id: 'someone-else' }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -308,6 +340,8 @@ describe('RecetaDetailPage', () => {
       }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -325,6 +359,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ created_by_user_id: '00000000-0000-0000-0000-00000000a0a0' }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -332,7 +368,13 @@ describe('RecetaDetailPage', () => {
   });
 
   it('offers the favourite and add-to-day actions', () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    useRecipeMock.mockReturnValue({
+      data: recipe(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     renderPage();
 
     expect(screen.getAllByRole('button', { name: 'Favorita' }).length).toBeGreaterThan(0);
@@ -340,14 +382,26 @@ describe('RecetaDetailPage', () => {
   });
 
   it('mounts the private notes card for the recipe', async () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    useRecipeMock.mockReturnValue({
+      data: recipe(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     renderPage();
 
     expect(await screen.findByTestId('notes-card')).toHaveTextContent(recipe().id);
   });
 
   it('shows a not-found state when the recipe cannot be loaded', () => {
-    useRecipeMock.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+    useRecipeMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { code: 'PGRST116', message: 'JSON object requested' },
+      refetch: vi.fn(),
+    });
     renderPage();
 
     expect(screen.getAllByText('Receta no encontrada').length).toBeGreaterThan(0);
@@ -355,5 +409,40 @@ describe('RecetaDetailPage', () => {
       'href',
       '/recipes',
     );
+  });
+
+  // PageShell renders the title in both a mobile and a desktop header (only
+  // one is CSS-hidden at a time), so — like every other test in this file —
+  // this asserts on getAllByText rather than the singular findByText/getByText.
+  it('shows a load failure, not "not found", when the fetch fails', () => {
+    useRecipeMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(
+      screen.getAllByText(i18n.t('common:errors.loadFailedTitle')).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(i18n.t('recetas:detail.notFoundTitle'))).not.toBeInTheDocument();
+  });
+
+  it('still shows "not found" when the recipe genuinely does not exist', () => {
+    useRecipeMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { code: 'PGRST116', message: 'JSON object requested' },
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(
+      screen.getAllByText(i18n.t('recetas:detail.notFoundTitle')).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(i18n.t('common:errors.loadFailedTitle'))).not.toBeInTheDocument();
   });
 });
