@@ -31,7 +31,7 @@ function errorCode(err: unknown): string | null {
 
 export function classifyError(err: unknown): ErrorKind {
   const code = errorCode(err);
-  if (code) return CODE_KINDS[code] ?? 'unknown';
+  if (code) return Object.hasOwn(CODE_KINDS, code) ? CODE_KINDS[code] : 'unknown';
   // A request that never reached the server rejects with a TypeError and no
   // code — that is the browser's offline/DNS/CORS signal.
   if (err instanceof TypeError) return 'offline';

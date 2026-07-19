@@ -33,7 +33,7 @@ describe('classifyError', () => {
     expect(classifyError(new Error('boom'))).toBe('unknown');
   });
 
-  it.each([[null], [undefined], ['a thrown string'], [42], [{}], [{ code: '' }], [{ code: 7 }]])(
+  it.each([[null], [undefined], ['a thrown string'], [42], [{}], [{ code: '' }], [{ code: 7 }], [{ code: 'toString' }], [{ code: 'constructor' }], [{ code: 'hasOwnProperty' }], [{ code: 'valueOf' }]])(
     'never throws on malformed input: %s',
     (input) => {
       expect(classifyError(input)).toBe('unknown');
