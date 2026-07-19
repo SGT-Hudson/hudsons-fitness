@@ -43,6 +43,9 @@ export function classifyError(err: unknown): ErrorKind {
  * wording. Returns an `ns:key` string, usable both from the i18n singleton in
  * `.ts` modules and from a namespaced `t` in components (an explicit prefix
  * wins over the hook's namespace).
+ *
+ * Body copy only — the heading is `errorTitleKey` below. Adding a kind that
+ * needs its own heading means touching both.
  */
 export function errorMessageKey(kind: ErrorKind): string {
   // `errors.generic` predates this module and is already used elsewhere; the
