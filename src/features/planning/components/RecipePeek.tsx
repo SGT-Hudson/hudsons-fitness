@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResponsiveDialog } from '@/components/ui/ResponsiveDialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { useRecipe } from '@/features/recipes/hooks';
 import { computeRecipeMacros, roundMacro } from '@/features/recipes/macros';
 import { ingredientDisplayName } from '@/features/ingredients/api';
@@ -47,7 +48,7 @@ export function RecipePeek({
   const { t, i18n } = useTranslation('planning');
   const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
-  const { data: recipe, isLoading } = useRecipe(recipeId);
+  const { data: recipe, isLoading, isError, error, refetch } = useRecipe(recipeId);
 
   const perServing = recipe
     ? computeRecipeMacros({
@@ -61,6 +62,12 @@ export function RecipePeek({
     : null;
 
   const displayName = recipe?.name ?? t('peek.title');
+
+  // Settled with nothing to show — a recipe that vanished. A *failed* fetch is
+  // no longer routed here; it gets its own state with a retry.
+  const missingState = (
+    <p className="py-6 text-center text-[13px] text-muted-foreground">{t('peek.missing')}</p>
+  );
 
   function renderHeader(showClose: boolean) {
     return (
@@ -100,12 +107,15 @@ export function RecipePeek({
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-4 w-2/3" />
               </div>
+            ) : isError ? (
+              <QueryErrorState
+                className="py-6"
+                error={error}
+                notFound={missingState}
+                onRetry={() => void refetch()}
+              />
             ) : !recipe || !perServing ? (
-              // Settled with nothing to show — a failed fetch, or a recipe that
-              // vanished. Skeletons here would spin forever.
-              <p className="py-6 text-center text-[13px] text-muted-foreground">
-                {t('peek.missing')}
-              </p>
+              missingState
             ) : (
               <>
                 <div className="tnum flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">

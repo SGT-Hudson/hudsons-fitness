@@ -34,7 +34,13 @@ const recipe = {
   ],
 };
 
-let recipeQuery: { data: unknown; isLoading: boolean } = { data: recipe, isLoading: false };
+let recipeQuery: {
+  data: unknown;
+  isLoading: boolean;
+  isError?: boolean;
+  error?: unknown;
+  refetch?: () => void;
+} = { data: recipe, isLoading: false };
 
 vi.mock('@/features/recipes/hooks', () => ({
   useRecipe: () => recipeQuery,
@@ -118,6 +124,31 @@ describe('RecipePeek', () => {
     renderPeek();
     expect(screen.getByText('No se pudo cargar la receta.')).toBeInTheDocument();
     expect(document.body.querySelector('[data-slot="skeleton"], .animate-pulse')).toBeNull();
+  });
+
+  it('shows a load failure when the recipe fetch fails', async () => {
+    recipeQuery = {
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    };
+    renderPeek();
+    expect(await screen.findByText(i18n.t('common:errors.loadFailedTitle'))).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('planning:peek.missing'))).not.toBeInTheDocument();
+  });
+
+  it('shows its own missing copy when the recipe is gone', async () => {
+    recipeQuery = {
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { code: 'PGRST116' },
+      refetch: vi.fn(),
+    };
+    renderPeek();
+    expect(await screen.findByText(i18n.t('planning:peek.missing'))).toBeInTheDocument();
   });
 
   // R-33 wave 3 QA fix: `peek.servings`/`peek.planned` used a single
