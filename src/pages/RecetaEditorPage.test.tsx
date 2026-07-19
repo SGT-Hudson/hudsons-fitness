@@ -395,6 +395,64 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
       'true',
     );
   });
+
+  // Task 7: a failed save used to render the raw Postgres message
+  // (`(err as Error).message`) right beside the form's own translated
+  // validation errors — a duplicate-name 23505 showed up as
+  // `recipes_name_key` verbatim. The loaded recipe already has a name and an
+  // ingredient row, so this reaches the real submit → catch path with no
+  // extra field-filling: the point is pinning what the catch block in
+  // RecetaEditorPage does with the rejection, not re-testing the form.
+  it('shows a translated save error, never the raw database message', async () => {
+    const user = userEvent.setup();
+    saveMutateAsync.mockRejectedValueOnce({
+      code: '23505',
+      message: 'duplicate key value violates unique constraint "recipes_name_key"',
+    });
+    renderEditor('/recipes/r-1/edit');
+
+    await user.click(save());
+
+    expect(await screen.findByText(i18n.t('common:errors.duplicate'))).toBeInTheDocument();
+    expect(screen.queryByText(/recipes_name_key/)).not.toBeInTheDocument();
+  });
+});
+
+// Task 7: the load half. Before this fix, an editor whose fetch failed
+// silently `<Navigate>`d back to the list — a user's edit link (bookmark,
+// deep link) simply vanished with no explanation. Mirrors the same
+// isError/error/refetch shape RecetaDetailPage's equivalent test uses.
+describe('RecetaEditorPage — load failure', () => {
+  it('shows a load failure instead of silently redirecting to the list', async () => {
+    useRecipe.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    });
+    renderEditor('/recipes/r-1/edit');
+
+    expect(await screen.findByText(i18n.t('common:errors.loadFailedTitle'))).toBeInTheDocument();
+    expect(screen.queryByText('lista')).not.toBeInTheDocument();
+  });
+
+  it('keeps the page shell, so the failure state has a title and a way back', async () => {
+    // Without the shell this state renders bare: no header, no back arrow, and
+    // only the bottom nav to escape with — unlike the three sibling screens.
+    useRecipe.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    });
+    renderEditor('/recipes/r-1/edit');
+
+    await screen.findByText(i18n.t('common:errors.loadFailedTitle'));
+    // PageShell renders its title in both the mobile and desktop headers.
+    expect(screen.getAllByText(i18n.t('recetas:editor.editTitle')).length).toBeGreaterThan(0);
+  });
 });
 
 // Task 3, item 2: nothing in the UI links to `/recipes/:id/edit` for a recipe

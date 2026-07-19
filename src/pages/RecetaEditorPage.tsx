@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Copy, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResponsiveDialog } from '@/components/ui/ResponsiveDialog';
 import { PageShell } from '@/components/layout/PageShell';
+import { QueryErrorState } from '@/components/QueryErrorState';
+import { classifyError, errorMessageKey } from '@/lib/errors';
 import {
   emptyEditorState,
   recipeToEditorState,
@@ -69,11 +71,35 @@ export function RecetaEditorPage() {
   const duplicateState = (location.state as { duplicate?: EditorState } | null)?.duplicate;
   const emptyInitial = useMemo(() => duplicateState ?? emptyEditorState(), [duplicateState]);
 
+  // Leaving the editor (back / cancel) returns you where you came from: the read
+  // view of the recipe you were editing, or the list when creating a new one.
+  // Declared before the early returns — the failure state needs it too.
+  const exitTo = isNew ? '/recipes' : `/recipes/${id}`;
+
   if (!isNew && recipeQuery.isLoading) {
     return <div className="text-muted-foreground">{t('editor.loading')}</div>;
   }
-  if (!isNew && recipeQuery.error) {
-    return <Navigate to="/recipes" replace />;
+  if (!isNew && recipeQuery.isError) {
+    // This used to `<Navigate to="/recipes" replace />` — the user's edit
+    // vanished with no explanation whenever the load failed.
+    // Inside the shell, like the three sibling screens: a failure state with no
+    // header leaves the user with no title and no way back but the nav bar.
+    return (
+      <PageShell title={t('editor.editTitle')} back={exitTo}>
+        <QueryErrorState
+          error={recipeQuery.error}
+          notFound={
+            <div className="space-y-3 py-10 text-center">
+              <p className="text-sm text-muted-foreground">{t('detail.notFoundTitle')}</p>
+              <Button asChild variant="outline">
+                <Link to="/recipes">{t('detail.backToList')}</Link>
+              </Button>
+            </div>
+          }
+          onRetry={() => void recipeQuery.refetch()}
+        />
+      </PageShell>
+    );
   }
   // A non-owner deep link (a bookmark, a typed URL — nothing in the UI links
   // here any more): `save_recipe` would 400 on this recipe, so send them to the
@@ -132,7 +158,8 @@ export function RecetaEditorPage() {
       // `/recipes/:id` was the editor itself and staying there was a no-op.)
       navigate(`/recipes/${savedId}`, { replace: true });
     } catch (err) {
-      setError((err as Error).message);
+      console.error('Recipe save failed', err);
+      setError(tCommon(errorMessageKey(classifyError(err))));
     }
   }
 
@@ -151,10 +178,6 @@ export function RecetaEditorPage() {
       setRemoveOpen(false);
     }
   }
-
-  // Leaving the editor (back / cancel) returns you where you came from: the read
-  // view of the recipe you were editing, or the list when creating a new one.
-  const exitTo = isNew ? '/recipes' : `/recipes/${id}`;
 
   const actions = (
     <>
