@@ -35,11 +35,6 @@ describe('toastError', () => {
     expect(console.error).toHaveBeenCalledWith(expect.any(String), err);
   });
 
-  it('shows an explicitly provided message instead of the classified one', () => {
-    toastError(new Error('boom'), 'Mensaje ya traducido');
-    expect(toast.mock.calls[0][0].description).toBe('Mensaje ya traducido');
-  });
-
   it('still uses the destructive variant and the shared error title', () => {
     toastError(new Error('boom'));
     expect(toast.mock.calls[0][0]).toMatchObject({
@@ -48,8 +43,15 @@ describe('toastError', () => {
     });
   });
 
-  it('ignores a non-string second argument (react-query passes variables there)', () => {
-    toastError({ code: '23505' }, { name: 'Pollo', servings: 2 });
+  it('ignores every extra positional argument react-query passes', () => {
+    // react-query calls onError(error, variables, context). `variables` is a
+    // bare string on the delete mutations — this asserts that uuid never
+    // reaches the user.
+    (toastError as (...args: unknown[]) => void)(
+      { code: '23505' },
+      'a3f1c2de-0000-4444-8888-000000000000',
+      undefined,
+    );
     expect(toast.mock.calls[0][0].description).toBe(i18n.t('common:errors.duplicate'));
   });
 

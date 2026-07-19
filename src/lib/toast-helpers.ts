@@ -43,21 +43,17 @@ export function toastApplied(description?: string) {
  * kept as a fallback, because a default that leaks is a default that will leak
  * again.
  *
- * `message` is for a call site that knows better and passes an
- * already-translated string. It is typed `unknown` on purpose: this function is
- * passed straight to react-query's `onError`, which calls it with
- * `(error, variables, context)` — so anything that is not a string must be
- * ignored rather than rendered.
+ * Deliberately single-parameter. This function is passed straight to
+ * react-query's `onError`, which calls it as `(error, variables, context)`;
+ * a second parameter would silently render those variables — a raw uuid, for
+ * the delete mutations — as the toast description.
  */
-export function toastError(err: unknown, message?: unknown) {
+export function toastError(err: unknown) {
   console.error('Operation failed', err);
   toast({
     variant: 'destructive',
     title: i18n.t('common:toasts.errorTitle'),
-    description:
-      typeof message === 'string' && message
-        ? message
-        : i18n.t(errorMessageKey(classifyError(err))),
+    description: i18n.t(errorMessageKey(classifyError(err))),
   });
 }
 
