@@ -99,15 +99,23 @@ select throws_ok(
        where program_id = '00000000-0000-0000-0000-0000000000b3' and day_index = 0 $q$,
   '42501', NULL, 'B cannot re-point its own program_day into A''s program');
 
--- ── Catalogue-wide: no USING-only UPDATE policy may exist ────────────────────
+-- ── Catalogue-wide: every UPDATE policy's WITH CHECK matches its USING ───────
 -- Postgres applies USING to the new row when WITH CHECK is absent, so a
--- missing clause is not a hole — but it is implicit, and it stops covering the
--- new row the moment someone narrows USING alone. This assertion covers every
--- table that exists now and every table added later.
+-- missing clause is not a hole. An explicit clause that *differs* from USING
+-- — including a permissive `with check (true)` — is the hole: it silently
+-- widens what an UPDATE may write, which is exactly the re-pointing hole the
+-- two deleted behavioural assertions used to catch. If a policy ever
+-- legitimately needs an asymmetric WITH CHECK, this is where that divergence
+-- must be argued and the assertion adjusted. This covers every table that
+-- exists now and every table added later.
+select cmp_ok(
+  (select count(*)::int from pg_policies where schemaname = 'public' and cmd = 'UPDATE'),
+  '>=', 26, 'the UPDATE-policy sweep below is actually looking at policies');
 select is(
   (select count(*)::int from pg_policies
-    where schemaname = 'public' and cmd = 'UPDATE' and with_check is null),
-  0, 'every UPDATE policy in public carries a WITH CHECK');
+    where schemaname = 'public' and cmd = 'UPDATE'
+      and with_check is distinct from qual),
+  0, 'every UPDATE policy in public has a WITH CHECK identical to its USING');
 
 select * from finish();
 rollback;
