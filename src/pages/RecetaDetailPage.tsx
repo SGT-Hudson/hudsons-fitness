@@ -12,7 +12,7 @@ import { TodayAddToDaySheet } from '@/features/diario/components/TodayAddToDaySh
 import type { AddSheetSelection } from '@/features/diario/components/AddToDaySheet';
 import { useMealLogsForDay } from '@/features/diario/hooks';
 import { isoDate } from '@/lib/dates';
-import { classifyError } from '@/lib/errors';
+import { classifyError, errorTitleKey } from '@/lib/errors';
 import { ingredientDisplayName } from '@/features/ingredients/api';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useRecipe } from '@/features/recipes/hooks';
@@ -98,10 +98,10 @@ export function RecetaDetailPage() {
   );
 
   if (isError) {
-    const notFound = classifyError(error) === 'notFound';
+    const kind = classifyError(error);
     return (
       <PageShell
-        title={notFound ? t('detail.notFoundTitle') : tCommon('errors.loadFailedTitle')}
+        title={kind === 'notFound' ? t('detail.notFoundTitle') : tCommon(errorTitleKey(kind))}
         back="/recipes"
       >
         <QueryErrorState

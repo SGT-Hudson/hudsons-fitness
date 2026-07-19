@@ -49,3 +49,14 @@ export function errorMessageKey(kind: ErrorKind): string {
   // unknown kind reuses it rather than introducing a second generic string.
   return kind === 'unknown' ? 'common:errors.generic' : `common:errors.${kind}`;
 }
+
+/**
+ * The heading for a failure state, as opposed to `errorMessageKey`'s body
+ * copy. A stale schema is the one kind whose remedy is the heading — the
+ * others all read as "we couldn't load this".
+ */
+export function errorTitleKey(kind: ErrorKind): string {
+  return kind === 'staleSchema'
+    ? 'common:errors.staleSchemaTitle'
+    : 'common:errors.loadFailedTitle';
+}

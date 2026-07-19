@@ -430,6 +430,25 @@ describe('RecetaDetailPage', () => {
     expect(screen.queryByText(i18n.t('recetas:detail.notFoundTitle'))).not.toBeInTheDocument();
   });
 
+  // The header (PageShell title) and the body (QueryErrorState) must agree on
+  // what a stale-schema failure means — a header saying "no se ha podido
+  // cargar" above a body saying "recarga la página" is a contradiction.
+  it('shows the stale-schema title in the header, not the generic load-failed title', () => {
+    useRecipeMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { code: 'PGRST205', message: 'schema cache' },
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(
+      screen.getAllByText(i18n.t('common:errors.staleSchemaTitle')).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryAllByText(i18n.t('common:errors.loadFailedTitle')).length).toBe(0);
+  });
+
   it('still shows "not found" when the recipe genuinely does not exist', () => {
     useRecipeMock.mockReturnValue({
       data: undefined,

@@ -2,7 +2,7 @@
 // The malformed-input cases are the point: a classifier that throws turns a
 // handled error into a blank screen.
 import { describe, it, expect } from 'vitest';
-import { classifyError, errorMessageKey } from './errors';
+import { classifyError, errorMessageKey, errorTitleKey } from './errors';
 
 describe('classifyError', () => {
   it('reads PGRST116 (no rows from .single()) as notFound', () => {
@@ -53,4 +53,17 @@ describe('errorMessageKey', () => {
   it('maps unknown to the pre-existing generic key rather than a new one', () => {
     expect(errorMessageKey('unknown')).toBe('common:errors.generic');
   });
+});
+
+describe('errorTitleKey', () => {
+  it('maps staleSchema to its own remedy title', () => {
+    expect(errorTitleKey('staleSchema')).toBe('common:errors.staleSchemaTitle');
+  });
+
+  it.each(['offline', 'unknown', 'denied', 'duplicate', 'notFound'] as const)(
+    'maps %s to the generic load-failed title',
+    (kind) => {
+      expect(errorTitleKey(kind)).toBe('common:errors.loadFailedTitle');
+    },
+  );
 });

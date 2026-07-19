@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { classifyError, errorMessageKey } from '@/lib/errors';
+import { classifyError, errorMessageKey, errorTitleKey } from '@/lib/errors';
 
 interface Props {
   /** The query's `error`. */
@@ -38,7 +38,7 @@ export function QueryErrorState({ error, notFound, onRetry, className }: Props) 
     <EmptyState
       className={className}
       icon={AlertTriangle}
-      title={t(stale ? 'errors.staleSchemaTitle' : 'errors.loadFailedTitle')}
+      title={t(errorTitleKey(kind))}
       hint={t(errorMessageKey(kind))}
       action={
         stale ? (
