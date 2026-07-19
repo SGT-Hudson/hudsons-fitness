@@ -34,20 +34,55 @@ beforeEach(async () => { useExercise.mockReset(); await i18n.changeLanguage('es'
 
 describe('ExerciseDetailPage', () => {
   it('shows the exercise on success', () => {
-    useExercise.mockReturnValue({ data: ex, isLoading: false, isError: false });
+    useExercise.mockReturnValue({
+      data: ex, isLoading: false, isError: false, error: null, refetch: vi.fn(),
+    });
     renderAt('ex-1');
     expect(screen.getByRole('heading', { name: 'Press de banca' })).toBeInTheDocument();
   });
 
   it('shows a loading status while fetching', () => {
-    useExercise.mockReturnValue({ data: undefined, isLoading: true, isError: false });
+    useExercise.mockReturnValue({
+      data: undefined, isLoading: true, isError: false, error: null, refetch: vi.fn(),
+    });
     renderAt('ex-1');
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('shows the not-found block on error', () => {
-    useExercise.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+    useExercise.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { code: 'PGRST116' },
+      refetch: vi.fn(),
+    });
     renderAt('missing');
     expect(screen.getByText('Ejercicio no encontrado')).toBeInTheDocument();
+  });
+
+  it('shows a load failure, not "not found", when the fetch fails', async () => {
+    useExercise.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    });
+    renderAt('ex-1');
+    expect(await screen.findByText(i18n.t('common:errors.loadFailedTitle'))).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('entrenamiento:browse.notFound.title'))).not.toBeInTheDocument();
+  });
+
+  it('still shows "not found" for PGRST116', async () => {
+    useExercise.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { code: 'PGRST116' },
+      refetch: vi.fn(),
+    });
+    renderAt('missing');
+    expect(await screen.findByText(i18n.t('entrenamiento:browse.notFound.title'))).toBeInTheDocument();
   });
 });
