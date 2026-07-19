@@ -1,7 +1,7 @@
 -- Tier-3 / R-16 — RLS isolation on child tables (ownership via a join to the
 -- parent). Covers workout_sets, recipe_ingredients, routine_exercises and
--- program_days, plus a catalogue-wide check that no UPDATE policy in public
--- is missing its WITH CHECK.
+-- program_days, plus a catalogue-wide check that every UPDATE policy in public
+-- carries a WITH CHECK identical to its USING.
 
 begin;
 select * from no_plan();
@@ -85,7 +85,7 @@ select throws_ok(
        where routine_id = '00000000-0000-0000-0000-0000000000b2' and position = 1 $q$,
   '42501', NULL, 'B cannot re-point its own routine_exercise into A''s routine');
 
--- ── program_days (parent programs) — F-2 closed the gap ──────────────────────
+-- ── program_days (parent programs) ───────────────────────────────────────────
 select lives_ok(
   $q$ insert into program_days (program_id, day_index, is_rest)
       values ('00000000-0000-0000-0000-0000000000b3',1,true) $q$,
