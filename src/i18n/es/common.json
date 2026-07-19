@@ -12,7 +12,21 @@
   "es": "Español",
   "en": "Inglés",
   "errors": {
-    "generic": "Algo ha ido mal. Inténtalo de nuevo."
+    "generic": "Algo ha ido mal. Inténtalo de nuevo.",
+    "notFound": "No hemos encontrado lo que buscabas.",
+    "denied": "No tienes permiso para hacer esto.",
+    "duplicate": "Ya existe algo con ese nombre.",
+    "offline": "Parece que no hay conexión. Comprueba tu red.",
+    "staleSchema": "La app está desactualizada. Recarga la página para seguir.",
+    "staleSchemaTitle": "Recarga la página",
+    "loadFailedTitle": "No se ha podido cargar",
+    "retry": "Reintentar",
+    "reload": "Recargar",
+    "boundary": {
+      "title": "Algo ha ido mal",
+      "body": "Se ha producido un error inesperado. Recarga la página o vuelve atrás.",
+      "home": "Inicio"
+    }
   },
   "toasts": {
     "saved": "Guardado",

@@ -12,7 +12,21 @@
   "es": "Spanish",
   "en": "English",
   "errors": {
-    "generic": "Something went wrong. Please try again."
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "We couldn't find what you were looking for.",
+    "denied": "You don't have permission to do that.",
+    "duplicate": "Something with that name already exists.",
+    "offline": "You appear to be offline. Check your connection.",
+    "staleSchema": "The app is out of date. Reload the page to continue.",
+    "staleSchemaTitle": "Reload the page",
+    "loadFailedTitle": "Couldn't load",
+    "retry": "Retry",
+    "reload": "Reload",
+    "boundary": {
+      "title": "Something went wrong",
+      "body": "An unexpected error occurred. Reload the page or go back.",
+      "home": "Home"
+    }
   },
   "toasts": {
     "saved": "Saved",
