@@ -246,7 +246,17 @@ git commit -m "feat(errors): add error classifier and shared error copy"
 
 **Interfaces:**
 - Consumes: `classifyError`, `errorMessageKey` from Task 1.
-- Produces: `toastError(err: unknown, message?: string): void` — the optional second argument is an **already-translated** string for a call site that genuinely knows better. Existing single-argument call sites keep compiling unchanged.
+- Produces: `toastError(err: unknown): void` — **single-parameter, deliberately.**
+
+> **Superseded during execution.** This task originally specified an optional
+> second `message` parameter, per the spec. It cannot exist: `toastError` is
+> passed straight to react-query's `onError`, which calls it as
+> `(error, variables, context)`, and twelve mutations have a bare `string` as
+> their variables type — so a failed delete rendered the raw uuid as the toast
+> description. There is no runtime way to tell a deliberate translated string
+> from a positional one, so the parameter was removed rather than guarded. A
+> call site that needs custom copy calls `toast()` directly, or we add a
+> distinctly-named function when one actually needs it.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -290,9 +300,16 @@ describe('toastError', () => {
     expect(console.error).toHaveBeenCalledWith(expect.any(String), err);
   });
 
-  it('shows an explicitly provided message instead of the classified one', () => {
-    toastError(new Error('boom'), 'Mensaje ya traducido');
-    expect(toast.mock.calls[0][0].description).toBe('Mensaje ya traducido');
+  it('ignores every extra positional argument react-query passes', () => {
+    // react-query calls onError(error, variables, context). `variables` is a
+    // bare string on the delete mutations — this asserts that uuid never
+    // reaches the user.
+    (toastError as (...args: unknown[]) => void)(
+      { code: '23505' },
+      'a3f1c2de-0000-4444-8888-000000000000',
+      undefined,
+    );
+    expect(toast.mock.calls[0][0].description).toBe(i18n.t('common:errors.duplicate'));
   });
 
   it('still uses the destructive variant and the shared error title', () => {
@@ -325,15 +342,19 @@ Then replace lines 39-49 in full:
  * Shows a translated, classified message. The raw error goes to the console,
  * which is where it is useful — the `.message` path was removed rather than
  * kept as a fallback, because a default that leaks is a default that will leak
- * again. `message` is for a call site that knows better and passes an
- * already-translated string.
+ * again.
+ *
+ * Deliberately single-parameter. This function is passed straight to
+ * react-query's `onError`, which calls it as `(error, variables, context)`; a
+ * second parameter would silently render those variables — a raw uuid, for the
+ * delete mutations — as the toast description.
  */
-export function toastError(err: unknown, message?: string) {
+export function toastError(err: unknown) {
   console.error('Operation failed', err);
   toast({
     variant: 'destructive',
     title: i18n.t('common:toasts.errorTitle'),
-    description: message ?? i18n.t(errorMessageKey(classifyError(err))),
+    description: i18n.t(errorMessageKey(classifyError(err))),
   });
 }
 ```
