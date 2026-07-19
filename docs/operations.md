@@ -737,9 +737,10 @@ suite (`supabase/tests/00_schema`..`07_ingredient_salt.test.sql` — the CI job 
 inserting into `auth.users` (the `handle_new_user` trigger makes the profile)
 and switches actor with `set local role authenticated` + a
 `request.jwt.claims` GUC, so `auth.uid()` evaluates RLS exactly as in prod.
-The remaining known gap is kept as a pgTAP `todo` (visible, non-failing): the
-R-22 UPDATE WITH-CHECK gap. (The R-25 hide-RPC bug it once also tracked was
-fixed in #151 — `20260603120000_r25_hide_drops_ref_only.sql`.)
+The suite carries no `todo` tests. It once tracked two: the R-25 hide-RPC bug,
+fixed in #151 (`20260603120000_r25_hide_drops_ref_only.sql`), and a supposed
+R-22 UPDATE WITH-CHECK gap that never existed (D-F27) — both blocks were
+deleted, the second replaced by a catalogue assertion over `pg_policies`.
 
 Because the schema sat on a reproducible baseline (R-00), `supabase start`
 applying from zero also validates migration ordering/idempotency — it is what
