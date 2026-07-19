@@ -33,6 +33,11 @@ const rowSchema = z.object({
   per_serving: z.boolean(),
 });
 
+const stepSchema = z.object({
+  stepId: z.string(),
+  text: z.string(),
+});
+
 export const RECIPE_ERROR_ORDER = [
   'nameRequired',
   'servingsInvalid',
@@ -91,7 +96,9 @@ export const recipeFormSchema = z
     name: z.string(),
     servings: z.string(),
     description: z.string(),
-    instructions: z.string(),
+    // R-36: structured steps replace the old free-text `instructions` column.
+    // An empty list is valid — not every recipe needs a method.
+    steps: z.array(stepSchema).default([]),
     // R-33 wave 5: optional prep time in minutes (empty = no time recorded).
     prepTime: z.string().default(''),
     rows: z.array(rowSchema),

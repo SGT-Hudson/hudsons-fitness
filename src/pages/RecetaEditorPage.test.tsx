@@ -68,7 +68,6 @@ function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredient
     created_at: '2026-06-01T00:00:00.000Z',
     created_by_user_id: 'u-1',
     description: 'Batch cooking',
-    instructions: 'Hornear 25 min.',
     meal_types: ['lunch'],
     name: 'Pollo con arroz',
     photo_url: null,
@@ -85,6 +84,26 @@ function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredient
         display_order: 0,
         created_at: '2026-06-01T00:00:00.000Z',
         ingredient: ingredient(),
+      },
+    ],
+    // Two entries, deliberately out of alphabetical order ('Precalentar' >
+    // 'Picar'): if the load path ever sorted alphabetically instead of by
+    // `display_order`, or a mapper silently reversed the array, the assertion
+    // on visible order below would catch it either way.
+    recipe_steps: [
+      {
+        id: 'st-1',
+        recipe_id: 'r-1',
+        display_order: 0,
+        text: 'Precalentar el horno a 200°C',
+        created_at: '2026-06-01T00:00:00.000Z',
+      },
+      {
+        id: 'st-2',
+        recipe_id: 'r-1',
+        display_order: 1,
+        text: 'Picar la cebolla',
+        created_at: '2026-06-01T00:00:00.000Z',
       },
     ],
     ...over,
@@ -125,7 +144,42 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     expect(screen.getByLabelText('Raciones')).toHaveValue('4');
     expect(screen.getByLabelText('Tiempo')).toHaveValue('35');
     expect(screen.getByLabelText('Descripción')).toHaveValue('Batch cooking');
-    expect(screen.getByLabelText('Instrucciones')).toHaveValue('Hornear 25 min.');
+    expect(screen.getByLabelText('Paso 1')).toHaveValue('Precalentar el horno a 200°C');
+  });
+
+  // R-36: pins the load half of the round trip. The mapper
+  // (`recipeToEditorState` in RecipeEditorForm.tsx) must place each step at
+  // the textarea matching its `display_order`, not the order it happens to
+  // sit in the `recipe_steps` array in some other sense (e.g. reversed).
+  it('loads the steps in display_order order', () => {
+    renderEditor('/recipes/r-1/edit');
+
+    expect(screen.getByLabelText('Paso 1')).toHaveValue('Precalentar el horno a 200°C');
+    expect(screen.getByLabelText('Paso 2')).toHaveValue('Picar la cebolla');
+  });
+
+  // R-36: the save half of the round trip. Reordering with the ↑/↓ buttons
+  // (RecipeStepsField's `swap()`) must be reflected in what's actually saved:
+  // `display_order` renumbered 0,1,… to match the NEW visible order, not the
+  // order the steps were loaded in.
+  it('sends the reordered steps with display_order renumbered to match', async () => {
+    const user = userEvent.setup();
+    renderEditor('/recipes/r-1/edit');
+
+    // Move step 1 ("Precalentar...") down, swapping it with step 2.
+    await user.click(screen.getByRole('button', { name: 'Bajar el paso 1' }));
+
+    // The swap must be visible before it's ever saved.
+    expect(screen.getByLabelText('Paso 1')).toHaveValue('Picar la cebolla');
+    expect(screen.getByLabelText('Paso 2')).toHaveValue('Precalentar el horno a 200°C');
+
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0].steps).toEqual([
+      { text: 'Picar la cebolla', display_order: 0 },
+      { text: 'Precalentar el horno a 200°C', display_order: 1 },
+    ]);
   });
 
   // THE regression this whole thread exists to prevent.
@@ -227,6 +281,57 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
     expect(saveMutateAsync.mock.calls[0][0].ingredients).toEqual([
       expect.objectContaining({ ingredient_id: 'i-1', quantity: 82.4 }),
+    ]);
+  });
+
+  // R-36: `recipe_steps` replaces the old free-text `instructions` column —
+  // the payload must carry the visible order as `display_order`, not
+  // whatever order the steps happened to be created in.
+  it('sends steps with display_order matching the visible order', async () => {
+    const user = userEvent.setup();
+    useRecipe.mockReturnValue({ data: recipe({ recipe_steps: [] }), isLoading: false, error: null });
+    renderEditor('/recipes/r-1/edit');
+
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 1'), 'primero');
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 2'), 'segundo');
+
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        steps: [
+          { text: 'primero', display_order: 0 },
+          { text: 'segundo', display_order: 1 },
+        ],
+      }),
+    );
+  });
+
+  // R-36 product decision: a blank step no longer blocks the save (the zod
+  // rule that rejected it is gone) — it is silently dropped, and the steps
+  // that survive renumber contiguously from 0. This also pins that the save
+  // actually goes through now, where it used to be blocked.
+  it('drops a blank step at save time and renumbers the remaining steps contiguously', async () => {
+    const user = userEvent.setup();
+    useRecipe.mockReturnValue({ data: recipe({ recipe_steps: [] }), isLoading: false, error: null });
+    renderEditor('/recipes/r-1/edit');
+
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 1'), 'primero');
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 2'), '   ');
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 3'), 'tercero');
+
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0].steps).toEqual([
+      { text: 'primero', display_order: 0 },
+      { text: 'tercero', display_order: 1 },
     ]);
   });
 

@@ -176,8 +176,11 @@ vi.mock('@/features/recipes/hooks', () => ({
       id: 'r1',
       name: 'Avena con plátano',
       servings: 1,
-      instructions: null,
       recipe_ingredients: [],
+      // R-36: these tests exercise the peek's open/edit flow, not its steps
+      // rendering — an empty array is the honest fixture (RecipePeek.test.tsx
+      // owns the steps-rendering coverage).
+      recipe_steps: [],
     },
     isLoading: false,
   }),

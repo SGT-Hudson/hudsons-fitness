@@ -43,7 +43,8 @@ reference shard carries it (never edit the decision entry).
 - R-33 — UI redesign: design system + nutrition screens — SHIPPED on develop (2026-07-15); release to main pending
 - R-34 — Gym screens redesign (blocked on gym design convergence)
 - R-35 — Shopping list from the planned week
-- R-36 — Recipe steps & photos (schema + editor + settings)
+- R-36 — Recipe steps & notes (structured steps + private notes) — SHIPPED
+- R-36b — Per-step recipe photos (split off R-36, blocked on storage/cost decision)
 - R-37 — Interactive TDEE calculator linked from the phase editor
 - R-38 — Progress analytics extras (adherence heatmap, ETA banner, energy balance, custom range)
 - R-39 — Measurement extras (progress photos, streak, smart-scale source toggle)
@@ -1178,19 +1179,43 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 - **scope (open):** apply the R-33 redesign to the shopping dialog (still the
   pre-redesign UI — the file was untouched by the R-33 Planificador waves).
 
-## R-36 — Recipe steps & photos
-- **decision:** (D-id at spec time)
+## R-36 — Recipe steps & notes
+- **decision:** D-F25, D-F26
 - **blocked-by:** —
-- **status:** partially **shipped** — favorites and prep time landed; structured
-  steps + per-step photos + private notes remain.
+- **status:** **shipped** — favorites, prep time, structured steps, and
+  private notes have landed. Per-step photos split off to **R-36b** (below),
+  blocked on a storage/cost decision.
 - **shipped:** recipe **favorites** (device-local; `useRecipeFavorites` in
   `RecetasPage`/`RecetaDetailPage`, pure helpers in
   `src/features/recipes/favorites.ts`; #32a2df4) and recipe **prep time**
   (`recipes.prep_time_minutes` column, `save_recipe` `p_prep_time_minutes` arg,
   validation in `src/features/recipes/schema.ts`; R-33 waves 4/5, #192).
-- **scope (open):** schema for structured/reorderable steps, per-step photos,
-  private notes; editor UI; "Fotos de los pasos" setting; photo-storage
-  decisions.
+  **Structured steps**: `recipe_steps` child table (RLS mirrors
+  `recipe_ingredients`), `recipes.instructions` dropped, `save_recipe` takes
+  `p_steps jsonb` in its place (delete-and-reinsert; blank steps dropped and
+  the rest renumbered, not rejected — D-F26); no migration of the old free
+  text, `recipe_steps` starts empty for everyone (D-F25). Reorderable ↑/↓
+  editor (`RecipeStepsField`, a react-hook-form field array — no DnD
+  dependency), numbered list + owner-only empty state on the detail page, and
+  the planner's recipe peek. **Private notes**: `user_recipe_refs.note`
+  (existed since R-01, unused until now) wired live via a self-gating "Mis
+  notas" card (`RecipeNotesCard`) that saves on blur for anyone holding the
+  recipe in their library, including recipes they did not create; plain
+  single-table update, no RPC, since the table's own RLS scopes it.
+- **scope (open):** none — remaining photo work is **R-36b**.
+
+## R-36b — Per-step recipe photos
+- **decision:** (D-id at spec time)
+- **blocked-by:** R-36 (structured steps — shipped); a storage/cost decision
+  for the first Supabase Storage bucket in the app
+- **status:** not started — split out of R-36 so structured steps and private
+  notes could ship without waiting on the storage question.
+- **scope (open):** per-step photos, the "Fotos de los pasos" setting, and the
+  whole Supabase Storage stack this needs for the first time in the app
+  (first bucket, upload flow, storage RLS, resizing). `recipes.photo_url`
+  exists but is dead (never written; recipe "images" are generated colour
+  placeholders, see `src/features/recipes/mediaHue.ts`) and is not reused by
+  this scope — it is a separate, still-unaddressed loose end.
 
 ## R-37 — Interactive TDEE calculator
 - **decision:** (D-id at spec time)
@@ -1297,3 +1322,4 @@ Status as of 2026-06-11. (R-xx entries above carry the detail.)
 | post-V1 item 4 | Rich home + diet calendar + TDEE surface | — | dropped (R-28 removed; UI-refactor remainder → R-33) |
 | post-V1 item 5 | In-app onboarding | R-29 | deferred until after R-33 |
 | post-V1 item 6 | Responsive desktop density | R-30 → R-33 | folded into R-33 |
+| R-36b | Per-step recipe photos + Supabase Storage | R-36 | deferred — blocked on storage/cost decision |

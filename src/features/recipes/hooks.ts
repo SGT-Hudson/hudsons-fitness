@@ -8,6 +8,7 @@ import {
   saveRecipe,
   type SaveRecipePayload,
 } from './api';
+import { fetchRecipeNote, saveRecipeNote } from './notes';
 
 export function useRecipes() {
   const { user } = useAuth();
@@ -48,6 +49,28 @@ export function useHideRecipe() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['recipes'] });
       toastDeleted();
+    },
+    onError: toastError,
+  });
+}
+
+// R-36: a private, per-user note living on the caller's own user_recipe_refs
+// row — see notes.ts for why it's a plain update rather than an RPC.
+export function useRecipeNote(recipeId: string | null | undefined) {
+  return useQuery({
+    enabled: !!recipeId,
+    queryKey: ['recipes', 'note', recipeId],
+    queryFn: () => fetchRecipeNote(recipeId!),
+  });
+}
+
+export function useSaveRecipeNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ recipeId, note }: { recipeId: string; note: string }) =>
+      saveRecipeNote(recipeId, note),
+    onSuccess: (_data, { recipeId }) => {
+      void qc.invalidateQueries({ queryKey: ['recipes', 'note', recipeId] });
     },
     onError: toastError,
   });

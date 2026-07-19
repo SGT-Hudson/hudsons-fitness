@@ -284,6 +284,28 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   `recipes.prep_time_minutes`, `ingredients.salt_g_per_unit` (with the matching
   `save_template` / `save_recipe` args); no RLS or destructive change.
 
+### 2026-07-19 — R-36 Recipe steps & notes
+
+- Structured, reorderable recipe steps replace the old `recipes.instructions`
+  free-text column: new `recipe_steps` child table (RLS mirrors
+  `recipe_ingredients`), `save_recipe` takes `p_steps jsonb` instead of
+  `p_instructions text` (delete-and-reinsert; blank steps dropped and the rest
+  renumbered rather than blocking the save — D-F26). No migration of the old
+  free text — `recipe_steps` starts empty for every recipe (D-F25), since the
+  app has no production users yet.
+- Editor gains `RecipeStepsField` — a react-hook-form field array with ↑/↓
+  reordering (no drag-and-drop dependency). The recipe detail page renders the
+  numbered step list with an owner-only empty state, and the planner's recipe
+  peek lists the steps too.
+- `user_recipe_refs.note` — live since R-01 but unused — is wired up as a
+  private per-user recipe note: a self-gating "Mis notas" card on the detail
+  page, saves on blur, available for any recipe in the user's library
+  including ones they did not create. Plain single-table PostgREST update
+  (RLS-scoped), not an RPC.
+- Per-step photos, the "Fotos de los pasos" setting, and the Supabase Storage
+  stack they need are split off to **R-36b**, blocked on a storage/cost
+  decision.
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |

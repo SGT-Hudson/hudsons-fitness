@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Copy, Pencil, Plus, Star, Utensils } from 'lucide-react';
+import { Copy, ListOrdered, Pencil, Plus, Star, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -21,6 +21,7 @@ import { toRecipeMealTypes } from '@/features/recipes/mealTypes';
 import { useRecipeFavorites } from '@/features/recipes/useFavorites';
 import { RecipeMacrosCard } from '@/features/recipes/components/RecipeMacrosCard';
 import { RecipeMediaPlaceholder } from '@/features/recipes/components/RecipeMediaPlaceholder';
+import { RecipeNotesCard } from '@/features/recipes/components/RecipeNotesCard';
 import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 
@@ -334,28 +335,49 @@ export function RecetaDetailPage() {
             </ul>
           </Card>
 
-          {/* One `instructions` text column → one numbered step. Structured,
-              reorderable, per-step-photo steps are R-36: when they land, this
-              same step row starts rendering 1, 2, 3… unchanged. Splitting the
-              text into fake steps here would invent structure the data doesn't
-              have — so the text keeps its own line breaks inside step 1. */}
-          {recipe.instructions?.trim() && (
-            <Card data-slot="instructions" className="px-4 pb-3 pt-0 md:px-4.5">
+          {/* R-36: real structured steps. Per-step photos are R-36b. */}
+          {(recipe.recipe_steps.length > 0 || canEdit) && (
+            <Card data-slot="steps" className="px-4 pb-3 pt-0 md:px-4.5">
               <div className="border-b py-3">
                 <h2 className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
                   {t('detail.instructionsTitle')}
                 </h2>
               </div>
-              <div className="flex items-start gap-3.5 py-3">
-                <span className="tnum grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-soft text-[13.5px] font-semibold text-accent-ink">
-                  1
-                </span>
-                <p className="whitespace-pre-line pt-0.5 text-[13.5px] leading-[1.6]">
-                  {recipe.instructions}
-                </p>
-              </div>
+              {recipe.recipe_steps.length > 0 ? (
+                <ol>
+                  {recipe.recipe_steps.map((step, i) => (
+                    <li key={step.id} className="flex items-start gap-3.5 border-t py-3 first:border-t-0">
+                      <span className="tnum grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-soft text-[13.5px] font-semibold text-accent-ink">
+                        {i + 1}
+                      </span>
+                      <p className="whitespace-pre-line pt-0.5 text-[13.5px] leading-[1.6]">
+                        {step.text}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <div className="py-6">
+                  <EmptyState
+                    icon={ListOrdered}
+                    title={t('detail.noStepsTitle')}
+                    hint={t('detail.noStepsHint')}
+                    action={
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={`/recipes/${recipe.id}/edit`}>{t('detail.edit')}</Link>
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
             </Card>
           )}
+
+          {/* R-36: private per-user note. Self-gates on library membership
+              (renders null unless I hold a ref to this recipe), so no
+              ownership/membership condition is added around it here — a
+              pooled recipe I did not create is still annotatable. */}
+          <RecipeNotesCard recipeId={recipe.id} />
 
           {/* Mobile action bar (the artboard's footer): the two things you do
               with a recipe you are reading. "Editar" is in the back header. */}

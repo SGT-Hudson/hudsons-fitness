@@ -567,10 +567,29 @@ complete history rather than the lone Sprint-9 file.
 20260711120000_r33_template_phase.sql               # applied (R-33 wave 4): nullable phase column on templates (no FK to phases)
 20260712120000_r33_recipe_prep_time.sql             # applied (R-33 wave 5): nullable prep-time column on recipes
 20260712130000_r33_ingredient_salt.sql              # applied (R-33 wave 6): nullable salt sub-macro on ingredients (mirrors U-1 pattern)
+20260718100000_r36_recipe_steps.sql                 # NOT YET APPLIED (R-36): recipe_steps child table, RLS mirrors recipe_ingredients (sentinel-owner writes blocked)
+20260718100100_r36_save_recipe_steps.sql            # NOT YET APPLIED (R-36): drops recipes.instructions; save_recipe's p_instructions text arg becomes p_steps jsonb — MUST land before this frontend deploys, see ordering note below
 ```
 
 `supabase/migrations/` in the repo is the canonical source for the full,
 authoritative sequence; this list is a curated annotation of it.
+
+**R-36 recipe steps — the two migrations MUST be applied before this frontend
+deploys.** `20260718100000_r36_recipe_steps.sql` and
+`20260718100100_r36_save_recipe_steps.sql` are not yet applied to the live
+database (see the ledger above). Migrations-first is safe: the currently-live
+frontend `select`s `*` on `recipes` and never names `instructions`, so reads
+keep working through the window, and the only breakage is `save_recipe` calls
+failing until both migrations land (the RPC signature changes together with
+the table). Frontend-first is severe and must not happen: the R-36
+`fetchRecipe` names `recipe_steps (...)` in its embed, so PostgREST rejects
+that query for EVERY recipe until `recipe_steps` exists, and the detail page
+collapses any fetch error into "Receta no encontrada" — every recipe would
+read as deleted for every user until the migrations land. Apply both
+migrations (in filename order — the second drops `recipes.instructions` and
+depends on `recipe_steps` existing) **before** promoting this branch's build
+to production, the same discipline as the Project A/B1/B2a backlog below,
+which was learned the hard way.
 
 **Project A / B1 / B2a backlog deploy (executed 2026-06-08).** The fine-taxonomy,
 B1-catalog, and B2a-instruction migrations had been authored + merged + CI-validated
@@ -694,8 +713,10 @@ supabase gen types typescript --project-id upvraruehzurbetzrxov > src/types/data
 Then **re-apply the post-generation corrections** (the generator cannot infer
 SQL-function argument nullability and emits every text arg as non-null
 `string`): restore `string | null` on `save_recipe.Args.{p_recipe_id,
-p_description,p_instructions}` and `save_template.Args.p_template_id` (a null
-id means "create new"). The marker comment above the `Functions` block in the
+p_description}` (R-36 dropped `p_instructions` — `save_recipe` now takes
+`p_steps jsonb` instead, which the generator already types correctly since
+it's `Json`, not `text`) and `save_template.Args.p_template_id` (a null id
+means "create new"). The marker comment above the `Functions` block in the
 file documents this; see `conventions.md` (generated-types caveats). Verify
 with `pnpm typecheck && pnpm lint && pnpm build` before committing.
 

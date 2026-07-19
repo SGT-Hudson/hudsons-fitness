@@ -1,6 +1,6 @@
 import i18n from '@/i18n';
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { RecipePeek } from './RecipePeek';
 
@@ -14,7 +14,13 @@ const recipe = {
   id: 'r1',
   name: 'Lentejas estofadas',
   servings: 4,
-  instructions: 'Sofríe la verdura. Añade las lentejas. Cuece 30 min.',
+  recipe_steps: [] as Array<{
+    id: string;
+    recipe_id: string;
+    display_order: number;
+    text: string;
+    created_at: string;
+  }>,
   recipe_ingredients: [
     {
       id: 'ri1', recipe_id: 'r1', ingredient_id: 'i1', quantity: 400, per_serving: false,
@@ -66,15 +72,31 @@ describe('RecipePeek', () => {
     expect(screen.getByText(/400/)).toBeInTheDocument();
   });
 
-  it('shows the instructions when the recipe has them', () => {
+  it('lists the recipe steps in display order', () => {
+    // Two steps, given out of alphabetical order — 'verter' sorts after
+    // 'picar' — so an accidental alpha-sort (or a reversal) of the array
+    // before render would flip these and the DOM-order assertion below
+    // would catch it, unlike a single-step fixture.
+    recipeQuery = {
+      data: {
+        ...recipe,
+        recipe_steps: [
+          { id: 's1', recipe_id: 'r1', display_order: 0, text: 'verter el caldo', created_at: '' },
+          { id: 's2', recipe_id: 'r1', display_order: 1, text: 'picar la cebolla', created_at: '' },
+        ],
+      },
+      isLoading: false,
+    };
     renderPeek();
-    expect(screen.getByText(/Sofríe la verdura/)).toBeInTheDocument();
+    const stepsSection = screen.getByText('Elaboración').closest('div');
+    expect(stepsSection).not.toBeNull();
+    const items = within(stepsSection as HTMLElement).getAllByRole('listitem');
+    expect(items.map((item) => item.textContent)).toEqual(['verter el caldo', 'picar la cebolla']);
   });
 
-  it('omits the instructions block when the recipe has none', () => {
-    recipeQuery = { data: { ...recipe, instructions: null }, isLoading: false };
-    renderPeek();
-    expect(screen.queryByText(/Sofríe la verdura/)).toBeNull();
+  it('omits the steps block when the recipe has none', () => {
+    renderPeek(); // base fixture's recipe_steps is []
+    expect(screen.queryByText('Elaboración')).toBeNull();
   });
 
   it('links out to the full recipe', () => {

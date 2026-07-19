@@ -23,7 +23,6 @@ function recipe(overrides: Partial<RecipeWithIngredients> = {}): RecipeWithIngre
     created_at: '2026-06-01T00:00:00.000Z',
     created_by_user_id: 'user-1',
     description: null,
-    instructions: null,
     meal_types: [],
     name: 'Tortilla',
     photo_url: null,
@@ -31,6 +30,7 @@ function recipe(overrides: Partial<RecipeWithIngredients> = {}): RecipeWithIngre
     servings: 2,
     updated_at: '2026-06-01T00:00:00.000Z',
     recipe_ingredients: [],
+    recipe_steps: [],
     ...overrides,
   };
 }
