@@ -3,6 +3,7 @@ import type { ToastActionElement } from '@/components/ui/toast';
 import { ToastAction } from '@/components/ui/toast';
 import i18n from '@/i18n';
 import { toast } from '@/hooks/use-toast';
+import { classifyError, errorMessageKey } from '@/lib/errors';
 
 export function toastSaved(description?: string) {
   toast({
@@ -36,15 +37,27 @@ export function toastApplied(description?: string) {
   });
 }
 
-export function toastError(err: unknown) {
-  const description =
-    err instanceof Error && err.message
-      ? err.message
-      : i18n.t('common:toasts.errorGeneric');
+/**
+ * Shows a translated, classified message. The raw error goes to the console,
+ * which is where it is useful — the `.message` path was removed rather than
+ * kept as a fallback, because a default that leaks is a default that will leak
+ * again.
+ *
+ * `message` is for a call site that knows better and passes an
+ * already-translated string. It is typed `unknown` on purpose: this function is
+ * passed straight to react-query's `onError`, which calls it with
+ * `(error, variables, context)` — so anything that is not a string must be
+ * ignored rather than rendered.
+ */
+export function toastError(err: unknown, message?: unknown) {
+  console.error('Operation failed', err);
   toast({
     variant: 'destructive',
     title: i18n.t('common:toasts.errorTitle'),
-    description,
+    description:
+      typeof message === 'string' && message
+        ? message
+        : i18n.t(errorMessageKey(classifyError(err))),
   });
 }
 
