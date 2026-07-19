@@ -1,5 +1,10 @@
 # R-16 Tier-3 — pgTAP DB/RLS/RPC tests in CI — Design
 
+> **Superseded in part (2026-07-19):** the "R-22 UPDATE WITH-CHECK gap" described
+> below never existed — Postgres applies an UPDATE policy's `USING` to the new row
+> when `WITH CHECK` is absent, so the `todo` blocks this spec introduced had been
+> passing all along. See `D-F27`. The rest of the document still stands.
+
 - **Date:** 2026-06-03
 - **Roadmap:** R-16 (Tier-3), decision D-F1
 - **Status:** design

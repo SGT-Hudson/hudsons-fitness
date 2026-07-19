@@ -595,9 +595,9 @@ reference shard carries it (never edit the decision entry).
   were added to prod out of band), so a from-zero reset failed — fixed by
   `20260523120050_f1_ingredients_submacro_cols`; (b) the INVOKER hide RPCs are
   blocked by the pool UPDATE WITH CHECK (now **R-25**). R-25 was fixed (#151,
-  migration `20260603120000_r25_hide_drops_ref_only`); only the R-22 UPDATE
-  WITH-CHECK gap remains as a pgTAP `todo` test (visible, non-failing) so it
-  flips green when fixed.
+  migration `20260603120000_r25_hide_drops_ref_only`). The suite carries no
+  `todo` tests: the two that tracked the R-22 WITH-CHECK gap were deleted in
+  2026-07-19's uniformity pass, having silently *passed* for months.
 - **scope:** Spec-first; Tier 1 is its own sprint, Tier 2 rides with R-09,
   Tier 3 is gated behind R-00.
   1. Spec: `docs/superpowers/specs/` test-strategy doc — tier boundaries,
@@ -823,11 +823,14 @@ reference shard carries it (never edit the decision entry).
 - **out-of-scope (sequenced after F-2):** F-3 guided runner (**shipped — see
   R-23**), F-4 muscle browse/heatmap (**shipped — see R-24**), U-8 visual pass
   (still pending), per-set/pyramid prescriptions, prescribed weights.
-- **RLS hardening follow-up:** the pre-existing `workout_sets` and
-  `recipe_ingredients` UPDATE policies have `using` but no `with check` (a
-  user could re-point a child row into another user's parent). F-2's new child
-  tables (`routine_exercises`, `program_days`) close this with both clauses;
-  backfill the two older tables in a follow-up migration.
+- **RLS hardening follow-up (done, 2026-07-19):** every UPDATE policy in
+  `public` now carries an explicit `with check` (migration
+  `20260719120000_r22_update_with_check`). This closed no hole — Postgres
+  already applies `using` to the new row when `with check` is absent, so the
+  older `using`-only policies were never re-pointable. The clause states the
+  intent and guards against a future edit that narrows `using` alone. A pgTAP
+  assertion over `pg_policies` now fails if a `using`-only UPDATE policy is
+  ever added.
 
 ## R-23 — Guided active-workout runner (F-3)
 - **decision:** D-F9

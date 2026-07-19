@@ -557,3 +557,11 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 **Why:** an early draft rejected the save with a validation error on a blank step. That was reversed: a blank step holds nothing worth losing, so blocking the save on it was friction with no benefit — the editor already had a filter-and-renumber path ready (previously dead code, since the zod schema rejected the save before it could run).
 
 **Status:** decided · done (R-36, `fix(recipes): drop blank steps at save instead of rejecting the save`)
+
+## D-F27 — Every UPDATE policy carries an explicit WITH CHECK, though none was missing
+
+**Ruling:** All fourteen `using`-only UPDATE policies in `public` were given a `with check` identical to their `using` (`20260719120000_r22_update_with_check`), and the pgTAP suite gained one assertion over `pg_policies` that fails if a `using`-only UPDATE policy is ever added. The two `todo` blocks that tracked the supposed gap were deleted.
+
+**Why:** the gap never existed. Postgres applies an UPDATE policy's `USING` to the new row when `WITH CHECK` is absent, so the policies were already closed — proven when a reviewer deleted the `with check` from `recipe_steps` during R-36 and the suite stayed green. The `todo` blocks had therefore been *passing* for months, reporting as "unexpectedly succeeded": coverage that read as tracked debt while asserting nothing. The clause is written anyway because implicit protection is one careless `USING` narrowing away from disappearing, and because the next reader should not have to know the subtlety to audit the schema. The R-22 label is a historical accident: R-22 is Training Routines, closed in May, and the gap survived only as a follow-up bullet filed under it, which is why the migration keeps the `r22` prefix.
+
+**Status:** decided · done (`fix(rls): give every UPDATE policy an explicit WITH CHECK`)

@@ -48,7 +48,7 @@ conventional commits.
 - What the app does / flows / origin → `docs/features.md`
 - Code rules (forms, macros, toasts, UI, i18n, theme) → `docs/conventions.md`
 - CI / deploy / Supabase / cron / runbook → `docs/operations.md`
-- Why a decision was made → `docs/decisions.md` (IDs `D-A1…D-F24`)
+- Why a decision was made → `docs/decisions.md` (IDs `D-A1…D-F27`)
 - What's still un-built / backlog → `docs/roadmap.md` (IDs `R-00…R-45`; F-/U-/post-V1 family index at end)
 - Shipped history → `docs/changelog.md`
 

@@ -457,7 +457,7 @@ User-owned, reusable exercise templates. A routine is a named list of exercise s
 
 ### `routine_exercises` (F-2, live in prod #122 / v2026-06-03)
 
-Child rows of `routines` — one row per exercise slot in the routine. Ordered by `position` (unique per routine). `exercise_id` is `ON DELETE RESTRICT` to preserve routine integrity. RLS routes through the parent routine via an `exists` subquery (same pattern as `workout_sets`). UPDATE policy carries both `using` and `with check` (closes the re-point-to-another-user's-parent gap). Index `idx_routine_exercises_routine` on `(routine_id)`.
+Child rows of `routines` — one row per exercise slot in the routine. Ordered by `position` (unique per routine). `exercise_id` is `ON DELETE RESTRICT` to preserve routine integrity. RLS routes through the parent routine via an `exists` subquery (same pattern as `workout_sets`). UPDATE policy carries both `using` and `with check`. Index `idx_routine_exercises_routine` on `(routine_id)`.
 
 | Column | Type / constraint |
 |---|---|
@@ -506,9 +506,17 @@ Check constraint: `(is_rest and routine_id is null) or (not is_rest and routine_
 
 Every table is RLS-enabled.
 
+**UPDATE policies and `WITH CHECK`.** Under Postgres, an UPDATE policy with no
+`WITH CHECK` applies its `USING` expression to the new row as well — an absent
+clause is not an open door. Every UPDATE policy in `public` nonetheless carries
+both clauses, written identically (`20260719120000_r22_update_with_check`): the
+pair states the intent, and it means a future edit that narrows `USING` cannot
+silently stop covering the new row. A pgTAP assertion over `pg_policies` keeps
+it that way.
+
 **Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `user_ingredient_refs`, `user_recipe_refs`, `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`, `workout_sessions`, `routines`, `programs`.
 
-**RLS-via-parent-join pattern.** Child tables with no `user_id` column inherit authorization by joining to their parent: `workout_sets` (via `workout_sessions`), `routine_exercises` (via `routines`), `program_days` (via `programs`). Each carries SELECT / INSERT / UPDATE / DELETE policies using an `exists` subquery that checks the parent's `user_id = auth.uid()`. The UPDATE policies on `routine_exercises` and `program_days` carry both `using` and `with check` to prevent a user re-pointing a child row to another user's parent (F-2 closes this gap; `workout_sets` and `recipe_ingredients` carry `using`-only UPDATE policies — a follow-up migration is noted in R-22 to backfill them).
+**RLS-via-parent-join pattern.** Child tables with no `user_id` column inherit authorization by joining to their parent: `workout_sets` (via `workout_sessions`), `routine_exercises` (via `routines`), `program_days` (via `programs`). Each carries SELECT / INSERT / UPDATE / DELETE policies using an `exists` subquery that checks the parent's `user_id = auth.uid()`. As with every other table, the UPDATE policies on all three carry both `using` and `with check`, written identically.
 
 **`ingredients` (shared library).** Different shape (see D-A1):
 - SELECT: any authenticated user reads the entire library (`using (true)`).
@@ -525,7 +533,7 @@ Reversibility escape-hatch (D-A1): the open-SELECT model can later be tightened 
 
 **`recipe_ingredients` (shared-pool child, via join to `recipes`).** SELECT opens to all authenticated (`using (true)`, policy `"Recipe ingredients pool readable"`) so any recipe's lines render (essential for anon-owned recipes in the diary); INSERT / UPDATE / DELETE stay owner-gated via an `exists` subquery on the parent recipe's real-owner predicate (same anon-sentinel + null-seed exclusions).
 
-**`recipe_steps` (shared-pool child, via join to `recipes`; R-36).** Same shape as `recipe_ingredients`: SELECT opens to all authenticated (`using (true)`, policy `"Recipe steps pool readable"`); INSERT / DELETE are owner-gated via an `exists` subquery on the parent recipe's real-owner predicate (same anon-sentinel + null-seed exclusions). The UPDATE policy carries both `using` and `with check`, written with identical expressions. This is explicit intent, not a closed gap: under Postgres, an UPDATE policy with no `WITH CHECK` already applies its `USING` expression to the new row, so `recipe_ingredients`'s `using`-only UPDATE policy is equally protected today (see the R-22 note above) — the explicit pair on `recipe_steps` only guards against a future edit that narrows `USING` without updating `WITH CHECK` in step, which would otherwise silently stop covering the new row.
+**`recipe_steps` (shared-pool child, via join to `recipes`; R-36).** Same shape as `recipe_ingredients`: SELECT opens to all authenticated (`using (true)`, policy `"Recipe steps pool readable"`); INSERT / DELETE are owner-gated via an `exists` subquery on the parent recipe's real-owner predicate (same anon-sentinel + null-seed exclusions). The UPDATE policy carries both `using` and `with check`, written with identical expressions — see the WITH CHECK note under Row-Level Security above.
 
 **`muscles` (read-only reference table).** A single SELECT policy `muscles_select_all` (`using (true)`) — any authenticated user reads the whole dictionary. No INSERT / UPDATE / DELETE policy: the seed data is effectively immutable to all app roles (R-26 / D-F11).
 
