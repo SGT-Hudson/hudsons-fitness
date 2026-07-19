@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import i18n from '@/i18n';
 
 interface Props {
   children: ReactNode;
@@ -27,23 +28,22 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.error) {
+      // A class component cannot use `useTranslation`, so it reads the i18n
+      // singleton like the other non-hook modules do. It will not re-render on
+      // a language switch — acceptable for a crash screen, which the user
+      // leaves by reloading anyway.
       return (
         <div className="min-h-dvh flex items-center justify-center p-4">
           <Card className="w-full max-w-lg">
             <CardHeader>
-              <CardTitle>Algo ha ido mal</CardTitle>
-              <CardDescription>
-                Se ha producido un error inesperado. Recarga la página o vuelve atrás.
-              </CardDescription>
+              <CardTitle>{i18n.t('common:errors.boundary.title')}</CardTitle>
+              <CardDescription>{i18n.t('common:errors.boundary.body')}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <pre className="text-xs bg-muted p-3 rounded-md overflow-auto max-h-40">
-                {this.state.error.message}
-              </pre>
+            <CardContent>
               <div className="flex gap-2">
-                <Button onClick={this.handleReset}>Reintentar</Button>
+                <Button onClick={this.handleReset}>{i18n.t('common:errors.retry')}</Button>
                 <Button variant="outline" onClick={() => window.location.assign('/')}>
-                  Inicio
+                  {i18n.t('common:errors.boundary.home')}
                 </Button>
               </div>
             </CardContent>
