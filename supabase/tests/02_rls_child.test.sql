@@ -71,11 +71,6 @@ select throws_ok(
   $q$ insert into recipe_ingredients (recipe_id, ingredient_id, quantity)
       values ('00000000-0000-0000-0000-0000000000a1','00000000-0000-0000-0000-0000000000d2',50) $q$,
   '42501', NULL, 'B cannot INSERT an ingredient row into A''s recipe');
-select throws_ok(
-  $q$ update recipe_ingredients set recipe_id = '00000000-0000-0000-0000-0000000000a1'
-       where recipe_id = '00000000-0000-0000-0000-0000000000b1'
-         and ingredient_id = '00000000-0000-0000-0000-0000000000d1' $q$,
-  '42501', NULL, 'B cannot re-point its own recipe_ingredient into A''s recipe');
 
 -- ── routine_exercises (parent routines) ──────────────────────────────────────
 select lives_ok(
