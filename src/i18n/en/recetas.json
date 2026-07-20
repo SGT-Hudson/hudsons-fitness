@@ -48,7 +48,9 @@
     "backToList": "Back to Recipes",
     "notesTitle": "My notes",
     "notesPlaceholder": "Jot down your tweaks: less salt, 5 more minutes…",
-    "notesSaved": "Saved"
+    "notesSaved": "Saved",
+    "notesUnsaved": "Unsaved",
+    "notesSave": "Save"
   },
   "editor": {
     "newTitle": "New recipe",

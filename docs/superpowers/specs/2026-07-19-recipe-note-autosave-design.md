@@ -1,5 +1,17 @@
 # Recipe note autosave — stop losing the note on tab close
 
+> ⚠ **SUPERSEDED 2026-07-20 by `2026-07-20-recipe-note-explicit-save.md`.**
+> Autosave was approved here and then dropped before implementation. The
+> deciding fact came from the code, not from this document: `RecipeNotesCard`
+> is the **only** component in the app that saves on blur — a `grep` for
+> `onBlur` across `src/` returns exactly one non-test line, its own. Every other
+> write surface is a form with an explicit submit. Autosave would not have
+> resolved that inconsistency; it would have deepened it, leaving the note as
+> the only field with autosave *and* the only one with blur-save.
+>
+> The analysis below is kept because it is still correct about what autosave
+> would have cost and why `beforeunload` was never viable. Do not implement it.
+
 **Date:** 2026-07-19
 **Thread:** notes autosave (spawned by the R-36 reviews)
 **Type:** single-component behaviour change

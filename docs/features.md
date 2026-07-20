@@ -129,8 +129,11 @@ transaction).
 Steps belong to the shared recipe row, so only the recipe's real creator may
 write them. A **private note** is the counterpart: free text stored on
 `user_recipe_refs.note` (never on the pooled `recipes` row — it is PII), shown
-on the detail page and saved on blur. It exists for any recipe in my library,
-including one someone else created and I cannot edit but can still annotate.
+on the detail page. It saves on an explicit button, and the card marks itself
+unsaved while the text differs from what is stored — the note used to save on
+blur, which made it the one field in the app that wrote itself and gave no sign
+when work was still pending. It exists for any recipe in my library, including
+one someone else created and I cannot edit but can still annotate.
 
 Per-ingredient scaling honors the `per_serving` flag: a normal line's quantity
 is divided across `servings`, but a `per_serving = true` line is added fresh

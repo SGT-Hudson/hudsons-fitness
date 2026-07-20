@@ -48,7 +48,9 @@
     "backToList": "Volver a Recetas",
     "notesTitle": "Mis notas",
     "notesPlaceholder": "Anota tus ajustes: menos sal, 5 min más…",
-    "notesSaved": "Guardado"
+    "notesSaved": "Guardado",
+    "notesUnsaved": "Sin guardar",
+    "notesSave": "Guardar"
   },
   "editor": {
     "newTitle": "Nueva receta",
