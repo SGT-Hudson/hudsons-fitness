@@ -526,7 +526,7 @@ describe('coach: muscle-recency rule', () => {
   it('uses the "never trained" headline when history is empty', () => {
     const hit = evaluateCoach(ctx({ history: [] }))
       .find((s) => s.ruleId === 'muscle-recency');
-    expect(hit?.headline).toBe('coach.rules.muscleRecency.headlineNever');
+    expect(hit?.headline).toBe('rules.muscleRecency.headlineNever');
   });
 
   it('refuses to fire when there are no primary movers', () => {
