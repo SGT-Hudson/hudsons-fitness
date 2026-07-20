@@ -219,7 +219,8 @@ decision rationale in `decisions.md`.
   `develop`). Test-file refinements followed: **#149** repaired apply-from-zero
   (`00_schema`); **#150** made tests `01`–`04` green on `develop`. Closes the "Tier-3
   gated" gaps noted in the earlier R-19 / R-01 entries. Only the R-22 UPDATE
-  WITH-CHECK gap remains as a pgTAP todo.
+  WITH-CHECK gap remains as a pgTAP todo — *correction: that todo asserted
+  nothing and no gap ever existed; retired 2026-07-19 (#214), see below*.
 - **R-25 hide drops the reference row only (#151).** Migration
   `20260603120000_r25_hide_drops_ref_only.sql` — hiding an owned library item now
   drops only the user's reference row; pool ownership is retained.
@@ -255,6 +256,9 @@ decision rationale in `decisions.md`.
   live database; the 10-migration backlog was deployed in order, bringing prod to
   **907 exercises** (873 catalog) with instructions + fine-muscle tags. See
   operations.md "Project A / B1 / B2a backlog deploy". **Project B (R-27) complete.**
+- **B2a pgTAP (#164).** The B2a instructions data foundation also added pgTAP suite
+  `06_instructions.test.sql` (the `instructions_en` / `instructions_es` `text[]`
+  column shape plus a sampled row asserting non-empty, equal-length bilingual steps).
 
 ### 2026-07-15 — R-33 UI redesign (design system + nutrition screens)
 
@@ -264,7 +268,9 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
 - **Foundation (app-wide, gym included).** Migrated to Tailwind CSS v4 (#179);
   foundation retheme (#180) — the `tokens.css` oklch token system as the app's
   source, self-hosted Rubik + Geist Mono, restyled shadcn primitives, a
-  hardcoded-colour sweep, and the heatmap ramp.
+  hardcoded-colour sweep, and the heatmap ramp. The sweep also moved the brand
+  green from `#16a34a` to `#13702f` in the PWA manifest (`vite.config.ts`) and the
+  `index.html` `theme-color` meta — superseding the Sprint 15 value.
 - **Shell & navigation (#183).** `PageShell` frame, per-section bottom navs, the
   `/more` hub, and the grouped desktop sidebar (web-sidebar-footer pattern).
 - **Semantic tone core (#184).** `src/core/nutritionTone.ts` replaces the old
@@ -282,7 +288,9 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   (#203). Docs reconciled to the shipped code at release (#204).
 - **Schema.** Three additive, nullable columns only — `meal_plan_templates.phase_type`,
   `recipes.prep_time_minutes`, `ingredients.salt_g_per_unit` (with the matching
-  `save_template` / `save_recipe` args); no RLS or destructive change.
+  `save_template` / `save_recipe` args); no RLS or destructive change. New pgTAP
+  suite `07_ingredient_salt.test.sql` (#194) pins the salt column to the U-1
+  nullable sub-macro contract — NULL means UNKNOWN, never 0.
 
 ### 2026-07-19 — R-36 Recipe steps & notes
 
@@ -292,7 +300,9 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   `p_instructions text` (delete-and-reinsert; blank steps dropped and the rest
   renumbered rather than blocking the save — D-F26). No migration of the old
   free text — `recipe_steps` starts empty for every recipe (D-F25), since the
-  app has no production users yet.
+  app has no production users yet. New pgTAP suite `08_recipe_steps.test.sql` —
+  shared-pool reads, owner-only writes (seeded-library sentinel excluded), note
+  isolation between users, step ordering, and the blank-step skip.
 - Editor gains `RecipeStepsField` — a react-hook-form field array with ↑/↓
   reordering (no drag-and-drop dependency). The recipe detail page renders the
   numbered step list with an owner-only empty state, and the planner's recipe
@@ -305,6 +315,86 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
 - Per-step photos, the "Fotos de los pasos" setting, and the Supabase Storage
   stack they need are split off to **R-36b**, blocked on a storage/cost
   decision.
+
+### 2026-07-14 → 2026-07-17 — Numeric locale boundary + R-35 shopping list (backfill)
+
+- **The decimal comma no longer eats the number (#198).** `<input type="number">`
+  silently turned a typed `1,2` into `12` — the comma a Spanish numeric keypad
+  emits by default, reaching body weight. The browser strips it before React sees
+  the value, so the fix is the DOM element itself. One shared input boundary:
+  `parseDecimalInput` (`src/lib/number.ts`, accept-both/emit-point, deliberately
+  **not** locale-aware, ambiguity rejected rather than guessed), the promoted
+  `NumberField` (`type="text" inputMode="decimal"`), and `useDecimalDraft` for the
+  two runner fields whose value lives as a number in the parent. Three competing
+  numeric conventions collapse onto it. Fraction-capable fields only — integers
+  (series, reps, rest, warm-up reps, RPE) keep `type="number"` and their spinner.
+  On `type="text"` the browser stops enforcing `min`/`max`/`step`, so every field
+  that lost a native gate gained the zod equivalent, retiring the native bubble
+  that used to preempt the app's own message and `MacroField`'s hardcoded
+  `max={100}`. Makes hard invariant 6 actually true.
+- **Every number renders in the active locale (#209).** The output-side mirror of
+  #198 — Spanish showed `82.4 kg`. `formatDecimal` + `formatQuantity` in
+  `src/lib/number.ts` (one shared `lang → BCP-47` map, nullish-safe) are the
+  emit-locale partner to `parseDecimalInput`; JSX numbers go through
+  `useNum()`, numbers inside translations through i18next's Intl formatter
+  (`{{var, number}}`, 8 namespaces × es/en). The ad-hoc `formatMacro` retired. An
+  eslint `no-restricted-syntax` guard flags raw `roundMacro()`/`Math.round()` in
+  JSX and `toLocaleString`/`Intl.NumberFormat` outside `src/lib/number.ts`, so the
+  class cannot return.
+- **R-35 shopping-list panel (#210).** The last Planificador surface still on the
+  pre-redesign UI moves to the shared `ResponsiveDialog` **panel** variant
+  (docked-right on desktop, bottom sheet on mobile), rebuilt on shipped R-33
+  tokens: sunken body, white rounded item rows, square accent checkbox, `tnum`
+  quantity badge, extra chip, check-off row-shrink. Shared `SegmentedControl` /
+  `Badge` / `EmptyState`. Behaviour and public props unchanged — per-week
+  check-off, staples hide/show, manual extras, share/copy and both views survive.
+
+### 2026-07-19 — Error classifier, local stack ports, RLS WITH-CHECK uniformity
+
+- **One error classifier, no raw messages, honest empty states (#212).** Nothing
+  decided what an error *meant* before showing it: `toastError` passed
+  `err.message` through as English PostgREST jargon, four screens collapsed
+  `isError || !data` into their not-found state (so a network failure claimed the
+  recipe was deleted), and the global `ErrorBoundary` printed `error.message`
+  untranslated in a `<pre>`. `src/lib/errors.ts` is now the single classifier —
+  six kinds (`notFound` `PGRST116`, `denied` `42501`, `duplicate` `23505`,
+  `offline`, `staleSchema` `PGRST200/202/205`, `unknown`) plus
+  `errorMessageKey`/`errorTitleKey`, and nothing else inspects an error code. The
+  shared `QueryErrorState` takes each screen's own not-found node and renders it
+  only when the error really is "no rows"; recipe detail, exercise detail, the
+  planner's recipe peek and the recipe editor (which used to silently redirect and
+  lose the edit) route through it.
+- **`networkMode: 'always'` on query defaults (#212).** Found in a real-browser
+  pass, not the tests: react-query's default `'online'` **pauses** a query while
+  offline — `isError` false, `data` undefined, `isLoading` false — so every screen
+  fell through to its not-found arm anyway and `QueryErrorState` never rendered.
+  `'offlineFirst'` is not sufficient (it ungates only the first attempt, so with
+  `retry: 1` the query fires once, fails, then re-pauses and never settles).
+- **Local Supabase stack moved to the 553xx range (#213).** The local stack
+  collided with another project's on every default 543xx port, and only the DB
+  port was pinned. `supabase/config.toml` now pins API 55321, DB 55322, shadow
+  55320, Studio 55323, Inbucket 55324, analytics 55327, pooler 55329. Config-only
+  and local-only — production is dashboard-managed and this file is not a deploy
+  surface; the ports serve migrations and the pgTAP suite.
+- **Every UPDATE policy carries an explicit WITH CHECK (#214).** Migration
+  `20260719120000_r22_update_with_check.sql`. **This closed no hole.** Postgres
+  applies an UPDATE policy's `USING` expression to the NEW row when `WITH CHECK`
+  is absent, so the fourteen `USING`-only policies were already covered — and the
+  two pgTAP `todo` blocks in `02_rls_child.test.sql` that claimed otherwise had
+  been silently *passing* for months, reading as tracked debt while asserting
+  nothing. The clause is written anyway to state the intent rather than leave it
+  to a Postgres subtlety, and as insurance against a future edit that narrows
+  `USING` alone. `ALTER POLICY`, not drop-and-recreate, so no policy body is
+  retyped; each `WITH CHECK` repeats that policy's existing `USING` exactly.
+- **The todos become one catalogue assertion (#214).** Both `todo` blocks were
+  deleted, not converted (the re-pointing behaviour stays covered by the hard
+  assertions on `routine_exercises` and `program_days`). In their place
+  `02_rls_child.test.sql` asserts catalogue-wide that no UPDATE policy in `public`
+  has a `with_check` distinct from its `qual` — identical, not merely present,
+  since `with check (true)` would be strictly weaker than the implicit behaviour
+  it replaced. A companion assertion pins the denominator so the sweep cannot pass
+  vacuously. The `r22` prefix is historical: R-22 is Training Routines, closed in
+  May; the gap survived only as a follow-up bullet filed under it.
 
 ## PR table
 
@@ -370,4 +460,11 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
 | 201/202 | R-33 wave 8 — Objetivos | Objetivos page (phase hero, phase-tinted rows, option-B history); phase editor promoted from modal to route with live phase-tinted preview + `23P01` overlap reason |
 | 203 | R-33 wave 9 — Ajustes | SettingsPage restyle (MorePage-consistent hero, segmented theme control, row subtitles) |
 | 204 | R-33 — release doc-reconcile | Reconcile living docs to shipped code (21 drift items across 6 shards) ahead of the batch release |
+| 198 | Forms — decimal comma input fix | One shared numeric input boundary: `parseDecimalInput` + `NumberField` (`type="text" inputMode="decimal"`) + `useDecimalDraft`; fraction-capable fields only, integers keep their spinner; zod replaces the lost native `min`/`max`/`step` gates |
+| 209 | i18n — locale-aware number rendering | `formatDecimal` / `formatQuantity` + `useNum()` + i18next `{{n, number}}` across 8 namespaces; eslint guard against raw rounding in JSX and `Intl` outside `src/lib/number.ts` |
+| 210 | R-35 — shopping list panel | Shopping-list dialog redesigned to the R-33 `ResponsiveDialog` panel (docked-right / bottom sheet); shared `SegmentedControl` / `Badge` / `EmptyState`; no behaviour change |
+| 211 | R-36 — recipe steps + private notes | `recipe_steps` child table (RLS mirrors `recipe_ingredients`), `save_recipe` takes `p_steps jsonb` and `recipes.instructions` dropped; `RecipeStepsField` editor with ↑/↓ reorder; `user_recipe_refs.note` wired up as "Mis notas"; pgTAP `08_recipe_steps` |
+| 212 | Errors — one classifier, honest empty states | `src/lib/errors.ts` (six kinds + message/title keys), `toastError` stops leaking `err.message`, shared `QueryErrorState`, translated `ErrorBoundary`, and `networkMode: 'always'` so offline queries settle instead of pausing into not-found |
+| 213 | Supabase — local stack ports | `supabase/config.toml` pins the local stack to 553xx (API 55321, DB 55322, Studio 55323) to coexist with another project; config-only, local-only |
+| 214 | RLS — UPDATE WITH CHECK uniformity | `20260719120000_r22_update_with_check.sql` — `alter policy … with check (X)` on all 14 `USING`-only UPDATE policies; closes no hole (Postgres already applied `USING` to the new row), retires two silently-passing `todo` blocks for one catalogue assertion that `with_check` is never distinct from `qual` |
 

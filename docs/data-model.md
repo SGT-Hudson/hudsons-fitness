@@ -12,7 +12,7 @@
 
 ## Overview
 
-Hudson's Fitness has ~26 base tables in prod, all RLS-enabled — the original 15, the R-07 `tdee_state` adaptive-filter memory table, the 3 Training MVP tables added by R-19 and applied 2026-05-21 (`exercises`, `workout_sessions`, `workout_sets`), the 4 F-2 training tables (`routines`, `routine_exercises`, `programs`, `program_days`, live in prod since v2026-06-03 / #122), the 2 R-01 per-user reference tables (`user_ingredient_refs`, `user_recipe_refs`), and the R-26 read-only `muscles` reference dictionary (#155). The `body_measurements_smoothed` view sits on top of `body_measurements` (see Views). Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The deliberate exceptions are `ingredients` and `recipes` (reclassified by R-01), the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
+Hudson's Fitness has 27 base tables in prod, all RLS-enabled — the original 15, the R-07 `tdee_state` adaptive-filter memory table, the 3 Training MVP tables added by R-19 and applied 2026-05-21 (`exercises`, `workout_sessions`, `workout_sets`), the 4 F-2 training tables (`routines`, `routine_exercises`, `programs`, `program_days`, live in prod since v2026-06-03 / #122), the 2 R-01 per-user reference tables (`user_ingredient_refs`, `user_recipe_refs`), the R-26 read-only `muscles` reference dictionary (#155), and the R-36 `recipe_steps` child table. The `body_measurements_smoothed` view sits on top of `body_measurements` (see Views). Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The deliberate exceptions are `ingredients` and `recipes` (reclassified by R-01), the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
 
 ## Tables
 
@@ -404,7 +404,7 @@ The structural source of the fine muscle taxonomy: 25 seed rows = 24 shadeable f
 |---|---|
 | `code` | `text` primary key — fine muscle code |
 | `muscle_group` | `text` not null, check in (`'shoulders'`, `'chest'`, `'back'`, `'arms'`, `'core'`, `'legs'`, `'full_body'`) |
-| `body_region_slug` | `text` not null — body-art region the code co-shades into (see `codesForBodyRegion` in `src/core/muscles.ts`) |
+| `body_region_slug` | `text` nullable — body-art region the code co-shades into (see `codesForBodyRegion` in `src/core/muscles.ts`); null only for `full_body`, which never shades |
 | `display_order` | `int` not null |
 | `is_full_body` | `boolean` not null default false |
 
@@ -514,7 +514,9 @@ pair states the intent, and it means a future edit that narrows `USING` cannot
 silently stop covering the new row. A pgTAP assertion over `pg_policies` keeps
 it that way.
 
-**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `profiles`, `body_measurements`, `user_ingredient_refs`, `user_recipe_refs`, `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`, `workout_sessions`, `routines`, `programs`.
+**Standard per-user pattern.** Most tables hold data owned by exactly one user and carry the four-policy set: SELECT / INSERT / UPDATE / DELETE all gated on `auth.uid() = user_id` (`with check` on INSERT, `using` on the rest). Applied to: `body_measurements`, `user_ingredient_refs`, `user_recipe_refs`, `meal_logs`, `goals`, `phases`, `meal_plan_templates`, `meal_plan_template_day_times`, `meal_plan_template_slots` (via join to `meal_plan_templates`), `meal_plan_weeks`, `meal_plan_week_slots` (via join to `meal_plan_weeks`), `daily_nutrition_history`, `tdee_estimates`, `tdee_state`, `workout_sessions`, `routines`, `programs`.
+
+**`profiles` (same shape, keyed on `id`).** `profiles` has no `user_id` column — the row *is* the user, so its four policies gate on `auth.uid() = id` (the PK) instead.
 
 **RLS-via-parent-join pattern.** Child tables with no `user_id` column inherit authorization by joining to their parent: `workout_sets` (via `workout_sessions`), `routine_exercises` (via `routines`), `program_days` (via `programs`). Each carries SELECT / INSERT / UPDATE / DELETE policies using an `exists` subquery that checks the parent's `user_id = auth.uid()`. As with every other table, the UPDATE policies on all three carry both `using` and `with check`, written identically.
 
@@ -559,9 +561,17 @@ User-facing RPCs, all `SECURITY INVOKER`, each atomic across multiple tables. Se
 - `save_program` — create-or-replace a program and its day slots (replace-children). Does NOT touch `is_active` or `anchor_date` — those are owned by `set_active_program`. INVOKER.
 - `set_active_program` — atomic active-flip: deactivates all other programs for the user then activates the target with the given `anchor_date`. Kept as an RPC (rather than client-side) because the two `UPDATE`s must be atomic with respect to the `programs_one_active_uidx` partial unique index — a gap between two client-side statements would transiently violate the constraint (D-F8). INVOKER.
 
-Two sanctioned `SECURITY DEFINER` exceptions — the only ones in the schema: (1) the cron-only `apply_template_to_week_admin` (Sprint 9), used by scheduled jobs that act across users with the service role; (2) `reconcile_account_delete` (R-01), account-delete reconciliation called only by the service role / edge — granted to no app-facing role.
+Four sanctioned `SECURITY DEFINER` functions — the only ones in the schema. Two are RPCs:
+1. `public.apply_template_to_week_admin` (Sprint 9) — the cron-only admin variant of `apply_template_to_week`; takes `p_user_id` explicitly instead of reading `auth.uid()`, so it needs definer rights to write meal-plan weeks *across* users on behalf of scheduled jobs. Granted to `service_role` only (`revoke all … from public, anon, authenticated`).
+2. `public.reconcile_account_delete` (R-01) — account-delete reconciliation, called by the `delete-account` edge function with the service-role client. Definer because the auth user is about to be deleted (there is no invoker identity left to authorize against) and the erase-refs + reassign-to-anon-sentinel work must span `user_*_refs`, `ingredients` and `recipes` atomically. Granted to no app-facing role.
 
-Invariant (D-C5): any operation that mutates more than one table atomically MUST be an RPC. Single-table mutations stay client-side. All user-callable RPCs must be `SECURITY INVOKER` with `set search_path = public`. `SECURITY DEFINER` is forbidden without explicit security review and a non-`public` schema home; the two documented exceptions are `apply_template_to_week_admin` (cron) and `reconcile_account_delete` (service-role/edge account-delete reconciliation).
+The other two are not RPCs and are never called by the client:
+3. `public.handle_new_user()` (R-00 baseline) — the `on_auth_user_created` trigger on `auth.users`. Definer because the trigger fires as the signup path's role, which has no rights on `public.profiles`; it inserts the new user's profile row (`on conflict (id) do nothing`).
+4. `private.invoke_edge_function(text)` (Sprint 9) — the cron helper that reads `cron_service_role_key` from `vault.decrypted_secrets` and POSTs to the edge function via `pg_net`. Definer because the `pg_cron` job role must not itself hold read access to Vault; it lives in the non-exposed `private` schema (`revoke all on schema private from public`).
+
+All four pin `set search_path` (`'public'` on `handle_new_user`, `''` on the rest) and fully qualify every table, so none is schema-hijackable.
+
+Invariant (D-C5): any operation that mutates more than one table atomically MUST be an RPC. Single-table mutations stay client-side. All user-callable RPCs must be `SECURITY INVOKER` with `set search_path = public`. `SECURITY DEFINER` is forbidden without explicit security review and a non-`public` schema home; the documented exceptions are the four enumerated above.
 
 `materialize_plan_for_date` (R-12 / D-D6): `SECURITY INVOKER`, `set search_path = public`, in-RPC `date <= today` Europe/Madrid guard, backed by the partial unique index `meal_logs_user_plan_slot_uidx` with `INSERT … ON CONFLICT DO NOTHING`. It replaced the hand-mirrored client/edge materialization copies (single source = the RPC). Live in prod since 2026-05-18 (migration applied, then the calling-code PR merged).
 
@@ -572,6 +582,8 @@ Invariant (D-C5): any operation that mutates more than one table atomically MUST
 ## Extensions
 
 Installed in the `extensions` schema (not `public`):
+- `uuid-ossp` — UUID generation; installed by the R-00 baseline as part of the standard Supabase set.
+- `pgcrypto` — crypto/digest primitives; installed by the R-00 baseline alongside `uuid-ossp`.
 - `pg_trgm` — fuzzy ingredient text search (gin trigram indexes on `ingredients.name` / `ingredients.brand`).
 - `btree_gist` — backs the non-overlapping phase date-range constraint via `EXCLUDE USING gist` on `phases`.
 

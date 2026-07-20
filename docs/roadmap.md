@@ -40,9 +40,9 @@ reference shard carries it (never edit the decision entry).
 - R-30 — Responsive desktop density, per-feature (REMOVED 2026-06-11 — folded into R-33)
 - R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — deferred from R-27
 - R-32 — DB-integration test tier / e2e guard for PostgREST select strings
-- R-33 — UI redesign: design system + nutrition screens — SHIPPED on develop (2026-07-15); release to main pending
+- R-33 — UI redesign: design system + nutrition screens — SHIPPED (released to `main` 2026-07-15, `v2026-07-15`)
 - R-34 — Gym screens redesign (blocked on gym design convergence)
-- R-35 — Shopping list from the planned week
+- R-35 — Shopping list from the planned week — SHIPPED
 - R-36 — Recipe steps & notes (structured steps + private notes) — SHIPPED
 - R-36b — Per-step recipe photos (split off R-36, blocked on storage/cost decision)
 - R-37 — Interactive TDEE calculator linked from the phase editor
@@ -1131,11 +1131,12 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 - **decision:** (D-ids at impl time: TW4+token architecture, navigation IA,
   Rubik, tone system + fat floor, heatmap ramp)
 - **blocked-by:** —
-- **status:** **shipped on `develop`** — spec converged 2026-07-02, execution
-  complete 2026-07-15; full spec in
-  `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md`. Promotion to
-  `main` is pending the batch release. All PRs landed: PR-1 Tailwind v4
-  migration (#179) and PR-2 foundation retheme — tokens.css, self-hosted fonts,
+- **status:** **shipped** — spec converged 2026-07-02, execution complete
+  2026-07-15; full spec in
+  `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md`. Released to
+  `main` 2026-07-15 (`release/2026-07-15`, #206, tag `v2026-07-15`). All PRs
+  landed: PR-1 Tailwind v4 migration (#179) and PR-2 foundation retheme —
+  tokens.css, self-hosted fonts,
   restyled shadcn primitives, hardcoded-colour sweep, heatmap ramp (#180);
   wave 0 shell & navigation (#183); the semantic tone core (#184,
   `src/core/nutritionTone.ts`); and the eight screen waves — Diario (#185/#186),
@@ -1172,15 +1173,16 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 ## R-35 — Shopping list from the planned week
 - **decision:** (D-id at spec time)
 - **blocked-by:** —
-- **status:** core **shipped** (#46, well before the R-33 spec). The R-33
-  restyle of the dialog is the only open work.
+- **status:** **shipped** — core landed in #46 (well before the R-33 spec); the
+  R-33 restyle of the dialog landed in #210.
 - **shipped (#46):** `ShoppingListDialog` (rendered in `PlanificadorPage`) with
   both consolidated + per-recipe views (`ShoppingView 'total' | 'byRecipe'`),
   localStorage per-week check-off, text export/share, and manual **extra items**
   (`appendExtra`/`ExtraItem` in `shoppingExport.ts`) — flat list until ingredient
   categories exist.
-- **scope (open):** apply the R-33 redesign to the shopping dialog (still the
-  pre-redesign UI — the file was untouched by the R-33 Planificador waves).
+- **shipped (#210):** the R-33 restyle of the dialog — `ShoppingListDialog`
+  rebuilt on the R-33 kit (`ResponsiveDialog`, `SegmentedControl`, `EmptyState`,
+  `Skeleton`, `Badge`); the file had been untouched by the Planificador waves.
 
 ## R-36 — Recipe steps & notes
 - **decision:** D-F25, D-F26
