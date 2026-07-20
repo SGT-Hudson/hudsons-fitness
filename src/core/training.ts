@@ -340,7 +340,7 @@ export type CoachSeverity = 'info' | 'nudge' | 'warn';
 export interface CoachSuggestion {
   ruleId: string;
   severity: CoachSeverity;
-  /** i18n key under `coach.rules.<ruleId>.headline`. */
+  /** i18n key under `rules.<ruleId>.headline` in the `coach` namespace. */
   headline: string;
   /** Template params the UI substitutes into the localised headline. */
   detail: Record<string, string | number>;
@@ -504,7 +504,7 @@ const ruleDoubleProgression: CoachRule = {
     return {
       ruleId: 'double-progression',
       severity: 'nudge',
-      headline: 'coach.rules.doubleProgression.headline',
+      headline: 'rules.doubleProgression.headline',
       detail: {
         sessions,
         targetReps,
@@ -549,7 +549,7 @@ const ruleRepProgression: CoachRule = {
     return {
       ruleId: 'rep-progression',
       severity: 'nudge',
-      headline: 'coach.rules.repProgression.headline',
+      headline: 'rules.repProgression.headline',
       detail: {
         sessions,
         weightKg: w0,
@@ -578,7 +578,7 @@ const ruleFlatE1rmDeload: CoachRule = {
     return {
       ruleId: 'flat-e1rm-deload',
       severity: 'nudge',
-      headline: 'coach.rules.flatE1rmDeload.headline',
+      headline: 'rules.flatE1rmDeload.headline',
       detail: {
         sessions: flatWindow,
         spreadKg: max - min,
@@ -616,7 +616,7 @@ const ruleRpeClimbingFatigue: CoachRule = {
     return {
       ruleId: 'rpe-climbing-fatigue',
       severity: 'warn',
-      headline: 'coach.rules.rpeClimbingFatigue.headline',
+      headline: 'rules.rpeClimbingFatigue.headline',
       detail: {
         sessions,
         weightKg: anchorWeight,
@@ -649,7 +649,7 @@ const ruleMuscleRecency: CoachRule = {
       const never: CoachSuggestion = {
         ruleId: 'muscle-recency',
         severity: 'info',
-        headline: 'coach.rules.muscleRecency.headlineNever',
+        headline: 'rules.muscleRecency.headlineNever',
         detail: { primaryMuscle: lead },
       };
       return never;
@@ -664,7 +664,7 @@ const ruleMuscleRecency: CoachRule = {
     const hit: CoachSuggestion = {
       ruleId: 'muscle-recency',
       severity: 'info',
-      headline: 'coach.rules.muscleRecency.headline',
+      headline: 'rules.muscleRecency.headline',
       detail: {
         primaryMuscle: lead,
         daysSince: days,
