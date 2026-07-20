@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { useRecipeNote, useSaveRecipeNote } from '../hooks';
@@ -9,8 +10,16 @@ import { useRecipeNote, useSaveRecipeNote } from '../hooks';
  *
  * The note lives on user_recipe_refs.note, so it exists only for recipes in the
  * user's library — including recipes created by someone else, which the user
- * cannot edit but can still annotate. Saves on blur: the note is read often
- * (while cooking) and written briefly, so a dialog would tax the common case.
+ * cannot edit but can still annotate. It is read often (while cooking) and
+ * written briefly, which is why it sits inline on the detail page rather than
+ * behind a dialog.
+ *
+ * Saves on an explicit button, and only on that. It used to save on blur, which
+ * made it the one field in the app that wrote itself — every other surface is a
+ * form with a submit. Blur-save also looked saved when it was not: nothing
+ * marked the note dirty, so text lost to a closed tab went unannounced. The
+ * unsaved marker is what makes the explicit button fair, so the two ship
+ * together (spec 2026-07-20-recipe-note-explicit-save).
  *
  * `data.exists` is the gate, not edit-ownership: saveRecipeNote runs an
  * `update … eq('recipe_id', …)` with no user filter (RLS scopes it), so
@@ -35,8 +44,12 @@ export function RecipeNotesCard({ recipeId }: { recipeId: string }) {
 
   if (isLoading || !data?.exists) return null;
 
-  function handleBlur() {
-    if (draft.trim() === (data?.note ?? '').trim()) return;
+  // Derived, not state: a useState mirror of two values that already exist
+  // would only be a way to hold a stale answer. Trimmed on both sides so
+  // trailing whitespace alone never counts as a change.
+  const dirty = draft.trim() !== data.note.trim();
+
+  function handleSave() {
     save.mutate({ recipeId, note: draft }, { onSuccess: () => setSaved(true) });
   }
 
@@ -46,8 +59,15 @@ export function RecipeNotesCard({ recipeId }: { recipeId: string }) {
         <h2 className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
           {t('detail.notesTitle')}
         </h2>
-        {saved && !save.isPending && (
-          <span className="text-[10.5px] text-text-dim">{t('detail.notesSaved')}</span>
+        {/* Dirty wins: you cannot be simultaneously saved and unsaved, and the
+            state that needs acting on is the one worth showing. */}
+        {dirty ? (
+          <span className="text-[10.5px] text-text-dim">{t('detail.notesUnsaved')}</span>
+        ) : (
+          saved &&
+          !save.isPending && (
+            <span className="text-[10.5px] text-text-dim">{t('detail.notesSaved')}</span>
+          )
         )}
       </div>
       <div className="py-3">
@@ -62,8 +82,17 @@ export function RecipeNotesCard({ recipeId }: { recipeId: string }) {
             setDraft(e.target.value);
             setSaved(false);
           }}
-          onBlur={handleBlur}
         />
+        <div className="mt-2.5 flex justify-end">
+          <Button
+            type="button"
+            size="sm"
+            disabled={!dirty || save.isPending}
+            onClick={handleSave}
+          >
+            {t('detail.notesSave')}
+          </Button>
+        </div>
       </div>
     </Card>
   );
