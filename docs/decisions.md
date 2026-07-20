@@ -250,9 +250,11 @@ But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves w
 
 **Ruling:** Confirmed exactly as-is. Chart time-range pills default to 90d with options 30d/90d/1y/all; per-chart independent state (each chart owns its own `useState<TimeRange>('90d')`), no cross-chart syncing, no persistence across refreshes. Document the shared component path (`features/measurements/components/TimeRangePills.tsx`) and the shared window helper (`fromDateForRange`).
 
+> ⚠ **The range set, the default and the component superseded by R-33 wave 7 (2026-07-14, #199/#200).** The presets are now `1m` / `6m` / `1y` / `all` with `6m` as the default — `TimeRange`, `TIME_RANGES` and `DEFAULT_TIME_RANGE` are declared in `src/features/measurements/hooks.ts`, and every chart opens on `useState<TimeRange>(DEFAULT_TIME_RANGE)`. `TimeRangePills` was retired in that wave; the presets render through the shared `SegmentedControl`. The per-chart independent, non-synced, non-persisted state below still holds, as does `fromDateForRange`.
+
 **Why:** The convention is implemented exactly as worded and the design choice is deliberate and defensible: per-chart independent (non-synced, non-persisted) range state lets the user compare different time scales side by side on `/progreso`, which is precisely what a progress view needs. Syncing or persisting the range would remove that comparison ability for no real gain. This is also consistent with the D-C1 no-query-string-state rule, and is the same per-chart-local-state pattern D-D5's %↔kg toggle follows. Doc-only — no change needed.
 
-**Status:** decided
+**Status:** decided · range set / default / component superseded by R-33 wave 7
 
 ## D-D5 — Composition chart — full redesign (fat/lean stack + trends + %↔kg toggle)
 
@@ -474,7 +476,7 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **Why:** Slot scarcity ruled out a single unified bar — both Planificador and Recetas need a slot and a 5-tab bar can't fit the full nutri set alongside gym's. Splitting into two section-scoped bars keeps each bar's item count sane and lets each bar hold strict per-section accent discipline (no cross-section accent bleed). It also matches the owner's preferred mental model of nutrition and training as two distinct apps you switch between, not one merged tab set. Full rationale in `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md` §4.
 
-**Status:** decided · in progress (R-33 wave 0, 2026-07-09)
+**Status:** decided · done (R-33 wave 0, #183; released to `main` 2026-07-15, `v2026-07-15`)
 
 ## D-F17 — R-33 tone core: canvas `nutritionTone.ts` replaces `macroStatus.ts`
 

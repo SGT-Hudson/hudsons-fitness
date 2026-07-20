@@ -112,23 +112,36 @@ and never feeds protein/TDEE/targets.
 ## Recipes
 
 Recipes are per-user private rows referencing the shared ingredient library
-(schema in `data-model.md`). Each recipe has a `servings` count and a list of
-ingredient lines (`quantity` in grams or units per the ingredient's
-`unit_type`). The recipe editor is a two-column layout: the ingredient list on
+(schema in `data-model.md`). Each recipe has a `servings` count, an optional
+`prep_time_minutes`, a list of ingredient lines (`quantity` in grams or units
+per the ingredient's `unit_type`), and an ordered list of **preparation
+steps**. Steps are structured rows in their own `recipe_steps` table (R-36),
+not a free-text blob — the old `recipes.instructions` column was dropped when
+they landed. In the editor they are a reorderable field array (↑/↓ buttons over
+the array's `swap()`, not drag-and-drop); on the detail page they render as a
+numbered list. The recipe editor is a two-column layout: the ingredient list on
 one side and a **live macros panel** on the other that recomputes as quantities
-change — when `servings === 1` it shows a single "Macros" column, otherwise it
-shows "Totales" and "Por ración" side by side. Persistence is atomic via the
-`save_recipe` RPC (UPSERT recipe + replace its `recipe_ingredients` in one
+change — it always shows "Totales" and "Por ración" side by side, with no
+single-column variant. Persistence is atomic via the `save_recipe` RPC (UPSERT
+recipe + replace its `recipe_ingredients` and `recipe_steps` in one
 transaction).
+
+Steps belong to the shared recipe row, so only the recipe's real creator may
+write them. A **private note** is the counterpart: free text stored on
+`user_recipe_refs.note` (never on the pooled `recipes` row — it is PII), shown
+on the detail page and saved on blur. It exists for any recipe in my library,
+including one someone else created and I cannot edit but can still annotate.
 
 Per-ingredient scaling honors the `per_serving` flag: a normal line's quantity
 is divided across `servings`, but a `per_serving = true` line is added fresh
 *per serving served* (the batch-cooked-curry trick — the stew's macros divide
 by 5 servings while the 70 g of rice is counted per plate).
 
-The Recetas list offers a grid/list view toggle persisted to `localStorage`:
-the grid shows recipe cards (photo or initials placeholder, name, kcal/serving,
-ingredient-count badge); the list shows dense rows with the same fields.
+The Recetas list switches presentation by breakpoint, not by user choice:
+under `md` it renders dense `RecipeRow` rows, at `md` and above a responsive
+grid of `RecipeCard`s (photo or initials placeholder, name, kcal/serving,
+ingredient-count badge) — both lists are always in the DOM, one hidden by a
+responsive class. There is no view toggle and nothing persisted.
 Recipes are part of the ★ Library Contribution & Lifecycle Model
 (`data-model.md#library-model`): the pool is shared, "my library" is the set
 of my `user_recipe_refs` rows, and "delete" = `hide_owned_recipe` (drops my
@@ -148,28 +161,49 @@ ownership to the anon sentinel). Macros are stored per 100 g, or per unit when
 indexes back fuzzy name/brand search (so "yogur" matches "yogures", "yogurt",
 and typos).
 
-Search (on the Ingredientes page and inside the recipe editor's autocomplete)
-is **local-first**: it queries the shared library, ordering verified rows
-first. Only when local results are thin (fewer than ~5) **and** the query is at
-least 3 characters does it also probe **OpenFoodFacts** (text search, no API
-key, CORS-friendly, queried directly from the browser). OFF results missing an
-energy value are filtered out. Picking an OFF result inserts it into the shared
-library tagged `source = 'openfoodfacts'` with the OFF barcode as
-`external_id`; the `unique (source, external_id)` constraint makes imports
-race-safe across concurrent users — a unique-violation on insert means another
+Library search is **local only**. The Ingredientes list, the full-screen
+`/recipes/ingredients/search` takeover and the recipe editor's autocomplete all
+run the same server search over the shared pool (ordering verified rows first)
+and never touch the network beyond Supabase — there is no auto-probe, no
+result-count threshold and no query-length trigger. **OpenFoodFacts** is
+queried from exactly one place: the explicit search panel the user opens on the
+method page (`/recipes/ingredients/new`), plus the barcode lookup described
+below. It is a text search, no API key, CORS-friendly, queried directly from
+the browser and debounced; results missing an energy value are filtered out.
+Picking an OFF result carries the whole product into the manual editor, and
+saving inserts it into the shared library tagged `source = 'openfoodfacts'`
+with the OFF barcode as `external_id`; the `unique (source, external_id)`
+constraint makes imports race-safe across concurrent users — a unique-violation on insert means another
 user already imported that barcode, so the existing row is fetched and reused
 instead.
 
-The Create Ingredient modal (opened from "+ Nuevo" on Ingredientes or the
-recipe editor's sticky "+ Crear nuevo" autocomplete item) has three tabs: a
-debounced OpenFoodFacts search, a manual-entry form, and a **barcode** tab
-(camera scan via the native `BarcodeDetector` with a lazy `@zxing/browser`
-fallback, plus a manual EAN/UPC field) that looks the product up in
-OpenFoodFacts by barcode and prefills the manual form (R-20). The camera-scan
-button is gated behind a `(pointer: coarse)` media query — only touch-primary
-devices (phone/tablet) see it; on desktop the typed-code path is the only
-affordance, since a webcam is awkward for product barcodes. On save it returns
-the new `ingredient_id` to whatever opened it. Ingredient duplicates are tolerated in
+Creating and editing an ingredient are **routes**, not a modal (R-33 wave 6).
+`/recipes/ingredients/new` is a method chooser: a pure navigation screen asking
+how you want to add it — search OpenFoodFacts, scan a barcode, or type it by
+hand. Every method ends at `/recipes/ingredients/new/manual`, the one editor
+form, carrying what it learned in router state: the whole OFF product on the
+search and barcode paths (that object is what makes the save an *import* —
+`source = 'openfoodfacts'` + `external_id` — rather than an anonymous manual
+row), or a bare EAN when OFF does not know the code, since a manual row cannot
+hold an `external_id` (the `ingredients_external_consistency` CHECK).
+`/recipes/ingredients/scan` is the camera scanner (native `BarcodeDetector`
+with a lazy `@zxing/browser` fallback, R-20) and `/recipes/ingredients/:id/edit`
+mounts the same editor over an existing row. The barcode method is two
+different affordances by pointer: the camera is gated behind
+`(pointer: coarse)`, so touch devices get "abrir cámara" → the scanner route
+while a desktop pointer gets an inline typed-EAN field and a plain statement
+that scanning is mobile-only — a webcam is useless against a product barcode.
+A `?q=` param rides through the whole detour, so the search the user was in
+survives it and also seeds the name on the manual method.
+
+`IngredientDialog` survives as a **create-only** dialog with just the manual
+form (the same `IngredientEditorForm` the routes mount — there is one editor,
+not two), kept for the single job the routes cannot do: create-then-select in
+place. You are filling a recipe row, the ingredient does not exist, you create
+it here and it is selected straight into the row you were filling — so its
+callers are only the recipe editor's `IngredientAutocomplete` and, on mobile,
+`AddIngredientSheet`. It returns the created row to whoever opened it.
+Ingredient duplicates are tolerated in
 Phase 1; the ★ model's Phase-2 reaper (R-01) is the structural resolution
 (gated on the deferred ratings/voting signal), not a dedicated dedup feature.
 
@@ -257,14 +291,36 @@ is preserved before the new week is built. The rollover and the daily
 snapshot crons also double as the keep-alive that prevents the free-tier
 Supabase project from auto-pausing.
 
+The planner derives a **shopping list** from the active week (opened from the
+Planificador, redesigned into the R-33 panel by R-35). The aggregation is pure
+and dependency-free (`src/features/planner/shopping.ts`, Tier-1 unit-tested):
+you cook a recipe in whole batches — a 5-serving curry cannot be cooked
+2/5ths — so for each recipe it sums the servings planned across the week,
+divides by the recipe's yield, rounds **up** to whole batches, and shops for
+that many full recipes, reporting the leftover servings that rounding buys you.
+Per-batch ingredient amounts follow the same `per_serving` rule as the macro
+core. The panel shows the result either aggregated by ingredient or broken down
+by recipe, with per-item check-off, "always have it" staples hidden across
+weeks, and free-text extras appended for the trip; a plain-text export goes out
+via the Web Share sheet or the clipboard (`shoppingExport.ts`). Nothing here is
+persisted server-side — check-off, staples and extras are `localStorage` (the
+first and last keyed per week, staples global), and no schema, RPC or edge
+function backs the list.
+
 ## Diario & materialization
 
 The Diario logging UX groups entries by meal. The four canonical sections —
 Breakfast, Lunch, Snack, and Dinner — **always render**, even when empty; the
 `other` fallback bucket appears only when it has entries. Each section header
 shows the meal's **kcal subtotal** (or a "— sin registros / — nothing logged"
-label when empty) alongside an add ("+") button that opens the full
-`MealLogDialog`. Below any logged entries, a **quick-add chip strip** lists
+label when empty) alongside an add ("+") button that opens the **`AddToDaySheet`**
+(R-33 wave 2), a two-step responsive sheet: an *explore* step that searches
+recipes and loose ingredients (or takes a custom typed-macros entry with no
+library item behind it), then a *ración* step for the quantity. It doubles as
+the edit surface — opened on an existing entry it goes straight to the ración
+step, locked to that entry's kind and pre-filled, where confirming updates it
+and deleting removes it. Openers that already know what you meant (the Recetas
+list's "+ añadir al diario") skip the explore step. Below any logged entries, a **quick-add chip strip** lists
 recent and most-frequent recipes derived from the user's `meal_logs` — recent
 entries (logged within ~14 days) first, then backfilled by most-logged frequency over a ~60-day history, capped to a short list (≈6).
 Tapping a chip logs **1 serving** of that recipe to the section's meal type
@@ -429,10 +485,8 @@ product ideas, not on the roadmap** and carry no R-id; stale or obsolete
 entries from the sources have been dropped. (Decided, scheduled work lives in
 `roadmap.md` with an R-id — not here.)
 
-- **Nutrition:** barcode scanner / external food databases for ingredient
-  entry; import recipes from a URL with auto-computed macros (JSON-LD +
-  LLM ingredient mapping); an automatic shopping list derived from the planned
-  week; dynamic serving rescaling (scale a recipe to N people or a target
+- **Nutrition:** import recipes from a URL with auto-computed macros (JSON-LD +
+  LLM ingredient mapping); dynamic serving rescaling (scale a recipe to N people or a target
   kcal); a **BEDCA seed** of ~100 generic Spanish staples (huevos, pollo,
   arroz blanco, leche entera, aceite de oliva, …) inserted idempotently as
   system rows to improve autocomplete for genéricos OpenFoodFacts covers
