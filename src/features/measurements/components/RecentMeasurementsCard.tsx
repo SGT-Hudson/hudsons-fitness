@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronRight, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useNum } from '@/hooks/useNum';
 import { formatDate, type Locale } from '@/lib/dates';
 import type { BodyMeasurement } from '../api';
 
@@ -26,6 +27,7 @@ interface Props {
 export function RecentMeasurementsCard({ measurements, loading, onEdit }: Props) {
   const { t, i18n } = useTranslation('metricas');
   const { t: tCommon } = useTranslation('common');
+  const num = useNum();
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   const rows = measurements.slice(0, PREVIEW_ROWS);
@@ -62,10 +64,10 @@ export function RecentMeasurementsCard({ measurements, loading, onEdit }: Props)
                 {formatDate(m.measured_on, 'd MMM yyyy', locale)}
               </span>
               <span className="tnum flex-1 text-[13px] font-medium">
-                {m.weight_kg == null ? '—' : `${m.weight_kg} kg`}
+                {m.weight_kg == null ? '—' : `${num.qty(m.weight_kg)} kg`}
               </span>
               <span className="tnum text-[12px] text-text-dim">
-                {m.body_fat_pct == null ? '—' : `${m.body_fat_pct} %`}
+                {m.body_fat_pct == null ? '—' : `${num.qty(m.body_fat_pct)} %`}
               </span>
               <Button
                 variant="ghost"

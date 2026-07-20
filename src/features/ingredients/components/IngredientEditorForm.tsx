@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { NumberField } from '@/components/ui/NumberField';
 import { deriveAutoKcal } from '@/core/autoKcal';
 import { parseDecimalInput } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 import type { OFFSearchResult } from '@/lib/openfoodfacts';
 import type { FieldErrors } from '@/lib/zod';
@@ -24,7 +25,6 @@ import { IngredientVerifiedCheck } from './IngredientVerifiedCheck';
 import { firstIngredientError, ingredientFormSchema } from '../schema';
 import { useCreateManualIngredient, useImportFromOFF, useUpdateIngredient } from '../hooks';
 import type { Ingredient } from '../api';
-import { formatMacro } from './IngredientMacroDots';
 
 /**
  * The editor's actions live OUTSIDE this component on both surfaces that mount
@@ -546,6 +546,7 @@ interface PreviewProps {
  */
 function PreviewCard({ name, brand, perUnit, source, kcal, protein, carbs, fat }: PreviewProps) {
   const { t } = useTranslation('ingredientes');
+  const num = useNum();
   const empty = name.trim() === '';
   // Same parser as the schema: the fields are strings and `8,5` is a valid one.
   const p = Math.max(0, parseDecimalInput(protein) ?? 0);
@@ -557,7 +558,7 @@ function PreviewCard({ name, brand, perUnit, source, kcal, protein, carbs, fat }
     { key: 'carbs', kcal: c * 4, bar: 'bg-macro-c' },
     { key: 'fat', kcal: f * 9, bar: 'bg-macro-g' },
   ] as const;
-  const kcalText = kcal.trim() === '' ? '0' : formatMacro(parseDecimalInput(kcal) ?? 0);
+  const kcalText = kcal.trim() === '' ? '0' : num.qty(parseDecimalInput(kcal) ?? 0, 1);
 
   return (
     <Card role="region" aria-label={t('preview.title')} className="space-y-3 p-3.5 md:p-4">
@@ -613,7 +614,7 @@ function PreviewCard({ name, brand, perUnit, source, kcal, protein, carbs, fat }
             <span
               className={cn('block text-[14px] font-semibold md:text-[15px]', empty && 'text-text-dim')}
             >
-              {empty ? '—' : `${formatMacro(m.value)} g`}
+              {empty ? '—' : `${num.qty(m.value, 1)} g`}
             </span>
           </div>
         ))}
@@ -640,7 +641,7 @@ function PreviewCard({ name, brand, perUnit, source, kcal, protein, carbs, fat }
               {split.map((s) => (
                 <span key={s.key} className="inline-flex items-center gap-1">
                   <span className={cn('size-[6px] rounded-full', s.bar)} aria-hidden="true" />
-                  {t(`macros.letter.${s.key}`)} {Math.round((s.kcal / atwater) * 100)} %
+                  {t(`macros.letter.${s.key}`)} {num.qty(Math.round((s.kcal / atwater) * 100))} %
                 </span>
               ))}
             </div>

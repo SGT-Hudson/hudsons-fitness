@@ -7,6 +7,7 @@ import { useLocalIngredientSearch } from '@/features/ingredients/hooks';
 import { IngredientDialog } from '@/features/ingredients/components/IngredientDialog';
 import { ingredientDisplayName, type Ingredient } from '@/features/ingredients/api';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -23,6 +24,7 @@ interface Props {
 
 export function IngredientAutocomplete({ selected, onSelect, onClear, placeholder }: Props) {
   const { t, i18n } = useTranslation('recetas');
+  const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -123,7 +125,7 @@ export function IngredientAutocomplete({ selected, onSelect, onClear, placeholde
                       )}
                     </span>
                     <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                      {ing.kcal_per_unit} kcal
+                      {num.qty(ing.kcal_per_unit)} kcal
                     </span>
                   </button>
                 </li>

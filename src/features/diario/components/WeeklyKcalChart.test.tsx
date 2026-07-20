@@ -172,8 +172,8 @@ describe('WeeklyKcalChart', () => {
       <WeeklyKcalChart days={days} target={2000} phase="cut" />,
     );
     expect(getByText(/^(Semana|Week)$/)).toBeInTheDocument();
-    expect(getByText(/media 2000 · obj 2000|avg 2000 · target 2000/)).toBeInTheDocument();
-    expect(getByText(/^(obj|target) 2000$/)).toBeInTheDocument();
+    expect(getByText(/media 2[.,]000 · obj 2[.,]000|avg 2[.,]000 · target 2[.,]000/)).toBeInTheDocument();
+    expect(getByText(/^(obj|target) 2[.,]000$/)).toBeInTheDocument();
   });
 
   it('a non-positive target hides the dashed line/chip but still renders 7 bars without crashing', () => {

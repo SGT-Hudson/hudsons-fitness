@@ -1,5 +1,6 @@
 import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatQuantity as formatQuantityLocale } from '@/lib/number';
 
 /**
  * The canvas's `StepperM` — a − / value / + control for a quantity, used
@@ -24,7 +25,7 @@ interface Props {
 }
 
 export function formatQuantity(value: number, lang: 'es' | 'en'): string {
-  return new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'es-ES').format(value);
+  return formatQuantityLocale(value, { lang });
 }
 
 /**

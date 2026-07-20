@@ -13,6 +13,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
             staleTime: 30_000,
             refetchOnWindowFocus: false,
             retry: 1,
+            // Attempt the fetch even when the browser reports itself offline, so a
+            // failure arrives as a real error the classifier can name. On the default
+            // ('online') react-query pauses the query instead: nothing errors, nothing
+            // loads, and every screen falls through to its not-found state — telling
+            // the user their data does not exist because their wifi dropped.
+            // 'offlineFirst' is not enough: it ungates only the first attempt, so the
+            // retry re-pauses and the query still never settles.
+            networkMode: 'always',
           },
         },
       }),

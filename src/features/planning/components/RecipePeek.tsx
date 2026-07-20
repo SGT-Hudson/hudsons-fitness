@@ -4,9 +4,11 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResponsiveDialog } from '@/components/ui/ResponsiveDialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { useRecipe } from '@/features/recipes/hooks';
 import { computeRecipeMacros, roundMacro } from '@/features/recipes/macros';
 import { ingredientDisplayName } from '@/features/ingredients/api';
+import { useNum } from '@/hooks/useNum';
 
 interface Props {
   open: boolean;
@@ -44,8 +46,9 @@ export function RecipePeek({
   onEdit,
 }: Props) {
   const { t, i18n } = useTranslation('planning');
+  const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
-  const { data: recipe, isLoading } = useRecipe(recipeId);
+  const { data: recipe, isLoading, isError, error, refetch } = useRecipe(recipeId);
 
   const perServing = recipe
     ? computeRecipeMacros({
@@ -59,6 +62,12 @@ export function RecipePeek({
     : null;
 
   const displayName = recipe?.name ?? t('peek.title');
+
+  // Settled with nothing to show — a recipe that vanished. A *failed* fetch is
+  // no longer routed here; it gets its own state with a retry.
+  const missingState = (
+    <p className="py-6 text-center text-[13px] text-muted-foreground">{t('peek.missing')}</p>
+  );
 
   function renderHeader(showClose: boolean) {
     return (
@@ -98,12 +107,15 @@ export function RecipePeek({
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-4 w-2/3" />
               </div>
+            ) : isError ? (
+              <QueryErrorState
+                className="py-6"
+                error={error}
+                notFound={missingState}
+                onRetry={() => void refetch()}
+              />
             ) : !recipe || !perServing ? (
-              // Settled with nothing to show — a failed fetch, or a recipe that
-              // vanished. Skeletons here would spin forever.
-              <p className="py-6 text-center text-[13px] text-muted-foreground">
-                {t('peek.missing')}
-              </p>
+              missingState
             ) : (
               <>
                 <div className="tnum flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -125,22 +137,22 @@ export function RecipePeek({
                     </span>
                   </div>
                   <div className="tnum text-[26px] font-semibold tracking-tight">
-                    {roundMacro(perServing.kcal)}
+                    {num.qty(roundMacro(perServing.kcal))}
                     <span className="ml-1 text-[12px] font-normal text-muted-foreground">
                       {t('summary.kcalUnit')}
                     </span>
                   </div>
                   <div className="tnum flex items-baseline gap-3 text-[12px]">
                     <span className="text-macro-p">
-                      {roundMacro(perServing.proteinG)}{' '}
+                      {num.qty(roundMacro(perServing.proteinG))}{' '}
                       <span className="opacity-70">{t('summary.letter.protein')}</span>
                     </span>
                     <span className="text-macro-c">
-                      {roundMacro(perServing.carbsG)}{' '}
+                      {num.qty(roundMacro(perServing.carbsG))}{' '}
                       <span className="opacity-70">{t('summary.letter.carbs')}</span>
                     </span>
                     <span className="text-macro-g">
-                      {roundMacro(perServing.fatG)}{' '}
+                      {num.qty(roundMacro(perServing.fatG))}{' '}
                       <span className="opacity-70">{t('summary.letter.fat')}</span>
                     </span>
                   </div>
@@ -156,7 +168,7 @@ export function RecipePeek({
                         key={ri.id}
                         className="tnum flex items-baseline gap-1.5 text-[13px]"
                       >
-                        <span className="font-medium">{ri.quantity}</span>
+                        <span className="font-medium">{num.qty(Number(ri.quantity))}</span>
                         <span className="text-muted-foreground">{ri.ingredient.unit_type}</span>
                         <span>{ingredientDisplayName(ri.ingredient, lang)}</span>
                       </li>
@@ -164,14 +176,18 @@ export function RecipePeek({
                   </ul>
                 </div>
 
-                {recipe.instructions && (
+                {recipe.recipe_steps.length > 0 && (
                   <div className="space-y-1.5">
                     <h3 className="text-[12px] font-semibold uppercase tracking-wide text-text-dim">
                       {t('peek.instructions')}
                     </h3>
-                    <p className="whitespace-pre-line text-[13px] text-foreground">
-                      {recipe.instructions}
-                    </p>
+                    <ol className="list-decimal space-y-1 pl-4 text-[13px] text-foreground">
+                      {recipe.recipe_steps.map((step) => (
+                        <li key={step.id} className="whitespace-pre-line">
+                          {step.text}
+                        </li>
+                      ))}
+                    </ol>
                   </div>
                 )}
               </>

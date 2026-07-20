@@ -19,14 +19,17 @@ import type { BodyMeasurement } from '@/features/measurements/api';
 import { deltaTone, type DeltaTone, type PhaseType } from '@/features/measurements/trend';
 import { useActivePhase } from '@/features/phases/hooks';
 import { formatDate, isoDate, type Locale } from '@/lib/dates';
+import { formatDecimal } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 
-/** Signed to one decimal. `-0.04` is a rounding artefact, not a loss — show `0.0`. */
-function formatDeltaKg(deltaKg: number): string {
-  const rounded = Number(deltaKg.toFixed(1));
-  if (rounded > 0) return `+${rounded.toFixed(1)}`;
-  if (rounded < 0) return rounded.toFixed(1);
-  return (0).toFixed(1);
+/**
+ * Signed to one decimal. `signed` gives `+82,4` / `-1,3` / `0,0`, and a value
+ * that rounds to `-0.0` (e.g. `-0.04`) is zero, so it shows no sign — the
+ * rounding-artefact case, handled natively rather than by hand.
+ */
+function formatDeltaKg(deltaKg: number, lang: string): string {
+  return formatDecimal(deltaKg, { lang, digits: 1, signed: true });
 }
 
 /**
@@ -43,8 +46,8 @@ const DELTA_TONE_CLASS: Record<DeltaTone, string> = {
 };
 
 /** Weights render to one decimal, so `80` and `82,4` line up in the column. */
-function formatKg(weightKg: number): string {
-  return weightKg.toFixed(1);
+function formatKg(weightKg: number, lang: string): string {
+  return formatDecimal(weightKg, { lang, digits: 1 });
 }
 
 /**
@@ -64,6 +67,7 @@ function formatKg(weightKg: number): string {
 export function MeasurementHistoryPage() {
   const { t, i18n } = useTranslation('metricas');
   const { t: tCommon } = useTranslation('common');
+  const num = useNum();
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   const activePhase = useActivePhase();
@@ -128,10 +132,10 @@ export function MeasurementHistoryPage() {
                         {formatDate(m.measured_on, 'd MMM', locale)}
                       </span>
                       <span className="tnum flex-1 text-[12.5px] font-medium">
-                        {m.weight_kg == null ? '—' : `${formatKg(m.weight_kg)} kg`}
+                        {m.weight_kg == null ? '—' : `${formatKg(m.weight_kg, locale)} kg`}
                       </span>
                       <span className="tnum w-[52px] text-right text-[11px] text-text-dim">
-                        {m.body_fat_pct == null ? '—' : `${m.body_fat_pct} %`}
+                        {m.body_fat_pct == null ? '—' : `${num.qty(m.body_fat_pct)} %`}
                       </span>
                       <span
                         data-testid={`history-delta-${m.id}`}
@@ -142,7 +146,7 @@ export function MeasurementHistoryPage() {
                             : DELTA_TONE_CLASS[deltaTone('weight', deltaKg, phaseType)],
                         )}
                       >
-                        {deltaKg == null ? '—' : formatDeltaKg(deltaKg)}
+                        {deltaKg == null ? '—' : formatDeltaKg(deltaKg, locale)}
                       </span>
                       <span className="flex shrink-0 items-center gap-0.5 self-center pl-1">
                         <Button
@@ -184,7 +188,7 @@ export function MeasurementHistoryPage() {
               weight:
                 firstEver.data.weight_kg == null
                   ? '—'
-                  : `${formatKg(firstEver.data.weight_kg)} kg`,
+                  : `${formatKg(firstEver.data.weight_kg, locale)} kg`,
             })}
           </p>
         )}

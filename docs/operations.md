@@ -120,9 +120,11 @@ the linked project (or a develop branch DB) from a machine with the CLI:
 supabase gen types typescript --project-id <PROJECT_ID> --schema public > src/types/database.ts
 ```
 
-B1 (level/mechanic/force/category/images/external_id) does not require a regen to
-compile — the picker and api read only existing columns; the new columns are
-consumed in B2. Regenerate when B2 starts reading them, or opportunistically.
+The B1 columns (level/mechanic/force/category/images/external_id) and the B2a
+`instructions_en`/`instructions_es` arrays are in the committed types — the
+regen happened once B2 started reading them (`ExerciseDetail`/`ExerciseCard`
+render `level` and `images`, `ExerciseFilters` filters on `level`, and
+`features/training/exercises/api.ts` picks the instruction array by language).
 
 ## Edge functions
 
@@ -171,8 +173,9 @@ supabase functions deploy <function-name> --project-ref upvraruehzurbetzrxov \
 Both flags are **required**: `--use-api` does Docker-free server-side bundling and
 follows the cross-root `src/core/*.ts` imports (R-17); `--import-map
 supabase/functions/deno.json` is needed because `supabase/config.toml` (which
-exists, but is minimal — Tier-3-local-DB only — and has no `[functions]`
-`import_map` key) does **not** point the CLI at the import map, so the bare
+exists, but is Tier-3-local-DB only and has no `[functions]`
+`import_map` key — it carries only `project_id`, the Postgres major version and
+the local port map) does **not** point the CLI at the import map, so the bare
 `@supabase/supabase-js` specifier otherwise fails to bundle (HTTP 400). Run from
 the repo root.
 
@@ -567,10 +570,51 @@ complete history rather than the lone Sprint-9 file.
 20260711120000_r33_template_phase.sql               # applied (R-33 wave 4): nullable phase column on templates (no FK to phases)
 20260712120000_r33_recipe_prep_time.sql             # applied (R-33 wave 5): nullable prep-time column on recipes
 20260712130000_r33_ingredient_salt.sql              # applied (R-33 wave 6): nullable salt sub-macro on ingredients (mirrors U-1 pattern)
+20260718100000_r36_recipe_steps.sql                 # applied live 2026-07-20 (R-36): recipe_steps child table, RLS mirrors recipe_ingredients (sentinel-owner writes blocked)
+20260718100100_r36_save_recipe_steps.sql            # applied live 2026-07-20 (R-36): drops recipes.instructions; save_recipe's p_instructions text arg becomes p_steps jsonb — had to land before this frontend deployed, see ordering note below
+20260719120000_r22_update_with_check.sql            # applied live 2026-07-20 (R-22 follow-up, #214): ALTERs all fourteen public UPDATE policies to add an explicit WITH CHECK repeating each policy's USING verbatim; closes no hole (Postgres already applied USING to the NEW row), states the intent
 ```
 
 `supabase/migrations/` in the repo is the canonical source for the full,
 authoritative sequence; this list is a curated annotation of it.
+
+**R-36 recipe steps — the two migrations had to be applied before this frontend
+deployed** (done 2026-07-20, see the live-deploy entry below; kept here as the
+recorded ordering rationale). `20260718100000_r36_recipe_steps.sql` and
+`20260718100100_r36_save_recipe_steps.sql` change the table and the RPC
+together. Migrations-first is safe: the then-live
+frontend `select`s `*` on `recipes` and never names `instructions`, so reads
+keep working through the window, and the only breakage is `save_recipe` calls
+failing until both migrations land (the RPC signature changes together with
+the table). Frontend-first would have been severe: the R-36
+`fetchRecipe` names `recipe_steps (...)` in its embed, so PostgREST rejects
+that query for EVERY recipe until `recipe_steps` exists, and the detail page
+collapses any fetch error into "Receta no encontrada" — every recipe would
+read as deleted for every user until the migrations landed. Both were applied
+in filename order (the second drops `recipes.instructions` and depends on
+`recipe_steps` existing) **before** promoting this branch's build to
+production — the same discipline as the Project A/B1/B2a backlog below, which
+was learned the hard way.
+
+**R-36 + R-22 deploy (executed 2026-07-20).** The three pending migrations were
+applied to the live project **in filename order** via MCP `apply_migration`:
+`20260718100000_r36_recipe_steps`, `20260718100100_r36_save_recipe_steps`,
+`20260719120000_r22_update_with_check`. Before this the live DB sat at
+`r33_ingredient_salt` (`20260712153200`) — the three R-33 column migrations
+(`r33_template_phase`, `r33_recipe_prep_time`, `r33_ingredient_salt`) had
+already landed on 2026-07-12, so this backlog was three files, not six. The set
+is NOT order-free: `r36_save_recipe_steps` drops `recipes.instructions` and
+recreates `save_recipe` against `recipe_steps`, so it must follow
+`r36_recipe_steps`. Post-apply verified by query: exactly **one** `save_recipe`
+overload (the 8-arg one taking `p_steps`, `SECURITY INVOKER`,
+`search_path=""`) — no stale `p_instructions` signature left behind;
+`recipe_steps` present with its 4 policies; `recipes.instructions` dropped;
+**26 of 26** `public` UPDATE policies now carrying `WITH CHECK`; and an
+anonymous PostgREST call embedding `recipe_steps` returning HTTP 200 `[]`
+instead of `PGRST200` — so the embed resolves and RLS still hides the rows from
+anon. Note that `user_recipe_refs.note` already existed live (it predates R-36,
+from the R-01 baseline), so the private-notes half of R-36 was never broken in
+prod — only the steps half was.
 
 **Project A / B1 / B2a backlog deploy (executed 2026-06-08).** The fine-taxonomy,
 B1-catalog, and B2a-instruction migrations had been authored + merged + CI-validated
@@ -593,7 +637,9 @@ visible in-app immediately — no frontend redeploy (the SPA queries at runtime)
 > ⚠ The dated "applied 20XX-XX-XX" notes in the migration list above are **authoring**
 > dates, not application dates. For the fine-taxonomy / B1 / B2a set the actual
 > application to the live DB was **2026-06-08** (this entry) — don't read the list
-> dates as deploy dates.
+> dates as deploy dates. The newer "**applied live** 20XX-XX-XX" notes are the
+> exception: those are real application dates, cross-checked against
+> `list_migrations` on the live project.
 
 **R-21 OFF contribute-back — REMOVED (2026-05-21).** The feature was pulled as
 a product decision before it was ever activated. Removal steps: (1) the
@@ -694,8 +740,10 @@ supabase gen types typescript --project-id upvraruehzurbetzrxov > src/types/data
 Then **re-apply the post-generation corrections** (the generator cannot infer
 SQL-function argument nullability and emits every text arg as non-null
 `string`): restore `string | null` on `save_recipe.Args.{p_recipe_id,
-p_description,p_instructions}` and `save_template.Args.p_template_id` (a null
-id means "create new"). The marker comment above the `Functions` block in the
+p_description}` (R-36 dropped `p_instructions` — `save_recipe` now takes
+`p_steps jsonb` instead, which the generator already types correctly since
+it's `Json`, not `text`) and `save_template.Args.p_template_id` (a null id
+means "create new"). The marker comment above the `Functions` block in the
 file documents this; see `conventions.md` (generated-types caveats). Verify
 with `pnpm typecheck && pnpm lint && pnpm build` before committing.
 
@@ -710,15 +758,39 @@ supabase test db                                                # runs supabase/
 supabase stop --no-backup
 ```
 
-Local runs need Docker + the Supabase CLI; CI uses `supabase/setup-cli`. The
-suite (`supabase/tests/00_schema`..`07_ingredient_salt.test.sql` — the CI job globs
+Local runs need Docker + the Supabase CLI; CI uses `supabase/setup-cli`.
+
+**Local ports (553xx).** Since 2026-07-19 `supabase/config.toml` pins the whole
+local stack out of the CLI defaults so it can run at the same time as the
+`financial-advisor` stack, which sits on the 543xx defaults; without this,
+`supabase start` here fails on every port while that project is up, not just
+the DB one.
+
+| service | port |
+| --- | --- |
+| `[api]` (PostgREST/Kong) | 55321 |
+| `[db]` | 55322 (shadow 55320) |
+| `[db.pooler]` | 55329 |
+| `[studio]` | 55323 |
+| `[inbucket]` | 55324 |
+| `[analytics]` | 55327 |
+
+Always stop the stack with `supabase stop`, never `docker stop` — the CLI
+leaves orphaned containers/networks behind otherwise. Note that on CLI 2.101.0
+plain `supabase stop` does **not** drop the volume: the next `start` reuses the
+stale local state, so a true from-zero migration rebuild (the thing that makes
+`db-test` worth running) needs `supabase stop --no-backup`.
+
+The
+suite (`supabase/tests/00_schema`..`08_recipe_steps.test.sql` — the CI job globs
 `*.test.sql`, so every numbered file is picked up automatically) creates test users by
 inserting into `auth.users` (the `handle_new_user` trigger makes the profile)
 and switches actor with `set local role authenticated` + a
 `request.jwt.claims` GUC, so `auth.uid()` evaluates RLS exactly as in prod.
-The remaining known gap is kept as a pgTAP `todo` (visible, non-failing): the
-R-22 UPDATE WITH-CHECK gap. (The R-25 hide-RPC bug it once also tracked was
-fixed in #151 — `20260603120000_r25_hide_drops_ref_only.sql`.)
+The suite carries no `todo` tests. It once tracked two: the R-25 hide-RPC bug,
+fixed in #151 (`20260603120000_r25_hide_drops_ref_only.sql`), and a supposed
+R-22 UPDATE WITH-CHECK gap that never existed (D-F27) — both blocks were
+deleted, the second replaced by a catalogue assertion over `pg_policies`.
 
 Because the schema sat on a reproducible baseline (R-00), `supabase start`
 applying from zero also validates migration ordering/idempotency — it is what

@@ -250,9 +250,11 @@ But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves w
 
 **Ruling:** Confirmed exactly as-is. Chart time-range pills default to 90d with options 30d/90d/1y/all; per-chart independent state (each chart owns its own `useState<TimeRange>('90d')`), no cross-chart syncing, no persistence across refreshes. Document the shared component path (`features/measurements/components/TimeRangePills.tsx`) and the shared window helper (`fromDateForRange`).
 
+> ⚠ **The range set, the default and the component superseded by R-33 wave 7 (2026-07-14, #199/#200).** The presets are now `1m` / `6m` / `1y` / `all` with `6m` as the default — `TimeRange`, `TIME_RANGES` and `DEFAULT_TIME_RANGE` are declared in `src/features/measurements/hooks.ts`, and every chart opens on `useState<TimeRange>(DEFAULT_TIME_RANGE)`. `TimeRangePills` was retired in that wave; the presets render through the shared `SegmentedControl`. The per-chart independent, non-synced, non-persisted state below still holds, as does `fromDateForRange`.
+
 **Why:** The convention is implemented exactly as worded and the design choice is deliberate and defensible: per-chart independent (non-synced, non-persisted) range state lets the user compare different time scales side by side on `/progreso`, which is precisely what a progress view needs. Syncing or persisting the range would remove that comparison ability for no real gain. This is also consistent with the D-C1 no-query-string-state rule, and is the same per-chart-local-state pattern D-D5's %↔kg toggle follows. Doc-only — no change needed.
 
-**Status:** decided
+**Status:** decided · range set / default / component superseded by R-33 wave 7
 
 ## D-D5 — Composition chart — full redesign (fat/lean stack + trends + %↔kg toggle)
 
@@ -374,7 +376,7 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **(b) Calendar-anchored scheduling with restart-from-today re-anchor.** A program cycle is positioned in time by a single `anchor_date` (the calendar date corresponding to `day_index = 0`). Today's slot = `(today − anchor_date) mod cycle_length`. Re-anchoring ("start from today") updates `anchor_date` so that today maps to `day_index = 0`. The alternative — an advancing/queue model that tracks the last-completed day — was rejected: it requires a persistent cursor that drifts on training gaps and needs reconciliation logic on rest days. The anchor-date model is near-stateless (one date field) and the re-anchor button recovers most flexibility: if the user skips days, they re-anchor and the cycle continues cleanly.
 
-**(c) No materialization — today's slot computed on the fly.** The active program's day sequence is never written to a secondary table or cache. The function `getTodaySlot(program, today)` in `src/core/programs.ts` computes the slot purely from `anchor_date` and the `program_days` array. This matches the no-materialization stance of the rest of the app (D-D6 keeps `materialize_plan_for_date` as a DB-level upsert for meal logs, but the training planner has no equivalent need — the computed slot is just a pointer to a routine, not a row to create).
+**(c) No materialization — today's slot computed on the fly.** The active program's day sequence is never written to a secondary table or cache. The function `scheduledSlotForDate(days, anchorISO, dateISO)` in `src/core/programs.ts` (backed by the `cycleDayForDate` helper) computes the slot purely from `anchor_date` and the `program_days` array. This matches the no-materialization stance of the rest of the app (D-D6 keeps `materialize_plan_for_date` as a DB-level upsert for meal logs, but the training planner has no equivalent need — the computed slot is just a pointer to a routine, not a row to create).
 
 **(d) One active program per user via partial unique index.** `programs_one_active_uidx` is a partial unique index on `(user_id) WHERE is_active`. At most one program can have `is_active = true` per user at the DB level — no application-layer guard is needed. This is cheaper and more reliable than a `profiles.active_program_id` FK column (which would duplicate state and require a two-table update).
 
@@ -474,7 +476,7 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 **Why:** Slot scarcity ruled out a single unified bar — both Planificador and Recetas need a slot and a 5-tab bar can't fit the full nutri set alongside gym's. Splitting into two section-scoped bars keeps each bar's item count sane and lets each bar hold strict per-section accent discipline (no cross-section accent bleed). It also matches the owner's preferred mental model of nutrition and training as two distinct apps you switch between, not one merged tab set. Full rationale in `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md` §4.
 
-**Status:** decided · in progress (R-33 wave 0, 2026-07-09)
+**Status:** decided · done (R-33 wave 0, #183; released to `main` 2026-07-15, `v2026-07-15`)
 
 ## D-F17 — R-33 tone core: canvas `nutritionTone.ts` replaces `macroStatus.ts`
 
@@ -536,8 +538,32 @@ Executed 2026-05-17: repo made public, CI workflow added, branch protection requ
 
 ## D-F24 — Full-screen navigate-only search deferred to the Ingredientes wave
 
-**Ruling:** The canvas's full-screen "navigate-only" quick search (searches, then opens the entity page, never logs) is **deferred** out of the Diario wave. Recipes have a detail/editor route (`/recipes/:id`) but there is **no ingredient/food detail page** — that page is built in the R-33 Ingredientes wave (§6.6). The search lands there, so it can navigate both entity kinds to real pages instead of shipping a degraded ingredient→list jump now.
+**Ruling:** The canvas's full-screen "navigate-only" quick search (searches, then opens the entity page, never logs) was deferred out of the Diario wave, and **shipped in the R-33 Ingredientes wave** — `IngredientSearchPage` at `/recipes/ingredients/search` (`src/app/router.tsx`). The deferral had hoped to avoid a degraded ingredient→list jump by landing picks on an ingredient detail page. That page was never built: the Ingredientes wave spec builds no ingredient detail route (only `/recipes/ingredients/:id/edit`), and treats the list row as the ingredient's surface (macros, origin, and the menu that edits it or drops it from the library). So picking a result navigates back to the **ingredient list scoped by `?q=`** — exactly the ingredient→list jump the deferral said it would avoid — because the detail destination it was waiting for does not exist.
 
-**Why:** half the search's value (jumping to an ingredient's page) has no destination until the Ingredientes wave exists; building a degraded version first, then reworking it, is wasted motion. Logging is fully served by `AddToDaySheet`, so nothing is blocked by the deferral.
+**Why:** half the search's value (jumping to an ingredient's page) had no destination until the Ingredientes wave existed; building a degraded version first, then reworking it, would have been wasted motion. In the event the wave chose not to build a detail page at all, so the "degraded" list jump is what shipped. Logging is fully served by `AddToDaySheet`, so nothing was blocked by the deferral.
 
-**Status:** decided · deferred to R-33 Ingredientes wave (2026-07-11)
+**Status:** shipped · R-33 Ingredientes wave 6 (PR #194, `77ada79`); pick lands on the scoped list, no ingredient detail page built
+
+## D-F25 — R-36 `recipe_steps` starts empty; the old `instructions` free text is not migrated
+
+**Ruling:** The migration that adds `recipe_steps` and drops `recipes.instructions` does not backfill: every existing recipe starts with zero steps, and whatever free text was in `instructions` is gone once the column is dropped.
+
+**Why:** the app has no production users yet, so there is no real instructions text to preserve — writing a migration step to parse free text into ordered step rows would be effort spent protecting data that doesn't exist. Simplest correct migration for the actual state of the world.
+
+**Status:** decided · done (R-36, migration `20260718100100_r36_save_recipe_steps.sql`)
+
+## D-F26 — R-36 blank recipe steps are dropped at save, not rejected
+
+**Ruling:** A step left blank (or whitespace-only) is silently skipped when the recipe is saved — both `save_recipe`'s insert (`where coalesce(btrim(item->>'text'), '') <> ''`) and the client's payload builder filter it out and renumber `display_order` contiguously. The save is never blocked on it.
+
+**Why:** an early draft rejected the save with a validation error on a blank step. That was reversed: a blank step holds nothing worth losing, so blocking the save on it was friction with no benefit — the editor already had a filter-and-renumber path ready (previously dead code, since the zod schema rejected the save before it could run).
+
+**Status:** decided · done (R-36, `fix(recipes): drop blank steps at save instead of rejecting the save`)
+
+## D-F27 — Every UPDATE policy carries an explicit WITH CHECK, though none was missing
+
+**Ruling:** All fourteen `using`-only UPDATE policies in `public` were given a `with check` identical to their `using` (`20260719120000_r22_update_with_check`), and the pgTAP suite gained one assertion over `pg_policies` that fails if a `using`-only UPDATE policy is ever added. The two `todo` blocks that tracked the supposed gap were deleted.
+
+**Why:** the gap never existed. Postgres applies an UPDATE policy's `USING` to the new row when `WITH CHECK` is absent, so the policies were already closed — proven when a reviewer deleted the `with check` from `recipe_steps` during R-36 and the suite stayed green. The `todo` blocks had therefore been *passing* for months, reporting as "unexpectedly succeeded": coverage that read as tracked debt while asserting nothing. The clause is written anyway because implicit protection is one careless `USING` narrowing away from disappearing, and because the next reader should not have to know the subtlety to audit the schema. The R-22 label is a historical accident: R-22 is Training Routines, closed in May, and the gap survived only as a follow-up bullet filed under it, which is why the migration keeps the `r22` prefix.
+
+**Status:** decided · done (`fix(rls): give every UPDATE policy an explicit WITH CHECK`)

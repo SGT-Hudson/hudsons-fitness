@@ -10,6 +10,8 @@ import {
   YAxis,
 } from 'recharts';
 import { formatDate, type Locale } from '@/lib/dates';
+import { formatDecimal } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import type { CompositionUnit } from '../composition';
 
 export interface TrendPoint {
@@ -31,6 +33,7 @@ interface Props {
 // component is purely presentational.
 export function TrendChart({ title, points, color, unit, locale }: Props) {
   const { t } = useTranslation('metricas');
+  const num = useNum();
 
   const yDomain = useMemo<[number, number] | undefined>(() => {
     const values = points
@@ -68,7 +71,7 @@ export function TrendChart({ title, points, color, unit, locale }: Props) {
                 domain={yDomain ?? ['auto', 'auto']}
                 tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
                 width={40}
-                tickFormatter={(v: number) => `${v}`}
+                tickFormatter={(v: number) => num.qty(v)}
               />
               <Tooltip
                 contentStyle={{
@@ -78,7 +81,10 @@ export function TrendChart({ title, points, color, unit, locale }: Props) {
                   fontSize: 12,
                 }}
                 labelFormatter={(d: string) => formatDate(d, 'd MMM yyyy', locale)}
-                formatter={(value: number) => [`${value.toFixed(1)}${suffix}`, title]}
+                formatter={(value: number) => [
+                  `${formatDecimal(value, { lang: locale, digits: 1 })}${suffix}`,
+                  title,
+                ]}
               />
               <Line
                 type="monotone"

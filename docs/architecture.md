@@ -11,10 +11,10 @@
 
 ## Stack & hosting
 
-Hudson's Fitness is a bilingual (ES/EN) PWA covering body composition, macros, recipes, weekly meal plans, and dietary phases. It is a React 18 + Vite + TypeScript single-page app that talks directly to Supabase (PostgREST + Auth + Realtime); there is no application server of its own. The schema lives in `data-model.md` and is not restated here.
+Hudson's Fitness is a bilingual (ES/EN) PWA covering body composition, macros, recipes, weekly meal plans, and dietary phases. It is a React 18 + Vite + TypeScript single-page app that talks directly to Supabase (PostgREST + Auth); there is no application server of its own. The schema lives in `data-model.md` and is not restated here.
 
 - **Frontend**: React 18, Vite, TypeScript SPA.
-- **Backend**: Supabase project `upvraruehzurbetzrxov` (EU Frankfurt) — PostgREST data API, Auth, Realtime.
+- **Backend**: Supabase project `upvraruehzurbetzrxov` (EU Frankfurt) — PostgREST data API and Auth. Realtime is available on the project but nothing subscribes to it.
 - **Hosting**: Vercel SPA hosting; production branch `main` deploys on merge. CI, branch-protection, and deploy mechanics are documented in `operations.md`.
 - **PWA**: built with `vite-plugin-pwa` (`registerType: 'autoUpdate'`); Workbox routes all `supabase.co` requests as `NetworkOnly` so data calls are never served from the service-worker cache.
 
@@ -35,7 +35,7 @@ src/
 ├── components/layout/    # app-shell layout pieces
 ├── hooks/                # cross-feature hooks
 ├── i18n/{es,en}/*.json   # translation namespaces (see i18n model)
-└── types/database.ts     # hand-written Supabase types
+└── types/database.ts     # generated Supabase types + nullable-RPC-arg patch (conventions.md)
 ```
 
 Each `features/<name>` slice follows a fixed shape:
@@ -53,7 +53,7 @@ The state-management boundary is fixed by **D-C1**:
 - **All server state** goes through TanStack Query, exposed via the per-feature `hooks.ts`. There is no second server-state store.
 - **React Context** is reserved for cross-cutting app concerns only and is used sparingly. At review time the only Contexts are **Auth** and **Theme**.
 - **Local UI state** uses component `useState` and route params for everything else.
-- **No query-string UI state** — UI state is not encoded into the URL search string.
+- **No query-string UI state**, with one deliberate exception — UI state is not encoded into the URL search string, except the ingredient search query (`?q=`), which is shareable and has to survive the hand-off from the full-screen search back to the list (`IngredientesPage` writes it with `replace`, `IngredientMethodPage` reads it).
 - **Zustand is the pre-blessed per-slice escape hatch**: it is introduced only when a real shared or frequently-updating client-state need actually appears, and then only for that slice. Redux and MobX are rejected.
 
 See D-C1 for the full ruling and rationale.

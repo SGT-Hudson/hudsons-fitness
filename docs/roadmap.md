@@ -40,10 +40,11 @@ reference shard carries it (never edit the decision entry).
 - R-30 — Responsive desktop density, per-feature (REMOVED 2026-06-11 — folded into R-33)
 - R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — deferred from R-27
 - R-32 — DB-integration test tier / e2e guard for PostgREST select strings
-- R-33 — UI redesign: design system + nutrition screens — SHIPPED on develop (2026-07-15); release to main pending
+- R-33 — UI redesign: design system + nutrition screens — SHIPPED (released to `main` 2026-07-15, `v2026-07-15`)
 - R-34 — Gym screens redesign (blocked on gym design convergence)
-- R-35 — Shopping list from the planned week
-- R-36 — Recipe steps & photos (schema + editor + settings)
+- R-35 — Shopping list from the planned week — SHIPPED
+- R-36 — Recipe steps & notes (structured steps + private notes) — SHIPPED
+- R-36b — Per-step recipe photos (split off R-36, blocked on storage/cost decision)
 - R-37 — Interactive TDEE calculator linked from the phase editor
 - R-38 — Progress analytics extras (adherence heatmap, ETA banner, energy balance, custom range)
 - R-39 — Measurement extras (progress photos, streak, smart-scale source toggle)
@@ -594,9 +595,9 @@ reference shard carries it (never edit the decision entry).
   were added to prod out of band), so a from-zero reset failed — fixed by
   `20260523120050_f1_ingredients_submacro_cols`; (b) the INVOKER hide RPCs are
   blocked by the pool UPDATE WITH CHECK (now **R-25**). R-25 was fixed (#151,
-  migration `20260603120000_r25_hide_drops_ref_only`); only the R-22 UPDATE
-  WITH-CHECK gap remains as a pgTAP `todo` test (visible, non-failing) so it
-  flips green when fixed.
+  migration `20260603120000_r25_hide_drops_ref_only`). The suite carries no
+  `todo` tests: the two that tracked the R-22 WITH-CHECK gap were deleted in
+  2026-07-19's uniformity pass, having silently *passed* for months.
 - **scope:** Spec-first; Tier 1 is its own sprint, Tier 2 rides with R-09,
   Tier 3 is gated behind R-00.
   1. Spec: `docs/superpowers/specs/` test-strategy doc — tier boundaries,
@@ -822,11 +823,14 @@ reference shard carries it (never edit the decision entry).
 - **out-of-scope (sequenced after F-2):** F-3 guided runner (**shipped — see
   R-23**), F-4 muscle browse/heatmap (**shipped — see R-24**), U-8 visual pass
   (still pending), per-set/pyramid prescriptions, prescribed weights.
-- **RLS hardening follow-up:** the pre-existing `workout_sets` and
-  `recipe_ingredients` UPDATE policies have `using` but no `with check` (a
-  user could re-point a child row into another user's parent). F-2's new child
-  tables (`routine_exercises`, `program_days`) close this with both clauses;
-  backfill the two older tables in a follow-up migration.
+- **RLS hardening follow-up (done, 2026-07-19):** every UPDATE policy in
+  `public` now carries an explicit `with check` (migration
+  `20260719120000_r22_update_with_check`). This closed no hole — Postgres
+  already applies `using` to the new row when `with check` is absent, so the
+  older `using`-only policies were never re-pointable. The clause states the
+  intent and guards against a future edit that narrows `using` alone. A pgTAP
+  assertion over `pg_policies` now fails if a `using`-only UPDATE policy is
+  ever added.
 
 ## R-23 — Guided active-workout runner (F-3)
 - **decision:** D-F9
@@ -1127,11 +1131,12 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 - **decision:** (D-ids at impl time: TW4+token architecture, navigation IA,
   Rubik, tone system + fat floor, heatmap ramp)
 - **blocked-by:** —
-- **status:** **shipped on `develop`** — spec converged 2026-07-02, execution
-  complete 2026-07-15; full spec in
-  `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md`. Promotion to
-  `main` is pending the batch release. All PRs landed: PR-1 Tailwind v4
-  migration (#179) and PR-2 foundation retheme — tokens.css, self-hosted fonts,
+- **status:** **shipped** — spec converged 2026-07-02, execution complete
+  2026-07-15; full spec in
+  `docs/superpowers/specs/2026-07-02-r33-ui-redesign-design.md`. Released to
+  `main` 2026-07-15 (`release/2026-07-15`, #206, tag `v2026-07-15`). All PRs
+  landed: PR-1 Tailwind v4 migration (#179) and PR-2 foundation retheme —
+  tokens.css, self-hosted fonts,
   restyled shadcn primitives, hardcoded-colour sweep, heatmap ramp (#180);
   wave 0 shell & navigation (#183); the semantic tone core (#184,
   `src/core/nutritionTone.ts`); and the eight screen waves — Diario (#185/#186),
@@ -1168,29 +1173,54 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 ## R-35 — Shopping list from the planned week
 - **decision:** (D-id at spec time)
 - **blocked-by:** —
-- **status:** core **shipped** (#46, well before the R-33 spec). The R-33
-  restyle of the dialog is the only open work.
+- **status:** **shipped** — core landed in #46 (well before the R-33 spec); the
+  R-33 restyle of the dialog landed in #210.
 - **shipped (#46):** `ShoppingListDialog` (rendered in `PlanificadorPage`) with
   both consolidated + per-recipe views (`ShoppingView 'total' | 'byRecipe'`),
   localStorage per-week check-off, text export/share, and manual **extra items**
   (`appendExtra`/`ExtraItem` in `shoppingExport.ts`) — flat list until ingredient
   categories exist.
-- **scope (open):** apply the R-33 redesign to the shopping dialog (still the
-  pre-redesign UI — the file was untouched by the R-33 Planificador waves).
+- **shipped (#210):** the R-33 restyle of the dialog — `ShoppingListDialog`
+  rebuilt on the R-33 kit (`ResponsiveDialog`, `SegmentedControl`, `EmptyState`,
+  `Skeleton`, `Badge`); the file had been untouched by the Planificador waves.
 
-## R-36 — Recipe steps & photos
-- **decision:** (D-id at spec time)
+## R-36 — Recipe steps & notes
+- **decision:** D-F25, D-F26
 - **blocked-by:** —
-- **status:** partially **shipped** — favorites and prep time landed; structured
-  steps + per-step photos + private notes remain.
+- **status:** **shipped** — favorites, prep time, structured steps, and
+  private notes have landed. Per-step photos split off to **R-36b** (below),
+  blocked on a storage/cost decision.
 - **shipped:** recipe **favorites** (device-local; `useRecipeFavorites` in
   `RecetasPage`/`RecetaDetailPage`, pure helpers in
   `src/features/recipes/favorites.ts`; #32a2df4) and recipe **prep time**
   (`recipes.prep_time_minutes` column, `save_recipe` `p_prep_time_minutes` arg,
   validation in `src/features/recipes/schema.ts`; R-33 waves 4/5, #192).
-- **scope (open):** schema for structured/reorderable steps, per-step photos,
-  private notes; editor UI; "Fotos de los pasos" setting; photo-storage
-  decisions.
+  **Structured steps**: `recipe_steps` child table (RLS mirrors
+  `recipe_ingredients`), `recipes.instructions` dropped, `save_recipe` takes
+  `p_steps jsonb` in its place (delete-and-reinsert; blank steps dropped and
+  the rest renumbered, not rejected — D-F26); no migration of the old free
+  text, `recipe_steps` starts empty for everyone (D-F25). Reorderable ↑/↓
+  editor (`RecipeStepsField`, a react-hook-form field array — no DnD
+  dependency), numbered list + owner-only empty state on the detail page, and
+  the planner's recipe peek. **Private notes**: `user_recipe_refs.note`
+  (existed since R-01, unused until now) wired live via a self-gating "Mis
+  notas" card (`RecipeNotesCard`) that saves on blur for anyone holding the
+  recipe in their library, including recipes they did not create; plain
+  single-table update, no RPC, since the table's own RLS scopes it.
+- **scope (open):** none — remaining photo work is **R-36b**.
+
+## R-36b — Per-step recipe photos
+- **decision:** (D-id at spec time)
+- **blocked-by:** R-36 (structured steps — shipped); a storage/cost decision
+  for the first Supabase Storage bucket in the app
+- **status:** not started — split out of R-36 so structured steps and private
+  notes could ship without waiting on the storage question.
+- **scope (open):** per-step photos, the "Fotos de los pasos" setting, and the
+  whole Supabase Storage stack this needs for the first time in the app
+  (first bucket, upload flow, storage RLS, resizing). `recipes.photo_url`
+  exists but is dead (never written; recipe "images" are generated colour
+  placeholders, see `src/features/recipes/mediaHue.ts`) and is not reused by
+  this scope — it is a separate, still-unaddressed loose end.
 
 ## R-37 — Interactive TDEE calculator
 - **decision:** (D-id at spec time)
@@ -1297,3 +1327,4 @@ Status as of 2026-06-11. (R-xx entries above carry the detail.)
 | post-V1 item 4 | Rich home + diet calendar + TDEE surface | — | dropped (R-28 removed; UI-refactor remainder → R-33) |
 | post-V1 item 5 | In-app onboarding | R-29 | deferred until after R-33 |
 | post-V1 item 6 | Responsive desktop density | R-30 → R-33 | folded into R-33 |
+| R-36b | Per-step recipe photos + Supabase Storage | R-36 | deferred — blocked on storage/cost decision |

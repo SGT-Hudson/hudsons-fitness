@@ -184,12 +184,12 @@ describe('MeasurementDialog — the responsive shell', () => {
     setup({ prefillFrom: PREVIOUS });
 
     // The field opens prefilled with the previous weight ⇒ no change yet.
-    expect(screen.getByText(/± 0\.0 kg desde la última · 8 may/)).toBeInTheDocument();
+    expect(screen.getByText(/± 0,0 kg desde la última · 8 may/)).toBeInTheDocument();
 
     const weight = screen.getByLabelText(WEIGHT());
     await user.clear(weight);
     await user.type(weight, '82,6'); // 82,9 → 82,6
-    expect(await screen.findByText(/↓ 0\.3 kg desde la última · 8 may/)).toBeInTheDocument();
+    expect(await screen.findByText(/↓ 0,3 kg desde la última · 8 may/)).toBeInTheDocument();
   });
 
   it('draws no delta line when there is no previous measurement', async () => {

@@ -81,7 +81,7 @@
     "prs": "Personal records",
     "pastSessions": "Past sessions",
     "warmup": "Warmup",
-    "volume": "Volume: {{kg}} kg"
+    "volume": "Volume: {{kg, number}} kg"
   },
   "exerciseDialog": {
     "title": "New exercise",
@@ -278,7 +278,7 @@
     "seriesShort": "sets",
     "begin": "Begin",
     "exerciseDone": "{{name}} done",
-    "completeSummary": "{{sets}} sets · {{volume}} kg volume",
+    "completeSummary": "{{sets}} sets · {{volume, number}} kg volume",
     "addSet": "+ Add another set",
     "upNext": "Up next",
     "jumpToExercise": "Jump to another exercise",
@@ -316,7 +316,7 @@
     "title": "RPE — Rate of Perceived Exertion",
     "subtitle": "How many reps you had left in the tank.",
     "explainLabel": "What is RPE?",
-    "target": "target {{value}}",
+    "target": "target {{value, number}}",
     "anchor": { "10": "none left", "9": "1 more", "8": "2 more", "7": "3–4 more", "6": "easy" },
     "anchorInline": { "6": "easy", "6.5": "", "7": "3–4 reps left", "7.5": "", "8": "2 reps left", "8.5": "", "9": "1 rep left", "9.5": "", "10": "no reps left" }
   }

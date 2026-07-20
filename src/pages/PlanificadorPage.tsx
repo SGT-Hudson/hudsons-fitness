@@ -44,6 +44,7 @@ import type { TemplatePhase } from '@/features/templates/api';
 import { useDailyTarget } from '@/features/planning/useDailyTarget';
 import { roundMacro, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { formatDate, isoDate, mondayOf, type Locale } from '@/lib/dates';
+import { useNum } from '@/hooks/useNum';
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -51,6 +52,7 @@ function capitalize(s: string): string {
 
 export function PlanificadorPage() {
   const { t, i18n } = useTranslation('planning');
+  const num = useNum();
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
 
   const today = isoDate();
@@ -308,15 +310,15 @@ export function PlanificadorPage() {
         <span className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
           {t('planner.avgKcal')}
         </span>
-        <span className="tnum font-semibold text-foreground">{avgKcal}</span>
-        <span className="tnum text-[11.5px] text-text-dim">/ {roundMacro(targets.kcal)} kcal</span>
+        <span className="tnum font-semibold text-foreground">{num.qty(avgKcal)}</span>
+        <span className="tnum text-[11.5px] text-text-dim">/ {num.qty(roundMacro(targets.kcal))} kcal</span>
       </span>
       <span className="h-5 w-px bg-border" aria-hidden="true" />
       <span className="flex items-baseline gap-1.5 text-[12.5px]">
         <span className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
           {t('planner.proteinAvg')}
         </span>
-        <span className="tnum font-semibold text-foreground">{avgProteinG} g</span>
+        <span className="tnum font-semibold text-foreground">{num.qty(avgProteinG)} g</span>
         {proteinPct != null && (
           <span className="tnum text-[11.5px] text-text-dim">
             {t('planner.proteinPct', { pct: proteinPct })}

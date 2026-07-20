@@ -12,6 +12,7 @@ import {
   type ToneStatus,
 } from '@/core/nutritionTone';
 import { formatDate, type Locale } from '@/lib/dates';
+import { useNum } from '@/hooks/useNum';
 
 /** "No data" is not a tone — see `nothingPlanned` below. */
 const NO_DATA: ToneStatus = { tone: 'neutral', excess: 'neutral', remaining: 0, overG: 0 };
@@ -63,6 +64,7 @@ type Props = DayHeaderCardBaseProps & DayHeaderIdentity;
 export function DayHeaderCard(props: Props) {
   const { isToday, isPast, totals, targets, phaseType, weightKg, className } = props;
   const { i18n } = useTranslation('planning');
+  const num = useNum();
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
 
   // A day with nothing planned carries no signal: `classify` would call it
@@ -128,14 +130,14 @@ export function DayHeaderCard(props: Props) {
               TEXT_TONE[kcal.tone],
             )}
           >
-            {roundMacro(totals.kcal)}
+            {num.qty(roundMacro(totals.kcal))}
           </span>
           {/* "kcal" is the same token in both locales — a unit, not a translated word. */}
           <span className="text-[9px] text-text-dim">kcal</span>
           <div className="flex-1" />
           {delta != null && (
             <span className={cn('tnum text-[10px] font-semibold', TEXT_TONE[kcal.tone])}>
-              {delta >= 0 ? `+${delta}` : delta}
+              {delta >= 0 ? `+${num.qty(delta)}` : num.qty(delta)}
             </span>
           )}
         </div>

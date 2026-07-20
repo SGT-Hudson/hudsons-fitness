@@ -25,6 +25,15 @@ vi.mock('@/features/diario/hooks', async (importActual) => ({
   useMealLogsForDay: () => ({ data: [], isLoading: false }),
 }));
 
+// R-36: the notes card is Supabase-backed (its own hooks + queries) and
+// separately tested; the page test only asserts it is mounted with the right
+// recipeId, so it is mocked to keep this test off the network.
+vi.mock('@/features/recipes/components/RecipeNotesCard', () => ({
+  RecipeNotesCard: ({ recipeId }: { recipeId: string }) => (
+    <div data-testid="notes-card">{recipeId}</div>
+  ),
+}));
+
 import { RecetaDetailPage } from './RecetaDetailPage';
 import type { Ingredient } from '@/features/ingredients/api';
 import type { RecipeWithIngredients } from '@/features/recipes/api';
@@ -57,7 +66,10 @@ function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredient
     created_by_user_id: 'me',
     servings: 4,
     description: null,
-    instructions: 'Dora el pollo.\nAñade el arroz.',
+    recipe_steps: [
+      { id: 'step-1', recipe_id: 'r-1', display_order: 0, text: 'Dora el pollo.', created_at: '' },
+      { id: 'step-2', recipe_id: 'r-1', display_order: 1, text: 'Añade el arroz.', created_at: '' },
+    ],
     meal_types: ['lunch'],
     prep_time_minutes: 35,
     recipe_ingredients: [
@@ -123,7 +135,13 @@ describe('RecetaDetailPage', () => {
   // PageShell mounts the mobile header AND the desktop one (CSS hides one), so
   // the name is in the DOM twice — hence getAllBy* throughout.
   it('renders the recipe name, its macros and its ingredients', () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    useRecipeMock.mockReturnValue({
+      data: recipe(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     renderPage();
 
     expect(screen.getAllByText('Pollo con arroz').length).toBeGreaterThan(0);
@@ -150,6 +168,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ prep_time_minutes: null }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -166,6 +186,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ prep_time_minutes: 35 }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -173,39 +195,77 @@ describe('RecetaDetailPage', () => {
     expect(screen.getAllByText('35 min').length).toBeGreaterThan(0);
   });
 
-  // R-36 will bring structured steps; until then the single `instructions`
-  // column is ONE step, line breaks preserved — never split into fake steps.
-  it('renders the instructions as a single numbered step', () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
-    renderPage();
-
-    expect(screen.getAllByText('Preparación').length).toBeGreaterThan(0);
-
-    const text = screen.getByText(/Dora el pollo\./);
-    // Both lines live in the same step node — the text keeps its own breaks.
-    expect(text.textContent).toContain('Añade el arroz.');
-
-    // The card holds exactly one numbered step, and it is "1": the second line
-    // must not be promoted into a step "2".
-    const card = text.closest('[data-slot="instructions"]')!;
-    expect(within(card as HTMLElement).getAllByText(/^\d+$/).map((n) => n.textContent)).toEqual([
-      '1',
-    ]);
-  });
-
-  it('omits the preparación card when the recipe has no instructions', () => {
+  // R-36: structured steps render as a real numbered <ol>, in `display_order`
+  // (fetchRecipe already sorts — the page must not re-sort).
+  it('renders steps as an ordered, numbered list', async () => {
     useRecipeMock.mockReturnValue({
-      data: recipe({ instructions: null }),
+      data: recipe({
+        recipe_steps: [
+          { id: 's1', recipe_id: 'r-1', display_order: 0, text: 'primero', created_at: '' },
+          { id: 's2', recipe_id: 'r-1', display_order: 1, text: 'segundo', created_at: '' },
+        ],
+      }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
-    expect(screen.queryByText('Preparación')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Preparación').length).toBeGreaterThan(0);
+    await screen.findAllByRole('listitem');
+
+    // Scoped to the steps card: the ingredients list above also renders <li>s.
+    const card = screen.getByText('primero').closest('[data-slot="steps"]')! as HTMLElement;
+
+    // DOM order, not just presence — ties each text to ITS position so a
+    // reversed render (or any other reordering) fails this assertion.
+    const items = within(card).getAllByRole('listitem');
+    expect(items.map((li) => li.textContent)).toEqual([
+      expect.stringContaining('primero'),
+      expect.stringContaining('segundo'),
+    ]);
+
+    // Numbered by position, not by the step's own data.
+    expect(within(card).getAllByText(/^\d+$/).map((n) => n.textContent)).toEqual(['1', '2']);
+  });
+
+  // R-01 shared pool: a non-owner has nothing actionable to do about missing
+  // steps, so the whole card disappears rather than showing an empty state.
+  it('hides the steps card entirely for a non-owner when there are no steps', () => {
+    useRecipeMock.mockReturnValue({
+      data: recipe({ created_by_user_id: 'someone-else', recipe_steps: [] }),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(screen.queryByText(/preparación/i)).not.toBeInTheDocument();
+  });
+
+  it('shows an empty state to the owner when there are no steps', () => {
+    useRecipeMock.mockReturnValue({
+      data: recipe({ recipe_steps: [] }),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(screen.getByText(/aún no hay pasos/i)).toBeInTheDocument();
   });
 
   it('routes the edit action to the editor for a recipe I created', () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    useRecipeMock.mockReturnValue({
+      data: recipe(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     renderPage();
 
     const editLinks = screen.getAllByRole('link', { name: /Editar/ });
@@ -221,6 +281,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ created_by_user_id: 'someone-else' }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -238,7 +300,13 @@ describe('RecetaDetailPage', () => {
   // This button on the read view is how that capability survives; it is
   // offered on ANY recipe, owned or not (unlike "editar").
   it('offers Duplicar for a recipe I created', () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    useRecipeMock.mockReturnValue({
+      data: recipe(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     renderPage();
 
     expect(screen.getAllByRole('button', { name: 'Duplicar' }).length).toBeGreaterThan(0);
@@ -249,6 +317,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ created_by_user_id: 'someone-else' }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -270,6 +340,8 @@ describe('RecetaDetailPage', () => {
       }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -287,6 +359,8 @@ describe('RecetaDetailPage', () => {
       data: recipe({ created_by_user_id: '00000000-0000-0000-0000-00000000a0a0' }),
       isLoading: false,
       isError: false,
+      error: null,
+      refetch: vi.fn(),
     });
     renderPage();
 
@@ -294,15 +368,40 @@ describe('RecetaDetailPage', () => {
   });
 
   it('offers the favourite and add-to-day actions', () => {
-    useRecipeMock.mockReturnValue({ data: recipe(), isLoading: false, isError: false });
+    useRecipeMock.mockReturnValue({
+      data: recipe(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     renderPage();
 
     expect(screen.getAllByRole('button', { name: 'Favorita' }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: 'Añadir al día' }).length).toBeGreaterThan(0);
   });
 
+  it('mounts the private notes card for the recipe', async () => {
+    useRecipeMock.mockReturnValue({
+      data: recipe(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(await screen.findByTestId('notes-card')).toHaveTextContent(recipe().id);
+  });
+
   it('shows a not-found state when the recipe cannot be loaded', () => {
-    useRecipeMock.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+    useRecipeMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { code: 'PGRST116', message: 'JSON object requested' },
+      refetch: vi.fn(),
+    });
     renderPage();
 
     expect(screen.getAllByText('Receta no encontrada').length).toBeGreaterThan(0);
@@ -310,5 +409,59 @@ describe('RecetaDetailPage', () => {
       'href',
       '/recipes',
     );
+  });
+
+  // PageShell renders the title in both a mobile and a desktop header (only
+  // one is CSS-hidden at a time), so — like every other test in this file —
+  // this asserts on getAllByText rather than the singular findByText/getByText.
+  it('shows a load failure, not "not found", when the fetch fails', () => {
+    useRecipeMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(
+      screen.getAllByText(i18n.t('common:errors.loadFailedTitle')).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(i18n.t('recetas:detail.notFoundTitle'))).not.toBeInTheDocument();
+  });
+
+  // The header (PageShell title) and the body (QueryErrorState) must agree on
+  // what a stale-schema failure means — a header saying "no se ha podido
+  // cargar" above a body saying "recarga la página" is a contradiction.
+  it('shows the stale-schema title in the header, not the generic load-failed title', () => {
+    useRecipeMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { code: 'PGRST205', message: 'schema cache' },
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(
+      screen.getAllByText(i18n.t('common:errors.staleSchemaTitle')).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryAllByText(i18n.t('common:errors.loadFailedTitle')).length).toBe(0);
+  });
+
+  it('still shows "not found" when the recipe genuinely does not exist', () => {
+    useRecipeMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { code: 'PGRST116', message: 'JSON object requested' },
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(
+      screen.getAllByText(i18n.t('recetas:detail.notFoundTitle')).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(i18n.t('common:errors.loadFailedTitle'))).not.toBeInTheDocument();
   });
 });

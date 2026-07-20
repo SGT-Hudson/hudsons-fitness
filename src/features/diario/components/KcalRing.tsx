@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { formatDecimal } from '@/lib/number';
 import { classify, type PhaseType, type Tone } from '@/core/nutritionTone';
 
 // Same tone→token mapping as DayTotalsCard's `TEXT_TONE` (D-F19 single-arc
@@ -39,7 +40,8 @@ interface Props {
 /** Single-arc kcal ring (D-F19): phase-aware tone colours the arc and the
  * center consumed number; the track is a plain `--bg-sunken` circle. */
 export function KcalRing({ consumed, target, phase, size = 118, stroke = 11, className }: Props) {
-  const { t } = useTranslation('diario');
+  const { t, i18n } = useTranslation('diario');
+  const lang = i18n.language;
   const { tone } = classify('kcal', consumed, target, phase);
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
@@ -74,10 +76,10 @@ export function KcalRing({ consumed, target, phase, size = 118, stroke = 11, cla
           data-testid="kcal-ring-value"
           className={cn('tabular-nums text-[27px] font-semibold tracking-tight', TEXT_TONE[tone])}
         >
-          {consumed.toLocaleString('es-ES')}
+          {formatDecimal(consumed, { lang, digits: 0 })}
         </span>
         <span className="text-[9.5px] text-muted-foreground mt-1">
-          {t('totals.ringOf', { target: target.toLocaleString('es-ES') })}
+          {t('totals.ringOf', { target: formatDecimal(target, { lang, digits: 0 }) })}
         </span>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import type { Macros, SubMacros } from '@/features/recipes/macros';
 import { computeRecipeMacros, computeRecipeSub } from '@/features/recipes/macros';
+import { formatQuantity } from '@/lib/number';
 import {
   addSub,
   ingredientSub,
@@ -142,7 +143,10 @@ export function sumMacros(items: Macros[]): Macros {
   );
 }
 
-export function describeMealLog(log: MealLogWithJoins): {
+export function describeMealLog(
+  log: MealLogWithJoins,
+  lang: string,
+): {
   title: string;
   detail: string;
 } {
@@ -151,7 +155,9 @@ export function describeMealLog(log: MealLogWithJoins): {
     return {
       title: log.recipe.name,
       detail:
-        servings === 1 ? '1 ración' : `${servings.toLocaleString('es-ES')} raciones`,
+        servings === 1
+          ? '1 ración'
+          : `${formatQuantity(servings, { lang })} raciones`,
     };
   }
   if (log.ingredient_id && log.ingredient && log.quantity != null) {
@@ -159,7 +165,7 @@ export function describeMealLog(log: MealLogWithJoins): {
     const unit = log.ingredient.unit_type === 'unit' ? 'ud' : 'g';
     return {
       title: log.ingredient.name,
-      detail: `${qty.toLocaleString('es-ES')} ${unit}`,
+      detail: `${formatQuantity(qty, { lang })} ${unit}`,
     };
   }
   return {

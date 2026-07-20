@@ -68,7 +68,6 @@ function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredient
     created_at: '2026-06-01T00:00:00.000Z',
     created_by_user_id: 'u-1',
     description: 'Batch cooking',
-    instructions: 'Hornear 25 min.',
     meal_types: ['lunch'],
     name: 'Pollo con arroz',
     photo_url: null,
@@ -85,6 +84,26 @@ function recipe(over: Partial<RecipeWithIngredients> = {}): RecipeWithIngredient
         display_order: 0,
         created_at: '2026-06-01T00:00:00.000Z',
         ingredient: ingredient(),
+      },
+    ],
+    // Two entries, deliberately out of alphabetical order ('Precalentar' >
+    // 'Picar'): if the load path ever sorted alphabetically instead of by
+    // `display_order`, or a mapper silently reversed the array, the assertion
+    // on visible order below would catch it either way.
+    recipe_steps: [
+      {
+        id: 'st-1',
+        recipe_id: 'r-1',
+        display_order: 0,
+        text: 'Precalentar el horno a 200°C',
+        created_at: '2026-06-01T00:00:00.000Z',
+      },
+      {
+        id: 'st-2',
+        recipe_id: 'r-1',
+        display_order: 1,
+        text: 'Picar la cebolla',
+        created_at: '2026-06-01T00:00:00.000Z',
       },
     ],
     ...over,
@@ -125,7 +144,42 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     expect(screen.getByLabelText('Raciones')).toHaveValue('4');
     expect(screen.getByLabelText('Tiempo')).toHaveValue('35');
     expect(screen.getByLabelText('Descripción')).toHaveValue('Batch cooking');
-    expect(screen.getByLabelText('Instrucciones')).toHaveValue('Hornear 25 min.');
+    expect(screen.getByLabelText('Paso 1')).toHaveValue('Precalentar el horno a 200°C');
+  });
+
+  // R-36: pins the load half of the round trip. The mapper
+  // (`recipeToEditorState` in RecipeEditorForm.tsx) must place each step at
+  // the textarea matching its `display_order`, not the order it happens to
+  // sit in the `recipe_steps` array in some other sense (e.g. reversed).
+  it('loads the steps in display_order order', () => {
+    renderEditor('/recipes/r-1/edit');
+
+    expect(screen.getByLabelText('Paso 1')).toHaveValue('Precalentar el horno a 200°C');
+    expect(screen.getByLabelText('Paso 2')).toHaveValue('Picar la cebolla');
+  });
+
+  // R-36: the save half of the round trip. Reordering with the ↑/↓ buttons
+  // (RecipeStepsField's `swap()`) must be reflected in what's actually saved:
+  // `display_order` renumbered 0,1,… to match the NEW visible order, not the
+  // order the steps were loaded in.
+  it('sends the reordered steps with display_order renumbered to match', async () => {
+    const user = userEvent.setup();
+    renderEditor('/recipes/r-1/edit');
+
+    // Move step 1 ("Precalentar...") down, swapping it with step 2.
+    await user.click(screen.getByRole('button', { name: 'Bajar el paso 1' }));
+
+    // The swap must be visible before it's ever saved.
+    expect(screen.getByLabelText('Paso 1')).toHaveValue('Picar la cebolla');
+    expect(screen.getByLabelText('Paso 2')).toHaveValue('Precalentar el horno a 200°C');
+
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0].steps).toEqual([
+      { text: 'Picar la cebolla', display_order: 0 },
+      { text: 'Precalentar el horno a 200°C', display_order: 1 },
+    ]);
   });
 
   // THE regression this whole thread exists to prevent.
@@ -230,6 +284,57 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
     ]);
   });
 
+  // R-36: `recipe_steps` replaces the old free-text `instructions` column —
+  // the payload must carry the visible order as `display_order`, not
+  // whatever order the steps happened to be created in.
+  it('sends steps with display_order matching the visible order', async () => {
+    const user = userEvent.setup();
+    useRecipe.mockReturnValue({ data: recipe({ recipe_steps: [] }), isLoading: false, error: null });
+    renderEditor('/recipes/r-1/edit');
+
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 1'), 'primero');
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 2'), 'segundo');
+
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        steps: [
+          { text: 'primero', display_order: 0 },
+          { text: 'segundo', display_order: 1 },
+        ],
+      }),
+    );
+  });
+
+  // R-36 product decision: a blank step no longer blocks the save (the zod
+  // rule that rejected it is gone) — it is silently dropped, and the steps
+  // that survive renumber contiguously from 0. This also pins that the save
+  // actually goes through now, where it used to be blocked.
+  it('drops a blank step at save time and renumbers the remaining steps contiguously', async () => {
+    const user = userEvent.setup();
+    useRecipe.mockReturnValue({ data: recipe({ recipe_steps: [] }), isLoading: false, error: null });
+    renderEditor('/recipes/r-1/edit');
+
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 1'), 'primero');
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 2'), '   ');
+    await user.click(screen.getByRole('button', { name: 'Añadir paso' }));
+    await user.type(screen.getByLabelText('Paso 3'), 'tercero');
+
+    await user.click(save());
+
+    await waitFor(() => expect(saveMutateAsync).toHaveBeenCalledTimes(1));
+    expect(saveMutateAsync.mock.calls[0][0].steps).toEqual([
+      { text: 'primero', display_order: 0 },
+      { text: 'tercero', display_order: 1 },
+    ]);
+  });
+
   // The regression this task exists to fix: `initial` used to be a fresh
   // object on every render, and opening (then cancelling) the remove dialog
   // re-renders the page — which reset the form back to the saved values and
@@ -289,6 +394,64 @@ describe('RecetaEditorPage — editing an existing recipe', () => {
       'aria-pressed',
       'true',
     );
+  });
+
+  // Task 7: a failed save used to render the raw Postgres message
+  // (`(err as Error).message`) right beside the form's own translated
+  // validation errors — a duplicate-name 23505 showed up as
+  // `recipes_name_key` verbatim. The loaded recipe already has a name and an
+  // ingredient row, so this reaches the real submit → catch path with no
+  // extra field-filling: the point is pinning what the catch block in
+  // RecetaEditorPage does with the rejection, not re-testing the form.
+  it('shows a translated save error, never the raw database message', async () => {
+    const user = userEvent.setup();
+    saveMutateAsync.mockRejectedValueOnce({
+      code: '23505',
+      message: 'duplicate key value violates unique constraint "recipes_name_key"',
+    });
+    renderEditor('/recipes/r-1/edit');
+
+    await user.click(save());
+
+    expect(await screen.findByText(i18n.t('common:errors.duplicate'))).toBeInTheDocument();
+    expect(screen.queryByText(/recipes_name_key/)).not.toBeInTheDocument();
+  });
+});
+
+// Task 7: the load half. Before this fix, an editor whose fetch failed
+// silently `<Navigate>`d back to the list — a user's edit link (bookmark,
+// deep link) simply vanished with no explanation. Mirrors the same
+// isError/error/refetch shape RecetaDetailPage's equivalent test uses.
+describe('RecetaEditorPage — load failure', () => {
+  it('shows a load failure instead of silently redirecting to the list', async () => {
+    useRecipe.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    });
+    renderEditor('/recipes/r-1/edit');
+
+    expect(await screen.findByText(i18n.t('common:errors.loadFailedTitle'))).toBeInTheDocument();
+    expect(screen.queryByText('lista')).not.toBeInTheDocument();
+  });
+
+  it('keeps the page shell, so the failure state has a title and a way back', async () => {
+    // Without the shell this state renders bare: no header, no back arrow, and
+    // only the bottom nav to escape with — unlike the three sibling screens.
+    useRecipe.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    });
+    renderEditor('/recipes/r-1/edit');
+
+    await screen.findByText(i18n.t('common:errors.loadFailedTitle'));
+    // PageShell renders its title in both the mobile and desktop headers.
+    expect(screen.getAllByText(i18n.t('recetas:editor.editTitle')).length).toBeGreaterThan(0);
   });
 });
 

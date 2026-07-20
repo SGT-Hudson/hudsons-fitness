@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { NumberField } from '@/components/ui/NumberField';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { formatDecimal } from '@/lib/number';
 import { useUpsertMeasurement } from '../hooks';
 import {
   measurementFormSchema,
@@ -40,9 +41,11 @@ function toInput(value: number | null | undefined): string {
  * The delta's arrow, the same ↑ / ↓ / · vocabulary the Diario body card uses for
  * its weekly rate. One decimal — a body scale's own resolution.
  */
-function signedKg(n: number): string {
-  const v = Math.abs(n).toFixed(1);
-  if (Number(v) === 0) return `± ${v}`;
+function signedKg(n: number, lang: string): string {
+  const v = formatDecimal(Math.abs(n), { lang, digits: 1 });
+  // Zero check stays on the number, not the localised string: `Number('0,0')`
+  // is NaN. The arrow carries the sign, so the value is formatted unsigned.
+  if (Number(Math.abs(n).toFixed(1)) === 0) return `± ${v}`;
   return `${n < 0 ? '↓' : '↑'} ${v}`;
 }
 
@@ -217,7 +220,7 @@ export function MeasurementDialog({
             {delta != null && previous?.measured_on && (
               <p className="tnum mt-1.5 text-[11px] font-medium text-text-dim">
                 {t('dialog.sinceLast', {
-                  delta: signedKg(delta),
+                  delta: signedKg(delta, locale),
                   date: formatDate(previous.measured_on, 'd MMM', locale),
                 })}
               </p>

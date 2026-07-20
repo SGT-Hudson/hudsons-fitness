@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { MeasurementDialog } from '@/features/measurements/components/MeasurementDialog';
 import { deltaTone, type DeltaTone, type PhaseType } from '@/features/measurements/trend';
 import { formatDate, isoDate, type Locale } from '@/lib/dates';
+import { formatDecimal } from '@/lib/number';
+import { useNum } from '@/hooks/useNum';
 import type { BodyMeasurement } from '@/features/measurements/api';
 
 const TONE_CLASS: Record<DeltaTone, string> = {
@@ -22,8 +24,8 @@ interface Props {
   phaseType?: PhaseType;
 }
 
-function signedRate(n: number): string {
-  const v = Math.abs(n).toFixed(2);
+function signedRate(n: number, lang: string): string {
+  const v = formatDecimal(Math.abs(n), { lang, digits: 2 });
   if (n > 0) return `↑ ${v}`;
   if (n < 0) return `↓ ${v}`;
   return `· ${v}`;
@@ -36,6 +38,7 @@ function signedRate(n: number): string {
  */
 export function BodyQuickMeasureCard({ latest, rate, phaseType }: Props) {
   const { t, i18n } = useTranslation('diario');
+  const num = useNum();
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
   const [open, setOpen] = useState(false);
   const tone: DeltaTone =
@@ -57,7 +60,7 @@ export function BodyQuickMeasureCard({ latest, rate, phaseType }: Props) {
       {latest?.weight_kg != null ? (
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-semibold tabular-nums tracking-tight">
-            {latest.weight_kg}
+            {num.qty(latest.weight_kg)}
           </span>
           <span className="text-xs text-text-dim">kg</span>
           {rate != null && (
@@ -67,7 +70,7 @@ export function BodyQuickMeasureCard({ latest, rate, phaseType }: Props) {
                 TONE_CLASS[tone],
               )}
             >
-              {signedRate(rate)} {t('body.rateUnit')}
+              {signedRate(rate, locale)} {t('body.rateUnit')}
             </span>
           )}
         </div>

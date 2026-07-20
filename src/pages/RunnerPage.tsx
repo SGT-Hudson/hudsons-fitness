@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { useNum } from '@/hooks/useNum';
 import { useSaveWorkout } from '@/features/training/hooks';
 import { Runner } from '@/features/training/runner/Runner';
 import { ResumePrompt } from '@/features/training/runner/ResumePrompt';
@@ -22,6 +23,7 @@ export function RunnerPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const save = useSaveWorkout();
+  const num = useNum();
   const route = (location.state as { runner?: RunnerRouteState } | null)?.runner ?? null;
 
   const draft = useMemo(() => loadDraft(), []);
@@ -63,7 +65,7 @@ export function RunnerPage() {
   const lastTimeByExercise: Record<string, string | null> = {};
   for (const [id, history] of Object.entries(route.historyByExercise)) {
     const last = lastWorkingSetForExercise(history);
-    lastTimeByExercise[id] = last ? `${last.reps} × ${Number(last.weightKg)} kg` : null;
+    lastTimeByExercise[id] = last ? `${last.reps} × ${num.qty(Number(last.weightKg))} kg` : null;
   }
 
   return (

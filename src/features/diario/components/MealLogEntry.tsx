@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { computeMealLogMacros, describeMealLog } from '../macros';
 import type { MealLogWithJoins } from '../api';
 import { roundMacro } from '@/features/recipes/macros';
+import { useNum } from '@/hooks/useNum';
 
 interface Props {
   log: MealLogWithJoins;
@@ -12,9 +13,10 @@ interface Props {
 }
 
 export function MealLogEntry({ log, onEdit }: Props) {
-  const { t } = useTranslation('diario');
+  const { t, i18n } = useTranslation('diario');
+  const num = useNum();
   const macros = computeMealLogMacros(log);
-  const desc = describeMealLog(log);
+  const desc = describeMealLog(log, i18n.language);
   // R-01: `recipes.deleted_at` is gone. Anon-owned (creator-hidden)
   // recipes still resolve via the open pool SELECT — no "recipe deleted"
   // distinction surfaces here anymore; historical entries render normally
@@ -46,12 +48,12 @@ export function MealLogEntry({ log, onEdit }: Props) {
         )}
       </div>
       <div className="hidden items-center gap-3.5 text-[11.5px] text-muted-foreground tabular-nums md:flex">
-        <span>P <b className="font-medium text-foreground">{roundMacro(macros.proteinG)}</b></span>
-        <span>C <b className="font-medium text-foreground">{roundMacro(macros.carbsG)}</b></span>
-        <span>F <b className="font-medium text-foreground">{roundMacro(macros.fatG)}</b></span>
+        <span>P <b className="font-medium text-foreground">{num.qty(roundMacro(macros.proteinG))}</b></span>
+        <span>C <b className="font-medium text-foreground">{num.qty(roundMacro(macros.carbsG))}</b></span>
+        <span>F <b className="font-medium text-foreground">{num.qty(roundMacro(macros.fatG))}</b></span>
       </div>
       <span className="shrink-0 text-xs tabular-nums md:min-w-[48px] md:text-right md:text-[13px]">
-        <span className="md:font-medium md:text-foreground">{roundMacro(macros.kcal)}</span>{' '}
+        <span className="md:font-medium md:text-foreground">{num.qty(roundMacro(macros.kcal))}</span>{' '}
         <span className="text-muted-foreground">kcal</span>
       </span>
       <Button

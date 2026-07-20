@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const order = vi.fn();
+const single = vi.fn();
 const eq = vi.fn();
 const select = vi.fn();
 const from = vi.fn();
@@ -16,7 +17,7 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
-import { listRecipes } from './api';
+import { fetchRecipe, listRecipes } from './api';
 import { computeRecipeMacros } from './macros';
 
 const USER = '11111111-1111-1111-1111-111111111111';
@@ -26,6 +27,7 @@ beforeEach(() => {
   select.mockReset().mockReturnValue({ eq });
   eq.mockReset().mockReturnValue({ order });
   order.mockReset();
+  single.mockReset();
 });
 
 describe('listRecipes — per-serving macros surfaced on RecipeListItem', () => {
@@ -94,5 +96,33 @@ describe('listRecipes — per-serving macros surfaced on RecipeListItem', () => 
 
     expect(result).toHaveLength(1);
     expect(result[0].perServing).toEqual(expected);
+  });
+});
+
+// PostgREST gives no ordering guarantee on embedded resources (recipe_steps
+// here), so fetchRecipe's `.sort((a, b) => a.display_order - b.display_order)`
+// is load-bearing, not decorative. This test feeds it an OUT-OF-ORDER embed —
+// deleting the sort line should turn this red.
+describe('fetchRecipe — recipe_steps sort', () => {
+  it('returns steps ordered by display_order regardless of embed order', async () => {
+    select.mockReturnValue({ eq });
+    eq.mockReturnValue({ single });
+    single.mockResolvedValue({
+      data: {
+        id: 'recipe-1',
+        name: 'Tortilla',
+        recipe_ingredients: [],
+        recipe_steps: [
+          { id: 's3', recipe_id: 'recipe-1', display_order: 2, text: 'tercero', created_at: '' },
+          { id: 's1', recipe_id: 'recipe-1', display_order: 0, text: 'primero', created_at: '' },
+          { id: 's2', recipe_id: 'recipe-1', display_order: 1, text: 'segundo', created_at: '' },
+        ],
+      },
+      error: null,
+    });
+
+    const result = await fetchRecipe('recipe-1');
+
+    expect(result.recipe_steps.map((s) => s.text)).toEqual(['primero', 'segundo', 'tercero']);
   });
 });

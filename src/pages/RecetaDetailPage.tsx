@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Copy, Pencil, Plus, Star, Utensils } from 'lucide-react';
+import { Copy, ListOrdered, Pencil, Plus, Star, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageShell } from '@/components/layout/PageShell';
 import { TodayAddToDaySheet } from '@/features/diario/components/TodayAddToDaySheet';
 import type { AddSheetSelection } from '@/features/diario/components/AddToDaySheet';
 import { useMealLogsForDay } from '@/features/diario/hooks';
 import { isoDate } from '@/lib/dates';
+import { classifyError, errorTitleKey } from '@/lib/errors';
 import { ingredientDisplayName } from '@/features/ingredients/api';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useRecipe } from '@/features/recipes/hooks';
@@ -21,6 +23,8 @@ import { toRecipeMealTypes } from '@/features/recipes/mealTypes';
 import { useRecipeFavorites } from '@/features/recipes/useFavorites';
 import { RecipeMacrosCard } from '@/features/recipes/components/RecipeMacrosCard';
 import { RecipeMediaPlaceholder } from '@/features/recipes/components/RecipeMediaPlaceholder';
+import { RecipeNotesCard } from '@/features/recipes/components/RecipeNotesCard';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 
 /**
@@ -43,9 +47,11 @@ export function RecetaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('recetas');
+  const { t: tCommon } = useTranslation('common');
+  const num = useNum();
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
-  const { data: recipe, isLoading, isError } = useRecipe(id);
+  const { data: recipe, isLoading, isError, error, refetch } = useRecipe(id);
   const { user } = useAuth();
   const { isFavorite, toggle: toggleFavorite } = useRecipeFavorites();
   const [addOpen, setAddOpen] = useState(false);
@@ -72,19 +78,45 @@ export function RecetaDetailPage() {
     );
   }
 
-  if (isError || !recipe || !id) {
+  // A missing id is a malformed URL, not a fetch result — there is nothing to
+  // report about a request that was never made.
+  if (!id) {
+    return <Navigate to="/recipes" replace />;
+  }
+
+  const notFoundState = (
+    <EmptyState
+      icon={Utensils}
+      title={t('detail.notFoundTitle')}
+      hint={t('detail.notFoundHint')}
+      action={
+        <Button asChild variant="outline">
+          <Link to="/recipes">{t('detail.backToList')}</Link>
+        </Button>
+      }
+    />
+  );
+
+  if (isError) {
+    const kind = classifyError(error);
+    return (
+      <PageShell
+        title={kind === 'notFound' ? t('detail.notFoundTitle') : tCommon(errorTitleKey(kind))}
+        back="/recipes"
+      >
+        <QueryErrorState
+          error={error}
+          notFound={notFoundState}
+          onRetry={() => void refetch()}
+        />
+      </PageShell>
+    );
+  }
+
+  if (!recipe) {
     return (
       <PageShell title={t('detail.notFoundTitle')} back="/recipes">
-        <EmptyState
-          icon={Utensils}
-          title={t('detail.notFoundTitle')}
-          hint={t('detail.notFoundHint')}
-          action={
-            <Button asChild variant="outline">
-              <Link to="/recipes">{t('detail.backToList')}</Link>
-            </Button>
-          }
-        />
+        {notFoundState}
       </PageShell>
     );
   }
@@ -108,7 +140,7 @@ export function RecetaDetailPage() {
       key: 'servings',
       label: t('detail.stats.servings'),
       short: t('detail.stats.servings'),
-      value: String(recipe.servings),
+      value: num.qty(recipe.servings),
     },
     ...(recipe.prep_time_minutes != null
       ? [
@@ -124,7 +156,7 @@ export function RecetaDetailPage() {
       key: 'kcal',
       label: t('detail.stats.kcalPerServing'),
       short: t('detail.stats.kcalPerServingShort'),
-      value: String(Math.round(perServing.kcal)),
+      value: num.qty(Math.round(perServing.kcal)),
     },
     {
       key: 'ingredients',
@@ -324,7 +356,7 @@ export function RecetaDetailPage() {
                     </span>
                   )}
                   <span className="tnum min-w-16 shrink-0 text-right text-[12.5px] text-muted-foreground">
-                    {Number(ri.quantity)}{' '}
+                    {num.qty(Number(ri.quantity))}{' '}
                     {ri.ingredient.unit_type === 'unit' ? t('form.units') : 'g'}
                   </span>
                 </li>
@@ -332,28 +364,49 @@ export function RecetaDetailPage() {
             </ul>
           </Card>
 
-          {/* One `instructions` text column → one numbered step. Structured,
-              reorderable, per-step-photo steps are R-36: when they land, this
-              same step row starts rendering 1, 2, 3… unchanged. Splitting the
-              text into fake steps here would invent structure the data doesn't
-              have — so the text keeps its own line breaks inside step 1. */}
-          {recipe.instructions?.trim() && (
-            <Card data-slot="instructions" className="px-4 pb-3 pt-0 md:px-4.5">
+          {/* R-36: real structured steps. Per-step photos are R-36b. */}
+          {(recipe.recipe_steps.length > 0 || canEdit) && (
+            <Card data-slot="steps" className="px-4 pb-3 pt-0 md:px-4.5">
               <div className="border-b py-3">
                 <h2 className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-text-dim">
                   {t('detail.instructionsTitle')}
                 </h2>
               </div>
-              <div className="flex items-start gap-3.5 py-3">
-                <span className="tnum grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-soft text-[13.5px] font-semibold text-accent-ink">
-                  1
-                </span>
-                <p className="whitespace-pre-line pt-0.5 text-[13.5px] leading-[1.6]">
-                  {recipe.instructions}
-                </p>
-              </div>
+              {recipe.recipe_steps.length > 0 ? (
+                <ol>
+                  {recipe.recipe_steps.map((step, i) => (
+                    <li key={step.id} className="flex items-start gap-3.5 border-t py-3 first:border-t-0">
+                      <span className="tnum grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-soft text-[13.5px] font-semibold text-accent-ink">
+                        {i + 1}
+                      </span>
+                      <p className="whitespace-pre-line pt-0.5 text-[13.5px] leading-[1.6]">
+                        {step.text}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <div className="py-6">
+                  <EmptyState
+                    icon={ListOrdered}
+                    title={t('detail.noStepsTitle')}
+                    hint={t('detail.noStepsHint')}
+                    action={
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={`/recipes/${recipe.id}/edit`}>{t('detail.edit')}</Link>
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
             </Card>
           )}
+
+          {/* R-36: private per-user note. Self-gates on library membership
+              (renders null unless I hold a ref to this recipe), so no
+              ownership/membership condition is added around it here — a
+              pooled recipe I did not create is still annotatable. */}
+          <RecipeNotesCard recipeId={recipe.id} />
 
           {/* Mobile action bar (the artboard's footer): the two things you do
               with a recipe you are reading. "Editar" is in the back header. */}

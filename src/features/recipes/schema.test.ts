@@ -22,7 +22,7 @@ function form(overrides: Record<string, unknown> = {}) {
     name: 'Tortilla',
     servings: '2',
     description: '',
-    instructions: '',
+    steps: [],
     prepTime: '',
     mealTypes: [],
     rows: validRows,
@@ -169,6 +169,30 @@ describe('recipeFormSchema — servings', () => {
       expect(res.error.issues.find((i) => i.path[0] === 'servings')?.message).toBe(
         'servingsInvalid',
       );
+    }
+  });
+});
+
+describe('steps', () => {
+  it('accepts an empty step list — a recipe may have no method', () => {
+    expect(recipeFormSchema.safeParse(form({ steps: [] })).success).toBe(true);
+  });
+
+  it('accepts steps with text', () => {
+    const res = recipeFormSchema.safeParse(
+      form({ steps: [{ stepId: 's1', text: 'Sofreir la cebolla' }] }),
+    );
+    expect(res.success).toBe(true);
+  });
+
+  // A blank step is not a validation failure any more: the owner decided a
+  // blank step holds nothing worth blocking the save over — it is silently
+  // dropped (and the rest renumbered) by the payload builder in
+  // RecetaEditorPage.tsx instead. The schema just has to get out of the way.
+  it('accepts a step whose text is empty or whitespace-only — it is dropped at save time, not rejected', () => {
+    for (const text of ['', '   ']) {
+      const res = recipeFormSchema.safeParse(form({ steps: [{ stepId: 's1', text }] }));
+      expect(res.success).toBe(true);
     }
   });
 });

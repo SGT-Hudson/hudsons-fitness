@@ -11,9 +11,11 @@ import { recipeLabels, type RecipeLabels } from './labels';
 
 export type Recipe = Tables<'recipes'>;
 export type RecipeIngredient = Tables<'recipe_ingredients'>;
+export type RecipeStep = Tables<'recipe_steps'>;
 
 export interface RecipeWithIngredients extends Recipe {
   recipe_ingredients: Array<RecipeIngredient & { ingredient: Ingredient }>;
+  recipe_steps: RecipeStep[];
 }
 
 export interface RecipeListItem {
@@ -138,20 +140,27 @@ export async function fetchRecipe(recipeId: string): Promise<RecipeWithIngredien
        recipe_ingredients (
          id, recipe_id, ingredient_id, quantity, per_serving, display_order, created_at,
          ingredient:ingredients (*)
+       ),
+       recipe_steps (
+         id, recipe_id, display_order, text, created_at
        )`,
     )
     .eq('id', recipeId)
     .single();
   if (error) throw error;
   type RawJoin = RecipeIngredient & { ingredient: Ingredient | Ingredient[] };
-  const raw = data as unknown as Recipe & { recipe_ingredients: RawJoin[] };
+  const raw = data as unknown as Recipe & {
+    recipe_ingredients: RawJoin[];
+    recipe_steps: RecipeStep[];
+  };
   const rows = (raw.recipe_ingredients ?? [])
     .map((ri) => ({
       ...ri,
       ingredient: Array.isArray(ri.ingredient) ? ri.ingredient[0] : ri.ingredient,
     }))
     .sort((a, b) => a.display_order - b.display_order);
-  return { ...raw, recipe_ingredients: rows };
+  const steps = (raw.recipe_steps ?? []).slice().sort((a, b) => a.display_order - b.display_order);
+  return { ...raw, recipe_ingredients: rows, recipe_steps: steps };
 }
 
 export interface SaveRecipePayload {
@@ -159,7 +168,7 @@ export interface SaveRecipePayload {
   name: string;
   servings: number;
   description: string | null;
-  instructions: string | null;
+  steps: Array<{ text: string; display_order: number }>;
   mealTypes: string[];
   // R-33 wave 5: minutes, or null for "no time recorded". ALWAYS sent, never
   // omitted — the RPC writes it unconditionally, so null genuinely clears it.
@@ -181,7 +190,7 @@ export async function saveRecipe(payload: SaveRecipePayload): Promise<string> {
     p_name: payload.name,
     p_servings: payload.servings,
     p_description: payload.description,
-    p_instructions: payload.instructions,
+    p_steps: payload.steps,
     p_ingredients: payload.ingredients,
     p_meal_types: payload.mealTypes,
     p_prep_time_minutes: payload.prepTimeMinutes,

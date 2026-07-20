@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 import type { Ingredient } from '../api';
 
@@ -27,6 +28,7 @@ interface Props {
  */
 export function IngredientMacroDots({ ingredient, className }: Props) {
   const { t } = useTranslation('ingredientes');
+  const num = useNum();
   const items = [
     { key: 'protein', value: ingredient.protein_g_per_unit },
     { key: 'carbs', value: ingredient.carbs_g_per_unit },
@@ -43,14 +45,9 @@ export function IngredientMacroDots({ ingredient, className }: Props) {
       {items.map(({ key, value }) => (
         <span key={key} className="inline-flex items-center gap-1">
           <span className={cn('size-[6px] shrink-0 rounded-full', DOT[key])} aria-hidden="true" />
-          {t(`macros.letter.${key}`)} {formatMacro(value)}
+          {t(`macros.letter.${key}`)} {num.qty(value, 1)}
         </span>
       ))}
     </div>
   );
-}
-
-/** One decimal, but never a trailing `.0` — the canvas prints `23`, not `23.0`. */
-export function formatMacro(value: number): string {
-  return String(Math.round(value * 10) / 10);
 }

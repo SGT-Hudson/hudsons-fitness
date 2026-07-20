@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { MacroBar } from '@/components/ui/MacroBar';
 import { roundMacro } from '@/features/recipes/macros';
 import { classify, type PhaseType, type Tone, type ToneStatus } from '@/core/nutritionTone';
+import { useNum } from '@/hooks/useNum';
 
 /** kcal has the day-header hero, not a chip. */
 export type ChipMetric = 'protein' | 'carbs' | 'fat' | 'fiber';
@@ -69,6 +70,7 @@ export function DayMacroChip({
   className,
 }: Props) {
   const { t } = useTranslation('planning');
+  const num = useNum();
   const s = neutral
     ? NO_DATA
     : classify(
@@ -102,11 +104,11 @@ export function DayMacroChip({
           {t(`summary.letter.${metric}`)}
         </span>
         <span className="tnum text-[9px] text-text-dim">
-          <b className="font-medium text-foreground">{roundMacro(consumed)}</b>
+          <b className="font-medium text-foreground">{num.qty(roundMacro(consumed))}</b>
           {hasTarget && (
             <>
               <span className="mx-px opacity-60">/</span>
-              {roundMacro(target!)}
+              {num.qty(roundMacro(target!))}
             </>
           )}
         </span>

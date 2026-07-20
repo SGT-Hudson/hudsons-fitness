@@ -1,4 +1,5 @@
 import { Apple, Plus, UtensilsCrossed } from 'lucide-react';
+import { useNum } from '@/hooks/useNum';
 
 export interface AddResultRowProps {
   kind: 'recipe' | 'ingredient';
@@ -16,6 +17,7 @@ export interface AddResultRowProps {
  * what "select" means (advance to the ración step).
  */
 export function AddResultRow({ kind, name, kcal, subtitle, onSelect }: AddResultRowProps) {
+  const num = useNum();
   const Icon = kind === 'recipe' ? UtensilsCrossed : Apple;
 
   return (
@@ -32,7 +34,7 @@ export function AddResultRow({ kind, name, kcal, subtitle, onSelect }: AddResult
         <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           {kcal != null && (
             <span className="tabular-nums font-semibold text-foreground">
-              {kcal} <span className="font-normal text-muted-foreground">kcal</span>
+              {num.qty(kcal)} <span className="font-normal text-muted-foreground">kcal</span>
             </span>
           )}
           {subtitle && <span className="truncate">{subtitle}</span>}

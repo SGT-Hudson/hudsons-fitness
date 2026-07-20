@@ -1,7 +1,7 @@
 -- Tier-3 / R-16 — RLS isolation on child tables (ownership via a join to the
--- parent). Covers workout_sets, recipe_ingredients (both with the R-22
--- UPDATE-WITH-CHECK gap, asserted under todo) and routine_exercises,
--- program_days (F-2 closed the gap — hard assertions).
+-- parent). Covers workout_sets, recipe_ingredients, routine_exercises and
+-- program_days, plus a catalogue-wide check that every UPDATE policy in public
+-- carries a WITH CHECK identical to its USING.
 
 begin;
 select * from no_plan();
@@ -32,10 +32,9 @@ insert into programs (id, user_id, name) values
   ('00000000-0000-0000-0000-0000000000a3', '11111111-1111-1111-1111-111111111111', 'Program A'),
   ('00000000-0000-0000-0000-0000000000b3', '22222222-2222-2222-2222-222222222222', 'Program B');
 
--- B-owned child rows (used by the re-point tests) + one A-owned set (SELECT denial)
+-- One A-owned set, for the SELECT-denial assertion below.
 insert into workout_sets (id, session_id, exercise_id, set_index, reps, weight_kg) values
-  ('00000000-0000-0000-0000-0000000000ca', '00000000-0000-0000-0000-00000000005a', '00000000-0000-0000-0000-0000000000e1', 1, 5, 100),
-  ('00000000-0000-0000-0000-0000000000cb', '00000000-0000-0000-0000-00000000005b', '00000000-0000-0000-0000-0000000000e1', 1, 5, 100);
+  ('00000000-0000-0000-0000-0000000000ca', '00000000-0000-0000-0000-00000000005a', '00000000-0000-0000-0000-0000000000e1', 1, 5, 100);
 insert into recipe_ingredients (recipe_id, ingredient_id, quantity) values
   ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000d1', 100);
 insert into routine_exercises (routine_id, exercise_id, position, target_sets, target_reps_min, target_reps_max) values
@@ -61,15 +60,6 @@ select throws_ok(
   $q$ insert into workout_sets (session_id, exercise_id, set_index, reps, weight_kg)
       values ('00000000-0000-0000-0000-00000000005a','00000000-0000-0000-0000-0000000000e1',9,8,80) $q$,
   '42501', NULL, 'B cannot INSERT a set into A''s session');
--- R-22 gap: workout_sets UPDATE has USING but no WITH CHECK, so re-pointing a
--- child into another user's parent is not blocked yet. Asserted under todo so
--- it is visible and non-failing; flip to a hard assertion when R-22 lands.
-select todo_start('R-22: workout_sets UPDATE lacks WITH CHECK');
-select throws_ok(
-  $q$ update workout_sets set session_id = '00000000-0000-0000-0000-00000000005a'
-       where id = '00000000-0000-0000-0000-0000000000cb' $q$,
-  '42501', NULL, 'B cannot re-point its own set into A''s session');
-select todo_end();
 
 -- ── recipe_ingredients (parent recipes) ──────────────────────────────────────
 select lives_ok(
@@ -80,15 +70,8 @@ select throws_ok(
   $q$ insert into recipe_ingredients (recipe_id, ingredient_id, quantity)
       values ('00000000-0000-0000-0000-0000000000a1','00000000-0000-0000-0000-0000000000d2',50) $q$,
   '42501', NULL, 'B cannot INSERT an ingredient row into A''s recipe');
-select todo_start('R-22: recipe_ingredients UPDATE lacks WITH CHECK');
-select throws_ok(
-  $q$ update recipe_ingredients set recipe_id = '00000000-0000-0000-0000-0000000000a1'
-       where recipe_id = '00000000-0000-0000-0000-0000000000b1'
-         and ingredient_id = '00000000-0000-0000-0000-0000000000d1' $q$,
-  '42501', NULL, 'B cannot re-point its own recipe_ingredient into A''s recipe');
-select todo_end();
 
--- ── routine_exercises (parent routines) — F-2 closed the gap ─────────────────
+-- ── routine_exercises (parent routines) ──────────────────────────────────────
 select lives_ok(
   $q$ insert into routine_exercises (routine_id, exercise_id, position, target_sets, target_reps_min, target_reps_max)
       values ('00000000-0000-0000-0000-0000000000b2','00000000-0000-0000-0000-0000000000e1',2,3,5,8) $q$,
@@ -102,7 +85,7 @@ select throws_ok(
        where routine_id = '00000000-0000-0000-0000-0000000000b2' and position = 1 $q$,
   '42501', NULL, 'B cannot re-point its own routine_exercise into A''s routine');
 
--- ── program_days (parent programs) — F-2 closed the gap ──────────────────────
+-- ── program_days (parent programs) ───────────────────────────────────────────
 select lives_ok(
   $q$ insert into program_days (program_id, day_index, is_rest)
       values ('00000000-0000-0000-0000-0000000000b3',1,true) $q$,
@@ -115,6 +98,24 @@ select throws_ok(
   $q$ update program_days set program_id = '00000000-0000-0000-0000-0000000000a3'
        where program_id = '00000000-0000-0000-0000-0000000000b3' and day_index = 0 $q$,
   '42501', NULL, 'B cannot re-point its own program_day into A''s program');
+
+-- ── Catalogue-wide: every UPDATE policy's WITH CHECK matches its USING ───────
+-- Postgres applies USING to the new row when WITH CHECK is absent, so a
+-- missing clause is not a hole. An explicit clause that *differs* from USING
+-- — including a permissive `with check (true)` — is the hole: it silently
+-- widens what an UPDATE may write, which is exactly the re-pointing hole the
+-- two deleted behavioural assertions used to catch. If a policy ever
+-- legitimately needs an asymmetric WITH CHECK, this is where that divergence
+-- must be argued and the assertion adjusted. This covers every table that
+-- exists now and every table added later.
+select cmp_ok(
+  (select count(*)::int from pg_policies where schemaname = 'public' and cmd = 'UPDATE'),
+  '>=', 26, 'the UPDATE-policy sweep below is actually looking at policies');
+select is(
+  (select count(*)::int from pg_policies
+    where schemaname = 'public' and cmd = 'UPDATE'
+      and with_check is distinct from qual),
+  0, 'every UPDATE policy in public has a WITH CHECK identical to its USING');
 
 select * from finish();
 rollback;
