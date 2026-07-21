@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { useNum } from '@/hooks/useNum';
 import { toRecipeMealTypes } from '../mealTypes';
 import type { RecipeListItem } from '../api';
-import { RecipeMediaPlaceholder } from './RecipeMediaPlaceholder';
+import { RecipePhoto } from './RecipePhoto';
 import { RecipeMacroDots } from './RecipeMacroDots';
 import { RecipeWarningPills } from './RecipeWarningPills';
 import { RecipeFavoritePin } from './RecipeFavoritePin';
@@ -21,7 +21,7 @@ interface Props {
 
 /**
  * The web artboard's recipe card (`RecipeCard`, `recetas-web.jsx`): a 132px
- * media band (the shared placeholder — recipes have no photos) with the
+ * media band (the cover photo, or the shared placeholder) with the
  * meal-type pill inset bottom-left and the favourite pin top-right, then name,
  * kcal/ración, the macro dot triad, and a footer with the ingredient count and
  * the "Leer más →" affordance.
@@ -42,8 +42,8 @@ export function RecipeCard({ recipe, favorite, canEdit, onToggleFavorite, onRemo
   return (
     <article className="card-lift group relative flex h-full flex-col rounded-3xl border bg-card">
       <div className="relative h-[132px] shrink-0 overflow-hidden rounded-t-3xl">
-        <RecipeMediaPlaceholder
-          recipeId={recipe.id}
+        <RecipePhoto
+          recipe={recipe}
           variant="card"
           className="transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
         />

@@ -7,6 +7,7 @@
 - [RPCs](#rpcs)
 - [Views](#views)
 - [Extensions](#extensions)
+- [Storage](#storage)
 - [Library Contribution & Lifecycle Model](#library-contribution--lifecycle-model)
 - [Type definitions & caveats](#type-definitions--caveats)
 
@@ -94,7 +95,7 @@ Shared-pool entity referencing the shared ingredient library — recipes are poo
 | `name` | `text` not null |
 | `servings` | `numeric(5,2)` not null default 1, check `servings > 0` |
 | `description` | `text` |
-| `photo_url` | `text` |
+| `photo_url` | `text` — R-36b: the object path in the `recipe-photos` Storage bucket (`<recipe_id>/full.webp`), not a URL; `null` = no cover photo. See [Storage](#storage). |
 | `meal_types` | `text[]` not null default `'{}'`, check `meal_types <@ array['breakfast','lunch','snack','dinner','dessert']` — U-2 (#96); gin index `idx_recipes_meal_types` for slot filtering |
 | `prep_time_minutes` | `integer` null, check `> 0` — minutes to prepare; null = no time recorded (R-33 wave 5) |
 | `created_at` | `timestamptz` not null default `now()` |
@@ -586,6 +587,16 @@ Installed in the `extensions` schema (not `public`):
 - `pgcrypto` — crypto/digest primitives; installed by the R-00 baseline alongside `uuid-ossp`.
 - `pg_trgm` — fuzzy ingredient text search (gin trigram indexes on `ingredients.name` / `ingredients.brand`).
 - `btree_gist` — backs the non-overlapping phase date-range constraint via `EXCLUDE USING gist` on `phases`.
+
+## Storage
+
+The app's first use of Supabase Storage (R-36b). One bucket, `recipe-photos` — **public**, `file_size_limit` 2 MB, `allowed_mime_types = {image/webp}` (the client only ever uploads WebP; the bucket rejects anything else as a bug or abuse rather than storing it). Objects are keyed `<recipe_id>/full.webp` and `<recipe_id>/thumb.webp` — stable paths, so replacing a photo overwrites in place instead of orphaning the old one. Migration `supabase/migrations/20260720120000_r36b_recipe_photos_bucket.sql`.
+
+RLS on `storage.objects` (a different table from anything in `public`, gated the same way):
+- **SELECT** — permissive across the bucket, for every `authenticated` user: `bucket_id = 'recipe-photos'`, nothing else. Not a convenience: Postgres applies SELECT policies to `update`, `delete` and `insert … on conflict do update` too, so without one the storage API's upsert cannot see the row it is replacing and a delete matches zero rows while still reporting success — i.e. the write policies below would be unreachable. The grant is scoped to this bucket and gives away only object metadata (path, size, mime, timestamps) for objects the CDN already serves to anyone with the URL, all of them under `<recipe_id>/` prefixes for recipes every authenticated user can already read from `public.recipes`.
+- **INSERT / UPDATE / DELETE** — real-creator only, same predicate shape as `recipe_ingredients` / `recipe_steps`: the path's first folder is joined back to `public.recipes`, requiring `r.created_by_user_id = auth.uid()` and excluding both a null creator (system seed) and the `LIBRARY_ANON_OWNER_ID` sentinel (creator-hidden rows). The UPDATE policy carries both `using` and `with check`, written identically (same R-22 convention as the table RLS above). The folder→`uuid` cast goes through a `case` guard on the uuid shape, so a malformed path denies with `42501` instead of raising `22P02`.
+
+`recipes.photo_url` holds this bucket's object path (`<recipe_id>/full.webp`), not a URL — see the `recipes` table above. The app derives the public URL client-side via `storage.from('recipe-photos').getPublicUrl(...)`; both keys are re-derived from the recipe id (`photo_url` is read as a presence flag), and a URL-encoded `?v=<updated_at>` busts the CDN cache after a replace. `updated_at` is bumped by the same single-table update that writes `photo_url` — nothing else moves it (there is no `updated_at` trigger in the schema), and the object key is stable, so without that bump a replaced photo would keep serving the old bytes.
 
 ## Library Contribution & Lifecycle Model
 <a id="library-model"></a>

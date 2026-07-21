@@ -8,7 +8,20 @@
     "remove": "Remove from favorites"
   },
   "media": {
-    "placeholderAlt": "Recipe without a photo"
+    "placeholderAlt": "Recipe without a photo",
+    "photoAlt": "Photo of {{name}}",
+    "openPhoto": "View the full-size photo",
+    "lightboxTitle": "Recipe photo",
+    "filePicker": "Photo file",
+    "addPhoto": "Add photo",
+    "addShort": "Add",
+    "replacePhoto": "Replace the photo",
+    "replaceShort": "Replace",
+    "removePhoto": "Remove the photo",
+    "removeShort": "Remove",
+    "uploading": "Uploading the photo…",
+    "removing": "Removing the photo…",
+    "unsupportedFormat": "Unsupported format. Try a JPG or PNG."
   },
   "list": {
     "ingredients_one": "{{count}} ingredient",

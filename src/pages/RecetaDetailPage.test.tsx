@@ -1,14 +1,28 @@
 // @vitest-environment jsdom
 import i18n from '@/i18n';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // The page pulls `useRecipe` from a supabase-importing module: mock the client
 // (CI has no env) and the hook itself, so the render is pure.
-vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
+// `storage` is here for R-36b's `publicPhotoUrl`, which reads the bucket's
+// public base off the client to build the hero/lightbox src.
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    storage: {
+      from: () => ({
+        getPublicUrl: (path: string) => ({
+          data: { publicUrl: `https://cdn.test/recipe-photos/${path}` },
+        }),
+      }),
+    },
+  },
+}));
 
 const useRecipeMock = vi.fn();
 vi.mock('@/features/recipes/hooks', () => ({ useRecipe: () => useRecipeMock() }));
@@ -463,5 +477,87 @@ describe('RecetaDetailPage', () => {
       screen.getAllByText(i18n.t('recetas:detail.notFoundTitle')).length,
     ).toBeGreaterThan(0);
     expect(screen.queryByText(i18n.t('common:errors.loadFailedTitle'))).not.toBeInTheDocument();
+  });
+});
+
+// R-36b: the cover photo on the read view. The hero is the only slot that
+// enlarges — and only when there is something to enlarge.
+describe('RecetaDetailPage — the cover photo', () => {
+  function loaded(over: Partial<RecipeWithIngredients> = {}) {
+    useRecipeMock.mockReturnValue({
+      data: recipe(over),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+  }
+
+  it('leaves the placeholder inert when the recipe has no photo', () => {
+    loaded({ photo_url: null } as Partial<RecipeWithIngredients>);
+    renderPage();
+
+    expect(screen.getByRole('img', { name: 'Receta sin foto' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: i18n.t('recetas:media.openPhoto') }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('opens the full-size photo in a lightbox when the hero is tapped', async () => {
+    const user = userEvent.setup();
+    loaded({ photo_url: 'r-1/full.webp', updated_at: '2026-07-21T10:00:00Z' } as Partial<RecipeWithIngredients>);
+    renderPage();
+
+    // Closed until asked for.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: i18n.t('recetas:media.openPhoto') }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('img', { name: 'Foto de Pollo con arroz' })).toHaveAttribute(
+      'src',
+      expect.stringContaining('r-1/full.webp'),
+    );
+  });
+
+  // A dangling photo_url (object gone, column never updated). The hero falls
+  // back to the placeholder inside RecipePhoto — the tap target and the
+  // lightbox have to go with it, or the page offers to enlarge a broken image.
+  it('drops the tap target when the photo fails to load, so nothing offers to enlarge it', async () => {
+    loaded({
+      photo_url: 'r-1/full.webp',
+      updated_at: '2026-07-21T10:00:00Z',
+    } as Partial<RecipeWithIngredients>);
+    renderPage();
+
+    const openLabel = i18n.t('recetas:media.openPhoto');
+    expect(screen.getByRole('button', { name: openLabel })).toBeInTheDocument();
+
+    fireEvent.error(screen.getByRole('img', { name: 'Foto de Pollo con arroz' }));
+
+    expect(await screen.findByRole('img', { name: 'Receta sin foto' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: openLabel })).not.toBeInTheDocument();
+  });
+
+  it('closes the lightbox if the photo turns out to be broken while it is open', async () => {
+    const user = userEvent.setup();
+    loaded({
+      photo_url: 'r-1/full.webp',
+      updated_at: '2026-07-21T10:00:00Z',
+    } as Partial<RecipeWithIngredients>);
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: i18n.t('recetas:media.openPhoto') }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+
+    // The hero's <img> is the one outside the dialog. Queried by alt text, not
+    // by role: an open Radix dialog marks the rest of the page `aria-hidden`,
+    // so the hero is no longer in the accessibility tree.
+    const heroImg = screen
+      .getAllByAltText('Foto de Pollo con arroz')
+      .find((img) => img.closest('[role="dialog"]') === null);
+    fireEvent.error(heroImg!);
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });

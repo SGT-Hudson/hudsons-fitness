@@ -94,6 +94,7 @@ function recipe(over: Partial<RecipeListItem> & Pick<RecipeListItem, 'id' | 'nam
     created_by_user_id: 'u1',
     labels: NO_LABELS,
     perServing: { kcal: 420, proteinG: 30, carbsG: 40, fatG: 12, fiberG: 6 },
+    photo_url: null,
     ...over,
   };
 }
