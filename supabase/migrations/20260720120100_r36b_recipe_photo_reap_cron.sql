@@ -1,16 +1,23 @@
 -- R-36b — weekly cron schedule for the `recipe-photo-reap` debris backstop.
 --
--- This migration applies normally (unlike the fully-deferred R-18 pattern):
--- registering the schedule with pg_cron is harmless on its own. What is
--- INERT until a separate step is the actual job — `cron.schedule` here only
--- points at the edge function by name, and `recipe-photo-reap` is not yet
--- deployed. Deploying it (`supabase functions deploy recipe-photo-reap
--- --use-api --import-map supabase/functions/deno.json`) is a separate,
--- user-gated ops step (Task 7). Until that happens, every weekly firing of
--- this job gets a 404 from `private.invoke_edge_function`'s POST and shows
--- up as a failed run in `cron.job_run_details` — harmless, self-contained,
--- and the same "not yet deployed ⇒ visible 404, not a silent no-op" shape
--- the `cron-healthcheck` staging note (20260518010000) calls out.
+-- STAGED — DO NOT APPLY TO THE LIVE PROJECT BEFORE THE FUNCTION IS DEPLOYED.
+-- (Local/CI stacks replay the whole migration history and register the job as
+-- a matter of course; nothing there ever fires it at a deployed function.)
+--
+-- Same ordering rule as the R-18 `cron-healthcheck` schedule (20260518010000),
+-- and for the same reason: apply this only AFTER
+--   supabase functions deploy recipe-photo-reap --project-ref upvraruehzurbetzrxov \
+--     --use-api --import-map supabase/functions/deno.json
+--
+-- Why the ordering matters even though a firing looks harmless. It is tempting
+-- to assume an early firing self-reports — that a 404 from the not-yet-deployed
+-- function turns into a failed run in `cron.job_run_details`. It does not.
+-- `private.invoke_edge_function` posts through `net.http_post` (pg_net), which
+-- is ASYNCHRONOUS: it enqueues the request, returns a request id immediately,
+-- and the cron job commits successfully regardless of what the HTTP call later
+-- does. The 404 lands in `net._http_response` and nowhere else, so an early
+-- firing is a SILENT no-op, not a visible failure — the opposite of what makes
+-- an out-of-order apply safe. Deploy first and there is nothing to notice.
 --
 -- Reuses the same `private.invoke_edge_function` + Vault
 -- `cron_service_role_key` path the other four jobs use (Sprint 9 /
@@ -26,3 +33,6 @@ select cron.schedule(
   '0 5 * * 0',
   $cron$ select private.invoke_edge_function('recipe-photo-reap'); $cron$
 );
+
+-- Rollback (manual, if ever needed):
+--   select cron.unschedule('recipe-photo-reap');

@@ -2,33 +2,48 @@
 //
 // Cron: 0 5 * * 0 UTC (Sun ≈ 06:00 CET / 07:00 CEST) — weekly, off-peak,
 // before the Monday `weekly-rollover` run so the two never overlap.
-// STAGED: this schedule is inert until the function itself is deployed
-// (a separate, user-gated ops step — see supabase/migrations/
-// 20260720120100_r36b_recipe_photo_reap_cron.sql).
+// STAGED: deploy this function BEFORE applying the cron migration
+// (supabase/migrations/20260720120100_r36b_recipe_photo_reap_cron.sql) — an
+// early firing is a silent no-op, not a visible failure, because pg_net's POST
+// is asynchronous. Both are user-gated ops steps; see that migration's header.
 //
-// Backstop for the `recipe-photos` bucket (photoStorage.ts, task 3). Stable
-// keys `<recipe_id>/full.webp` + `<recipe_id>/thumb.webp` with `upsert: true`
-// mean a normal photo replace overwrites in place — nothing is ever orphaned
-// by the happy path, so a healthy run finds ZERO prefixes to reap. What this
-// prunes is debris from the unhappy paths: `setRecipePhoto` uploading
-// successfully but the recipe never being saved (an abandoned pre-save
-// upload flow, should one ever exist upstream of this function — today's
-// editor only shows the photo field for an already-saved recipe, so this is
-// currently a defensive no-op path, not an active one), or an upload
-// succeeding while a *sibling* write in the same client call fails partway
-// (partial-failure debris).
+// WHAT THIS DOES, EXACTLY: it deletes the object pair under any
+// `<recipe_id>/` prefix that has NO matching row in `public.recipes`. That is
+// the whole rule. Read literally, and stated up front because it is narrower
+// than "reaps orphaned recipe photos" suggests.
 //
-// ASSUMPTION THIS DESIGN RELIES ON: recipes are NEVER hard-deleted. Hiding a
-// recipe only removes the caller's `user_recipe_refs` row; account deletion
-// reassigns owned recipes to the anon sentinel user (`reconcile_account_delete`)
-// and keeps the `recipes` row intact. So "no matching `recipes` row for this
-// prefix" can ONLY mean debris, never "the recipe was deleted" — the reaper
-// does not need to special-case a live recipe's photo. If a future feature
-// introduces a real hard-delete of `recipes`, THIS FUNCTION MUST BE REVISITED:
-// as written it would then also reap the photos of legitimately deleted
-// recipes, which happens to be correct cleanup in that case too, but the
-// "never hard-deleted" comment trail (here and in the bucket migration)
-// would go stale and should be updated together.
+// WHAT IT THEREFORE DOES NOT COVER. Every half-failure `photoStorage.ts` can
+// produce leaves the `recipes` row in place — an upload that landed while the
+// `photo_url` update failed, a clear whose removes landed while the null
+// failed. None of those are visible to this rule, and they are deliberately
+// not made visible to it: "the row exists but its `photo_url` doesn't point
+// here" is indistinguishable, from the outside, from an upload that is
+// committed in Storage and about to commit in Postgres a few hundred
+// milliseconds later. A service-role job running unattended once a week
+// cannot tell those apart, and getting it wrong deletes a live user photo.
+// Those half-failures are handled where they happen instead: the keys are
+// stable, so retrying a set overwrites the debris and retrying a clear removes
+// it, and a dangling `photo_url` degrades to the placeholder in the UI. The
+// worst case is one ≤2 MB object pair per abandoned attempt, on a bucket with
+// one photo per recipe.
+//
+// SO WHAT IS IT FOR? It is the tripwire for the assumption everything above
+// rests on: recipes are NEVER hard-deleted. Hiding a recipe only removes the
+// caller's `user_recipe_refs` row; account deletion reassigns owned recipes to
+// the anon sentinel user (`reconcile_account_delete`) and keeps the `recipes`
+// row intact. So today "no matching `recipes` row" can only mean a prefix
+// whose recipe never existed or vanished by some path we do not have — and a
+// healthy week reaps ZERO prefixes, which is the expected, correct result. If
+// a future feature introduces a real hard-delete of `recipes`, this function
+// starts doing real work automatically (reaping the deleted recipes' photos,
+// which is the right cleanup) — and the reaped counts in its logs are the
+// signal that the assumption has changed and this comment trail, the bucket
+// migration's, and `operations.md` all need revisiting together.
+//
+// It only removes the two keys it knows about (`full.webp` + `thumb.webp`).
+// Any other object under a reaped prefix survives and is unreachable by any
+// code path; nothing writes such an object today, and a blind "delete
+// everything under this prefix" is not a power this job should have.
 //
 // Deletion goes through the storage admin API (`storage.remove`), never raw
 // `delete from storage.objects` SQL — the latter can leave the backing
@@ -76,10 +91,15 @@ async function listRecipeIdPrefixes(supabase: SupabaseClient): Promise<string[]>
       sortBy: { column: 'name', order: 'asc' },
     });
     if (error) throw error;
-    for (const entry of data ?? []) {
+    // Unreachable per the supabase-js contract (no error ⇒ data), but this job
+    // deletes user data with the service role and nobody watching: "the bucket
+    // looks empty" is exactly the shape of a delete-everything bug, so it is an
+    // explicit failure rather than a silently short listing.
+    if (!data) throw new Error('storage list returned no data and no error');
+    for (const entry of data) {
       if (UUID_RE.test(entry.name)) ids.add(entry.name);
     }
-    if (!data || data.length < PAGE_SIZE) break;
+    if (data.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
   }
   return [...ids];
@@ -94,7 +114,10 @@ async function existingRecipeIds(
   for (const batch of chunk(candidateIds, CHUNK_SIZE)) {
     const { data, error } = await supabase.from('recipes').select('id').in('id', batch);
     if (error) throw error;
-    for (const row of data ?? []) found.add((row as { id: string }).id);
+    // Same reasoning as the listing above, and worse here: a null read as "no
+    // rows" would mark every prefix in the batch as debris and delete it.
+    if (!data) throw new Error('recipes lookup returned no data and no error');
+    for (const row of data) found.add((row as { id: string }).id);
   }
   return found;
 }
