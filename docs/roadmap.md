@@ -1231,11 +1231,13 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   mutation, invariant 3 doesn't require an RPC). One `RecipePhoto` component
   covers every media slot (list card, mobile row, detail hero, editor tile);
   tapping the detail hero opens a lightbox; add/replace/remove on the editor
-  tile is gated on `canEditRecipe`. A weekly `recipe-photo-reap` cron
-  backstops partial-failure debris (`operations.md` → Cron) — neither the
-  schedule migration nor the edge function itself has been applied/deployed
-  to the live project yet (deploying the function is a separate, user-gated
-  ops step).
+  tile is gated on `canEditRecipe`. A weekly `recipe-photo-reap` cron reaps
+  bucket prefixes whose `recipes` row is gone (`operations.md` → Cron) — an
+  invariant tripwire on "recipes are never hard-deleted", not a sweeper for
+  half-failures where the recipe row survives; those self-correct on retry.
+  Neither the schedule migration nor the edge function itself has been
+  applied/deployed to the live project yet (deploy the function first — the
+  schedule firing early is a silent no-op, not a visible failure).
 
 ## R-37 — Interactive TDEE calculator
 - **decision:** (D-id at spec time)

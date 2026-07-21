@@ -404,13 +404,19 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   `<recipe_id>/full.webp` / `<recipe_id>/thumb.webp` (stable paths, so a
   replace overwrites in place rather than orphaning). RLS on
   `storage.objects` follows the same real-creator-only shape as
-  `recipe_ingredients`/`recipe_steps` for INSERT/UPDATE/DELETE, with
-  deliberately no SELECT policy — the bucket is public, so reads go through
-  the CDN via `<img src>`, never through PostgREST.
+  `recipe_ingredients`/`recipe_steps` for INSERT/UPDATE/DELETE, plus a
+  permissive SELECT policy scoped to the bucket: Postgres applies SELECT
+  policies to `update`/`delete`/`on conflict do update` as well, so without one
+  a replace can't see the row it overwrites and a remove matches nothing while
+  reporting success. The grant exposes only metadata for objects the CDN
+  already serves to anyone with the URL. The path→`uuid` cast is `case`-guarded
+  so a malformed path denies instead of raising `22P02`.
 - **`recipes.photo_url` (dead since it was added) now holds the object
   path**, not a URL. `publicPhotoUrl()` (`src/features/recipes/photoStorage.ts`)
-  derives the CDN URL client-side and appends `?v=<updated_at>` so a replace
-  busts the cache.
+  derives the CDN URL client-side from the recipe id and appends a URL-encoded
+  `?v=<updated_at>` so a replace busts the cache — `setRecipePhoto` bumps
+  `updated_at` in the same update, since the object key is stable and nothing
+  else in the schema moves that column.
 - **Client-side resize to WebP, zero dependencies**
   (`src/features/recipes/photoResize.ts`): a plain `<canvas>` +
   `toBlob('image/webp', q)` pass produces a 1600 px-long-edge "full" (detail
@@ -430,14 +436,22 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   Add/replace/remove controls on the editor tile are gated on
   `canEditRecipe` — a non-creator sees the photo, never the controls. New
   i18n keys under `recetas.media` (ES + EN).
-- **Weekly `recipe-photo-reap` cron backstops partial-failure debris** — a
-  bucket prefix with no matching `recipes` row (an abandoned upload, or an
-  upload that succeeded while a sibling write failed) — via the storage
-  admin API, never raw SQL delete. Neither the cron schedule migration
-  (`20260720120100_r36b_recipe_photo_reap_cron.sql`) nor the edge function
-  itself (`supabase/functions/recipe-photo-reap/index.ts`) has been
-  applied/deployed to the live project yet — deploying the function is a
-  separate, user-gated ops step.
+- **Weekly `recipe-photo-reap` cron is an invariant tripwire, not a
+  garbage collector.** It reaps exactly one thing: a bucket prefix with no
+  matching `recipes` row, via the storage admin API, never a raw SQL delete.
+  Because recipes are never hard-deleted, that set is empty today and a healthy
+  run reaps zero — a non-zero count is the signal that the never-hard-deleted
+  assumption has changed. It deliberately does NOT chase half-failures where
+  the recipe row survives (objects uploaded but `photo_url` not written, or
+  removed but not nulled): those are indistinguishable from an upload that is
+  seconds away from committing, and a service-role job guessing wrong deletes a
+  live photo. Stable keys make a retry overwrite or remove the debris instead,
+  and a dangling `photo_url` degrades to the placeholder. Neither the cron
+  schedule migration (`20260720120100_r36b_recipe_photo_reap_cron.sql`) nor the
+  edge function itself (`supabase/functions/recipe-photo-reap/index.ts`) has
+  been applied/deployed to the live project yet — deploy the function first,
+  since an early firing is a silent no-op (pg_net's POST is asynchronous, so
+  the cron run succeeds regardless of the HTTP status).
 - **Per-step photos — the original R-36b scope — dropped for good.** This
   ships one cover photo per recipe instead; see
   `docs/superpowers/specs/2026-07-20-r36b-recipe-photo-design.md` for the
@@ -514,5 +528,5 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
 | 212 | Errors — one classifier, honest empty states | `src/lib/errors.ts` (six kinds + message/title keys), `toastError` stops leaking `err.message`, shared `QueryErrorState`, translated `ErrorBoundary`, and `networkMode: 'always'` so offline queries settle instead of pausing into not-found |
 | 213 | Supabase — local stack ports | `supabase/config.toml` pins the local stack to 553xx (API 55321, DB 55322, Studio 55323) to coexist with another project; config-only, local-only |
 | 214 | RLS — UPDATE WITH CHECK uniformity | `20260719120000_r22_update_with_check.sql` — `alter policy … with check (X)` on all 14 `USING`-only UPDATE policies; closes no hole (Postgres already applied `USING` to the new row), retires two silently-passing `todo` blocks for one catalogue assertion that `with_check` is never distinct from `qual` |
-| TBD | R-36b — recipe cover photo | First Supabase Storage bucket (`recipe-photos`, public, 2 MB, `image/webp`-only) with real-creator write RLS; `recipes.photo_url` now the object path; client-side resize-to-WebP (`photoResize.ts`); dedicated upload/clear action; `RecipePhoto` in every media slot + detail lightbox; weekly `recipe-photo-reap` cron (schedule staged, function not yet deployed). Per-step photos dropped in favour of one cover photo |
+| TBD | R-36b — recipe cover photo | First Supabase Storage bucket (`recipe-photos`, public, 2 MB, `image/webp`-only) with real-creator write RLS; `recipes.photo_url` now the object path; client-side resize-to-WebP (`photoResize.ts`); dedicated upload/clear action; `RecipePhoto` in every media slot + detail lightbox; weekly `recipe-photo-reap` cron as a never-hard-deleted tripwire (schedule staged, function not yet deployed). Per-step photos dropped in favour of one cover photo |
 
