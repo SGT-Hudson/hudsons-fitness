@@ -520,6 +520,26 @@ describe('RecetaDetailPage — the cover photo', () => {
     );
   });
 
+  // The lightbox replaces the shared dialog's corner glyph with its own disc,
+  // so it is worth asserting there is exactly ONE close control and that it is
+  // the labelled one — a `hideClose` that stopped working would leave two
+  // buttons stacked in the same corner, which reads as a rendering glitch.
+  it('offers a single, labelled close control that dismisses the lightbox', async () => {
+    const user = userEvent.setup();
+    loaded({ photo_url: 'r-1/full.webp', updated_at: '2026-07-21T10:00:00Z' } as Partial<RecipeWithIngredients>);
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: i18n.t('recetas:media.openPhoto') }));
+    const dialog = await screen.findByRole('dialog');
+
+    const closeLabel = i18n.t('recetas:media.closePhoto');
+    expect(within(dialog).getAllByRole('button')).toHaveLength(1);
+
+    await user.click(within(dialog).getByRole('button', { name: closeLabel }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
   // A dangling photo_url (object gone, column never updated). The hero falls
   // back to the placeholder inside RecipePhoto — the tap target and the
   // lightbox have to go with it, or the page offers to enlarge a broken image.

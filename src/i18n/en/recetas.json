@@ -12,6 +12,7 @@
     "photoAlt": "Photo of {{name}}",
     "openPhoto": "View the full-size photo",
     "lightboxTitle": "Recipe photo",
+    "closePhoto": "Close the photo",
     "filePicker": "Photo file",
     "addPhoto": "Add photo",
     "addShort": "Add",
