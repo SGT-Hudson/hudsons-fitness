@@ -140,11 +140,27 @@ is divided across `servings`, but a `per_serving = true` line is added fresh
 *per serving served* (the batch-cooked-curry trick — the stew's macros divide
 by 5 servings while the 70 g of rice is counted per plate).
 
+Each recipe carries one optional **cover photo** (R-36b), the app's first use
+of Supabase Storage. Picking a file resizes and re-encodes it to WebP entirely
+client-side, off a plain `<canvas>` (no dependencies): a 1600 px-long-edge
+"full" for the detail hero and a 400 px "thumb" for cards/rows/the editor
+tile, both uploaded as-is so Supabase's paid image-transform tier is never
+touched. One `RecipePhoto` component renders every media slot — the list
+card, mobile row, detail hero, and editor tile — falling back to the existing
+deterministic colour placeholder when there's no photo, or if the image fails
+to load. Tapping the detail hero opens the full photo in a lightbox. Only the
+recipe's real creator gets add/replace/remove controls on the editor tile
+(`canEditRecipe`, the same gate as steps); picking a file the browser can't
+decode (a raw HEIC picked via the Files app rather than Photos) reports an
+inline "unsupported format" message instead of failing silently. Per-step
+photos were the original R-36b scope and were dropped for good in favour of
+this single cover photo per recipe.
+
 The Recetas list switches presentation by breakpoint, not by user choice:
 under `md` it renders dense `RecipeRow` rows, at `md` and above a responsive
-grid of `RecipeCard`s (photo or initials placeholder, name, kcal/serving,
-ingredient-count badge) — both lists are always in the DOM, one hidden by a
-responsive class. There is no view toggle and nothing persisted.
+grid of `RecipeCard`s (cover photo or the colour placeholder, name,
+kcal/serving, ingredient-count badge) — both lists are always in the DOM, one
+hidden by a responsive class. There is no view toggle and nothing persisted.
 Recipes are part of the ★ Library Contribution & Lifecycle Model
 (`data-model.md#library-model`): the pool is shared, "my library" is the set
 of my `user_recipe_refs` rows, and "delete" = `hide_owned_recipe` (drops my

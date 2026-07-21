@@ -107,9 +107,19 @@ one-time un-stale event, not a recurring step.
 ## Supabase project
 
 Supabase project `upvraruehzurbetzrxov` (EU Frankfurt region, for GDPR).
-Provides Auth, the PostgREST data API, and Realtime; the app talks to it
-directly with no application server of its own. The full schema (tables, RLS,
-RPCs, views, extensions) is documented in `data-model.md`.
+Provides Auth, the PostgREST data API, Storage, and Realtime; the app talks to
+it directly with no application server of its own. The full schema (tables,
+RLS, RPCs, views, extensions, Storage) is documented in `data-model.md`.
+
+### Storage (`recipe-photos` bucket, R-36b)
+
+The app's first use of Supabase Storage. Bucket `recipe-photos` is **public**,
+capped at 2 MB per object, `image/webp`-only — the client resizes and
+re-encodes every photo to WebP before upload
+(`src/features/recipes/photoResize.ts`), so Supabase's paid image-transform
+add-on ($5/1 000 origin images/mo) is never touched. Full RLS shape and object
+layout are in `data-model.md` → Storage; the weekly debris-reap cron is under
+[Cron](#cron) below.
 
 ### Regenerating database types (after a schema migration)
 
@@ -144,10 +154,11 @@ supabase/
     ├── weekly-rollover/index.ts            # 0 2 * * 1  UTC (≈03:00 CET Mon)
     ├── recalculate-tdee/index.ts           # 0 3 * * *  UTC (≈04:00 CET)
     ├── cron-healthcheck/index.ts           # 0 6 * * *  UTC (R-18, live)
-    └── delete-account/index.ts             # GDPR account erasure (user-invoked)
+    ├── delete-account/index.ts             # GDPR account erasure (user-invoked)
+    └── recipe-photo-reap/index.ts          # 0 5 * * 0  UTC (R-36b, NOT YET DEPLOYED)
 ```
 
-The five functions:
+The six functions:
 
 - **`daily-nutrition-snapshot`** — for each profile, runs the same
   plan-materialization the Diario page does (so days never opened still get
@@ -162,6 +173,10 @@ The five functions:
 - **`cron-healthcheck`** — detects a silent under-run of the data crons and
   surfaces it (R-18 / D-F5; details under [Cron](#cron)).
 - **`delete-account`** — user-invoked GDPR account erasure.
+- **`recipe-photo-reap`** — weekly debris backstop for the `recipe-photos`
+  bucket (R-36b; details under [Cron](#cron)). **Not yet deployed** — the
+  cron schedule migration is written and applies cleanly on its own, but
+  deploying the function itself is a separate, user-gated step.
 
 **Deploy** (per function):
 
@@ -320,7 +335,7 @@ redeploy/rollback:
 
 ## Cron
 
-Four jobs run via `pg_cron`, each invoking an edge function through
+Five jobs are scheduled via `pg_cron`, each invoking an edge function through
 `private.invoke_edge_function` (which reads the service-role key from Vault).
 Schedules are in UTC (D-F4, D-F5):
 
@@ -329,6 +344,7 @@ Schedules are in UTC (D-F4, D-F5):
 | `0 1 * * *` | daily nutrition snapshot | `daily-nutrition-snapshot` |
 | `0 2 * * 1` | weekly rollover (Monday) | `weekly-rollover` |
 | `0 3 * * *` | recalculate TDEE | `recalculate-tdee` |
+| `0 5 * * 0` | recipe-photo debris reap (Sunday; R-36b — schedule staged, function NOT yet deployed) | `recipe-photo-reap` |
 | `0 6 * * *` | cron liveness healthcheck (R-18, live since 2026-05-18) | `cron-healthcheck` |
 
 **Why the DST drift is harmless.** The schedules are fixed in UTC, so the
@@ -448,6 +464,36 @@ snapshot is also the free-tier keep-alive, so a silent death is double-impact.
   upvraruehzurbetzrxov`), THEN apply the migration — otherwise the first
   scheduled run 404s and self-reports as an alert. Rollback:
   `select cron.unschedule('cron-healthcheck');`.
+
+**Recipe-photo debris reap (R-36b).** A fifth job, `recipe-photo-reap`,
+backstops the `recipe-photos` Storage bucket (see
+[Storage](#storage-recipe-photos-bucket-r-36b) above; full bucket/RLS shape in
+`data-model.md`). Weekly it lists every `<recipe_id>` prefix currently in the
+bucket, checks which ones still have a matching `recipes` row, and deletes the
+`full.webp`/`thumb.webp` pair for any that don't via the storage admin API
+(`storage.remove`, never raw `delete from storage.objects` — the latter can
+leave the backing object un-reclaimed). Because `recipes` rows are never
+hard-deleted (see the Library Contribution & Lifecycle Model in
+`data-model.md`), a missing row can only mean debris — an abandoned upload or
+a partial failure between the Storage write and the `recipes.photo_url`
+update — never a legitimately deleted recipe's photo. A healthy week finds
+zero prefixes to reap.
+
+- **STAGED — not yet applied to the live project.** Neither
+  `supabase/migrations/20260720120100_r36b_recipe_photo_reap_cron.sql` (the
+  `cron.schedule` entry, `0 5 * * 0` UTC) nor the edge function it targets,
+  `supabase/functions/recipe-photo-reap/index.ts`, has been applied/deployed
+  live yet. Once it is, the migration is harmless to apply on its own — it
+  only names the function by string, unlike the fully-deferred R-18-era
+  pattern. Deploying the function itself is a separate, user-gated ops step:
+  ```bash
+  supabase functions deploy recipe-photo-reap --project-ref upvraruehzurbetzrxov \
+    --use-api --import-map supabase/functions/deno.json
+  ```
+  Until that happens, every weekly firing 404s against
+  `private.invoke_edge_function`'s POST and shows up as a failed run in
+  `cron.job_run_details` — visible, not a silent no-op (same shape as the
+  `cron-healthcheck` staging note above).
 
 ## Data seeding
 
@@ -573,6 +619,8 @@ complete history rather than the lone Sprint-9 file.
 20260718100000_r36_recipe_steps.sql                 # applied live 2026-07-20 (R-36): recipe_steps child table, RLS mirrors recipe_ingredients (sentinel-owner writes blocked)
 20260718100100_r36_save_recipe_steps.sql            # applied live 2026-07-20 (R-36): drops recipes.instructions; save_recipe's p_instructions text arg becomes p_steps jsonb — had to land before this frontend deployed, see ordering note below
 20260719120000_r22_update_with_check.sql            # applied live 2026-07-20 (R-22 follow-up, #214): ALTERs all fourteen public UPDATE policies to add an explicit WITH CHECK repeating each policy's USING verbatim; closes no hole (Postgres already applied USING to the NEW row), states the intent
+20260720120000_r36b_recipe_photos_bucket.sql        # STAGED (R-36b): recipe-photos Storage bucket (public, 2 MB, image/webp-only) + real-creator INSERT/UPDATE/DELETE RLS on storage.objects — the app's first Storage bucket
+20260720120100_r36b_recipe_photo_reap_cron.sql      # STAGED (R-36b): weekly recipe-photo-reap cron schedule; harmless to apply alone, but the edge function it targets is not yet deployed (see Cron)
 ```
 
 `supabase/migrations/` in the repo is the canonical source for the full,
