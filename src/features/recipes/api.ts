@@ -41,6 +41,10 @@ export interface RecipeListItem {
   // diario ración-projection step can read a recipe's contribution off this
   // already-fetched list with zero extra network cost.
   perServing: Macros;
+  // R-36b: the object path (not a URL — see photoStorage.ts), carried onto
+  // the list item for the same reason as `perServing` above — the card grid
+  // renders `publicPhotoUrl(item)` off data it already has, no extra round trip.
+  photo_url: string | null;
 }
 
 // Ingredient macro shape pulled per row for U-3 label computation.
@@ -60,7 +64,7 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
     .select(
       `recipe:recipes (
          id, name, servings, description, updated_at, meal_types, prep_time_minutes,
-         created_by_user_id,
+         created_by_user_id, photo_url,
          recipe_ingredients (
            quantity, per_serving,
            ingredient:ingredients (
@@ -90,6 +94,7 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
           | 'meal_types'
           | 'prep_time_minutes'
           | 'created_by_user_id'
+          | 'photo_url'
         > & {
           recipe_ingredients: MacroRow[] | null;
         })
@@ -123,6 +128,7 @@ export async function listRecipes(userId: string): Promise<RecipeListItem[]> {
       created_by_user_id: r.recipe.created_by_user_id,
       labels,
       perServing,
+      photo_url: r.recipe.photo_url,
     });
   }
   out.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
