@@ -88,6 +88,20 @@ describe('RecipePhotoField — the three states', () => {
     expect(screen.getByRole('button', { name: 'Cambiar la foto' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Quitar la foto' })).toBeDisabled();
   });
+
+  it('removing: the busy status announces removal, not upload', () => {
+    clearPhoto.isPending = true;
+    render(<RecipePhotoField recipe={recipe({ photo_url: 'r-1/full.webp' })} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Quitando la foto…');
+  });
+
+  it('requests the 400px thumb for the 70px tile, not the 1600px full image', () => {
+    render(<RecipePhotoField recipe={recipe({ photo_url: 'r-1/full.webp' })} />);
+    expect(screen.getByRole('img', { name: /Foto de/ })).toHaveAttribute(
+      'src',
+      expect.stringContaining('r-1/thumb.webp'),
+    );
+  });
 });
 
 describe('RecipePhotoField — the ownership gate (R-01)', () => {
@@ -151,5 +165,20 @@ describe('RecipePhotoField — picking a file', () => {
     await user.click(screen.getByRole('button', { name: 'Quitar la foto' }));
 
     expect(clearPhoto.mutate).toHaveBeenCalledWith('r-1');
+  });
+
+  it('clears a leftover unsupported-format message when the photo is removed', async () => {
+    setPhoto.mutateAsync = vi
+      .fn()
+      .mockRejectedValue(new PhotoDecodeError('could not decode "foto.heic" as an image'));
+    const user = userEvent.setup();
+    render(<RecipePhotoField recipe={recipe({ photo_url: 'r-1/full.webp' })} />);
+
+    await user.upload(screen.getByLabelText('Archivo de foto'), jpeg());
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Quitar la foto' }));
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

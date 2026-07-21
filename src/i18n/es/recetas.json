@@ -20,6 +20,7 @@
     "removePhoto": "Quitar la foto",
     "removeShort": "Quitar",
     "uploading": "Subiendo la foto…",
+    "removing": "Quitando la foto…",
     "unsupportedFormat": "Formato no admitido. Prueba con JPG o PNG."
   },
   "list": {

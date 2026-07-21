@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import i18n from '@/i18n';
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 // `publicPhotoUrl` reads the bucket's public base off the client, and CI has
 // no Supabase env — so the client is stubbed with just the storage surface it
@@ -57,6 +57,24 @@ describe('RecipePhoto', () => {
     const { unmount } = render(<RecipePhoto recipe={source()} variant={variant} />);
     expect(screen.getByRole('img')).toHaveAttribute('src', expect.stringContaining(key));
     unmount();
+  });
+
+  it('an explicit rendition overrides the variant-implied choice — the editor tile keeps the hero placeholder look but fetches the cheap thumb', () => {
+    render(<RecipePhoto recipe={source()} variant="hero" rendition="thumb" />);
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      expect.stringContaining('r-1/thumb.webp'),
+    );
+  });
+
+  it('falls back to the placeholder if the photo itself fails to load (a dangling photo_url)', () => {
+    render(<RecipePhoto recipe={source()} variant="card" />);
+    const img = screen.getByRole('img', { name: 'Foto de Pollo con arroz' });
+
+    fireEvent.error(img);
+
+    expect(screen.getByRole('img', { name: 'Receta sin foto' })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /Foto de/ })).not.toBeInTheDocument();
   });
 
   it('cache-busts on updated_at, so a replaced photo is not served from the CDN cache', () => {

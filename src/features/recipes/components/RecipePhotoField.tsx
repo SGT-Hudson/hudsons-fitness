@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { cn } from '@/lib/utils';
 import type { Recipe } from '../api';
 import { useClearRecipePhoto, useSetRecipePhoto } from '../hooks';
 import { canEditRecipe } from '../ownership';
@@ -12,7 +11,6 @@ import { RecipePhoto, type RecipePhotoSource } from './RecipePhoto';
 
 interface Props {
   recipe: RecipePhotoSource & Pick<Recipe, 'created_by_user_id'>;
-  className?: string;
 }
 
 /**
@@ -33,7 +31,7 @@ interface Props {
  * the one failure reported inline here — it is the user's to fix, and the
  * generic toast would not tell them how.
  */
-export function RecipePhotoField({ recipe, className }: Props) {
+export function RecipePhotoField({ recipe }: Props) {
   const { t } = useTranslation('recetas');
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,16 +61,21 @@ export function RecipePhotoField({ recipe, className }: Props) {
   }
 
   return (
-    <div className={cn('flex w-[70px] shrink-0 flex-col gap-1.5 md:w-24', className)}>
+    <div className="flex w-[70px] shrink-0 flex-col gap-1.5 md:w-24">
       <div className="relative size-[70px] overflow-hidden rounded-[12px] md:size-24">
-        <RecipePhoto recipe={recipe} variant="hero" />
+        {/* The tile draws at 70px (96px at `md`) — the hero *placeholder* look
+            (40px icon) is right here, but downloading the 1600px `full` image
+            into that small a box is not, hence the explicit thumb rendition. */}
+        <RecipePhoto recipe={recipe} variant="hero" rendition="thumb" />
         {busy && (
           <div
             role="status"
             className="absolute inset-0 grid place-items-center bg-background/70 text-text-dim"
           >
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            <span className="sr-only">{t('media.uploading')}</span>
+            <span className="sr-only">
+              {clearPhoto.isPending ? t('media.removing') : t('media.uploading')}
+            </span>
           </div>
         )}
       </div>
@@ -103,7 +106,13 @@ export function RecipePhotoField({ recipe, className }: Props) {
               variant="ghost"
               aria-label={t('media.removePhoto')}
               disabled={busy}
-              onClick={() => clearPhoto.mutate(recipe.id)}
+              onClick={() => {
+                // A leftover "Formato no admitido" from a prior failed pick
+                // must not survive a successful remove of the (different)
+                // photo that replaced it.
+                setDecodeFailed(false);
+                clearPhoto.mutate(recipe.id);
+              }}
               className="h-7 w-full rounded-[9px] px-1.5 text-[10.5px]"
             >
               {t('media.removeShort')}
