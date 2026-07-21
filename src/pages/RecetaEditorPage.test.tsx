@@ -29,10 +29,15 @@ vi.mock('@/features/ingredients/hooks', () => ({
 const useRecipe = vi.fn();
 const saveMutateAsync = vi.fn();
 const hideMutateAsync = vi.fn();
+// R-36b: the meta card's media tile is now the photo field, which reaches for
+// the two cover-photo mutations. Idle stubs — the field has its own test.
+const idlePhotoMutation = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false };
 vi.mock('@/features/recipes/hooks', () => ({
   useRecipe: (id: string | null) => useRecipe(id),
   useSaveRecipe: () => ({ mutateAsync: saveMutateAsync, isPending: false }),
   useHideRecipe: () => ({ mutateAsync: hideMutateAsync, isPending: false }),
+  useSetRecipePhoto: () => idlePhotoMutation,
+  useClearRecipePhoto: () => idlePhotoMutation,
 }));
 
 // Ownership (task 3): the recipe below is created by 'u-1'. Signed in as its

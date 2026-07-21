@@ -22,8 +22,10 @@ import { computeRecipeMacros } from '@/features/recipes/macros';
 import { toRecipeMealTypes } from '@/features/recipes/mealTypes';
 import { useRecipeFavorites } from '@/features/recipes/useFavorites';
 import { RecipeMacrosCard } from '@/features/recipes/components/RecipeMacrosCard';
-import { RecipeMediaPlaceholder } from '@/features/recipes/components/RecipeMediaPlaceholder';
 import { RecipeNotesCard } from '@/features/recipes/components/RecipeNotesCard';
+import { RecipePhoto } from '@/features/recipes/components/RecipePhoto';
+import { RecipePhotoLightbox } from '@/features/recipes/components/RecipePhotoLightbox';
+import { publicPhotoUrl } from '@/features/recipes/photoStorage';
 import { useNum } from '@/hooks/useNum';
 import { cn } from '@/lib/utils';
 
@@ -55,6 +57,7 @@ export function RecetaDetailPage() {
   const { user } = useAuth();
   const { isFavorite, toggle: toggleFavorite } = useRecipeFavorites();
   const [addOpen, setAddOpen] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   // Same warm-up as the Recetas list: the add-to-day sheet reads today's meal
   // logs to pick the slot it opens on, and it reads them once, at open. Firing
@@ -207,6 +210,10 @@ export function RecetaDetailPage() {
   // and removing it from the library (a ref drop, deliberately ungated).
   const canEdit = canEditRecipe(recipe, user?.id);
 
+  // R-36b: null when the recipe has no cover photo — which is what decides
+  // whether the hero is tappable at all (see the media band below).
+  const photoUrl = publicPhotoUrl(recipe);
+
   // "Duplicar" is the editor's own mechanism (`navigateToRecipeDuplicate`),
   // reachable from here too — the only reason it used to require opening the
   // editor first was that this page didn't offer it, not that it needs
@@ -269,13 +276,26 @@ export function RecetaDetailPage() {
     >
       <div className="grid gap-3 md:grid-cols-[1fr_360px] md:items-start md:gap-4.5">
         <div className="space-y-3 md:space-y-3.5">
-          {/* Hero: the media placeholder (recipes have no photos) + the recipe's
+          {/* Hero: the cover photo (or the media placeholder) + the recipe's
               identity. On mobile the meal-type chip rides the media band, as on
               the list card; on web it is in the page header, so the media shrinks
-              to the artboard's 104px square beside the name. */}
+              to the artboard's 104px square beside the name. With a photo the
+              band becomes a button that opens the lightbox — without one there
+              is nothing to enlarge, so the placeholder stays inert. */}
           <Card className="overflow-hidden md:flex md:items-center md:gap-4 md:p-4">
             <div className="relative h-[120px] w-full shrink-0 overflow-hidden md:h-[104px] md:w-[104px] md:rounded-[14px]">
-              <RecipeMediaPlaceholder recipeId={recipe.id} variant="hero" />
+              {photoUrl ? (
+                <button
+                  type="button"
+                  aria-label={t('media.openPhoto')}
+                  onClick={() => setPhotoOpen(true)}
+                  className="block h-full w-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <RecipePhoto recipe={recipe} variant="hero" />
+                </button>
+              ) : (
+                <RecipePhoto recipe={recipe} variant="hero" />
+              )}
               {mealTypes.length > 0 && (
                 <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center gap-1 md:hidden">
                   {mealTypes.map((m) => (
@@ -421,6 +441,15 @@ export function RecetaDetailPage() {
 
       {addOpen && (
         <TodayAddToDaySheet open onOpenChange={setAddOpen} selection={addSelection} />
+      )}
+
+      {photoUrl && (
+        <RecipePhotoLightbox
+          open={photoOpen}
+          onOpenChange={setPhotoOpen}
+          src={photoUrl}
+          alt={t('media.photoAlt', { name: recipe.name })}
+        />
       )}
     </PageShell>
   );

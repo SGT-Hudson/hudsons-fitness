@@ -9,6 +9,7 @@ import {
   type SaveRecipePayload,
 } from './api';
 import { fetchRecipeNote, saveRecipeNote } from './notes';
+import { PhotoDecodeError } from './photoResize';
 import { clearRecipePhoto, setRecipePhoto } from './photoStorage';
 
 export function useRecipes() {
@@ -89,7 +90,13 @@ export function useSetRecipePhoto() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['recipes'] });
     },
-    onError: toastError,
+    // A file the browser cannot decode (a raw HEIC) is the one failure the
+    // user can act on, and the photo field reports it inline with copy that
+    // says how — a second, generic "something went wrong" toast on top of that
+    // would only be noise. Everything else still toasts.
+    onError: (err) => {
+      if (!(err instanceof PhotoDecodeError)) toastError(err);
+    },
   });
 }
 

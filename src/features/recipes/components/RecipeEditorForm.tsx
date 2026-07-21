@@ -12,10 +12,10 @@ import { parseDecimalInput } from '@/lib/number';
 import { AddIngredientSheet } from './AddIngredientSheet';
 import { IngredientAutocomplete } from './IngredientAutocomplete';
 import { RecipeMacrosCard } from './RecipeMacrosCard';
-import { RecipeMediaPlaceholder } from './RecipeMediaPlaceholder';
+import { RecipePhotoField } from './RecipePhotoField';
 import { RecipeStepsField } from './RecipeStepsField';
 import { ingredientDisplayName, type Ingredient } from '@/features/ingredients/api';
-import type { RecipeWithIngredients } from '../api';
+import type { Recipe, RecipeWithIngredients } from '../api';
 import { newRowId } from '../ids';
 import { computeRecipeMacros } from '../macros';
 import {
@@ -107,17 +107,19 @@ interface Props {
   error: string | null;
   onSubmit: (state: EditorState) => void;
   /**
-   * The recipe being edited — the media tile's hue is derived from its id, so
-   * the tile is the SAME colour here, on the read view and on the list card.
-   * Absent on create: there is no id yet, and the canvas draws an empty dashed
-   * tile there rather than a coloured one (photo upload is not built).
+   * The recipe being edited — the media tile draws its cover photo, or the
+   * placeholder whose hue is derived from the id, so the tile matches the read
+   * view and the list card. Absent on create: there is no id yet, so there is
+   * nothing to name a photo's object path after and nothing to derive a hue
+   * from — the canvas draws an empty dashed tile there instead. (Adding a
+   * photo to a brand-new recipe therefore means saving it first.)
    */
-  recipeId?: string;
+  recipe?: Pick<Recipe, 'id' | 'name' | 'photo_url' | 'updated_at' | 'created_by_user_id'>;
   /** Remove-from-library (mobile's danger button). Absent on create. */
   onRemove?: () => void;
 }
 
-export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove }: Props) {
+export function RecipeEditorForm({ initial, error, onSubmit, recipe, onRemove }: Props) {
   const { t, i18n } = useTranslation('recetas');
   const { t: tCommon } = useTranslation('common');
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
@@ -255,21 +257,21 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipeId, onRemove 
               identity — photo tile, a borderless title that reads as a heading
               rather than a form field, and the three meta values inline. */}
           <Card className="flex gap-3 p-3 md:gap-4 md:p-4">
-            <div className="size-[70px] shrink-0 overflow-hidden rounded-[12px] md:size-24">
-              {recipeId ? (
-                <RecipeMediaPlaceholder recipeId={recipeId} variant="hero" />
-              ) : (
-                // Create: no id, so no hue to derive. The canvas draws an empty
-                // dashed tile here — and since photo upload does not exist, it is
-                // a tile, not a button that would lie about what it does.
+            {recipe ? (
+              <RecipePhotoField recipe={recipe} />
+            ) : (
+              // Create: no id, so neither a hue to derive nor a prefix to
+              // upload under. The canvas draws an empty dashed tile here — and
+              // it stays a tile, not a button that would lie about what it does.
+              <div className="size-[70px] shrink-0 overflow-hidden rounded-[12px] md:size-24">
                 <div
                   aria-hidden="true"
                   className="grid size-full place-items-center rounded-[12px] border-[1.5px] border-dashed border-input bg-muted text-text-dim"
                 >
                   <Utensils className="size-5 md:size-6" />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <Label htmlFor="recipe-name" className="sr-only">

@@ -14,7 +14,7 @@ import {
   RECIPE_EDITOR_FORM_ID,
   type EditorState,
 } from '@/features/recipes/components/RecipeEditorForm';
-import { RecipeMediaPlaceholder } from '@/features/recipes/components/RecipeMediaPlaceholder';
+import { RecipePhoto } from '@/features/recipes/components/RecipePhoto';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useHideRecipe, useRecipe, useSaveRecipe } from '@/features/recipes/hooks';
 import { navigateToRecipeDuplicate } from '@/features/recipes/duplicate';
@@ -246,7 +246,7 @@ export function RecetaEditorPage() {
           initial={initial ?? emptyInitial}
           error={error}
           onSubmit={handleSubmit}
-          recipeId={recipe?.id}
+          recipe={recipe}
           onRemove={recipe ? () => setRemoveOpen(true) : undefined}
         />
       </div>
@@ -276,7 +276,7 @@ export function RecetaEditorPage() {
 
             <div className="flex items-center gap-3 rounded-[13px] border bg-muted p-2.5">
               <div className="size-10 shrink-0 overflow-hidden rounded-[11px]">
-                <RecipeMediaPlaceholder recipeId={recipe.id} variant="thumbnail" />
+                <RecipePhoto recipe={recipe} variant="thumbnail" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-semibold">{recipe.name}</p>
