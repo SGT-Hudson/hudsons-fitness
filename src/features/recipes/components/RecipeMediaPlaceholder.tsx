@@ -30,9 +30,10 @@ interface Props {
 
 /**
  * Shared "no photo" fill for every recipe media slot (list card media band,
- * mobile row thumbnail, detail hero). `recipes.photo_url` is dead — no
- * Storage bucket, no upload, the RPC never writes it — so this is what every
- * recipe shows in place of a photo: a deterministic diagonal-stripe tint
+ * mobile row thumbnail, detail hero, editor tile). Since R-36b a recipe CAN
+ * have a cover photo, so this is the empty case rather than the only case:
+ * `RecipePhoto` renders it whenever `recipes.photo_url` is null, and also when
+ * a photo that should exist fails to load. A deterministic diagonal-stripe tint
  * with the Recetas/utensils icon centred on it, reading as a deliberate
  * placeholder rather than a broken image.
  *

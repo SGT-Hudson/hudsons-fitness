@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { Recipe } from '../api';
@@ -27,6 +27,16 @@ interface Props {
    * rendition="thumb"`.
    */
   rendition?: 'full' | 'thumb';
+  /**
+   * Fired with the URL that failed to load, when this component gives up on it
+   * and swaps to the placeholder. Exists because the fallback is otherwise
+   * invisible to the caller: the detail page decides whether the hero is
+   * tappable (and whether the lightbox exists) from the same URL, and without
+   * this it would keep offering "ver la foto a tamaño completo" over a broken
+   * `<img>`. Callers that render the placeholder identically to the photo — the
+   * card, the row, the editor tile — need nothing and pass nothing.
+   */
+  onBroken?: (url: string) => void;
   className?: string;
 }
 
@@ -37,7 +47,10 @@ interface Props {
  * one place. The empty case never regresses into a broken `<img>`, and neither
  * does a dangling `photo_url` (Storage object gone, column update never ran —
  * see photoStorage.ts): if the photo itself fails to load, the `onError`
- * fallback below swaps back to the placeholder.
+ * fallback below swaps back to the placeholder — and tells the caller via
+ * `onBroken`, so an affordance built on "there is a photo" (the detail page's
+ * tappable hero and its lightbox) disappears with it instead of pointing at a
+ * broken image.
  *
  * The hero asks for the 1600px `full` rendition by default; every smaller
  * slot takes the 400px `thumb` — see `rendition` above to override that. Both
@@ -47,27 +60,33 @@ interface Props {
  * Fills its container — size and rounding are the caller's className, exactly
  * as with the placeholder, so the two are interchangeable at every call site.
  */
-export function RecipePhoto({ recipe, variant = 'card', rendition, className }: Props) {
+export function RecipePhoto({ recipe, variant = 'card', rendition, onBroken, className }: Props) {
   const { t } = useTranslation('recetas');
   const url = publicPhotoUrl(recipe, rendition ?? (variant === 'hero' ? 'full' : 'thumb'));
-  const [broken, setBroken] = useState(false);
 
-  // A new url (a different recipe, or a replace/clear) deserves a fresh
-  // attempt — the failure belongs to the URL that produced it, not forever.
-  useEffect(() => {
-    setBroken(false);
-  }, [url]);
+  // The failure belongs to the URL that produced it, not to the component: a
+  // new url (a different recipe, or a replace/clear) deserves a fresh attempt.
+  // Storing WHICH url broke, rather than a boolean reset by an effect, makes
+  // that atomic — an effect-based reset renders the placeholder for one frame
+  // against the new url before clearing, which is a visible flash on a replace.
+  const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
 
-  if (!url || broken) {
+  if (!url || url === brokenUrl) {
     return <RecipeMediaPlaceholder recipeId={recipe.id} variant={variant} className={className} />;
   }
 
   return (
     <img
+      // Remount on a url change so the browser starts a clean load rather than
+      // reusing the element that just failed.
+      key={url}
       src={url}
       alt={t('media.photoAlt', { name: recipe.name })}
       loading="lazy"
-      onError={() => setBroken(true)}
+      onError={() => {
+        setBrokenUrl(url);
+        onBroken?.(url);
+      }}
       className={cn('h-full w-full object-cover', className)}
     />
   );

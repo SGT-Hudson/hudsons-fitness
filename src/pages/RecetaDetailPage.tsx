@@ -58,6 +58,13 @@ export function RecetaDetailPage() {
   const { isFavorite, toggle: toggleFavorite } = useRecipeFavorites();
   const [addOpen, setAddOpen] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
+  // Which photo URL failed to load, if any. `RecipePhoto` already falls back to
+  // the placeholder on its own, but that decision is invisible from here — and
+  // this page builds two affordances on "there is a photo" (the tappable hero
+  // and the lightbox) that must vanish with it, or a dangling `photo_url`
+  // leaves a placeholder advertising "ver la foto a tamaño completo" and
+  // opening a dialog onto a broken `<img>`.
+  const [brokenPhotoUrl, setBrokenPhotoUrl] = useState<string | null>(null);
 
   // Same warm-up as the Recetas list: the add-to-day sheet reads today's meal
   // logs to pick the slot it opens on, and it reads them once, at open. Firing
@@ -210,9 +217,13 @@ export function RecetaDetailPage() {
   // and removing it from the library (a ref drop, deliberately ungated).
   const canEdit = canEditRecipe(recipe, user?.id);
 
-  // R-36b: null when the recipe has no cover photo — which is what decides
-  // whether the hero is tappable at all (see the media band below).
+  // R-36b: null when the recipe has no cover photo. `hasPhoto` is the stricter
+  // question the UI actually needs — a photo that EXISTS and LOADED — and is
+  // what decides whether the hero is tappable and whether the lightbox is
+  // mounted at all (see the media band below). Both sides key off the URL, so
+  // a replace re-arms them without any reset step.
   const photoUrl = publicPhotoUrl(recipe);
+  const hasPhoto = photoUrl !== null && photoUrl !== brokenPhotoUrl;
 
   // "Duplicar" is the editor's own mechanism (`navigateToRecipeDuplicate`),
   // reachable from here too — the only reason it used to require opening the
@@ -280,22 +291,17 @@ export function RecetaDetailPage() {
               identity. On mobile the meal-type chip rides the media band, as on
               the list card; on web it is in the page header, so the media shrinks
               to the artboard's 104px square beside the name. With a photo the
-              band becomes a button that opens the lightbox — without one there
-              is nothing to enlarge, so the placeholder stays inert. */}
+              band gets a transparent full-bleed button that opens the lightbox —
+              without one there is nothing to enlarge, so the placeholder stays
+              inert. The button is an OVERLAY rather than a wrapper so that
+              `RecipePhoto` keeps the same place in the tree either way: wrapping
+              it would remount the photo the moment the tap target appeared or
+              disappeared, throwing away its own broken/loaded state and
+              re-requesting an image that had just failed. It sits after the
+              chips so the whole band is tappable, chips included. */}
           <Card className="overflow-hidden md:flex md:items-center md:gap-4 md:p-4">
             <div className="relative h-[120px] w-full shrink-0 overflow-hidden md:h-[104px] md:w-[104px] md:rounded-[14px]">
-              {photoUrl ? (
-                <button
-                  type="button"
-                  aria-label={t('media.openPhoto')}
-                  onClick={() => setPhotoOpen(true)}
-                  className="block h-full w-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <RecipePhoto recipe={recipe} variant="hero" />
-                </button>
-              ) : (
-                <RecipePhoto recipe={recipe} variant="hero" />
-              )}
+              <RecipePhoto recipe={recipe} variant="hero" onBroken={setBrokenPhotoUrl} />
               {mealTypes.length > 0 && (
                 <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center gap-1 md:hidden">
                   {mealTypes.map((m) => (
@@ -307,6 +313,14 @@ export function RecetaDetailPage() {
                     </span>
                   ))}
                 </div>
+              )}
+              {hasPhoto && (
+                <button
+                  type="button"
+                  aria-label={t('media.openPhoto')}
+                  onClick={() => setPhotoOpen(true)}
+                  className="absolute inset-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                />
               )}
             </div>
 
@@ -443,7 +457,7 @@ export function RecetaDetailPage() {
         <TodayAddToDaySheet open onOpenChange={setAddOpen} selection={addSelection} />
       )}
 
-      {photoUrl && (
+      {hasPhoto && photoUrl && (
         <RecipePhotoLightbox
           open={photoOpen}
           onOpenChange={setPhotoOpen}

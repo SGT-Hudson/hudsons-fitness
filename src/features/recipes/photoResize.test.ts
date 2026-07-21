@@ -155,6 +155,25 @@ describe('resizeToWebp', () => {
     expect(toBlobCalls).toHaveLength(0);
   });
 
+  // A 0×0 "successful" decode (truncated file, an SVG with no intrinsic size)
+  // would otherwise draw a blank canvas and upload a blank photo as if all were
+  // well — the silent-blank outcome the spec forbids.
+  it('rejects a decode that succeeded with no pixels, instead of uploading a blank', async () => {
+    mockNaturalWidth = 0;
+    mockNaturalHeight = 0;
+
+    await expect(resizeToWebp(makeFile('truncated.jpg'))).rejects.toBeInstanceOf(PhotoDecodeError);
+    expect(toBlobCalls).toHaveLength(0);
+  });
+
+  it('rejects when only one dimension decodes to zero', async () => {
+    mockNaturalWidth = 800;
+    mockNaturalHeight = 0;
+
+    await expect(resizeToWebp(makeFile('degenerate.jpg'))).rejects.toBeInstanceOf(PhotoDecodeError);
+    expect(toBlobCalls).toHaveLength(0);
+  });
+
   it('revokes the object URL after both success and decode failure', async () => {
     await resizeToWebp(makeFile());
     expect(revokedUrls).toEqual(['blob:mock-url']);

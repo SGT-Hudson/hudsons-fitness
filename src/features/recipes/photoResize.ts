@@ -37,6 +37,20 @@ function loadImage(file: File): Promise<HTMLImageElement> {
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
+      // A decode can "succeed" with no pixels — a truncated/corrupt file, or an
+      // SVG with no intrinsic size. Drawing that to a canvas yields a blank
+      // image and a perfectly successful upload of a blank photo, which is the
+      // silent-blank outcome this module exists to make impossible. It is the
+      // same class of failure as a format the browser cannot read at all, so it
+      // gets the same typed rejection, before the canvas is ever touched.
+      if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+        reject(
+          new PhotoDecodeError(
+            `"${file.name}" decoded to an empty image (0×0) — nothing to resize`,
+          ),
+        );
+        return;
+      }
       resolve(img);
     };
     img.onerror = () => {

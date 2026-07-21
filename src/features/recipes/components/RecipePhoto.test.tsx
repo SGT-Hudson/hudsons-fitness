@@ -87,8 +87,25 @@ describe('RecipePhoto', () => {
     );
     const after = screen.getByRole('img').getAttribute('src');
 
-    expect(before).toContain('?v=2026-07-21T10:00:00Z');
-    expect(after).toContain('?v=2026-07-21T12:30:00Z');
+    expect(before).toContain(`?v=${encodeURIComponent('2026-07-21T10:00:00Z')}`);
+    expect(after).toContain(`?v=${encodeURIComponent('2026-07-21T12:30:00Z')}`);
     expect(after).not.toBe(before);
+  });
+
+  // The detail page builds a tap target and a lightbox on "there is a photo",
+  // and the fallback below is otherwise invisible to it — without this callback
+  // a dangling photo_url shows the placeholder while still offering to enlarge
+  // it, over a broken <img>.
+  it('tells the caller which url broke, so an affordance built on the photo can go with it', () => {
+    const onBroken = vi.fn();
+    render(<RecipePhoto recipe={source()} variant="hero" onBroken={onBroken} />);
+    const img = screen.getByRole('img', { name: 'Foto de Pollo con arroz' });
+    const url = img.getAttribute('src');
+
+    expect(onBroken).not.toHaveBeenCalled();
+    fireEvent.error(img);
+
+    expect(onBroken).toHaveBeenCalledWith(url);
+    expect(screen.getByRole('img', { name: 'Receta sin foto' })).toBeInTheDocument();
   });
 });

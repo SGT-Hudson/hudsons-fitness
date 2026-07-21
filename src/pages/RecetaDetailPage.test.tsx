@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import i18n from '@/i18n';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -518,5 +518,46 @@ describe('RecetaDetailPage — the cover photo', () => {
       'src',
       expect.stringContaining('r-1/full.webp'),
     );
+  });
+
+  // A dangling photo_url (object gone, column never updated). The hero falls
+  // back to the placeholder inside RecipePhoto — the tap target and the
+  // lightbox have to go with it, or the page offers to enlarge a broken image.
+  it('drops the tap target when the photo fails to load, so nothing offers to enlarge it', async () => {
+    loaded({
+      photo_url: 'r-1/full.webp',
+      updated_at: '2026-07-21T10:00:00Z',
+    } as Partial<RecipeWithIngredients>);
+    renderPage();
+
+    const openLabel = i18n.t('recetas:media.openPhoto');
+    expect(screen.getByRole('button', { name: openLabel })).toBeInTheDocument();
+
+    fireEvent.error(screen.getByRole('img', { name: 'Foto de Pollo con arroz' }));
+
+    expect(await screen.findByRole('img', { name: 'Receta sin foto' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: openLabel })).not.toBeInTheDocument();
+  });
+
+  it('closes the lightbox if the photo turns out to be broken while it is open', async () => {
+    const user = userEvent.setup();
+    loaded({
+      photo_url: 'r-1/full.webp',
+      updated_at: '2026-07-21T10:00:00Z',
+    } as Partial<RecipeWithIngredients>);
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: i18n.t('recetas:media.openPhoto') }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+
+    // The hero's <img> is the one outside the dialog. Queried by alt text, not
+    // by role: an open Radix dialog marks the rest of the page `aria-hidden`,
+    // so the hero is no longer in the accessibility tree.
+    const heroImg = screen
+      .getAllByAltText('Foto de Pollo con arroz')
+      .find((img) => img.closest('[role="dialog"]') === null);
+    fireEvent.error(heroImg!);
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });
