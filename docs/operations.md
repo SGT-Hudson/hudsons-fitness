@@ -830,7 +830,7 @@ stale local state, so a true from-zero migration rebuild (the thing that makes
 `db-test` worth running) needs `supabase stop --no-backup`.
 
 The
-suite (`supabase/tests/00_schema`..`08_recipe_steps.test.sql` — the CI job globs
+suite (`supabase/tests/00_schema`..`09_recipe_photos.test.sql` — the CI job globs
 `*.test.sql`, so every numbered file is picked up automatically) creates test users by
 inserting into `auth.users` (the `handle_new_user` trigger makes the profile)
 and switches actor with `set local role authenticated` + a
