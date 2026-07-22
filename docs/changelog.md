@@ -502,6 +502,35 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   `<img>`.
 - **Dependencies:** npm-minor-patch group bump, 16 packages (#220).
 
+### 2026-07-22 (tarde) — Idioma al arrancar + R-31
+
+- **The app painted a frame in the language the profile overrules (#226).** Not
+  "it renders before it knows the language": `RequireOnboarded` already holds
+  the tree until the profile resolves, so the right language *was* known at
+  first paint — it was applied in a `useEffect`, which runs after commit.
+  Measured per frame: ~130 ms in the wrong language, ~40-85 ms of it with the
+  header already switched and the nav not (the "mixed" look). `useLayoutEffect`
+  does **not** fix it — `changeLanguage` doesn't propagate synchronously, so
+  react-i18next's re-render misses the pre-paint flush. Fix: `ProfileLanguageSync`
+  wraps its children and holds the shared `FullPageLoader` until the language is
+  applied, gated by a one-shot flag rather than "they match now" (an unsupported
+  profile language would otherwise strand the user in the loader). Same trail
+  caught `<html lang>` stuck at index.html's `es`; it now follows
+  `languageChanged`.
+- **R-31 — search lay terms + add an exercise from its detail page (#227).**
+  Typed text now expands to muscle codes three ways instead of one: fine-muscle
+  labels, whole group names, and a curated bilingual lay-term table (slang,
+  cross-language terms, movement patterns) — one `muscleCodesForQuery` shared by
+  browse and the picker. And `/exercises/:id` stopped being read-only: an add
+  sheet either appends the exercise to a routine (defaulting to the one the
+  active program trains next, targets only, 3×8-12) or opens a fresh session
+  with it pre-filled. Writing straight into a session was rejected on purpose —
+  `save_workout` is a replace-children RPC that writes `title`/`notes`/
+  `program_id`/`routine_id` with no coalesce, there is no "today's session"
+  concept, and a session row needs concrete reps + weight, so a placeholder
+  would pollute history and e1RM. Adding from inside the live runner is split
+  out as R-46.
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |
@@ -582,4 +611,8 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
 | 221 | R-36b — recipe cover photo | First Supabase Storage bucket (`recipe-photos`, public, 2 MB, `image/webp`-only) with real-creator write RLS; `recipes.photo_url` now the object path; client-side resize-to-WebP (`photoResize.ts`); dedicated upload/clear action; `RecipePhoto` in every media slot + detail lightbox; weekly `recipe-photo-reap` cron as a never-hard-deleted tripwire. Per-step photos dropped in favour of one cover photo. Applied to production on 2026-07-22: migrations → function deploy → cron, in that order |
 | 222 | UI — dialog focus ring + lightbox close | `DialogContent` used `focus:ring` instead of `focus-visible:ring`, so every dialog flashed the brand ring on open; plus a legible photo-viewer close control on the lightbox |
 | 223 | Recipes — editor photo tile controls | Remove becomes a trash badge on the photo, the tile opens the lightbox, and the unsupported-format message gets a full-width line |
+| 224 | Docs — release doc-reconcile | 27 drift items fixed across the eight living-doc shards ahead of `v2026-07-22` |
+| 225 | Release `v2026-07-22` | Promotion of #218–#224 to `main` |
+| 226 | i18n — language flash at startup | Language was applied post-commit in a `useEffect`; `ProfileLanguageSync` now holds the loader until it is applied, and `<html lang>` follows the active language |
+| 227 | R-31 — exercise search follow-ups + add-from-detail | Lay-term/group-name search expansion shared by browse + picker; add sheet on `/exercises/:id` (append to a routine, or start a pre-filled session). Live-runner half split out as R-46 |
 
