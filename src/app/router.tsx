@@ -36,14 +36,11 @@ import { RoutinePage } from '@/pages/RoutinePage';
 import { RunnerPage } from '@/pages/RunnerPage';
 import { RoutineEditorPage } from '@/pages/RoutineEditorPage';
 import { ProgramEditorPage } from '@/pages/ProgramEditorPage';
+import { FullPageLoader } from '@/components/ui/FullPageLoader';
 
 const ProgresoPage = lazy(() =>
   import('@/pages/ProgresoPage').then((m) => ({ default: m.ProgresoPage })),
 );
-
-function FullPageLoader() {
-  return <div className="p-8 text-muted-foreground">…</div>;
-}
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();

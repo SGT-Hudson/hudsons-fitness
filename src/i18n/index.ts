@@ -80,4 +80,22 @@ void i18n
     },
   });
 
+/**
+ * Keeps `<html lang>` on the language actually being rendered. `index.html`
+ * ships a static `lang="es"`, which every English render then contradicted —
+ * and that attribute is not decoration: it is what a screen reader picks its
+ * pronunciation from and what the browser offers to translate against.
+ *
+ * Hooked to the event rather than set from each caller, so it covers every way
+ * the language moves: the detector's initial pick, the profile reconcile
+ * (`ProfileLanguageSync`), and the Settings switcher.
+ */
+function syncDocumentLang(lng: string) {
+  if (typeof document === 'undefined') return;
+  document.documentElement.lang = lng.split('-')[0];
+}
+
+syncDocumentLang(i18n.language);
+i18n.on('languageChanged', syncDocumentLang);
+
 export default i18n;
