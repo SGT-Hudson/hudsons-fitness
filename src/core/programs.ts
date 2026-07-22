@@ -75,6 +75,39 @@ export function projectCycle(
   return out;
 }
 
+export interface NextScheduledRoutine {
+  dateISO: string;
+  routineId: string;
+  /** 0 = today, 1 = tomorrow… */
+  daysAhead: number;
+}
+
+/**
+ * The next day of the cycle that trains a routine, scanning forward from
+ * `fromISO` (inclusive) over one full cycle. Rest days and slots whose
+ * routine no longer exists are skipped; `knownRoutineIds`, when given,
+ * defines "exists". Returns null when the program never trains — no days,
+ * an all-rest cycle, or every scheduled routine deleted. R-31.
+ */
+export function nextScheduledRoutine(
+  days: ProgramDaySlot[],
+  anchorISO: string,
+  fromISO: string,
+  knownRoutineIds?: ReadonlySet<string>,
+): NextScheduledRoutine | null {
+  if (days.length === 0) return null;
+  for (const { dateISO, slot } of projectCycle(days, anchorISO, fromISO, days.length)) {
+    if (!slot || slot.isRest || !slot.routineId) continue;
+    if (knownRoutineIds && !knownRoutineIds.has(slot.routineId)) continue;
+    return {
+      dateISO,
+      routineId: slot.routineId,
+      daysAhead: dayNumber(dateISO) - dayNumber(fromISO),
+    };
+  }
+  return null;
+}
+
 export interface PrefillSet {
   setIndex: number;
   isWarmup: boolean;

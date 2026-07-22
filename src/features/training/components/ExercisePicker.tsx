@@ -10,9 +10,9 @@ import {
   type Exercise,
   type PrimaryMuscle,
 } from '../exercises/api';
-import { codesInGroup, type MuscleGroup } from '@/core/muscles';
+import { codesInGroup, MUSCLE_GROUPS, type MuscleGroup } from '@/core/muscles';
 import { MuscleSelect } from './MuscleSelect';
-import { musclesMatchingQuery } from '../exercises/muscleSearch';
+import { muscleCodesForQuery } from '../exercises/muscleSearch';
 import { ExerciseDialog } from './ExerciseDialog';
 import { ExerciseInfoButton } from './ExerciseInfoButton';
 import { cn } from '@/lib/utils';
@@ -47,7 +47,10 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
   const labelByCode = Object.fromEntries(
     PRIMARY_MUSCLE_VALUES.map((c) => [c, t(`exerciseDialog.muscle.${c}`)]),
   );
-  const textMuscles = musclesMatchingQuery(debounced, labelByCode);
+  const groupLabelByKey = Object.fromEntries(
+    MUSCLE_GROUPS.map((g) => [g, t(`exerciseDialog.muscleGroup.${g}`)]),
+  );
+  const textMuscles = muscleCodesForQuery(debounced, labelByCode, groupLabelByKey);
 
   const isGroup = selectedMuscle.startsWith('group:');
   const groupKey = isGroup
