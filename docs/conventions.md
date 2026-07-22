@@ -24,6 +24,7 @@ tracked in `roadmap.md`).
   - Where a blank carries a domain meaning the shared helpers cannot express (ingredients: blank fiber → 0 g, blank sub-macro → `null` "unknown"), the feature builds its own string→number field schemas — but keeps the contract: stable issue codes resolved through `pickFirstError`.
 - The shared first-error precedence helper `pickFirstError(errors, orderedKeys, order)` (also `src/lib/zod.ts`) backs each feature's `first<X>Error` wrapper for multi-rule `superRefine` schemas (recipes, diario, templates, ingredients); the wrapper keeps the feature-named export and passes its ordered key list (D-C2).
 - Single-control, instant-apply settings (the Settings language and theme segmented buttons, both the page-local `Segmented`) are controlled inputs, not RHF forms — they have no validated submit (theme is localStorage-only per D-F6).
+- Two shipped forms do have a validated submit and still hand-roll it — `ApplyTemplateDialog` (`useState` + a `pickError` flag) and the manual-EAN form on `IngredientScanPage` (`isValidEan` checked inline in the handler): known deviations to converge on RHF+zod when either is next touched, not a licensed pattern (D-C2 stands).
 
 ## Types & macros
 
@@ -57,8 +58,6 @@ tracked in `roadmap.md`).
 - Authenticated language change is Settings-only; the one-click `LanguageSwitcher` appears only on pre-auth and onboarding routes (removed from the `AppLayout` header) (D-E4).
 
 ## Theme
-
-> ⚠ Changing — see R-33
 
 - Theme is localStorage-only (key `hf-theme`), never profile-backed (D-F6).
 - The `index.html` pre-paint IIFE and `ThemeProvider` `STORAGE_KEY`/system-resolution MUST stay identical — change one, change the other (D-F6).

@@ -10,10 +10,12 @@
 
 project_id = "hudsons-fitness"
 
-# Ports moved to the 553xx range (2026-07-19) so this stack can run at the same
-# time as financial-advisor, which sits on the 543xx defaults. Without this,
+# Ports moved out of the CLI defaults (2026-07-19) so this stack can run at the
+# same time as financial-advisor, which sits on the 543xx defaults. Without this,
 # `supabase start` here fails while that project is up — the two collide on
-# every default port, not just the DB one.
+# every default port, not just the DB one. The range is 563xx, not the 553xx
+# first chosen: Windows reserves 55167-55466 on this machine for Hyper-V, so
+# nothing there could bind either.
 #
 # This is the one deliberate exception to the "keep it minimal" rule above:
 # ports are a machine-level coexistence concern, not a service toggle, and the

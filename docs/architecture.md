@@ -11,10 +11,10 @@
 
 ## Stack & hosting
 
-Hudson's Fitness is a bilingual (ES/EN) PWA covering body composition, macros, recipes, weekly meal plans, and dietary phases. It is a React 18 + Vite + TypeScript single-page app that talks directly to Supabase (PostgREST + Auth); there is no application server of its own. The schema lives in `data-model.md` and is not restated here.
+Hudson's Fitness is a bilingual (ES/EN) PWA covering body composition, macros, recipes, weekly meal plans, dietary phases, and training (sessions, live runner, exercise catalog, routines, programs). It is a React 18 + Vite + TypeScript single-page app that talks directly to Supabase (PostgREST + Auth + Storage); there is no application server of its own. The schema lives in `data-model.md` and is not restated here.
 
 - **Frontend**: React 18, Vite, TypeScript SPA.
-- **Backend**: Supabase project `upvraruehzurbetzrxov` (EU Frankfurt) — PostgREST data API and Auth. Realtime is available on the project but nothing subscribes to it.
+- **Backend**: Supabase project `upvraruehzurbetzrxov` (EU Frankfurt) — PostgREST data API, Auth, and Storage. Storage's only use is the `recipe-photos` bucket (R-36b): the browser uploads the two renditions and builds public URLs itself, and the bucket's own RLS policies are the security boundary, exactly as for tables. Realtime is available on the project but nothing subscribes to it.
 - **Hosting**: Vercel SPA hosting; production branch `main` deploys on merge. CI, branch-protection, and deploy mechanics are documented in `operations.md`.
 - **PWA**: built with `vite-plugin-pwa` (`registerType: 'autoUpdate'`); Workbox routes all `supabase.co` requests as `NetworkOnly` so data calls are never served from the service-worker cache.
 

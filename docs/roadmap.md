@@ -52,6 +52,8 @@ reference shard carries it (never edit the decision entry).
 - R-41 — Planner recipe suggestions by macro fit (add-drawer V2)
 - R-42 — Per-phase default template
 - R-43 — Small verifications & leftovers (ingredient is_verified, comida libre, meal times, bell, glyphs)
+- R-44 — Ingredient category (deferred from R-33 wave 6 — needs a taxonomy decision)
+- R-45 — Ingredient photos (gap record only — `ingredients` has no image column)
 - Feature & UX family index (F-x / U-x / post-V1 items / Projects A–B) — at end
 
 ## R-00 — Baseline current schema into migrations
@@ -582,7 +584,13 @@ reference shard carries it (never edit the decision entry).
   `03_rls_pool`, `04_rpc` (replace-children, materialize guard + idempotency,
   one-active-program, hide/reconcile), and `05_muscles` (fine-taxonomy seed
   completeness, anti-drift vs `src/core/muscles.ts`, the
-  `validate_exercise_muscles` trigger — added with **R-26** / #155). Config in
+  `validate_exercise_muscles` trigger — added with **R-26** / #155). Later work
+  keeps adding to the suite rather than to `00_schema`, one file per feature:
+  `06_instructions` (Project B2a — the bilingual `instructions_*` arrays and
+  their per-row parity), `07_ingredient_salt` (R-33 wave 6 — the U-1 nullable
+  sub-macro contract on the salt column), `08_recipe_steps` (R-36 — RLS
+  ownership through the join to the parent recipe) and `09_recipe_photos`
+  (R-36b — the `recipe-photos` bucket's policies on `storage.objects`). Config in
   `supabase/config.toml`; design spec
   `docs/superpowers/specs/2026-06-03-tier3-pgtap-ci-design.md` (+ the earlier
   `2026-05-18-test-strategy.md`). Promoted to a **required check on `develop`**.
@@ -1070,11 +1078,15 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 - **blocked-by:** —
 - **status:** deferred (2026-06-11) — explicitly sequenced **after the R-33 UI
   redesign**: onboarding should teach the final UI, not one about to change.
-  Only the profile-setup `OnboardingPage` exists; no feature-discovery layer
-  (no welcome modal, tour, coachmarks, or empty-state CTAs).
-- **scope:** contextual empty states (explanation + CTA) + one short welcome modal
-  (esp. explaining the section split). Avoid an 8-screen wizard. Time to the
-  friends-and-family invite, not before. (post-V1 brainstorm item 5.)
+  Only the profile-setup `OnboardingPage` exists; no welcome modal, tour or
+  coachmarks. The empty-state half of the scope did land inside **R-33**
+  (#212): the shared `EmptyState` takes an explanatory `hint` plus an optional
+  `action`, and the screens where an empty list is a dead end (recipes,
+  ingredients, recipe detail) pass the button that gets you out of it — so what is
+  left here is the guided layer, not the per-screen prompts.
+- **scope:** one short welcome modal (esp. explaining the section split) and
+  whatever pointing-at-features layer it needs. Avoid an 8-screen wizard. Time
+  to the friends-and-family invite, not before. (post-V1 brainstorm item 5.)
 
 ## R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
 - **decision:** (none yet)

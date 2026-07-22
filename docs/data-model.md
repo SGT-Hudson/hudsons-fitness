@@ -13,7 +13,7 @@
 
 ## Overview
 
-Hudson's Fitness has 27 base tables in prod, all RLS-enabled — the original 15, the R-07 `tdee_state` adaptive-filter memory table, the 3 Training MVP tables added by R-19 and applied 2026-05-21 (`exercises`, `workout_sessions`, `workout_sets`), the 4 F-2 training tables (`routines`, `routine_exercises`, `programs`, `program_days`, live in prod since v2026-06-03 / #122), the 2 R-01 per-user reference tables (`user_ingredient_refs`, `user_recipe_refs`), the R-26 read-only `muscles` reference dictionary (#155), and the R-36 `recipe_steps` child table. The `body_measurements_smoothed` view sits on top of `body_measurements` (see Views). Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The deliberate exceptions are `ingredients` and `recipes` (reclassified by R-01), the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
+Hudson's Fitness has 28 base tables in prod, all RLS-enabled — the original 15, the R-07 `tdee_state` adaptive-filter memory table, the 3 Training MVP tables added by R-19 and applied 2026-05-21 (`exercises`, `workout_sessions`, `workout_sets`), the 4 F-2 training tables (`routines`, `routine_exercises`, `programs`, `program_days`, live in prod since v2026-06-03 / #122), the 2 R-01 per-user reference tables (`user_ingredient_refs`, `user_recipe_refs`), the R-26 read-only `muscles` reference dictionary (#155), and the R-36 `recipe_steps` child table — plus a 28th that is not part of the app's model: `_r01_recipes_owner_backup`, the R-01 rollback snapshot deliberately left in place after the backfill (RLS enabled with no policies, so it is deny-all to every app role — see `operations.md`). The `body_measurements_smoothed` view sits on top of `body_measurements` (see Views). Per-user tables follow the standard `auth.uid() = user_id` pattern so a user only ever sees their own rows. The deliberate exceptions are `ingredients` and `recipes` (reclassified by R-01), the intentionally-shared crowdsourced library — every authenticated user reads the whole pool and may contribute rows. The backend is Supabase project `upvraruehzurbetzrxov` (PostgreSQL 15+, EU Frankfurt region for GDPR). Repo is public — RLS is the sole security boundary (see D-F2, `operations.md`).
 
 ## Tables
 
@@ -544,7 +544,7 @@ The repo is public, so RLS is the sole security boundary — there is no server-
 
 ## RPCs
 
-User-facing RPCs, all `SECURITY INVOKER`, each atomic across multiple tables. Search-path pinning is not uniform: most set `search_path = public`, but several — including both `save_recipe` (R-36) and earlier ones (`save_recipe_ref`, `u2_recipe_meal_types`, `r33_template_phase`, `r33_recipe_prep_time`, the R-00 baseline set) — use the stricter `set search_path to ''` with every table reference fully qualified (`public.recipes`, not `recipes`). Both styles are INVOKER-safe; the empty-path form is pre-existing drift from the nominal convention below, not a R-36 regression.
+User-facing RPCs, all `SECURITY INVOKER`, most of them atomic across multiple tables (the few single-table ones are flagged as such below). Search-path pinning is not uniform: most set `search_path = public`, but several — including both `save_recipe` (R-36) and earlier ones (`save_recipe_ref`, `u2_recipe_meal_types`, `r33_template_phase`, `r33_recipe_prep_time`, the R-00 baseline set) — use the stricter `set search_path to ''` with every table reference fully qualified (`public.recipes`, not `recipes`). Both styles are INVOKER-safe; the empty-path form is pre-existing drift from the nominal convention below, not a R-36 regression.
 
 **Nutrition / meal planning (live in prod):**
 - `save_recipe` — create-or-replace a recipe with its ingredients and steps (replace-children on both `recipe_ingredients` and `recipe_steps`). Still 8 args; R-36 dropped `p_instructions text` and added `p_steps jsonb` in its place (old signature explicitly `drop function`-ed first, since the arg-list change would otherwise register an ambiguous overload). INVOKER.
@@ -553,6 +553,9 @@ User-facing RPCs, all `SECURITY INVOKER`, each atomic across multiple tables. Se
 - `save_week_as_template`
 - `copy_week_meal` (U-6) — copy one planned meal onto other days of the active week (atomic multi-row delete-then-insert across N target dates on `meal_plan_week_slots`; single-table, chosen for atomicity over a two-round-trip client delete+insert)
 - `materialize_plan_for_date` (R-12 / D-D6)
+
+**Library lifecycle (R-01, narrowed by R-25):**
+- `hide_owned_recipe` / `hide_owned_ingredient` — drop the caller's reference row for a pooled item (see the Library model, point 3). Single-table since R-25 removed the hide→anon ownership transfer, so they no longer *need* to be RPCs; kept anyway for a stable client API surface. INVOKER.
 
 **Training MVP (R-19, live in prod since 2026-05-21):**
 - `save_workout` — create-or-replace a workout session and its sets (5 args); extended to 7 args by F-2 to accept two nullable provenance stamps (`p_program_id`, `p_routine_id` — both `DEFAULT NULL`; null = ad-hoc). The 5-arg overload was dropped and replaced by the 7-arg signature in `20260528120030_f2_rpcs.sql` (live in prod #122 / v2026-06-03).
@@ -587,6 +590,9 @@ Installed in the `extensions` schema (not `public`):
 - `pgcrypto` — crypto/digest primitives; installed by the R-00 baseline alongside `uuid-ossp`.
 - `pg_trgm` — fuzzy ingredient text search (gin trigram indexes on `ingredients.name` / `ingredients.brand`).
 - `btree_gist` — backs the non-overlapping phase date-range constraint via `EXCLUDE USING gist` on `phases`.
+- `pg_net` — async HTTP from inside Postgres; the `net.http_post` that `private.invoke_edge_function` fires at the edge functions (Sprint 9).
+
+`pg_cron` is the one exception to the schema rule: it is not relocatable, so it installs into its own `cron` schema. It is what schedules the Sprint-9 jobs, the R-18 healthcheck and the R-36b orphan-photo reaper — see `operations.md` for the job inventory.
 
 ## Storage
 
@@ -596,7 +602,7 @@ RLS on `storage.objects` (a different table from anything in `public`, gated the
 - **SELECT** — permissive across the bucket, for every `authenticated` user: `bucket_id = 'recipe-photos'`, nothing else. Not a convenience: Postgres applies SELECT policies to `update`, `delete` and `insert … on conflict do update` too, so without one the storage API's upsert cannot see the row it is replacing and a delete matches zero rows while still reporting success — i.e. the write policies below would be unreachable. The grant is scoped to this bucket and gives away only object metadata (path, size, mime, timestamps) for objects the CDN already serves to anyone with the URL, all of them under `<recipe_id>/` prefixes for recipes every authenticated user can already read from `public.recipes`.
 - **INSERT / UPDATE / DELETE** — real-creator only, same predicate shape as `recipe_ingredients` / `recipe_steps`: the path's first folder is joined back to `public.recipes`, requiring `r.created_by_user_id = auth.uid()` and excluding both a null creator (system seed) and the `LIBRARY_ANON_OWNER_ID` sentinel (creator-hidden rows). The UPDATE policy carries both `using` and `with check`, written identically (same R-22 convention as the table RLS above). The folder→`uuid` cast goes through a `case` guard on the uuid shape, so a malformed path denies with `42501` instead of raising `22P02`.
 
-`recipes.photo_url` holds this bucket's object path (`<recipe_id>/full.webp`), not a URL — see the `recipes` table above. The app derives the public URL client-side via `storage.from('recipe-photos').getPublicUrl(...)`; both keys are re-derived from the recipe id (`photo_url` is read as a presence flag), and a URL-encoded `?v=<updated_at>` busts the CDN cache after a replace. `updated_at` is bumped by the same single-table update that writes `photo_url` — nothing else moves it (there is no `updated_at` trigger in the schema), and the object key is stable, so without that bump a replaced photo would keep serving the old bytes.
+`recipes.photo_url` holds this bucket's object path (`<recipe_id>/full.webp`), not a URL — see the `recipes` table above. The app derives the public URL client-side via `storage.from('recipe-photos').getPublicUrl(...)`; both keys are re-derived from the recipe id (`photo_url` is read as a presence flag), and a URL-encoded `?v=<updated_at>` busts the CDN cache after a replace. `updated_at` is bumped by the same single-table update that writes `photo_url` — there is no `updated_at` trigger in the schema, so nothing moves it implicitly, and the object key is stable, so without that bump a replaced photo would keep serving the old bytes. The only other writer is `save_recipe`, which sets `updated_at = now()` on every edit; that is harmless (a stale token is the failure mode, a fresh one is not).
 
 ## Library Contribution & Lifecycle Model
 <a id="library-model"></a>
