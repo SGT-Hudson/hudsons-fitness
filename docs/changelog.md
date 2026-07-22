@@ -309,7 +309,8 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   peek lists the steps too.
 - `user_recipe_refs.note` — live since R-01 but unused — is wired up as a
   private per-user recipe note: a self-gating "Mis notas" card on the detail
-  page, saves on blur, available for any recipe in the user's library
+  page (blur-save at first, replaced by an explicit button in #218 below),
+  available for any recipe in the user's library
   including ones they did not create. Plain single-table PostgREST update
   (RLS-scoped), not an RPC.
 - Per-step photos, the "Fotos de los pasos" setting, and the Supabase Storage
@@ -370,12 +371,15 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   fell through to its not-found arm anyway and `QueryErrorState` never rendered.
   `'offlineFirst'` is not sufficient (it ungates only the first attempt, so with
   `retry: 1` the query fires once, fails, then re-pauses and never settles).
-- **Local Supabase stack moved to the 553xx range (#213).** The local stack
+- **Local Supabase stack pinned to its own port range (#213).** The local stack
   collided with another project's on every default 543xx port, and only the DB
-  port was pinned. `supabase/config.toml` now pins API 55321, DB 55322, shadow
-  55320, Studio 55323, Inbucket 55324, analytics 55327, pooler 55329. Config-only
-  and local-only — production is dashboard-managed and this file is not a deploy
-  surface; the ports serve migrations and the pgTAP suite.
+  port was pinned. `supabase/config.toml` first pinned 553xx, then moved to
+  **563xx** during R-36b (in #221): Windows reserves 55167–55466 for Hyper-V on
+  this machine, so the 553xx stack would not start at all. Current pins: API
+  56321, DB 56322, shadow 56320, Studio 56323, Inbucket 56324, analytics 56327,
+  pooler 56329. Config-only and local-only — production is dashboard-managed and
+  this file is not a deploy surface; the ports serve migrations and the pgTAP
+  suite.
 - **Every UPDATE policy carries an explicit WITH CHECK (#214).** Migration
   `20260719120000_r22_update_with_check.sql`. **This closed no hole.** Postgres
   applies an UPDATE policy's `USING` expression to the NEW row when `WITH CHECK`
@@ -395,6 +399,108 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   it replaced. A companion assertion pins the denominator so the sweep cannot pass
   vacuously. The `r22` prefix is historical: R-22 is Training Routines, closed in
   May; the gap survived only as a follow-up bullet filed under it.
+- **Released to `main`** via `release/2026-07-20` (#216, tag `v2026-07-20`),
+  preceded by the required doc-reconcile (#215).
+
+### 2026-07-21 — R-36b Recipe cover photo
+
+- **First Supabase Storage bucket in the app.** `recipe-photos` — public,
+  2 MB file-size cap, `image/webp`-only (`allowed_mime_types`) — created in
+  `20260720120000_r36b_recipe_photos_bucket.sql`. Objects are keyed
+  `<recipe_id>/full.webp` / `<recipe_id>/thumb.webp` (stable paths, so a
+  replace overwrites in place rather than orphaning). RLS on
+  `storage.objects` follows the same real-creator-only shape as
+  `recipe_ingredients`/`recipe_steps` for INSERT/UPDATE/DELETE, plus a
+  permissive SELECT policy scoped to the bucket: Postgres applies SELECT
+  policies to `update`/`delete`/`on conflict do update` as well, so without one
+  a replace can't see the row it overwrites and a remove matches nothing while
+  reporting success. The grant exposes only metadata for objects the CDN
+  already serves to anyone with the URL. The path→`uuid` cast is `case`-guarded
+  so a malformed path denies instead of raising `22P02`.
+- **`recipes.photo_url` (dead since it was added) now holds the object
+  path**, not a URL. `publicPhotoUrl()` (`src/features/recipes/photoStorage.ts`)
+  derives the CDN URL client-side from the recipe id and appends a URL-encoded
+  `?v=<updated_at>` so a replace busts the cache — `setRecipePhoto` bumps
+  `updated_at` in the same update, since the object key is stable and nothing
+  else in the schema moves that column.
+- **Client-side resize to WebP, zero dependencies**
+  (`src/features/recipes/photoResize.ts`): a plain `<canvas>` +
+  `toBlob('image/webp', q)` pass produces a 1600 px-long-edge "full" (detail
+  hero) and a 400 px "thumb" (cards/rows/editor tile) from one picked file,
+  never upscaled — so Supabase's paid image-transform tier ($5/1 000 origin
+  images/mo) is never needed. A file the browser can't decode (raw HEIC
+  picked via Files rather than Photos) rejects with a typed
+  `PhotoDecodeError` instead of resolving a blank blob.
+- **Upload/clear is a dedicated client action** (`setRecipePhoto`/
+  `clearRecipePhoto` in `photoStorage.ts`), not folded into `save_recipe` —
+  only `recipes.photo_url` changes, a single-table mutation, so invariant 3
+  (RPC only for >1-table atomic mutations) doesn't apply.
+- **One `RecipePhoto` component renders every media slot** — the list card,
+  mobile row, detail hero, and editor tile — falling back to the existing
+  colour placeholder when there's no photo or the image fails to load. The
+  detail hero opens the full photo in a lightbox (shadcn `Dialog`) on tap.
+  Add/replace/remove controls on the editor tile are gated on
+  `canEditRecipe` — a non-creator sees the photo, never the controls. New
+  i18n keys under `recetas.media` (ES + EN).
+- **Weekly `recipe-photo-reap` cron is an invariant tripwire, not a
+  garbage collector.** It reaps exactly one thing: a bucket prefix with no
+  matching `recipes` row, via the storage admin API, never a raw SQL delete.
+  Because recipes are never hard-deleted, that set is empty today and a healthy
+  run reaps zero — a non-zero count is the signal that the never-hard-deleted
+  assumption has changed. It deliberately does NOT chase half-failures where
+  the recipe row survives (objects uploaded but `photo_url` not written, or
+  removed but not nulled): those are indistinguishable from an upload that is
+  seconds away from committing, and a service-role job guessing wrong deletes a
+  live photo. Stable keys make a retry overwrite or remove the debris instead,
+  and a dangling `photo_url` degrades to the placeholder. Neither the cron
+  schedule migration (`20260720120100_r36b_recipe_photo_reap_cron.sql`) nor the
+  edge function itself (`supabase/functions/recipe-photo-reap/index.ts`) has
+  been applied/deployed to the live project yet — deploy the function first,
+  since an early firing is a silent no-op (pg_net's POST is asynchronous, so
+  the cron run succeeds regardless of the HTTP status).
+- **pgTAP suite `09_recipe_photos.test.sql`** covers the bucket's RLS: the
+  real creator writes under their own recipe's prefix, a holder of the pooled
+  recipe does not, and the malformed-path cast denies instead of raising.
+- **Per-step photos — the original R-36b scope — dropped for good.** This
+  ships one cover photo per recipe instead; see
+  `docs/superpowers/specs/2026-07-20-r36b-recipe-photo-design.md` for the
+  pivot rationale.
+
+### 2026-07-22 — R-36b live, and the photo/note polish around it
+
+- **R-36b is applied to production** (the entry above was written with the
+  cron staged and the function undeployed). Order was migrations → edge
+  function `recipe-photo-reap` → cron schedule, and that order is mandatory:
+  `private.invoke_edge_function` goes through pg_net, whose POST is
+  asynchronous, so a firing before the deploy is a silent no-op rather than a
+  visible failure. Two runs verified — empty bucket `checked=0, reaped=0`, and
+  with one live photo `checked=1, reaped=0`.
+- **The private recipe note saves on an explicit button (#218).** It was the
+  only self-writing field in the app — every other write surface is a form with
+  a `handleSubmit` — and blur-save was quietly the unsafe option, since nothing
+  marked the note dirty and text lost to a closed tab went unannounced. Now:
+  a `Guardar` button disabled while the trimmed draft matches the stored note,
+  plus an unsaved marker.
+- **The Coach card rendered raw i18n keys (#219).** `src/core/training.ts`
+  emitted `coach.rules.<rule>.headline`, but both consumers already resolve
+  inside the `coach` namespace. With i18next's default separators the string
+  holds no `:`, so it was never read as a namespace hop — the whole dotted path
+  was walked inside the coach bundle, whose root key is `rules`, not `coach`.
+  Miss → i18next echoes the key. Fixed by emitting `rules.<rule>.headline`.
+- **Every dialog in the app drew the brand focus ring on open (#222).**
+  `DialogContent` used `focus:ring` where it wanted `focus-visible:ring`, and
+  Radix focuses the close button on open. Fixed there, once. The same PR gave
+  the photo lightbox its own close control — a translucent dark disc with the
+  keyboard ring drawn *inside* it, because the shared bare glyph vanishes over
+  a bright photo and an outside ring is white-on-white exactly when it matters.
+- **The editor's photo tile lost a button and gained a lightbox (#223).**
+  Remove moved from a second full-width button under the 70 px tile to a trash
+  badge in the photo's corner; tapping the tile now opens the same lightbox the
+  detail page uses, so a photo just uploaded no longer needs a trip out of the
+  editor to be seen big. The affordance follows the detail page's rule — it
+  disappears when the image fails, rather than opening a modal onto a broken
+  `<img>`.
+- **Dependencies:** npm-minor-patch group bump, 16 packages (#220).
 
 ## PR table
 
@@ -467,4 +573,13 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
 | 212 | Errors — one classifier, honest empty states | `src/lib/errors.ts` (six kinds + message/title keys), `toastError` stops leaking `err.message`, shared `QueryErrorState`, translated `ErrorBoundary`, and `networkMode: 'always'` so offline queries settle instead of pausing into not-found |
 | 213 | Supabase — local stack ports | `supabase/config.toml` pins the local stack to 553xx (API 55321, DB 55322, Studio 55323) to coexist with another project; config-only, local-only |
 | 214 | RLS — UPDATE WITH CHECK uniformity | `20260719120000_r22_update_with_check.sql` — `alter policy … with check (X)` on all 14 `USING`-only UPDATE policies; closes no hole (Postgres already applied `USING` to the new row), retires two silently-passing `todo` blocks for one catalogue assertion that `with_check` is never distinct from `qual` |
+| 215 | Release doc-reconcile | Reconcile living docs to shipped code ahead of `release/2026-07-20` |
+| 216 | Release — `v2026-07-20` | Promotion of #209–#215 to `main` |
+| 164 | B2a — exercise instructions data foundation | Bilingual `instructions_en` / `instructions_es` `text[]` columns on `public.exercises` (index-aligned), source-guarded backfill migration emitted by `build-seed.ts` from the same deterministic `exercises:build` run, plus `buildExerciseImageUrl`. Data only — the UI folds under R-27 Project B |
+| 218 | R-36 — explicit note save | Private recipe note gets a `Guardar` button + unsaved marker, replacing the app's only blur-save field |
+| 219 | Coach — i18n key fix | `core/training.ts` emitted `coach.rules.…` into a hook already scoped to the `coach` namespace; the doubled prefix made the card render raw keys |
+| 220 | Dependencies | npm-minor-patch group bump (16 packages) |
+| 221 | R-36b — recipe cover photo | First Supabase Storage bucket (`recipe-photos`, public, 2 MB, `image/webp`-only) with real-creator write RLS; `recipes.photo_url` now the object path; client-side resize-to-WebP (`photoResize.ts`); dedicated upload/clear action; `RecipePhoto` in every media slot + detail lightbox; weekly `recipe-photo-reap` cron as a never-hard-deleted tripwire. Per-step photos dropped in favour of one cover photo. Applied to production on 2026-07-22: migrations → function deploy → cron, in that order |
+| 222 | UI — dialog focus ring + lightbox close | `DialogContent` used `focus:ring` instead of `focus-visible:ring`, so every dialog flashed the brand ring on open; plus a legible photo-viewer close control on the lightbox |
+| 223 | Recipes — editor photo tile controls | Remove becomes a trash badge on the photo, the tile opens the lightbox, and the unsupported-format message gets a full-width line |
 

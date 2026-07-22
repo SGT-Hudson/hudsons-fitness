@@ -44,7 +44,7 @@ reference shard carries it (never edit the decision entry).
 - R-34 — Gym screens redesign (blocked on gym design convergence)
 - R-35 — Shopping list from the planned week — SHIPPED
 - R-36 — Recipe steps & notes (structured steps + private notes) — SHIPPED
-- R-36b — Per-step recipe photos (split off R-36, blocked on storage/cost decision)
+- R-36b — Recipe cover photo (split off R-36, scope changed from per-step to one cover photo) — SHIPPED
 - R-37 — Interactive TDEE calculator linked from the phase editor
 - R-38 — Progress analytics extras (adherence heatmap, ETA banner, energy balance, custom range)
 - R-39 — Measurement extras (progress photos, streak, smart-scale source toggle)
@@ -52,6 +52,8 @@ reference shard carries it (never edit the decision entry).
 - R-41 — Planner recipe suggestions by macro fit (add-drawer V2)
 - R-42 — Per-phase default template
 - R-43 — Small verifications & leftovers (ingredient is_verified, comida libre, meal times, bell, glyphs)
+- R-44 — Ingredient category (deferred from R-33 wave 6 — needs a taxonomy decision)
+- R-45 — Ingredient photos (gap record only — `ingredients` has no image column)
 - Feature & UX family index (F-x / U-x / post-V1 items / Projects A–B) — at end
 
 ## R-00 — Baseline current schema into migrations
@@ -582,7 +584,13 @@ reference shard carries it (never edit the decision entry).
   `03_rls_pool`, `04_rpc` (replace-children, materialize guard + idempotency,
   one-active-program, hide/reconcile), and `05_muscles` (fine-taxonomy seed
   completeness, anti-drift vs `src/core/muscles.ts`, the
-  `validate_exercise_muscles` trigger — added with **R-26** / #155). Config in
+  `validate_exercise_muscles` trigger — added with **R-26** / #155). Later work
+  keeps adding to the suite rather than to `00_schema`, one file per feature:
+  `06_instructions` (Project B2a — the bilingual `instructions_*` arrays and
+  their per-row parity), `07_ingredient_salt` (R-33 wave 6 — the U-1 nullable
+  sub-macro contract on the salt column), `08_recipe_steps` (R-36 — RLS
+  ownership through the join to the parent recipe) and `09_recipe_photos`
+  (R-36b — the `recipe-photos` bucket's policies on `storage.objects`). Config in
   `supabase/config.toml`; design spec
   `docs/superpowers/specs/2026-06-03-tier3-pgtap-ci-design.md` (+ the earlier
   `2026-05-18-test-strategy.md`). Promoted to a **required check on `develop`**.
@@ -1070,11 +1078,15 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 - **blocked-by:** —
 - **status:** deferred (2026-06-11) — explicitly sequenced **after the R-33 UI
   redesign**: onboarding should teach the final UI, not one about to change.
-  Only the profile-setup `OnboardingPage` exists; no feature-discovery layer
-  (no welcome modal, tour, coachmarks, or empty-state CTAs).
-- **scope:** contextual empty states (explanation + CTA) + one short welcome modal
-  (esp. explaining the section split). Avoid an 8-screen wizard. Time to the
-  friends-and-family invite, not before. (post-V1 brainstorm item 5.)
+  Only the profile-setup `OnboardingPage` exists; no welcome modal, tour or
+  coachmarks. The empty-state half of the scope did land inside **R-33**
+  (#212): the shared `EmptyState` takes an explanatory `hint` plus an optional
+  `action`, and the screens where an empty list is a dead end (recipes,
+  ingredients, recipe detail) pass the button that gets you out of it — so what is
+  left here is the guided layer, not the per-screen prompts.
+- **scope:** one short welcome modal (esp. explaining the section split) and
+  whatever pointing-at-features layer it needs. Avoid an 8-screen wizard. Time
+  to the friends-and-family invite, not before. (post-V1 brainstorm item 5.)
 
 ## R-30 — Responsive desktop density, per-feature (post-V1 item 6 / U-8)
 - **decision:** (none yet)
@@ -1188,8 +1200,9 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 - **decision:** D-F25, D-F26
 - **blocked-by:** —
 - **status:** **shipped** — favorites, prep time, structured steps, and
-  private notes have landed. Per-step photos split off to **R-36b** (below),
-  blocked on a storage/cost decision.
+  private notes have landed. Photo work split off to **R-36b** (below) —
+  also shipped, as one cover photo per recipe rather than the per-step model
+  this entry originally scoped.
 - **shipped:** recipe **favorites** (device-local; `useRecipeFavorites` in
   `RecetasPage`/`RecetaDetailPage`, pure helpers in
   `src/features/recipes/favorites.ts`; #32a2df4) and recipe **prep time**
@@ -1209,18 +1222,34 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   single-table update, no RPC, since the table's own RLS scopes it.
 - **scope (open):** none — remaining photo work is **R-36b**.
 
-## R-36b — Per-step recipe photos
-- **decision:** (D-id at spec time)
-- **blocked-by:** R-36 (structured steps — shipped); a storage/cost decision
-  for the first Supabase Storage bucket in the app
-- **status:** not started — split out of R-36 so structured steps and private
-  notes could ship without waiting on the storage question.
-- **scope (open):** per-step photos, the "Fotos de los pasos" setting, and the
-  whole Supabase Storage stack this needs for the first time in the app
-  (first bucket, upload flow, storage RLS, resizing). `recipes.photo_url`
-  exists but is dead (never written; recipe "images" are generated colour
-  placeholders, see `src/features/recipes/mediaHue.ts`) and is not reused by
-  this scope — it is a separate, still-unaddressed loose end.
+## R-36b — Recipe cover photo
+- **decision:** (D-id at spec time; design doc
+  `docs/superpowers/specs/2026-07-20-r36b-recipe-photo-design.md`)
+- **blocked-by:** R-36 (structured steps — shipped)
+- **status:** **shipped** — pivoted from the original per-step scope (below)
+  to one cover photo per recipe once the storage/cost question converged:
+  cost was never the constraint (single-user scale is $0–2/mo on any Storage
+  option), the only real line item was Supabase's paid image-transform
+  add-on, avoided entirely by resizing client-side. Per-step photos are
+  **dropped for good** — not deferred — a separate epic if ever revived.
+- **shipped:** first Supabase Storage bucket in the app, `recipe-photos`
+  (public, 2 MB cap, `image/webp`-only; RLS on `storage.objects` gated on the
+  recipe's real creator — `data-model.md` → Storage). `recipes.photo_url`
+  (previously dead) now holds the object path, not a URL
+  (`src/features/recipes/photoStorage.ts`). Client-side resize-to-WebP with
+  no dependencies (`src/features/recipes/photoResize.ts`): 1600 px "full" +
+  400 px "thumb", both derived from one `<canvas>` pass. Upload/clear is a
+  dedicated client action, not folded into `save_recipe` (single-table
+  mutation, invariant 3 doesn't require an RPC). One `RecipePhoto` component
+  covers every media slot (list card, mobile row, detail hero, editor tile);
+  tapping the detail hero opens a lightbox; add/replace/remove on the editor
+  tile is gated on `canEditRecipe`. A weekly `recipe-photo-reap` cron reaps
+  bucket prefixes whose `recipes` row is gone (`operations.md` → Cron) — an
+  invariant tripwire on "recipes are never hard-deleted", not a sweeper for
+  half-failures where the recipe row survives; those self-correct on retry.
+  Neither the schedule migration nor the edge function itself has been
+  applied/deployed to the live project yet (deploy the function first — the
+  schedule firing early is a silent no-op, not a visible failure).
 
 ## R-37 — Interactive TDEE calculator
 - **decision:** (D-id at spec time)
@@ -1327,4 +1356,4 @@ Status as of 2026-06-11. (R-xx entries above carry the detail.)
 | post-V1 item 4 | Rich home + diet calendar + TDEE surface | — | dropped (R-28 removed; UI-refactor remainder → R-33) |
 | post-V1 item 5 | In-app onboarding | R-29 | deferred until after R-33 |
 | post-V1 item 6 | Responsive desktop density | R-30 → R-33 | folded into R-33 |
-| R-36b | Per-step recipe photos + Supabase Storage | R-36 | deferred — blocked on storage/cost decision |
+| R-36b | Recipe cover photo + Supabase Storage (per-step photos dropped) | R-36 | done |

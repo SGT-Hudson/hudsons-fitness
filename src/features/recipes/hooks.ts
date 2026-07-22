@@ -9,6 +9,8 @@ import {
   type SaveRecipePayload,
 } from './api';
 import { fetchRecipeNote, saveRecipeNote } from './notes';
+import { PhotoDecodeError } from './photoResize';
+import { clearRecipePhoto, setRecipePhoto } from './photoStorage';
 
 export function useRecipes() {
   const { user } = useAuth();
@@ -71,6 +73,39 @@ export function useSaveRecipeNote() {
       saveRecipeNote(recipeId, note),
     onSuccess: (_data, { recipeId }) => {
       void qc.invalidateQueries({ queryKey: ['recipes', 'note', recipeId] });
+    },
+    onError: toastError,
+  });
+}
+
+// R-36b task 3: cover-photo upload/clear. Both invalidate the whole
+// ['recipes'] branch (list + detail) — after either mutation `photo_url`
+// (and `updated_at`, which the cache-busting URL depends on) has changed, so
+// both the card grid and the detail page need a refetch.
+export function useSetRecipePhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ recipeId, file }: { recipeId: string; file: File }) =>
+      setRecipePhoto(recipeId, file),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['recipes'] });
+    },
+    // A file the browser cannot decode (a raw HEIC) is the one failure the
+    // user can act on, and the photo field reports it inline with copy that
+    // says how — a second, generic "something went wrong" toast on top of that
+    // would only be noise. Everything else still toasts.
+    onError: (err) => {
+      if (!(err instanceof PhotoDecodeError)) toastError(err);
+    },
+  });
+}
+
+export function useClearRecipePhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (recipeId: string) => clearRecipePhoto(recipeId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['recipes'] });
     },
     onError: toastError,
   });

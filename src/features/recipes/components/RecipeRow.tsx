@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { useNum } from '@/hooks/useNum';
 import type { RecipeListItem } from '../api';
-import { RecipeMediaPlaceholder } from './RecipeMediaPlaceholder';
+import { RecipePhoto } from './RecipePhoto';
 import { RecipeMacroDots } from './RecipeMacroDots';
 import { RecipeWarningPills } from './RecipeWarningPills';
 import { RecipeFavoritePin } from './RecipeFavoritePin';
@@ -43,7 +43,7 @@ export function RecipeRow({
   return (
     <article className="relative flex min-h-[96px] overflow-hidden rounded-[14px] border bg-card">
       <div className="relative w-24 shrink-0 self-stretch">
-        <RecipeMediaPlaceholder recipeId={recipe.id} variant="thumbnail" />
+        <RecipePhoto recipe={recipe} variant="thumbnail" />
         <RecipeFavoritePin
           favorite={favorite}
           onToggle={onToggleFavorite}

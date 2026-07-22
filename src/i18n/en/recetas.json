@@ -8,7 +8,21 @@
     "remove": "Remove from favorites"
   },
   "media": {
-    "placeholderAlt": "Recipe without a photo"
+    "placeholderAlt": "Recipe without a photo",
+    "photoAlt": "Photo of {{name}}",
+    "openPhoto": "View the full-size photo",
+    "lightboxTitle": "Recipe photo",
+    "closePhoto": "Close the photo",
+    "filePicker": "Photo file",
+    "addPhoto": "Add photo",
+    "addShort": "Add",
+    "replacePhoto": "Replace the photo",
+    "replaceShort": "Replace",
+    "removePhoto": "Remove the photo",
+    "removeShort": "Remove",
+    "uploading": "Uploading the photo…",
+    "removing": "Removing the photo…",
+    "unsupportedFormat": "Unsupported format. Try a JPG or PNG."
   },
   "list": {
     "ingredients_one": "{{count}} ingredient",
@@ -48,7 +62,9 @@
     "backToList": "Back to Recipes",
     "notesTitle": "My notes",
     "notesPlaceholder": "Jot down your tweaks: less salt, 5 more minutes…",
-    "notesSaved": "Saved"
+    "notesSaved": "Saved",
+    "notesUnsaved": "Unsaved",
+    "notesSave": "Save"
   },
   "editor": {
     "newTitle": "New recipe",

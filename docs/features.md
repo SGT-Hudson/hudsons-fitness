@@ -70,8 +70,14 @@ requires `initial_weight_kg` on the profile; to-goal additionally requires a
 derivable target weight). The **target weight** is computed on render by
 `computeTargetWeightKg` from `goal.target_body_fat_pct` + the latest
 `body_fat_pct`/`weight_kg` (fat-free-mass method — assuming fat loss only);
-it is never stored. **Estimated BMR** (Mifflin-St Jeor) is shown as a quiet,
-delta-free line — it is a deterministic function of current weight, so a
+it is never stored. A **goal-date ETA** follows (`computeGoalEta`, R-07 / D-B4):
+the trend weight is projected to that target at the Kalman filter's own
+model-implied rate — `(avgIntake − expenditure) / KCAL_PER_KG` — so the estimate
+reuses the filter's persisted quantities instead of adding a second estimator,
+and is likewise derived, never stored. It degrades honestly: at maintenance
+(or beyond a 2-year horizon) it says *stalled*, and moving away from the target
+it says so rather than printing a date. **Estimated BMR** (Mifflin-St Jeor) is
+shown as a quiet, delta-free line — it is a deterministic function of current weight, so a
 BMR "Δ" would merely restate the weight trend.
 
 Below the weight headline the card shows body-fat, muscle, and water
@@ -129,19 +135,44 @@ transaction).
 Steps belong to the shared recipe row, so only the recipe's real creator may
 write them. A **private note** is the counterpart: free text stored on
 `user_recipe_refs.note` (never on the pooled `recipes` row — it is PII), shown
-on the detail page and saved on blur. It exists for any recipe in my library,
-including one someone else created and I cannot edit but can still annotate.
+on the detail page. It saves on an explicit button, and the card marks itself
+unsaved while the text differs from what is stored — the note used to save on
+blur, which made it the one field in the app that wrote itself and gave no sign
+when work was still pending. It exists for any recipe in my library, including
+one someone else created and I cannot edit but can still annotate.
 
 Per-ingredient scaling honors the `per_serving` flag: a normal line's quantity
 is divided across `servings`, but a `per_serving = true` line is added fresh
 *per serving served* (the batch-cooked-curry trick — the stew's macros divide
 by 5 servings while the 70 g of rice is counted per plate).
 
+Each recipe carries one optional **cover photo** (R-36b), the app's first use
+of Supabase Storage. Picking a file resizes and re-encodes it to WebP entirely
+client-side, off a plain `<canvas>` (no dependencies): a 1600 px-long-edge
+"full" for the detail hero and a 400 px "thumb" for cards/rows/the editor
+tile, both uploaded as-is so Supabase's paid image-transform tier is never
+touched. One `RecipePhoto` component renders every media slot — the list
+card, mobile row, detail hero, and editor tile — falling back to the existing
+deterministic colour placeholder when there's no photo, or if the image fails
+to load. Tapping the detail hero opens the full photo in a lightbox. Only the
+recipe's real creator gets add/replace/remove controls on the editor tile
+(`canEditRecipe`, the same gate as steps); picking a file the browser can't
+decode (a raw HEIC picked via the Files app rather than Photos) reports an
+inline "unsupported format" message instead of failing silently. Per-step
+photos were the original R-36b scope and were dropped for good in favour of
+this single cover photo per recipe.
+
 The Recetas list switches presentation by breakpoint, not by user choice:
 under `md` it renders dense `RecipeRow` rows, at `md` and above a responsive
-grid of `RecipeCard`s (photo or initials placeholder, name, kcal/serving,
-ingredient-count badge) — both lists are always in the DOM, one hidden by a
-responsive class. There is no view toggle and nothing persisted.
+grid of `RecipeCard`s (cover photo or the colour placeholder, name,
+kcal/serving, ingredient-count badge, favourite pin) — both lists are always in
+the DOM, one hidden by a responsive class. There is no row/grid view toggle.
+What the user *does* control is the filter bar above them — search plus
+meal-type, goal, and favourites-only chips — and **favourites**, which are
+device-local (`localStorage`, no schema: a client UI preference, same
+convention as the shopping checklist) and float their recipes to the top of
+whatever the filters left. The favourites-only chip filters in memory on the
+page for that reason, outside the shared pure filter helper.
 Recipes are part of the ★ Library Contribution & Lifecycle Model
 (`data-model.md#library-model`): the pool is shared, "my library" is the set
 of my `user_recipe_refs` rows, and "delete" = `hide_owned_recipe` (drops my
@@ -487,18 +518,19 @@ entries from the sources have been dropped. (Decided, scheduled work lives in
 
 - **Nutrition:** import recipes from a URL with auto-computed macros (JSON-LD +
   LLM ingredient mapping); dynamic serving rescaling (scale a recipe to N people or a target
-  kcal); a **BEDCA seed** of ~100 generic Spanish staples (huevos, pollo,
-  arroz blanco, leche entera, aceite de oliva, …) inserted idempotently as
-  system rows to improve autocomplete for genéricos OpenFoodFacts covers
-  poorly.
+  kcal). (The generic-staples seed that used to sit here shipped as F-1 — 215
+  bilingual whole foods inserted per-row idempotently as `source = 'system'`
+  rows, sourced from USDA rather than BEDCA.)
 - **Body composition:** smart-scale / health-platform integrations
   (Withings, Renpho, Garmin, Apple Health, Google Fit) to avoid manual
-  entry; trend charts with regression, goal-date prediction, and plateau
-  alerts.
+  entry; regression fits over the trend charts and plateau alerts (the
+  goal-date prediction from this entry shipped — see the ETA line above).
 - **Training (not in the original spreadsheet, expected for a gym app):**
-  routines and training plans; set/rep/weight/RPE logging with per-exercise
-  history; 1RM / volume / progression tracking; rest and superset timers;
-  an exercise library; cardio / NEAT and step tracking via wearables.
+  superset timers (the runner's rest timer shipped, supersets never did);
+  cardio / NEAT and step tracking via wearables. The rest of this entry —
+  routines and training plans, set/rep/weight/RPE logging with per-exercise
+  history, e1RM / volume / progression tracking, an exercise library — shipped
+  as the F-2…F-4 family; see *Entrenamiento* above.
 - **Health & wellbeing:** sleep and mood logging correlated with
   performance; injury / niggle tracking with automatic exercise exclusion.
 - **Goals UX:** a body-fat-goal visual reference on `/progress/goals` — reference
