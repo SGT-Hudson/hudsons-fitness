@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import '@/i18n';
 import i18n from '@/i18n';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
@@ -10,6 +10,18 @@ const useExercise = vi.fn();
 vi.mock('@/features/training/exercises/hooks', () => ({
   useExercise: (...a: unknown[]) => useExercise(...a),
 }));
+
+// The add sheet's data hooks read the auth context; stub them so the page
+// renders without an AuthProvider (the sheet itself is tested on its own).
+const mutate = vi.fn();
+vi.mock('@/features/training/routines/hooks', () => ({
+  useRoutines: () => ({ data: [{ id: 'r-1', name: 'Torso A', routine_exercises: [] }] }),
+  useSaveRoutine: () => ({ mutate, isPending: false }),
+}));
+vi.mock('@/features/training/programs/hooks', () => ({
+  useActiveProgram: () => ({ data: null }),
+}));
+vi.mock('@/hooks/use-media-query', () => ({ useMediaQuery: () => true })); // desktop → Dialog
 
 import { ExerciseDetailPage } from './ExerciseDetailPage';
 import type { Exercise } from '@/features/training/exercises/api';
@@ -30,7 +42,7 @@ function renderAt(id: string) {
   );
 }
 
-beforeEach(async () => { useExercise.mockReset(); await i18n.changeLanguage('es'); });
+beforeEach(async () => { useExercise.mockReset(); mutate.mockReset(); await i18n.changeLanguage('es'); });
 
 describe('ExerciseDetailPage', () => {
   it('shows the exercise on success', () => {
@@ -39,6 +51,36 @@ describe('ExerciseDetailPage', () => {
     });
     renderAt('ex-1');
     expect(screen.getByRole('heading', { name: 'Press de banca' })).toBeInTheDocument();
+  });
+
+  it('opens the add sheet and appends the exercise to the chosen routine', () => {
+    useExercise.mockReturnValue({
+      data: ex, isLoading: false, isError: false, error: null, refetch: vi.fn(),
+    });
+    renderAt('ex-1');
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir a la rutina' }));
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        routineId: 'r-1',
+        exercises: [
+          expect.objectContaining({
+            exercise_id: 'ex-1', position: 1, target_sets: 3,
+            target_reps_min: 8, target_reps_max: 12,
+          }),
+        ],
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('does not offer the add sheet when the exercise failed to load', () => {
+    useExercise.mockReturnValue({
+      data: undefined, isLoading: false, isError: true,
+      error: { code: 'PGRST116' }, refetch: vi.fn(),
+    });
+    renderAt('missing');
+    expect(screen.queryByRole('button', { name: 'Añadir' })).not.toBeInTheDocument();
   });
 
   it('shows a loading status while fetching', () => {

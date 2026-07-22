@@ -323,5 +323,18 @@
     "target": "objetivo {{value, number}}",
     "anchor": { "10": "ninguna", "9": "1 más", "8": "2 más", "7": "3–4 más", "6": "fácil" },
     "anchorInline": { "6": "fácil", "6.5": "", "7": "3–4 reps en reserva", "7.5": "", "8": "2 reps en reserva", "8.5": "", "9": "1 rep en reserva", "9.5": "", "10": "sin reps en reserva" }
+  },
+  "addFromDetail": {
+    "open": "Añadir",
+    "title": "Añadir {{name}}",
+    "heading": "¿Dónde lo añades?",
+    "routineLabel": "Rutina",
+    "permanentHint": "Se añade a la rutina de forma permanente, no solo para el próximo día.",
+    "addToRoutine": "Añadir a la rutina",
+    "noRoutines": "Todavía no tienes rutinas. Puedes entrenarlo ahora en una sesión suelta.",
+    "trainNow": "Entrenar ahora",
+    "trainNowHint": "Abre una sesión nueva con este ejercicio ya puesto, solo por esta vez.",
+    "added": "Añadido a {{name}}",
+    "when": { "today": "hoy", "tomorrow": "mañana", "inDays": "en {{count}} días" }
   }
 }

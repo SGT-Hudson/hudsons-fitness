@@ -319,5 +319,18 @@
     "target": "target {{value, number}}",
     "anchor": { "10": "none left", "9": "1 more", "8": "2 more", "7": "3–4 more", "6": "easy" },
     "anchorInline": { "6": "easy", "6.5": "", "7": "3–4 reps left", "7.5": "", "8": "2 reps left", "8.5": "", "9": "1 rep left", "9.5": "", "10": "no reps left" }
+  },
+  "addFromDetail": {
+    "open": "Add",
+    "title": "Add {{name}}",
+    "heading": "Where do you want it?",
+    "routineLabel": "Routine",
+    "permanentHint": "This adds it to the routine for good, not just for the next session.",
+    "addToRoutine": "Add to routine",
+    "noRoutines": "You don't have any routines yet. You can still train it now as a one-off session.",
+    "trainNow": "Train now",
+    "trainNowHint": "Opens a new session with this exercise already in it, just this once.",
+    "added": "Added to {{name}}",
+    "when": { "today": "today", "tomorrow": "tomorrow", "inDays": "in {{count}} days" }
   }
 }
