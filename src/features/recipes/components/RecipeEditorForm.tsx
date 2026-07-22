@@ -256,7 +256,10 @@ export function RecipeEditorForm({ initial, error, onSubmit, recipe, onRemove }:
           {/* Meta (canvas RecetaMetaEdit / RecetaMetaCreate): the recipe's
               identity — photo tile, a borderless title that reads as a heading
               rather than a form field, and the three meta values inline. */}
-          <Card className="flex gap-3 p-3 md:gap-4 md:p-4">
+          {/* `flex-wrap`: the photo field's unsupported-format message is a
+              sibling of the tile column (see RecipePhotoField), so it wraps
+              onto its own full-width line instead of being squeezed into 70px. */}
+          <Card className="flex flex-wrap gap-3 p-3 md:gap-4 md:p-4">
             {recipe ? (
               <RecipePhotoField recipe={recipe} />
             ) : (

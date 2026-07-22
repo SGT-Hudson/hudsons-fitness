@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import i18n from '@/i18n';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // The field renders through `publicPhotoUrl` (client-side, but it reads the
@@ -105,21 +105,55 @@ describe('RecipePhotoField — the three states', () => {
 });
 
 describe('RecipePhotoField — the ownership gate (R-01)', () => {
-  it('shows a pooled recipe’s photo to the holder but offers no controls', () => {
+  it('shows a pooled recipe’s photo to the holder but offers no editing controls', () => {
     render(
       <RecipePhotoField
         recipe={recipe({ created_by_user_id: 'someone-else', photo_url: 'r-1/full.webp' })}
       />,
     );
     expect(screen.getByRole('img', { name: 'Foto de Pollo con arroz' })).toBeInTheDocument();
-    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: 'Cambiar la foto' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Quitar la foto' })).not.toBeInTheDocument();
     expect(document.querySelector('input[type="file"]')).toBeNull();
+    // Looking is not editing: the photo stays enlargeable for whoever can see it.
+    expect(screen.getByRole('button', { name: 'Ver la foto a tamaño completo' })).toBeVisible();
   });
 
-  it('offers no controls to a signed-out render either', () => {
+  it('offers no editing controls to a signed-out render either', () => {
     currentUserId = null;
     render(<RecipePhotoField recipe={recipe({ photo_url: 'r-1/full.webp' })} />);
-    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: 'Cambiar la foto' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Quitar la foto' })).not.toBeInTheDocument();
+  });
+});
+
+describe('RecipePhotoField — enlarging the photo from the editor', () => {
+  it('opens the lightbox on the full rendition when the tile is tapped', async () => {
+    const user = userEvent.setup();
+    render(<RecipePhotoField recipe={recipe({ photo_url: 'r-1/full.webp' })} />);
+
+    await user.click(screen.getByRole('button', { name: 'Ver la foto a tamaño completo' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('img', { name: 'Foto de Pollo con arroz' })).toHaveAttribute(
+      'src',
+      expect.stringContaining('r-1/full.webp'),
+    );
+  });
+
+  it('offers nothing to enlarge while the recipe has no photo', () => {
+    render(<RecipePhotoField recipe={recipe()} />);
+    expect(
+      screen.queryByRole('button', { name: 'Ver la foto a tamaño completo' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('drops the affordance when the tile’s image turns out to be broken', () => {
+    render(<RecipePhotoField recipe={recipe({ photo_url: 'r-1/full.webp' })} />);
+    fireEvent.error(screen.getByRole('img', { name: 'Foto de Pollo con arroz' }));
+    expect(
+      screen.queryByRole('button', { name: 'Ver la foto a tamaño completo' }),
+    ).not.toBeInTheDocument();
   });
 });
 
