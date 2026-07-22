@@ -184,9 +184,11 @@ But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves w
 
 **Ruling:** Keep the architecture as-is and record an explicit decision boundary plus a pre-blessed escape hatch. Boundary: server state → TanStack Query (per-feature `hooks.ts`); cross-cutting app concerns → React Context, used sparingly (at review time: Auth + Theme); everything else → local `useState` / route params; no query-string (`useSearchParams`) UI state. Escape hatch: Zustand is the pre-blessed library for shared, frequently-updating client state, introduced per-slice only when a real need appears — never a wholesale migration. Redux/MobX/etc remain rejected.
 
+> ⚠ **The blanket no-query-string rule qualified by R-33 wave 6 (2026-07-12, #194).** The Ingredientes list keeps its search query in the URL — `useSearchParams()` read as `?q=`, written with `setSearchParams(…, { replace: true })`, and read again by `IngredientMethodPage` — because the full-screen search navigates *to* the scoped list and that scope must survive the navigation (D-F24). The rule now reads: query-string state only where a value must survive navigation or be linkable; ephemeral UI state (toggles, range pills, sheet open/close) stays local `useState`.
+
 **Why:** The architecture is followed faithfully and is the conventionally correct stack for a Supabase/PostgREST SPA, not an arbitrary imposition: the app is overwhelmingly server-state, and genuine global client state is just auth + theme (low-frequency, read-mostly, where Context's re-render weakness does not bite). Redux would be wrong (no complex client state machine; RTK Query would re-implement TanStack Query worse-integrated with Supabase). Zustand is the only defensible alternative and only reactively, per-slice, when a real shared/frequently-updating need appears (global command palette, cross-route wizard, optimistic-UI coordination). One drift to note for the doc rewrite: there are **two** sanctioned Contexts (Auth + Theme, theme added Sprint 14), so the inherited "React Context for auth" wording understates reality and must be corrected.
 
-**Status:** decided
+**Status:** decided · no-query-string rule qualified by R-33 wave 6
 
 ## D-C2 — Forms — RHF + zod everywhere
 
@@ -234,7 +236,7 @@ But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves w
 
 **Ruling:** Confirmed and tightened. Toasts fire from the layer that owns the mutation (usually a `hooks.ts` file). When a component owns its own mutation flow without a separate hook — e.g. destructive confirm dialogs like `DeleteAccountDialog.tsx` — the component calls toast directly. Pages never call toast. No code action; only the wording is rewritten.
 
-**Why:** The original "fire from hooks, not pages" rule was correct and followed, but too absolute — it did not account for the legitimate case where a component (not a page) owns a self-contained destructive mutation flow with no separate hook, where calling toast from the component is correct. The tightened phrasing preserves the real intent (pages never toast; the mutation owner toasts) while documenting that the owner can be a component when there is no hook. Implementation details worth preserving so they are not lost: `TOAST_LIMIT = 3`, success default 4000ms, destructive default 7000ms, the 5 helpers (`toastSaved/Deleted/Created/Applied/Error`), and the opt-in `durationMs` override.
+**Why:** The original "fire from hooks, not pages" rule was correct and followed, but too absolute — it did not account for the legitimate case where a component (not a page) owns a self-contained destructive mutation flow with no separate hook, where calling toast from the component is correct. The tightened phrasing preserves the real intent (pages never toast; the mutation owner toasts) while documenting that the owner can be a component when there is no hook. Implementation details worth preserving so they are not lost: `TOAST_LIMIT = 3`, success default 4000ms, destructive default 7000ms, the 6 helpers (`toastSaved/Deleted/Created/Applied/Error` plus `toastUndoableQuickAdd`), and the opt-in `durationMs` override.
 
 **Status:** decided
 
@@ -260,13 +262,15 @@ But BMR differs from `bone_kg` (D-A6): BMR carries trend information (it moves w
 
 **Ruling:** Full redesign (user-designed, endorsed). The composition stack becomes `fat%` + `lean%` only (`lean% ≡ 100 − bodyFat%`, a true disjoint 100% partition, fat at bottom, hard `domain={[0,100]}` now correct). Muscle% and water% are rendered as independent non-stacked trend charts (plus a fat% trend), not stacked peers. Add a `%`↔`kg` toggle computed frontend from the stored `weight_kg` (zero schema work) as local `useState`. Keep per-series linear interpolation (`interpolateSeries`) as-is.
 
+> ⚠ **The fat/lean stack and the hard `[0,100]` domain superseded by R-33 wave 7 (2026-07-14, #199).** `CompositionChart` is now a single chart of three independent, non-stacked lines — grasa / músculo / agua — because a 100% partition can only show two of the four numbers the app stores and hid the two the user actually logs a scale for. With no partition to anchor it the hard cap went too: the Y domain is padded to the data (`domain={yDomain ?? ['auto','auto']}`). The `%`↔`kg` toggle as local `useState`, the frontend kg decomposition and its presentational-only guardrail all still hold.
+
 **Why:** All three inherited sub-rules (Y-axis capped at 100%, body fat at bottom, linear interpolation) were implemented exactly as worded — but the convention itself is semantically wrong. Body water is distributed *within* lean tissue, so `bodyFat%`, `muscle%`, `water%` are **not disjoint partitions** of body mass — they overlap. Stacking them implies a parts-of-a-whole relationship that does not exist; the sum routinely exceeds 100% (e.g. 20+40+55=115), which the hard `domain={[0,100]}` then clips into a visibly misleading chart.
 
 The "body fat at bottom" sub-rule only existed *because* of that incorrect stacking. fat%/lean% is a true partition that sums to exactly 100%, making the hard cap correct and meaningful; muscle/water belong as independent trend series because that is what a progress tracker actually needs ("is my body-fat % falling?").
 
 The kg toggle is the more honest view for the key cut question ("am I retaining muscle *mass* while losing fat?" — muscle% can rise merely because fat fell) and costs zero schema/data work. The kg decomposition is presentational only and must not feed protein/TDEE — same guardrail as D-A6's bone analysis. Recording why the old fat+muscle+water stack was a category error (non-disjoint ratios) prevents its reintroduction.
 
-**Status:** decided · done (R-11)
+**Status:** decided · done (R-11) · stack / hard `[0,100]` domain superseded by R-33 wave 7
 
 ## D-D6 — Plan = default truth — confirm + single RPC + partial unique index + today-guard
 

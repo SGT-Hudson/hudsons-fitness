@@ -155,7 +155,7 @@ supabase/
     ├── recalculate-tdee/index.ts           # 0 3 * * *  UTC (≈04:00 CET)
     ├── cron-healthcheck/index.ts           # 0 6 * * *  UTC (R-18, live)
     ├── delete-account/index.ts             # GDPR account erasure (user-invoked)
-    └── recipe-photo-reap/index.ts          # 0 5 * * 0  UTC (R-36b, NOT YET DEPLOYED)
+    └── recipe-photo-reap/index.ts          # 0 5 * * 0  UTC (R-36b, live)
 ```
 
 The six functions:
@@ -175,9 +175,7 @@ The six functions:
 - **`delete-account`** — user-invoked GDPR account erasure.
 - **`recipe-photo-reap`** — weekly tripwire on the `recipe-photos` bucket:
   reaps prefixes whose `recipes` row is gone, which should never happen
-  (R-36b; details and the exact scope under [Cron](#cron)). **Not yet
-  deployed** — deploy it before applying its cron schedule migration; both are
-  user-gated steps.
+  (R-36b; details and the exact scope under [Cron](#cron)).
 
 **Deploy** (per function):
 
@@ -345,7 +343,7 @@ Schedules are in UTC (D-F4, D-F5):
 | `0 1 * * *` | daily nutrition snapshot | `daily-nutrition-snapshot` |
 | `0 2 * * 1` | weekly rollover (Monday) | `weekly-rollover` |
 | `0 3 * * *` | recalculate TDEE | `recalculate-tdee` |
-| `0 5 * * 0` | recipe-photo debris reap (Sunday; R-36b — schedule staged, function NOT yet deployed) | `recipe-photo-reap` |
+| `0 5 * * 0` | recipe-photo debris reap (Sunday; R-36b, live since 2026-07-21) | `recipe-photo-reap` |
 | `0 6 * * *` | cron liveness healthcheck (R-18, live since 2026-05-18) | `cron-healthcheck` |
 
 **Why the DST drift is harmless.** The schedules are fixed in UTC, so the
@@ -498,22 +496,25 @@ Read that rule literally, because it is narrower than "reaps orphaned photos":
   reaped prefix survives and is unreachable by any code path (nothing writes
   one today).
 
-- **STAGED — not yet applied to the live project, and the order matters.**
-  Neither `supabase/migrations/20260720120100_r36b_recipe_photo_reap_cron.sql`
-  (the `cron.schedule` entry, `0 5 * * 0` UTC) nor the edge function it targets,
-  `supabase/functions/recipe-photo-reap/index.ts`, has been applied/deployed
-  live yet. **Deploy the function first**, exactly as with the R-18
-  `cron-healthcheck` staging note above:
+- **Live since 2026-07-21 (ordered), and the order matters.** The R-36b apply
+  ran migrations → edge-function deploy → cron schedule:
+  `20260720120000_r36b_recipe_photos_bucket.sql` (the bucket + its
+  `storage.objects` policies), then
   ```bash
   supabase functions deploy recipe-photo-reap --project-ref upvraruehzurbetzrxov \
     --use-api --import-map supabase/functions/deno.json
   ```
-  Applying the schedule first is not "harmless but noisy" — it is **invisible**.
-  `private.invoke_edge_function` posts via `net.http_post` (pg_net), which is
-  asynchronous: it enqueues the request and returns a request id, so the cron
-  run commits as a success no matter what the HTTP call later does. A 404 from
-  the missing function lands in `net._http_response` and nowhere else, never in
-  `cron.job_run_details`.
+  then `20260720120100_r36b_recipe_photo_reap_cron.sql` (the `cron.schedule`
+  entry, `0 5 * * 0` UTC). Honour that order on any redeploy/rollback:
+  scheduling before the function exists is not "harmless but noisy" — it is
+  **invisible**. `private.invoke_edge_function` posts via `net.http_post`
+  (pg_net), which is asynchronous: it enqueues the request and returns a request
+  id, so the cron run commits as a success no matter what the HTTP call later
+  does. A 404 from the missing function lands in `net._http_response` and
+  nowhere else, never in `cron.job_run_details`. Two manual invocations verified
+  the deployed function against the live bucket: empty bucket →
+  `checked 0 / reaped 0`, and with one real recipe photo present →
+  `checked 1 / reaped 0` (the healthy tripwire result described above).
 
 ## Data seeding
 
@@ -612,7 +613,7 @@ complete history rather than the lone Sprint-9 file.
 20260523120001_r21_profiles_contribute_to_off.sql   # applied 2026-05-21 (R-21 — later removed)
 20260523120050_f1_ingredients_submacro_cols.sql     # applied 2026-05-23 (F-1 / U-1): ingredients sub-macro columns
 20260523120100_f1_whole_foods_seed.sql              # applied 2026-05-23 (F-1): whole-foods system seed (scripts/whole-foods/ pipeline)
-20260524120000_r21_drop_contribute_to_off.sql       # STAGED — R-21 REMOVED (drops the column; apply after the removal reaches main)
+20260524120000_r21_drop_contribute_to_off.sql       # applied live 2026-05-21 (R-21 REMOVED): drops the column, after the removal reached main
 20260525120000_u1_sub_macros.sql                    # applied 2026-05-25 (U-1): sub-macro columns on meal_logs + daily_nutrition_history
 20260526120000_u2_recipe_meal_types.sql             # applied 2026-05-26 (U-2): recipes.meal_types text[]
 20260527120000_u6_copy_week_meal.sql                # applied 2026-05-27 (U-6): copy-week / copy-meal RPC
@@ -639,8 +640,8 @@ complete history rather than the lone Sprint-9 file.
 20260718100000_r36_recipe_steps.sql                 # applied live 2026-07-20 (R-36): recipe_steps child table, RLS mirrors recipe_ingredients (sentinel-owner writes blocked)
 20260718100100_r36_save_recipe_steps.sql            # applied live 2026-07-20 (R-36): drops recipes.instructions; save_recipe's p_instructions text arg becomes p_steps jsonb — had to land before this frontend deployed, see ordering note below
 20260719120000_r22_update_with_check.sql            # applied live 2026-07-20 (R-22 follow-up, #214): ALTERs all fourteen public UPDATE policies to add an explicit WITH CHECK repeating each policy's USING verbatim; closes no hole (Postgres already applied USING to the NEW row), states the intent
-20260720120000_r36b_recipe_photos_bucket.sql        # STAGED (R-36b): recipe-photos Storage bucket (public, 2 MB, image/webp-only) + bucket-scoped SELECT and real-creator INSERT/UPDATE/DELETE RLS on storage.objects — the app's first Storage bucket
-20260720120100_r36b_recipe_photo_reap_cron.sql      # STAGED (R-36b): weekly recipe-photo-reap cron schedule; apply only AFTER deploying the edge function — an early firing is a silent no-op, not a visible failure (see Cron)
+20260720120000_r36b_recipe_photos_bucket.sql        # applied live 2026-07-21 (R-36b): recipe-photos Storage bucket (public, 2 MB, image/webp-only) + bucket-scoped SELECT and real-creator INSERT/UPDATE/DELETE RLS on storage.objects — the app's first Storage bucket
+20260720120100_r36b_recipe_photo_reap_cron.sql      # applied live 2026-07-21 (R-36b), AFTER deploying the edge function: weekly recipe-photo-reap cron schedule — an early firing would be a silent no-op, not a visible failure (see Cron)
 ```
 
 `supabase/migrations/` in the repo is the canonical source for the full,
@@ -710,14 +711,17 @@ visible in-app immediately — no frontend redeploy (the SPA queries at runtime)
 > `list_migrations` on the live project.
 
 **R-21 OFF contribute-back — REMOVED (2026-05-21).** The feature was pulled as
-a product decision before it was ever activated. Removal steps: (1) the
-`off-contribute` edge function + client/core code are deleted in-repo; (2) drop
-the `profiles.contribute_to_off` column via
-`20260524120000_r21_drop_contribute_to_off.sql` — **apply only after the
-removal is on `main`** (the Settings toggle WROTE the column; dropping it while
-old prod code is live would break, R-01-style); (3) delete the `off-contribute`
-edge function from the project; (4) remove the `OFF_USER_ID` / `OFF_PASSWORD`
-edge secrets. **Barcode scanning (R-20) is unaffected.**
+a product decision before it was ever activated. Removal, executed: (1) the
+`off-contribute` edge function + client/core code were deleted in-repo; (2) the
+`profiles.contribute_to_off` column was dropped via
+`20260524120000_r21_drop_contribute_to_off.sql`, applied live **after the
+removal was on `main`** (the Settings toggle WROTE the column; dropping it while
+old prod code was live would have broken it, R-01-style); (3) the
+`off-contribute` edge function is gone from the project (`list_edge_functions`
+returns only the six documented above); (4) remove the `OFF_USER_ID` /
+`OFF_PASSWORD` edge secrets — the one step not verifiable from the management
+API, and inert either way since nothing reads them.
+**Barcode scanning (R-20) is unaffected.**
 
 **R-19 Training MVP Wave-3 apply procedure (executed 2026-05-21).** The
 four training migrations were applied **in order** (filename-lexicographic
@@ -828,20 +832,22 @@ supabase stop --no-backup
 
 Local runs need Docker + the Supabase CLI; CI uses `supabase/setup-cli`.
 
-**Local ports (553xx).** Since 2026-07-19 `supabase/config.toml` pins the whole
+**Local ports (563xx).** Since 2026-07-19 `supabase/config.toml` pins the whole
 local stack out of the CLI defaults so it can run at the same time as the
 `financial-advisor` stack, which sits on the 543xx defaults; without this,
 `supabase start` here fails on every port while that project is up, not just
-the DB one.
+the DB one. The range moved 553xx→563xx on 2026-07-21: Windows reserves
+55167–55466 on this machine for Hyper-V, so nothing in the 553xx block could
+bind and `supabase start` failed there too.
 
 | service | port |
 | --- | --- |
-| `[api]` (PostgREST/Kong) | 55321 |
-| `[db]` | 55322 (shadow 55320) |
-| `[db.pooler]` | 55329 |
-| `[studio]` | 55323 |
-| `[inbucket]` | 55324 |
-| `[analytics]` | 55327 |
+| `[api]` (PostgREST/Kong) | 56321 |
+| `[db]` | 56322 (shadow 56320) |
+| `[db.pooler]` | 56329 |
+| `[studio]` | 56323 |
+| `[inbucket]` | 56324 |
+| `[analytics]` | 56327 |
 
 Always stop the stack with `supabase stop`, never `docker stop` — the CLI
 leaves orphaned containers/networks behind otherwise. Note that on CLI 2.101.0
