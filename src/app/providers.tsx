@@ -30,8 +30,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <ProfileLanguageSync />
-          {children}
+          {/* Wraps rather than sits beside the app: it holds the tree for the
+              few milliseconds between knowing the profile's language and
+              having applied it, so nothing is ever painted in the detector's
+              guess when the profile disagrees. */}
+          <ProfileLanguageSync>{children}</ProfileLanguageSync>
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
