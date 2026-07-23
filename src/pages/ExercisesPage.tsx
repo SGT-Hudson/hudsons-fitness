@@ -12,7 +12,8 @@ import { ExerciseFilters } from '@/features/training/components/ExerciseFilters'
 import { AppliedFilterChips, EMPTY_FILTERS, type BrowseFilters } from '@/features/training/components/AppliedFilterChips';
 import { useExercisesBrowse } from '@/features/training/exercises/hooks';
 import { PRIMARY_MUSCLE_VALUES, type Equipment, type PrimaryMuscle } from '@/features/training/exercises/api';
-import { musclesMatchingQuery } from '@/features/training/exercises/muscleSearch';
+import { muscleCodesForQuery } from '@/features/training/exercises/muscleSearch';
+import { MUSCLE_GROUPS } from '@/core/muscles';
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -29,12 +30,17 @@ export function ExercisesPage() {
   const [filters, setFilters] = useState<BrowseFilters>(EMPTY_FILTERS);
   const debounced = useDebouncedValue(query, 200);
 
-  // Typing a muscle name surfaces matches (parity with the picker).
+  // Typing a muscle name, a group name or a lay term surfaces matches
+  // (parity with the picker).
   const labelByCode = useMemo(
     () => Object.fromEntries(PRIMARY_MUSCLE_VALUES.map((c) => [c, t(`exerciseDialog.muscle.${c}`)])),
     [t],
   );
-  const textMuscles = musclesMatchingQuery(debounced, labelByCode);
+  const groupLabelByKey = useMemo(
+    () => Object.fromEntries(MUSCLE_GROUPS.map((g) => [g, t(`exerciseDialog.muscleGroup.${g}`)])),
+    [t],
+  );
+  const textMuscles = muscleCodesForQuery(debounced, labelByCode, groupLabelByKey);
 
   const resetKey = `${debounced}|${filters.category}|${filters.equipment}|${filters.level}|${filters.muscleValue}`;
 

@@ -3,6 +3,7 @@ import {
   cycleDayForDate,
   scheduledSlotForDate,
   projectCycle,
+  nextScheduledRoutine,
   prefillSetsFromRoutine,
   warmupWeightKg,
   type ProgramDaySlot,
@@ -57,6 +58,54 @@ describe('projectCycle', () => {
     const proj = projectCycle(slots, '2026-05-24', '2026-05-24', 3);
     expect(proj.map((p) => p.dateISO)).toEqual(['2026-05-24', '2026-05-25', '2026-05-26']);
     expect(proj.map((p) => p.slot?.routineId)).toEqual(['push', 'pull', 'legs']);
+  });
+});
+
+describe('nextScheduledRoutine', () => {
+  it('returns today when today is a training day', () => {
+    expect(nextScheduledRoutine(slots, '2026-05-24', '2026-05-24')).toEqual({
+      dateISO: '2026-05-24',
+      routineId: 'push',
+      daysAhead: 0,
+    });
+  });
+
+  it('skips rest days and returns the next training day', () => {
+    // 2026-05-27 is dayIndex 3 (rest), 05-28 is 4 (rest), 05-29 wraps to push.
+    expect(nextScheduledRoutine(slots, '2026-05-24', '2026-05-27')).toEqual({
+      dateISO: '2026-05-29',
+      routineId: 'push',
+      daysAhead: 2,
+    });
+  });
+
+  it('treats a rest day as rest even if it still carries a stale routine id', () => {
+    const stale: ProgramDaySlot[] = [
+      { dayIndex: 0, isRest: true, routineId: 'push' },
+      { dayIndex: 1, isRest: false, routineId: 'pull' },
+    ];
+    expect(nextScheduledRoutine(stale, '2026-05-24', '2026-05-24')?.routineId).toBe('pull');
+  });
+
+  it('skips slots whose routine is missing from the known set', () => {
+    const known = new Set(['legs']);
+    expect(nextScheduledRoutine(slots, '2026-05-24', '2026-05-24', known)).toEqual({
+      dateISO: '2026-05-26',
+      routineId: 'legs',
+      daysAhead: 2,
+    });
+  });
+
+  it('returns null for a program with no days', () => {
+    expect(nextScheduledRoutine([], '2026-05-24', '2026-05-24')).toBeNull();
+  });
+
+  it('returns null when the cycle is all rest', () => {
+    const allRest: ProgramDaySlot[] = [
+      { dayIndex: 0, isRest: true, routineId: null },
+      { dayIndex: 1, isRest: true, routineId: null },
+    ];
+    expect(nextScheduledRoutine(allRest, '2026-05-24', '2026-05-24')).toBeNull();
   });
 });
 

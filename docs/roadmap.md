@@ -38,7 +38,7 @@ reference shard carries it (never edit the decision entry).
 - R-27 — Bulk exercise catalog (Project B) — COMPLETE + released (2026-06-08); catalog live in prod
 - R-29 — In-app feature-discovery onboarding (post-V1 item 5) — deferred until after R-33
 - R-30 — Responsive desktop density, per-feature (REMOVED 2026-06-11 — folded into R-33)
-- R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — deferred from R-27
+- R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — SHIPPED
 - R-32 — DB-integration test tier / e2e guard for PostgREST select strings
 - R-33 — UI redesign: design system + nutrition screens — SHIPPED (released to `main` 2026-07-15, `v2026-07-15`)
 - R-34 — Gym screens redesign (blocked on gym design convergence)
@@ -54,6 +54,7 @@ reference shard carries it (never edit the decision entry).
 - R-43 — Small verifications & leftovers (ingredient is_verified, comida libre, meal times, bell, glyphs)
 - R-44 — Ingredient category (deferred from R-33 wave 6 — needs a taxonomy decision)
 - R-45 — Ingredient photos (gap record only — `ingredients` has no image column)
+- R-46 — Add an exercise mid-workout, from inside the live runner (split off R-31)
 - Feature & UX family index (F-x / U-x / post-V1 items / Projects A–B) — at end
 
 ## R-00 — Baseline current schema into migrations
@@ -1104,7 +1105,19 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 ## R-31 — Exercise search/browse follow-ups (deferred from Project B / R-27)
 - **decision:** (D-id at plan time)
 - **blocked-by:** none (Project B is complete + released)
-- **status:** not built — deferred, low priority.
+- **status:** SHIPPED — all three items built. (1) + (2) landed as one shared
+  `muscleCodesForQuery` (fine-muscle labels ∪ group names ∪ a curated bilingual
+  lay-term table), feeding `textMuscles` in both the browse page and the picker.
+  (3) landed as an **add sheet** on `/exercises/:id` with two destinations:
+  append to a routine (default = the one the active program trains next, via
+  `nextScheduledRoutine`; targets only, 3×8-12 by default) or "train now",
+  which opens a fresh session through the existing `location.state.prefill`
+  channel. Adding straight to a session was rejected: `save_workout` is a
+  replace-children RPC that writes `title`/`notes`/`program_id`/`routine_id`
+  with no coalesce, there is no "today's session" concept (several per day are
+  allowed), and a session row needs concrete reps + weight, so a placeholder
+  would pollute history/e1RM. Adding to the **live runner** was split out — see
+  R-46.
 - **scope:** the polish items intentionally dropped from B2c to keep it focused:
   (1) **lay-term search aliases** — a curated bilingual map (slang/lay term →
   muscle code(s) / exercise keywords) feeding the browse + picker search, so e.g.
@@ -1328,6 +1341,18 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   renders transiently and never persists. The canvas's ingredient screens use no
   photos either, so nothing is missing today — this exists only so the gap is
   recorded. Rides with recipe photo upload if that ever ships.
+
+## R-46 — Add an exercise mid-workout (live runner)
+- **decision:** (D-id at spec time)
+- **blocked-by:** —
+- **status:** todo — split off R-31 (2026-07-22), explicitly out of that batch.
+- **scope:** while a workout is running, add an exercise that wasn't planned.
+  The runner freezes its exercise list on entry: its reducer can add *sets* but
+  has no add-exercise action, so this needs a new action, the picker surfaced
+  inside the runner, and a decision on whether the addition stays in that one
+  session or is also appended to the routine behind it. R-31 shipped the
+  catalogue-side half (add to a routine, or start a session pre-filled); this is
+  the in-the-gym half.
 
 ## Feature & UX family index
 
