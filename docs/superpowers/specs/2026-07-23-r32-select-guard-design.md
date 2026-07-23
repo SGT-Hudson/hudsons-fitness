@@ -80,12 +80,28 @@ This is the only file that grows when a helper is added.
 
 ### The runner — `selects.itest.ts`
 
-One `it` per registry case: await `run()`, assert it does not throw. A broken
-select surfaces as a PostgREST 400 that the helper rethrows, so the failure names
-the helper and carries the server's own message (`column … does not exist`).
+One `it` per registry case: await `run()` and classify the outcome.
 
-Helpers that return `null`/`[]` for a missing user are *passing* — absence of
-data is the expected outcome and is not asserted on.
+"Assert it does not throw" is **wrong** and would make the suite permanently red:
+four in-scope helpers (`fetchRecipe`, `fetchTemplate`, `fetchSession`,
+`fetchRoutine`) end in `.single()`, which raises `PGRST116` ("0 rows") when the id
+matches nothing — exactly the situation the guard deliberately creates. Every
+helper rethrows the raw `PostgrestError`, so `err.code` is available.
+
+The rule is therefore a **strict allow-list on the error code**:
+
+- No error → pass.
+- `PGRST116` (no rows) → pass. Absence of data is the expected outcome.
+- **Any other code → fail**, surfacing code and message. That covers `42703`
+  (undefined column), `42P01` (undefined table), `PGRST100` (select parse error)
+  and `PGRST200` (no relationship found for an embed) without having to enumerate
+  them.
+
+An allow-list, not a deny-list: an unrecognised code must fail the build rather
+than pass unnoticed.
+
+Helpers that return `null`/`[]` for a missing user are passing — nothing is
+asserted about returned data.
 
 **Each case also asserts that at least one HTTP request left the process.** The
 runner wraps `globalThis.fetch` with a per-case counter and fails a case that
