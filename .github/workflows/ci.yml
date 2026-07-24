@@ -67,6 +67,8 @@ jobs:
   # the auth schema + pg_cron/pg_net/vault) and applies the full migration
   # history from zero — so this also guards that migrations apply cleanly and
   # idempotently. `supabase test db` runs supabase/tests/*.test.sql.
+  # It also runs Tier-4 (R-32): the real fetch helpers against this stack, so an
+  # invalid `.select(...)` string fails here rather than in production.
   db-test:
     runs-on: ubuntu-latest
     steps:
@@ -83,6 +85,26 @@ jobs:
 
       - name: Run pgTAP suite
         run: supabase test db
+
+      # Tier-4 (R-32): the client's PostgREST select strings, run against the
+      # stack this job already started. Node/pnpm are set up here rather than
+      # in a new job so the stack is not stood up twice.
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run Tier-4 select-string guard
+        run: |
+          eval "$(supabase status -o env | sed -n 's/^ANON_KEY=/SUPABASE_TEST_ANON_KEY=/p')"
+          export SUPABASE_TEST_ANON_KEY
+          pnpm test:integration
 
       - name: Stop stack
         if: always()

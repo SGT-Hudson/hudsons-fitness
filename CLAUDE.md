@@ -12,7 +12,8 @@ pnpm dev          # http://localhost:5173
 pnpm typecheck    # tsc --noEmit
 pnpm lint         # eslint .
 pnpm build        # tsc -b && vite build (to ./dist)
-pnpm test         # vitest run
+pnpm test         # vitest run (Tier-1 + Tier-2; hermetic, no stack)
+pnpm test:integration  # Tier-4 select-string guard — needs a running local stack (R-32)
 pnpm preview      # preview ./dist locally
 ```
 
@@ -22,7 +23,7 @@ pnpm preview      # preview ./dist locally
 1. Metric-only (kg/cm/g).
 2. DB is canonical; RLS is the sole security boundary (repo is public).
 3. Any >1-table atomic mutation is an RPC (`SECURITY INVOKER` + `set search_path = public`). `SECURITY DEFINER` is forbidden without security review; the sanctioned exceptions are enumerated in `data-model.md`.
-4. **Ship flow (bright line).** Never push directly to `main`/`develop`. `develop` advances only by squash-auto-merge of a CI-green `claude/*` PR; `main` only by a user-approved `release/*` PR. CI must be green before any merge: `lint-build` (`pnpm lint` + `pnpm build` + `pnpm test`) and `db-test` (Tier-3 pgTAP against a real Postgres) are both required status checks on `develop`; `edge-check` (Deno lint + shared-core type-check) runs on every PR but is not yet required. Full flow in `operations.md`.
+4. **Ship flow (bright line).** Never push directly to `main`/`develop`. `develop` advances only by squash-auto-merge of a CI-green `claude/*` PR; `main` only by a user-approved `release/*` PR. CI must be green before any merge: `lint-build` (`pnpm lint` + `pnpm build` + `pnpm test`) and `db-test` (Tier-3 pgTAP + Tier-4 select-string guard against a real Postgres) are both required status checks on `develop`; `edge-check` (Deno lint + shared-core type-check) runs on every PR but is not yet required. Full flow in `operations.md`.
 5. BMR (Mifflin-St Jeor) and target-weight are derived — never stored.
 6. Convert units/fractions only at the form boundary via shared helpers.
 7. Never commit secrets. Public repo → a committed key persists in history and is irreversible. Client config is public-tier `.env.local`; server secrets live in Supabase Vault.

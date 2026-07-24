@@ -46,7 +46,8 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
   `pnpm build` + `pnpm test` — Vitest Tier-1 + Tier-2), `edge-check` (Deno lint
   + shared-core type-check), and `db-test` (Tier-3 pgTAP — `supabase start`
   applies the migration history from zero into the real Supabase Postgres
-  image, then `supabase test db` runs `supabase/tests/*.test.sql`). R-16.
+  image, then `supabase test db` runs `supabase/tests/*.test.sql`; then Tier-4
+  runs `pnpm test:integration` against the same stack). R-16, R-32.
 - **`develop` = integration + staging.** Short-lived `claude/*` branch → PR
   into `develop` → `lint-build` green → `.github/workflows/auto-merge.yml`
   arms GitHub-native squash auto-merge → merged hands-off; branch
@@ -67,8 +68,8 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
   auto-opened back-merge PR `main`→`develop` so the fix survives the next
   promotion.
 - **Branch protection on `develop`:** required status checks `lint-build` and
-  `db-test` (Tier-3 pgTAP — R-16); `strict` false; force-push/deletion blocked;
-  0 required reviews.
+  `db-test` (Tier-3 pgTAP + Tier-4 select-string guard — R-16, R-32); `strict`
+  false; force-push/deletion blocked; 0 required reviews.
 - **Branch protection on `main`:** required status check `lint-build`;
   `strict` false; a PR is required before merging (0 required reviews —
   solo); force-push/deletion blocked; `enforce_admins` false (the solo
@@ -882,3 +883,29 @@ command** block above). There is no dedicated workflow or script for this on
 `develop`; the from-zero migration apply is exercised by the `db-test` job in
 `.github/workflows/ci.yml`, while the prod-diff confirmation stays a hands-on CLI
 step.
+
+### Tier-4 select-string guard (R-32, D-F28)
+
+The same `db-test` job also runs **Tier-4**: the real client fetch helpers
+against the stack it already started, so an invalid PostgREST `.select(...)`
+string fails CI rather than production. It is a separate Vitest config
+(`vitest.integration.config.ts`, files `src/test/integration/*.itest.ts`) and is
+**excluded from `pnpm test`** — that suite stays hermetic and stack-free.
+
+```bash
+# needs a running local stack (see Tier-3 above)
+export SUPABASE_TEST_ANON_KEY="$(supabase status -o env | sed -n 's/^ANON_KEY="\(.*\)"$/\1/p')"
+pnpm test:integration
+```
+
+Each of the 20 guarded helpers is invoked with ids that match nothing; PostgREST
+validates the select before applying filters, so no seed or auth session is
+needed. The error policy is an **allow-list — only `PGRST116`** ("0 rows" from a
+`.single()`) passes; any other code (`42703` undefined column, `PGRST200` bad
+embed, `PGRST100` parse error) fails the build. A coverage meta-test fails when a
+helper carrying an explicit column/embed select is missing from the registry.
+The tier **refuses to run against a non-local host** (fail-closed host assertion
+in the setup file) and, in CI, extracts the anon key with
+`eval "$(supabase status -o env | sed -n 's/^ANON_KEY=/SUPABASE_TEST_ANON_KEY=/p')"`.
+On Node 20 the setup polyfills `globalThis.WebSocket` from `ws` (a
+devDependency) — delete that block when the project moves to Node 22.
