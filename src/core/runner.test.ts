@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeTimerView, buildRunnerState, runnerReducer, nextPendingIndex, focusIndex, skippedUndoneIndices, toSaveWorkoutSets, type RunnerInput } from './runner';
+import { computeTimerView, buildRunnerState, runnerReducer, nextPendingIndex, focusIndex, skippedUndoneIndices, toSaveWorkoutSets, type RunnerInput, type AddedExerciseInput } from './runner';
 import { warmupWeightKg } from './programs';
 
 describe('computeTimerView', () => {
@@ -491,5 +491,107 @@ describe('END_EXERCISE — finish early keeping recorded sets', () => {
       { exercise_id: 'bench', set_index: 1, reps: 8, weight_kg: 40, rpe: null, is_warmup: true },
       { exercise_id: 'bench', set_index: 2, reps: 8, weight_kg: 80, rpe: 8, is_warmup: false },
     ]);
+  });
+});
+
+describe('ADD_EXERCISE', () => {
+  function baseInput(): RunnerInput {
+    return {
+      programId: null, routineId: 'r1', routineName: 'Push', performedOn: '2026-07-26',
+      nowMs: 1_000_000,
+      exercises: [
+        {
+          exerciseId: 'bench', position: 1, targetSets: 1, targetRepsMin: 8, targetRepsMax: 8,
+          restSeconds: 90, targetRpe: 8, defaultIncrementKg: 2.5, warmupSets: [],
+          lastWorkingWeightKg: 80, workingSetPrefill: [{ reps: 8, weightKg: 80 }],
+        },
+        {
+          exerciseId: 'fly', position: 5, targetSets: 1, targetRepsMin: 10, targetRepsMax: 12,
+          restSeconds: 60, targetRpe: null, defaultIncrementKg: 2.5, warmupSets: [],
+          lastWorkingWeightKg: 20, workingSetPrefill: [{ reps: 10, weightKg: 20 }],
+        },
+      ],
+    };
+  }
+
+  const curls: AddedExerciseInput = {
+    exerciseId: 'curl', targetSets: 3, targetRepsMin: 8, targetRepsMax: 12,
+    restSeconds: null, targetRpe: null, defaultIncrementKg: 2.5, warmupSets: [],
+    lastWorkingWeightKg: 14,
+    workingSetPrefill: [{ reps: 12, weightKg: 14 }, { reps: 12, weightKg: 14 }, { reps: 10, weightKg: 14 }],
+  };
+
+  it('appends the exercise at the end with position max+1', () => {
+    const s = runnerReducer(buildRunnerState(baseInput()), {
+      type: 'ADD_EXERCISE', exercise: curls, nowMs: 2_000_000,
+    });
+    expect(s.exercises).toHaveLength(3);
+    expect(s.exercises[2].exerciseId).toBe('curl');
+    expect(s.exercises[2].position).toBe(6); // max(1,5) + 1, NOT length + 1
+    expect(s.exercises[2].status).toBe('pending');
+  });
+
+  it('does not move the cursor or change the phase', () => {
+    const before = buildRunnerState(baseInput());
+    const s = runnerReducer(before, { type: 'ADD_EXERCISE', exercise: curls, nowMs: 2_000_000 });
+    expect(s.currentExerciseIndex).toBe(before.currentExerciseIndex);
+    expect(s.currentSetIndex).toBe(before.currentSetIndex);
+    expect(s.phase).toBe(before.phase);
+    expect(s.exercises[0]).toBe(before.exercises[0]); // untouched exercises are not rebuilt
+  });
+
+  it('builds sets from the prefill, with the working weight as the anchor', () => {
+    const s = runnerReducer(buildRunnerState(baseInput()), {
+      type: 'ADD_EXERCISE', exercise: curls, nowMs: 2_000_000,
+    });
+    const added = s.exercises[2];
+    expect(added.workingWeightKg).toBe(14);
+    expect(added.sets).toHaveLength(3);
+    expect(added.sets.map((x) => x.setIndex)).toEqual([1, 2, 3]);
+    expect(added.sets.every((x) => !x.isWarmup)).toBe(true);
+    expect(added.sets[0]).toMatchObject({ reps: 12, weightKg: 14, baselineWeightKg: 14 });
+  });
+
+  it('lands at 0 kg with no baseline when there is no history', () => {
+    const noHistory: AddedExerciseInput = {
+      ...curls,
+      lastWorkingWeightKg: null,
+      workingSetPrefill: [{ reps: 8, weightKg: null }, { reps: 8, weightKg: null }, { reps: 8, weightKg: null }],
+    };
+    const s = runnerReducer(buildRunnerState(baseInput()), {
+      type: 'ADD_EXERCISE', exercise: noHistory, nowMs: 2_000_000,
+    });
+    const added = s.exercises[2];
+    expect(added.workingWeightKg).toBe(0);
+    expect(added.sets.every((x) => x.weightKg === 0)).toBe(true);
+    expect(added.sets.every((x) => x.baselineWeightKg === null)).toBe(true);
+  });
+
+  it('refuses an exercise already in the session, returning the same state', () => {
+    const before = buildRunnerState(baseInput());
+    const s = runnerReducer(before, {
+      type: 'ADD_EXERCISE', exercise: { ...curls, exerciseId: 'bench' }, nowMs: 2_000_000,
+    });
+    expect(s).toBe(before);
+  });
+
+  it('is reachable by CONTINUE once the routine exercises are done', () => {
+    let s = buildRunnerState(baseInput());
+    s = runnerReducer(s, { type: 'ADD_EXERCISE', exercise: curls, nowMs: 2_000_000 });
+    s = runnerReducer(s, { type: 'SKIP_CURRENT', nowMs: 2_000_001 }); // skip bench -> activates fly
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 2_000_002 });   // fly's only set -> exercise-complete
+    s = runnerReducer(s, { type: 'CONTINUE', nowMs: 2_000_003 });
+    expect(s.exercises[s.currentExerciseIndex].exerciseId).toBe('curl');
+    expect(s.phase).toBe('ready');
+  });
+
+  it('saves the added exercise sets with a contiguous per-exercise set_index', () => {
+    let s = buildRunnerState(baseInput());
+    s = runnerReducer(s, { type: 'ADD_EXERCISE', exercise: curls, nowMs: 2_000_000 });
+    s = runnerReducer(s, { type: 'JUMP_TO', exerciseIndex: 2, nowMs: 2_000_001 });
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 2_000_002 });
+    s = runnerReducer(s, { type: 'RECORD_SET', nowMs: 2_000_003 });
+    const rows = toSaveWorkoutSets(s).filter((r) => r.exercise_id === 'curl');
+    expect(rows.map((r) => r.set_index)).toEqual([1, 2]);
   });
 });
