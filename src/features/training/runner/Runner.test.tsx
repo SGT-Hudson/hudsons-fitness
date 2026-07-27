@@ -1,5 +1,5 @@
-import { it, expect, vi, beforeAll, afterAll } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import i18n from '@/i18n';
 
@@ -18,9 +18,13 @@ vi.mock('@/features/training/exercises/hooks', () => ({
 
 import { Runner } from './Runner';
 import { buildRunnerState, type RunnerInput } from '@/core/runner';
+import { EXTRAS_KEY } from './useRunnerDraft';
 
 beforeAll(async () => { await i18n.changeLanguage('en'); });
 afterAll(async () => { await i18n.changeLanguage('es'); });
+// Runner now seeds/mirrors `extras` (added-exercise display data) to
+// localStorage (R-46 review finding); isolate each test from the others.
+beforeEach(() => localStorage.clear());
 
 function state() {
   const input: RunnerInput = {
@@ -169,6 +173,25 @@ it('adds an exercise from the overview panel', async () => {
   expect(await screen.findByText(/Biceps Curl/)).toBeInTheDocument();
 });
 
+// The contract says onLoadExercise never rejects (see loadAddedExercise), but
+// Runner shouldn't rely on that: a rejection must not become an unhandled
+// promise rejection nor a silent no-op that leaves the user staring at nothing.
+it('does not add the exercise or crash when onLoadExercise rejects', async () => {
+  searchResults.length = 0;
+  searchResults.push(curlRow);
+  const onLoadExercise = vi.fn().mockRejectedValue(new Error('lookup failed'));
+  renderRunner(vi.fn(), onLoadExercise);
+
+  await openOverview();
+  await userEvent.click(screen.getByRole('button', { name: i18n.t('entrenamiento:runner.addExercise') }));
+  await userEvent.click(screen.getByPlaceholderText(i18n.t('entrenamiento:picker.placeholder')));
+  await userEvent.click(await screen.findByText('Biceps Curl'));
+
+  await vi.waitFor(() => expect(onLoadExercise).toHaveBeenCalled());
+  // No phantom exercise was added — the overview still shows only 'bench'.
+  expect(screen.queryByText(/Biceps Curl/)).not.toBeInTheDocument();
+});
+
 it('hides exercises already in the session from the picker', async () => {
   searchResults.length = 0;
   searchResults.push(curlRow, { id: 'bench', name_es: 'Press banca', name_en: 'Bench Press', equipment: null });
@@ -178,10 +201,13 @@ it('hides exercises already in the session from the picker', async () => {
   await userEvent.click(screen.getByRole('button', { name: i18n.t('entrenamiento:runner.addExercise') }));
   await userEvent.click(screen.getByPlaceholderText(i18n.t('entrenamiento:picker.placeholder')));
 
-  expect(await screen.findByText('Biceps Curl')).toBeInTheDocument();
+  // Scoped to the picker's results dropdown — the overview panel behind the
+  // dialog also renders "Bench Press" (as "1 · Bench Press"), so an unscoped
+  // query would pass for the wrong reason.
+  const list = await screen.findByRole('list');
+  expect(within(list).getByText('Biceps Curl')).toBeInTheDocument();
   // 'bench' is the routine's only exercise; it must not be offered again
-  const options = screen.queryAllByText('Bench Press');
-  expect(options).toHaveLength(0);
+  expect(within(list).queryAllByText('Bench Press')).toHaveLength(0);
 });
 
 it('still adds the exercise when the prefill lookup fails', async () => {
@@ -206,4 +232,66 @@ it('still adds the exercise when the prefill lookup fails', async () => {
   await userEvent.click(await screen.findByText('Biceps Curl'));
 
   expect(await screen.findByText(/Biceps Curl/)).toBeInTheDocument();
+});
+
+// A resumed draft (PWA reload mid-workout) rebuilds `initialState` from
+// localStorage complete with the added exercise, but `RunnerPage` rebuilds
+// `names`/`coachContextByExercise`/`lastTimeByExercise` from the routine only
+// — which has no row for it. Without persisting `extras` too, the merged maps
+// would lose the added exercise's display data on exactly this path.
+function stateWithAddedExercise() {
+  const input: RunnerInput = {
+    programId: 'p1', routineId: 'r1', routineName: 'Push Day',
+    performedOn: '2026-05-25', nowMs: 1_000_000,
+    exercises: [
+      {
+        exerciseId: 'bench', position: 1, targetSets: 1, targetRepsMin: 8, targetRepsMax: 8,
+        restSeconds: 90, targetRpe: 8, defaultIncrementKg: 2.5,
+        warmupSets: [], lastWorkingWeightKg: 80,
+        workingSetPrefill: [{ reps: 8, weightKg: 80 }],
+      },
+      {
+        exerciseId: 'curl', position: 2, targetSets: 3, targetRepsMin: 8, targetRepsMax: 12,
+        restSeconds: null, targetRpe: null, defaultIncrementKg: 1.25,
+        warmupSets: [], lastWorkingWeightKg: 14,
+        workingSetPrefill: [
+          { reps: 12, weightKg: 14 }, { reps: 12, weightKg: 14 }, { reps: 10, weightKg: 14 },
+        ],
+      },
+    ],
+  };
+  return buildRunnerState(input);
+}
+
+it('resumes a draft with an added exercise\'s display data intact', async () => {
+  // Simulates a reload: the draft (initialState) already has 'curl' in
+  // state.exercises, and its display data was mirrored to storage before the
+  // reload — but the routine-derived `names` prop below only knows 'bench'.
+  localStorage.setItem(EXTRAS_KEY, JSON.stringify({
+    curl: {
+      name: 'Biceps Curl',
+      lastTime: '10 × 14 kg',
+      coach: {
+        exerciseId: 'curl', primaryMuscles: ['biceps'], equipment: null,
+        defaultIncrementKg: 1.25, history: [], todayISO: '2026-07-26',
+      },
+    },
+  }));
+
+  render(
+    <Runner
+      initialState={stateWithAddedExercise()}
+      names={names}
+      coachContextByExercise={{}}
+      lastTimeByExercise={{ bench: '8 × 80 kg' }}
+      onSave={vi.fn()}
+      onExit={() => {}}
+      onSaved={vi.fn()}
+      onLoadExercise={fakeLoad()}
+    />,
+  );
+
+  await openOverview();
+  // Resolved name, not the raw 'curl' id the routine-derived `names` would fall back to.
+  expect(await screen.findByText(/2 · Biceps Curl/)).toBeInTheDocument();
 });

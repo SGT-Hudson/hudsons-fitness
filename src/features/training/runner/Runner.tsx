@@ -21,7 +21,7 @@ import type { Exercise } from '../exercises/api';
 import type { AddedExerciseData } from './loadAddedExercise';
 import { useRestTimer } from './useRestTimer';
 import { useWakeLock } from './useWakeLock';
-import { useRunnerDraftMirror } from './useRunnerDraft';
+import { loadExtras, useRunnerDraftMirror, useRunnerExtrasMirror, type RunnerExtras } from './useRunnerDraft';
 import { fireRestAlarm } from './alarm';
 import { SetView } from './SetView';
 import { ExerciseStart } from './ExerciseStart';
@@ -63,9 +63,9 @@ export function Runner({
   const [adding, setAdding] = useState(false);
   // Added exercises aren't in the props keyed by id, so keep their display data
   // here and merge it over the props. One record, not three parallel maps.
-  const [extras, setExtras] = useState<
-    Record<string, { name: string; lastTime: string | null; coach: CoachContext }>
-  >({});
+  // Seeded from storage so a resumed draft doesn't lose an added exercise's
+  // name/coach-context/last-time back to its raw id (R-46 review finding).
+  const [extras, setExtras] = useState<RunnerExtras>(() => loadExtras());
 
   const mergedNames = useMemo(() => {
     const out = { ...names };
@@ -84,6 +84,7 @@ export function Runner({
   }, [coachContextByExercise, extras]);
 
   useRunnerDraftMirror(state);
+  useRunnerExtrasMirror(extras);
   useWakeLock(state.phase !== 'finishing');
 
   const timer = useRestTimer(state.restStartedAtMs, state.restTargetSeconds, fireRestAlarm);
@@ -133,6 +134,8 @@ export function Runner({
         [exercise.id]: { name: data.name, lastTime: data.lastTimeLabel, coach: data.coachContext },
       }));
       dispatch({ type: 'ADD_EXERCISE', exercise: data.input, nowMs: Date.now() });
+    } catch (e) {
+      setError((e as Error).message);
     } finally {
       setAdding(false);
       setAddOpen(false);
