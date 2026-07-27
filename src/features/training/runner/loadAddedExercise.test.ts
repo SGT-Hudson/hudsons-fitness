@@ -69,6 +69,16 @@ describe('loadAddedExercise', () => {
     expect(data.name).toBe('Curl de bíceps'); // the exercise is still added
   });
 
+  it('falls back to no weight when the fetch throws synchronously', async () => {
+    const data = await loadAddedExercise(
+      opts(() => { throw new Error('boom'); }),
+    );
+    expect(data.input.lastWorkingWeightKg).toBeNull();
+    expect(data.input.workingSetPrefill.every((p) => p.weightKg === null)).toBe(true);
+    expect(data.lastTimeLabel).toBeNull();
+    expect(data.name).toBe('Curl de bíceps'); // the exercise is still added
+  });
+
   it('falls back to no weight when the fetch never settles (timeout)', async () => {
     vi.useFakeTimers();
     const pending = loadAddedExercise(opts(() => new Promise<CoreSessionSet[]>(() => {}), 4000));
