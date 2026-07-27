@@ -531,6 +531,25 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   would pollute history and e1RM. Adding from inside the live runner is split
   out as R-46.
 
+### 2026-07-27 — R-46 add an exercise mid-workout
+
+- **The live runner can add an exercise that wasn't planned (#231).** A new
+  pure `ADD_EXERCISE` action on the runner reducer (`src/core/runner.ts`)
+  appends it at `max(position) + 1` without moving the cursor, and refuses a
+  duplicate `exerciseId`; the picker hides exercises already in the session
+  (`excludeIds`) for the same reason — `workout_sets` is unique on
+  `(session_id, exercise_id, set_index)`, and a duplicate would fail the whole
+  end-of-workout save. The working weight prefills from the last logged
+  session for that exercise; any failure — offline, an error, a request that
+  never settles (4 s timeout), or no history at all — degrades silently to
+  0 kg rather than blocking the add or throwing a toast. The addition is
+  **session-only**: the routine behind the workout is never touched. Saving it
+  back to the routine was deliberately deferred, not forgotten — it needs the
+  full `RoutineWithExercises` aggregate mid-workout and only applies when the
+  session came from a routine at all; R-31 already covers adding an exercise to
+  a routine from the catalogue. No migration, no RPC, no new write path — the
+  added exercise's sets ride the existing `save_workout` call.
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |
@@ -615,4 +634,5 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
 | 225 | Release `v2026-07-22` | Promotion of #218–#224 to `main` |
 | 226 | i18n — language flash at startup | Language was applied post-commit in a `useEffect`; `ProfileLanguageSync` now holds the loader until it is applied, and `<html lang>` follows the active language |
 | 227 | R-31 — exercise search follow-ups + add-from-detail | Lay-term/group-name search expansion shared by browse + picker; add sheet on `/exercises/:id` (append to a routine, or start a pre-filled session). Live-runner half split out as R-46 |
+| 231 | R-46 — add an exercise mid-workout | New `ADD_EXERCISE` runner-reducer action (append at `max(position)+1`, cursor untouched, no duplicate `exerciseId`); picker `excludeIds` hides exercises already in the session; working-weight prefill from last logged session with a silent 0 kg fallback (offline/error/4 s timeout/no history); session-only — the routine behind the workout is never modified |
 

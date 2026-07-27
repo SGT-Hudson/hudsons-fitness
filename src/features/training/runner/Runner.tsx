@@ -1,4 +1,4 @@
-import { useEffect, useState, useReducer } from 'react';
+import { useEffect, useMemo, useState, useReducer } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Replace } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import type { CoachContext } from '@/core/training';
+import { classifyError, errorMessageKey } from '@/lib/errors';
 import {
   runnerReducer,
   nextPendingIndex,
@@ -16,9 +17,12 @@ import {
   type RunnerExercise,
 } from '@/core/runner';
 import type { SaveWorkoutPayload } from '../api';
+import { ExercisePicker } from '../components/ExercisePicker';
+import type { Exercise } from '../exercises/api';
+import type { AddedExerciseData } from './loadAddedExercise';
 import { useRestTimer } from './useRestTimer';
 import { useWakeLock } from './useWakeLock';
-import { useRunnerDraftMirror } from './useRunnerDraft';
+import { loadExtras, useRunnerDraftMirror, useRunnerExtrasMirror, type RunnerExtras } from './useRunnerDraft';
 import { fireRestAlarm } from './alarm';
 import { SetView } from './SetView';
 import { ExerciseStart } from './ExerciseStart';
@@ -35,6 +39,9 @@ interface Props {
   onSave: (payload: SaveWorkoutPayload) => Promise<unknown>;
   onExit: () => void; // back out without saving
   onSaved: () => void; // after a successful save (clears draft + navigates)
+  /** Resolves an added exercise's plan + prefill. Contractually never rejects
+   *  (see loadAddedExercise) — failures come back as a 0 kg fallback. */
+  onLoadExercise: (exercise: Exercise) => Promise<AddedExerciseData>;
 }
 
 function planLabel(ex: RunnerExercise): string {
@@ -43,9 +50,10 @@ function planLabel(ex: RunnerExercise): string {
 }
 
 export function Runner({
-  initialState, names, coachContextByExercise, lastTimeByExercise, onSave, onExit, onSaved,
+  initialState, names, coachContextByExercise, lastTimeByExercise, onSave, onExit, onSaved, onLoadExercise,
 }: Props) {
   const { t } = useTranslation('entrenamiento');
+  const { t: tCommon } = useTranslation('common');
   const [state, dispatch] = useReducer(runnerReducer, initialState);
   const [begun, setBegun] = useState(false); // exercise-start gate (per active exercise)
   const [skipAck, setSkipAck] = useState(false); // user chose to save without remaining skipped
@@ -53,8 +61,35 @@ export function Runner({
   const [pendingJump, setPendingJump] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  // Added exercises aren't in the props keyed by id, so keep their display data
+  // here and merge it over the props. One record, not three parallel maps.
+  // Seeded from storage so a resumed draft doesn't lose an added exercise's
+  // name/coach-context/last-time back to its raw id (R-46 review finding) —
+  // stamped with this session's routine + start time so a stale/unrelated
+  // draft's extras can never leak into a different workout.
+  const [extras, setExtras] = useState<RunnerExtras>(() => loadExtras(initialState));
+
+  const mergedNames = useMemo(() => {
+    const out = { ...names };
+    for (const [id, e] of Object.entries(extras)) out[id] = e.name;
+    return out;
+  }, [names, extras]);
+  const mergedLastTime = useMemo(() => {
+    const out = { ...lastTimeByExercise };
+    for (const [id, e] of Object.entries(extras)) out[id] = e.lastTime;
+    return out;
+  }, [lastTimeByExercise, extras]);
+  const mergedCoach = useMemo(() => {
+    const out = { ...coachContextByExercise };
+    for (const [id, e] of Object.entries(extras)) out[id] = e.coach;
+    return out;
+  }, [coachContextByExercise, extras]);
 
   useRunnerDraftMirror(state);
+  useRunnerExtrasMirror(state.routineId, state.startedAtMs, extras);
   useWakeLock(state.phase !== 'finishing');
 
   const timer = useRestTimer(state.restStartedAtMs, state.restTargetSeconds, fireRestAlarm);
@@ -93,6 +128,27 @@ export function Runner({
     dispatch({ type: 'JUMP_TO', exerciseIndex: i, nowMs: Date.now() });
     setShowOverview(false);
     setPendingJump(null);
+  }
+
+  async function handleAddExercise(exercise: Exercise) {
+    setAdding(true);
+    setAddError(null);
+    try {
+      const data = await onLoadExercise(exercise);
+      setExtras((prev) => ({
+        ...prev,
+        [exercise.id]: { name: data.name, lastTime: data.lastTimeLabel, coach: data.coachContext },
+      }));
+      dispatch({ type: 'ADD_EXERCISE', exercise: data.input, nowMs: Date.now() });
+      setAddOpen(false);
+    } catch (e) {
+      // Keep the dialog open so the failure is visible where it happened,
+      // instead of closing silently and surfacing a stray message later
+      // under the (unrelated) save button on the review screen.
+      setAddError(tCommon(errorMessageKey(classifyError(e))));
+    } finally {
+      setAdding(false);
+    }
   }
 
   // Jumping away from an in-progress exercise with logged work-sets warns first
@@ -142,18 +198,19 @@ export function Runner({
         <ExerciseOverview
           exercises={state.exercises}
           currentIndex={focusIndex(state) >= 0 ? focusIndex(state) : state.currentExerciseIndex}
-          names={names}
+          names={mergedNames}
           onJump={requestJump}
           onSkipCurrent={() => { dispatch({ type: 'SKIP_CURRENT', nowMs: Date.now() }); setShowOverview(false); }}
           onFinishEarly={() => { dispatch({ type: 'FINISH_EARLY', nowMs: Date.now() }); setShowOverview(false); }}
           onClose={() => setShowOverview(false)}
+          onAddExercise={() => { setAddError(null); setAddOpen(true); }}
         />
         <Dialog open={pendingJump !== null} onOpenChange={(o) => { if (!o) setPendingJump(null); }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('runner.leavePartialTitle')}</DialogTitle>
               <DialogDescription>
-                {t('runner.leavePartialBody', { name: names[ex.exerciseId] ?? ex.exerciseId })}
+                {t('runner.leavePartialBody', { name: mergedNames[ex.exerciseId] ?? ex.exerciseId })}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -164,6 +221,30 @@ export function Runner({
                 {t('runner.switchExercise')}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog
+          open={addOpen}
+          onOpenChange={(o) => { if (!adding) { setAddOpen(o); setAddError(null); } }}
+        >
+          <DialogContent className="overflow-visible">
+            <DialogHeader>
+              <DialogTitle>{t('runner.addExerciseTitle')}</DialogTitle>
+              <DialogDescription>{t('runner.addExerciseBody')}</DialogDescription>
+            </DialogHeader>
+            {addError && <p className="text-center text-sm text-destructive">{addError}</p>}
+            {adding ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {t('runner.addExerciseLoading')}
+              </p>
+            ) : (
+              <ExercisePicker
+                selected={null}
+                onSelect={handleAddExercise}
+                onClear={() => {}}
+                excludeIds={state.exercises.map((e) => e.exerciseId)}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -178,7 +259,7 @@ export function Runner({
           {header}
           <SkipRecovery
             skipped={skipped}
-            names={names}
+            names={mergedNames}
             indexOf={(e) => state.exercises.indexOf(e)}
             onDoExercise={(i) => { dispatch({ type: 'JUMP_TO', exerciseIndex: i, nowMs: Date.now() }); setSkipAck(false); }}
             onProceed={() => setSkipAck(true)}
@@ -191,7 +272,7 @@ export function Runner({
         {header}
         <ReviewScreen
           exercises={state.exercises}
-          names={names}
+          names={mergedNames}
           routineName={state.routineName}
           saving={saving}
           onSave={handleSave}
@@ -209,8 +290,8 @@ export function Runner({
         {header}
         <CompletionCard
           exercise={ex}
-          exerciseName={names[ex.exerciseId] ?? ex.exerciseId}
-          nextExerciseName={next ? names[next.exerciseId] ?? next.exerciseId : null}
+          exerciseName={mergedNames[ex.exerciseId] ?? ex.exerciseId}
+          nextExerciseName={next ? mergedNames[next.exerciseId] ?? next.exerciseId : null}
           nextExercisePlan={next ? planLabel(next) : null}
           onAddSet={() => dispatch({ type: 'ADD_SET', nowMs: Date.now() })}
           onContinue={() => dispatch({ type: 'CONTINUE', nowMs: Date.now() })}
@@ -226,8 +307,8 @@ export function Runner({
         {header}
         <ExerciseStart
           exercise={ex}
-          exerciseName={names[ex.exerciseId] ?? ex.exerciseId}
-          coachContext={coachContextByExercise[ex.exerciseId] ?? null}
+          exerciseName={mergedNames[ex.exerciseId] ?? ex.exerciseId}
+          coachContext={mergedCoach[ex.exerciseId] ?? null}
           onSetWorkingWeight={(kg) => dispatch({ type: 'SET_WORKING_WEIGHT', weightKg: kg })}
           onBegin={() => setBegun(true)}
         />
@@ -252,7 +333,7 @@ export function Runner({
         setOrdinal={{ current: ordinal, total: sameKind.length }}
         phase={state.phase === 'resting' ? 'resting' : 'ready'}
         timer={timer}
-        lastTimeLabel={!set.isWarmup ? lastTimeByExercise[ex.exerciseId] ?? null : null}
+        lastTimeLabel={!set.isWarmup ? mergedLastTime[ex.exerciseId] ?? null : null}
         onStartRest={() => dispatch({ type: 'START_REST', nowMs: Date.now() })}
         onRecord={() => dispatch({ type: 'RECORD_SET', nowMs: Date.now() })}
         onEdit={(patch) => dispatch({ type: 'EDIT_CURRENT_SET', patch })}
