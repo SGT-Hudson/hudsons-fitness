@@ -9,8 +9,11 @@ import i18n from '@/i18n';
 // the detail popup stays closed in these tests.
 vi.mock('@/lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
 vi.mock('@/hooks/use-media-query', () => ({ useMediaQuery: () => false }));
+const searchResults: { id: string; name_es: string; name_en: string; equipment: string | null }[] = [];
 vi.mock('@/features/training/exercises/hooks', () => ({
   useExercise: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
+  useExerciseSearch: () => ({ data: searchResults, isLoading: false }),
+  useCreateExercise: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
 }));
 
 import { Runner } from './Runner';
@@ -35,7 +38,38 @@ function state() {
 
 const names = { bench: 'Bench Press' };
 
-function renderRunner(onSave = vi.fn().mockResolvedValue('new-id')) {
+const curlRow = {
+  id: 'curl', name_es: 'Curl de bíceps', name_en: 'Biceps Curl',
+  default_increment_kg: 1.25, primary_muscles: ['biceps'], equipment: null,
+};
+
+function fakeLoad(overrides = {}) {
+  return vi.fn().mockResolvedValue({
+    input: {
+      exerciseId: 'curl', targetSets: 3, targetRepsMin: 8, targetRepsMax: 12,
+      restSeconds: null, targetRpe: null, defaultIncrementKg: 1.25, warmupSets: [],
+      lastWorkingWeightKg: 14,
+      workingSetPrefill: [
+        { reps: 12, weightKg: 14 }, { reps: 12, weightKg: 14 }, { reps: 10, weightKg: 14 },
+      ],
+    },
+    name: 'Biceps Curl',
+    lastTimeLabel: '10 × 14 kg',
+    coachContext: {
+      exerciseId: 'curl', primaryMuscles: ['biceps'], equipment: null,
+      defaultIncrementKg: 1.25, history: [], todayISO: '2026-07-26',
+    },
+    ...overrides,
+  });
+}
+
+async function openOverview() {
+  // The header button's accessible name comes from its aria-label
+  // (runner.jumpToExercise), which overrides its visible text (runner.switchExercise).
+  await userEvent.click(screen.getByRole('button', { name: i18n.t('entrenamiento:runner.jumpToExercise') }));
+}
+
+function renderRunner(onSave = vi.fn().mockResolvedValue('new-id'), onLoadExercise = fakeLoad()) {
   render(
     <Runner
       initialState={state()}
@@ -45,6 +79,7 @@ function renderRunner(onSave = vi.fn().mockResolvedValue('new-id')) {
       onSave={onSave}
       onExit={() => {}}
       onSaved={vi.fn()}
+      onLoadExercise={onLoadExercise}
     />,
   );
   return onSave;
@@ -62,6 +97,7 @@ it('walks begin → start rest → record → finish → save with correct paylo
       onSave={onSave}
       onExit={() => {}}
       onSaved={onSaved}
+      onLoadExercise={fakeLoad()}
     />,
   );
 
@@ -115,4 +151,59 @@ it('leaves reps on the integer spinner — there is no comma to lose there', () 
 
   expect(screen.getByLabelText('Reps')).toHaveAttribute('type', 'number');
   expect(screen.getByLabelText('Weight')).toHaveAttribute('type', 'text');
+});
+
+it('adds an exercise from the overview panel', async () => {
+  searchResults.length = 0;
+  searchResults.push(curlRow);
+  const onLoadExercise = fakeLoad();
+  renderRunner(vi.fn(), onLoadExercise);
+
+  await openOverview();
+  await userEvent.click(screen.getByRole('button', { name: i18n.t('entrenamiento:runner.addExercise') }));
+  await userEvent.click(screen.getByPlaceholderText(i18n.t('entrenamiento:picker.placeholder')));
+  await userEvent.click(await screen.findByText('Biceps Curl'));
+
+  expect(onLoadExercise).toHaveBeenCalledWith(expect.objectContaining({ id: 'curl' }));
+  // back on the overview, listed last with its resolved name and position
+  expect(await screen.findByText(/Biceps Curl/)).toBeInTheDocument();
+});
+
+it('hides exercises already in the session from the picker', async () => {
+  searchResults.length = 0;
+  searchResults.push(curlRow, { id: 'bench', name_es: 'Press banca', name_en: 'Bench Press', equipment: null });
+  renderRunner(vi.fn(), fakeLoad());
+
+  await openOverview();
+  await userEvent.click(screen.getByRole('button', { name: i18n.t('entrenamiento:runner.addExercise') }));
+  await userEvent.click(screen.getByPlaceholderText(i18n.t('entrenamiento:picker.placeholder')));
+
+  expect(await screen.findByText('Biceps Curl')).toBeInTheDocument();
+  // 'bench' is the routine's only exercise; it must not be offered again
+  const options = screen.queryAllByText('Bench Press');
+  expect(options).toHaveLength(0);
+});
+
+it('still adds the exercise when the prefill lookup fails', async () => {
+  searchResults.length = 0;
+  searchResults.push(curlRow);
+  const onLoadExercise = fakeLoad({
+    input: {
+      exerciseId: 'curl', targetSets: 3, targetRepsMin: 8, targetRepsMax: 12,
+      restSeconds: null, targetRpe: null, defaultIncrementKg: 2.5, warmupSets: [],
+      lastWorkingWeightKg: null,
+      workingSetPrefill: [
+        { reps: 8, weightKg: null }, { reps: 8, weightKg: null }, { reps: 8, weightKg: null },
+      ],
+    },
+    lastTimeLabel: null,
+  });
+  renderRunner(vi.fn(), onLoadExercise);
+
+  await openOverview();
+  await userEvent.click(screen.getByRole('button', { name: i18n.t('entrenamiento:runner.addExercise') }));
+  await userEvent.click(screen.getByPlaceholderText(i18n.t('entrenamiento:picker.placeholder')));
+  await userEvent.click(await screen.findByText('Biceps Curl'));
+
+  expect(await screen.findByText(/Biceps Curl/)).toBeInTheDocument();
 });

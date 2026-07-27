@@ -12,12 +12,13 @@ interface Props {
   onSkipCurrent: () => void;
   onFinishEarly: () => void;
   onClose: () => void;
+  onAddExercise: () => void;
 }
 
 /** Jump / skip / finish-early (spec §2 frame 9). Jump targets any
  *  remaining/skipped exercise. */
 export function ExerciseOverview({
-  exercises, currentIndex, names, onJump, onSkipCurrent, onFinishEarly, onClose,
+  exercises, currentIndex, names, onJump, onSkipCurrent, onFinishEarly, onClose, onAddExercise,
 }: Props) {
   const { t } = useTranslation('entrenamiento');
   return (
@@ -65,6 +66,9 @@ export function ExerciseOverview({
         );
       })}
       <div className="mt-auto flex flex-col gap-2">
+        <Button type="button" variant="secondary" className="w-full" onClick={onAddExercise}>
+          {t('runner.addExercise')}
+        </Button>
         <Button type="button" variant="outline" className="w-full" onClick={onSkipCurrent}>{t('runner.skipCurrent')}</Button>
         <Button type="button" variant="destructive" className="w-full" onClick={onFinishEarly}>{t('runner.finishEarly')}</Button>
       </div>
