@@ -64,8 +64,10 @@ export function Runner({
   // Added exercises aren't in the props keyed by id, so keep their display data
   // here and merge it over the props. One record, not three parallel maps.
   // Seeded from storage so a resumed draft doesn't lose an added exercise's
-  // name/coach-context/last-time back to its raw id (R-46 review finding).
-  const [extras, setExtras] = useState<RunnerExtras>(() => loadExtras());
+  // name/coach-context/last-time back to its raw id (R-46 review finding) —
+  // stamped with this session's routine + start time so a stale/unrelated
+  // draft's extras can never leak into a different workout.
+  const [extras, setExtras] = useState<RunnerExtras>(() => loadExtras(initialState));
 
   const mergedNames = useMemo(() => {
     const out = { ...names };
@@ -84,7 +86,7 @@ export function Runner({
   }, [coachContextByExercise, extras]);
 
   useRunnerDraftMirror(state);
-  useRunnerExtrasMirror(extras);
+  useRunnerExtrasMirror(state, extras);
   useWakeLock(state.phase !== 'finishing');
 
   const timer = useRestTimer(state.restStartedAtMs, state.restTargetSeconds, fireRestAlarm);
@@ -127,6 +129,7 @@ export function Runner({
 
   async function handleAddExercise(exercise: Exercise) {
     setAdding(true);
+    setError(null);
     try {
       const data = await onLoadExercise(exercise);
       setExtras((prev) => ({

@@ -263,19 +263,25 @@ function stateWithAddedExercise() {
   return buildRunnerState(input);
 }
 
+const curlExtrasEntry = {
+  name: 'Biceps Curl',
+  lastTime: '10 × 14 kg',
+  coach: {
+    exerciseId: 'curl', primaryMuscles: ['biceps'], equipment: null,
+    defaultIncrementKg: 1.25, history: [], todayISO: '2026-07-26',
+  },
+};
+
 it('resumes a draft with an added exercise\'s display data intact', async () => {
   // Simulates a reload: the draft (initialState) already has 'curl' in
   // state.exercises, and its display data was mirrored to storage before the
-  // reload — but the routine-derived `names` prop below only knows 'bench'.
+  // reload, stamped for this exact session (routineId 'r1', startedAtMs
+  // 1_000_000 — see stateWithAddedExercise) — but the routine-derived `names`
+  // prop below only knows 'bench'.
   localStorage.setItem(EXTRAS_KEY, JSON.stringify({
-    curl: {
-      name: 'Biceps Curl',
-      lastTime: '10 × 14 kg',
-      coach: {
-        exerciseId: 'curl', primaryMuscles: ['biceps'], equipment: null,
-        defaultIncrementKg: 1.25, history: [], todayISO: '2026-07-26',
-      },
-    },
+    routineId: 'r1',
+    startedAtMs: 1_000_000,
+    map: { curl: curlExtrasEntry },
   }));
 
   render(
@@ -294,4 +300,34 @@ it('resumes a draft with an added exercise\'s display data intact', async () => 
   await openOverview();
   // Resolved name, not the raw 'curl' id the routine-derived `names` would fall back to.
   expect(await screen.findByText(/2 · Biceps Curl/)).toBeInTheDocument();
+});
+
+it('does not adopt another session\'s stale extras', async () => {
+  // Stamped for a *different* session (an abandoned draft from another
+  // routine, tab closed / phone died, never discarded or saved). Starting
+  // this session must render this session's own routine-provided name for
+  // 'curl', not the stale one — a plausible collision, since routines share
+  // one exercise catalog.
+  localStorage.setItem(EXTRAS_KEY, JSON.stringify({
+    routineId: 'a-different-routine',
+    startedAtMs: 999,
+    map: { curl: curlExtrasEntry },
+  }));
+
+  render(
+    <Runner
+      initialState={stateWithAddedExercise()}
+      names={{ ...names, curl: 'Hammer Curl' }} // this session's own routine-provided name
+      coachContextByExercise={{}}
+      lastTimeByExercise={{ bench: '8 × 80 kg' }}
+      onSave={vi.fn()}
+      onExit={() => {}}
+      onSaved={vi.fn()}
+      onLoadExercise={fakeLoad()}
+    />,
+  );
+
+  await openOverview();
+  expect(await screen.findByText(/2 · Hammer Curl/)).toBeInTheDocument();
+  expect(screen.queryByText(/Biceps Curl/)).not.toBeInTheDocument();
 });

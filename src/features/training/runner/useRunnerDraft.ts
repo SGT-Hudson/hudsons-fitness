@@ -11,6 +11,21 @@ export const EXTRAS_KEY = 'hf:runner:extras:v1';
  *  regress an added exercise back to its raw id. */
 export type RunnerExtras = Record<string, { name: string; lastTime: string | null; coach: CoachContext }>;
 
+/** Identifies which workout session an extras map belongs to. A single global
+ *  key with no session identity would let an abandoned draft's extras leak
+ *  into an unrelated later workout (possibly overwriting a routine-provided
+ *  exercise's real name/history with stale data) — `routineId` alone isn't
+ *  enough since the same routine can be started more than once. */
+type ExtrasStamp = Pick<RunnerState, 'routineId' | 'startedAtMs'>;
+
+interface StoredExtras extends ExtrasStamp {
+  map: RunnerExtras;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export function loadDraft(): RunnerState | null {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
@@ -29,19 +44,28 @@ export function saveDraft(state: RunnerState): void {
   }
 }
 
-export function loadExtras(): RunnerExtras {
+/** Returns {} unless the stored extras were stamped for this exact session
+ *  (same routine, same start time) — a stamp mismatch (different workout, or
+ *  nothing stored) is treated the same as "no extras". Also tolerates a
+ *  corrupt/unexpected stored shape (e.g. literal `"null"`), which would
+ *  otherwise crash the merged-maps `useMemo`s downstream. */
+export function loadExtras(stamp: ExtrasStamp): RunnerExtras {
   try {
     const raw = localStorage.getItem(EXTRAS_KEY);
     if (!raw) return {};
-    return JSON.parse(raw) as RunnerExtras;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isPlainObject(parsed)) return {};
+    if (parsed.routineId !== stamp.routineId || parsed.startedAtMs !== stamp.startedAtMs) return {};
+    return isPlainObject(parsed.map) ? (parsed.map as RunnerExtras) : {};
   } catch {
     return {};
   }
 }
 
-export function saveExtras(extras: RunnerExtras): void {
+export function saveExtras(stamp: ExtrasStamp, extras: RunnerExtras): void {
   try {
-    localStorage.setItem(EXTRAS_KEY, JSON.stringify(extras));
+    const stored: StoredExtras = { routineId: stamp.routineId, startedAtMs: stamp.startedAtMs, map: extras };
+    localStorage.setItem(EXTRAS_KEY, JSON.stringify(stored));
   } catch {
     /* quota / private mode — best effort */
   }
@@ -72,8 +96,8 @@ export function useRunnerDraftMirror(state: RunnerState | null): void {
 }
 
 /** Mirror added-exercise display data alongside the draft — see `RunnerExtras`. */
-export function useRunnerExtrasMirror(extras: RunnerExtras): void {
+export function useRunnerExtrasMirror(stamp: ExtrasStamp, extras: RunnerExtras): void {
   useEffect(() => {
-    saveExtras(extras);
-  }, [extras]);
+    saveExtras(stamp, extras);
+  }, [stamp, extras]);
 }

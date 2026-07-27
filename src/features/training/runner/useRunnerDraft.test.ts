@@ -8,6 +8,9 @@ import type { RunnerState } from '@/core/runner';
 
 const state = { routineName: 'Push Day', exercises: [], savedAtMs: 123 } as unknown as RunnerState;
 
+const stamp = { routineId: 'r1', startedAtMs: 1_000_000 };
+const otherStamp = { routineId: 'r2', startedAtMs: 2_000_000 };
+
 const extras: RunnerExtras = {
   curl: {
     name: 'Biceps Curl',
@@ -48,25 +51,38 @@ describe('added-exercise extras persistence (R-46)', () => {
   beforeEach(() => localStorage.clear());
 
   it('returns {} when nothing is stored', () => {
-    expect(loadExtras()).toEqual({});
+    expect(loadExtras(stamp)).toEqual({});
   });
 
-  it('round-trips saved extras', () => {
-    saveExtras(extras);
-    expect(loadExtras()).toEqual(extras);
+  it('round-trips saved extras for the same session stamp', () => {
+    saveExtras(stamp, extras);
+    expect(loadExtras(stamp)).toEqual(extras);
+  });
+
+  it('refuses a different session\'s extras (stamp mismatch) — the cross-session leak this guards against', () => {
+    saveExtras(stamp, extras);
+    expect(loadExtras(otherStamp)).toEqual({});
   });
 
   it('returns {} on corrupt JSON', () => {
     localStorage.setItem(EXTRAS_KEY, '{not json');
-    expect(loadExtras()).toEqual({});
+    expect(loadExtras(stamp)).toEqual({});
+  });
+
+  it('returns {} when the stored value is the literal "null"', () => {
+    // JSON.parse('null') is a real `null`, which is truthy as a raw string and
+    // would otherwise be cast straight to RunnerExtras, crashing Object.entries
+    // downstream in Runner's merged-maps useMemos.
+    localStorage.setItem(EXTRAS_KEY, 'null');
+    expect(loadExtras(stamp)).toEqual({});
   });
 
   it('clearDraft also clears extras — a stale map must not leak into the next workout', () => {
     saveDraft(state);
-    saveExtras(extras);
+    saveExtras(stamp, extras);
     clearDraft();
     expect(loadDraft()).toBeNull();
-    expect(loadExtras()).toEqual({});
+    expect(loadExtras(stamp)).toEqual({});
     expect(localStorage.getItem(EXTRAS_KEY)).toBeNull();
   });
 });
