@@ -54,7 +54,7 @@ reference shard carries it (never edit the decision entry).
 - R-43 — Small verifications & leftovers (ingredient is_verified, comida libre, meal times, bell, glyphs)
 - R-44 — Ingredient category (deferred from R-33 wave 6 — needs a taxonomy decision)
 - R-45 — Ingredient photos (gap record only — `ingredients` has no image column)
-- R-46 — Add an exercise mid-workout, from inside the live runner (split off R-31)
+- R-46 — Add an exercise mid-workout, from inside the live runner (split off R-31) — SHIPPED
 - Feature & UX family index (F-x / U-x / post-V1 items / Projects A–B) — at end
 
 ## R-00 — Baseline current schema into migrations
@@ -1356,16 +1356,38 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   recorded. Rides with recipe photo upload if that ever ships.
 
 ## R-46 — Add an exercise mid-workout (live runner)
-- **decision:** (D-id at spec time)
+- **decision:** (D-id at spec time; design doc
+  `docs/superpowers/specs/2026-07-26-r46-add-exercise-mid-workout-design.md`)
 - **blocked-by:** —
-- **status:** todo — split off R-31 (2026-07-22), explicitly out of that batch.
-- **scope:** while a workout is running, add an exercise that wasn't planned.
-  The runner freezes its exercise list on entry: its reducer can add *sets* but
-  has no add-exercise action, so this needs a new action, the picker surfaced
-  inside the runner, and a decision on whether the addition stays in that one
-  session or is also appended to the routine behind it. R-31 shipped the
-  catalogue-side half (add to a routine, or start a session pre-filled); this is
-  the in-the-gym half.
+- **status:** **shipped** — split off R-31 (2026-07-22) as the in-the-gym half;
+  R-31 already covers adding from the catalogue (append to a routine, or start
+  a pre-filled session). A new pure `ADD_EXERCISE` action on the runner's
+  reducer (`src/core/runner.ts`) appends the exercise at `max(position) + 1`
+  without moving the cursor, and refuses a duplicate `exerciseId`. The picker
+  surfaced inside the runner hides exercises already in the session
+  (`ExercisePicker`'s `excludeIds`) for the same reason: `workout_sets` is
+  unique on `(session_id, exercise_id, set_index)`, and a duplicate would fail
+  the whole end-of-workout save.
+- **shipped:** the working weight prefills from the user's last logged session
+  for that exercise (`loadAddedExercise`, best-effort by design — see
+  `settleOrFallback`); any failure — offline, a Supabase error, a request that
+  never settles (4 s timeout, `HISTORY_TIMEOUT_MS`), or no history at all —
+  degrades silently to 0 kg, and the exercise is still added with no error
+  toast. An added exercise gets a plain default plan (3 × 8-12, no warm-up
+  sets) since there's no routine row behind it; everything is adjustable
+  afterward in the runner itself (`ADD_SET`, the weight stepper). Its display
+  data (name, "last time" hint, coach context) is persisted alongside the
+  runner draft, so resuming after a reload still shows the real name rather
+  than a raw id. **Session-only, on purpose:** the routine behind the workout
+  is never modified. "Also save it to the routine" was **deliberately
+  deferred**, not forgotten — it would require loading the
+  `RoutineWithExercises` aggregate mid-workout, and it only applies when the
+  session actually came from a routine; R-31 already covers adding an exercise
+  to a routine from the catalogue. No migration, no RPC, no schema change, no
+  new write path — the added exercise's sets ride the existing `save_workout`
+  call. Verified in a real browser at mobile and desktop widths against the
+  live database, including the offline path, the draft resume, and a real
+  save.
 
 ## Feature & UX family index
 
