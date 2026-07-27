@@ -24,7 +24,12 @@ beforeAll(async () => { await i18n.changeLanguage('en'); });
 afterAll(async () => { await i18n.changeLanguage('es'); });
 // Runner now seeds/mirrors `extras` (added-exercise display data) to
 // localStorage (R-46 review finding); isolate each test from the others.
-beforeEach(() => localStorage.clear());
+// The picker's search results are also reset here so a test that forgets to
+// seed its own rows can never silently inherit a previous test's catalogue.
+beforeEach(() => {
+  localStorage.clear();
+  searchResults.length = 0;
+});
 
 function state() {
   const input: RunnerInput = {
@@ -158,7 +163,6 @@ it('leaves reps on the integer spinner — there is no comma to lose there', () 
 });
 
 it('adds an exercise from the overview panel', async () => {
-  searchResults.length = 0;
   searchResults.push(curlRow);
   const onLoadExercise = fakeLoad();
   renderRunner(vi.fn(), onLoadExercise);
@@ -175,9 +179,10 @@ it('adds an exercise from the overview panel', async () => {
 
 // The contract says onLoadExercise never rejects (see loadAddedExercise), but
 // Runner shouldn't rely on that: a rejection must not become an unhandled
-// promise rejection nor a silent no-op that leaves the user staring at nothing.
-it('does not add the exercise or crash when onLoadExercise rejects', async () => {
-  searchResults.length = 0;
+// promise rejection nor a silent no-op that leaves the user staring at
+// nothing — the dialog must stay open with the failure visible right there,
+// not close silently and resurface later as a raw message under Save.
+it('keeps the add dialog open and shows an error when onLoadExercise rejects', async () => {
   searchResults.push(curlRow);
   const onLoadExercise = vi.fn().mockRejectedValue(new Error('lookup failed'));
   renderRunner(vi.fn(), onLoadExercise);
@@ -188,12 +193,16 @@ it('does not add the exercise or crash when onLoadExercise rejects', async () =>
   await userEvent.click(await screen.findByText('Biceps Curl'));
 
   await vi.waitFor(() => expect(onLoadExercise).toHaveBeenCalled());
+  // The dialog itself is still open, showing the generic failure message —
+  // not the raw exception text — right where the failure happened.
+  expect(await screen.findByText(i18n.t('common:errors.generic'))).toBeInTheDocument();
+  expect(screen.getByText(i18n.t('entrenamiento:runner.addExerciseTitle'))).toBeInTheDocument();
+  expect(screen.queryByText('lookup failed')).not.toBeInTheDocument();
   // No phantom exercise was added — the overview still shows only 'bench'.
   expect(screen.queryByText(/Biceps Curl/)).not.toBeInTheDocument();
 });
 
 it('hides exercises already in the session from the picker', async () => {
-  searchResults.length = 0;
   searchResults.push(curlRow, { id: 'bench', name_es: 'Press banca', name_en: 'Bench Press', equipment: null });
   renderRunner(vi.fn(), fakeLoad());
 
@@ -211,7 +220,6 @@ it('hides exercises already in the session from the picker', async () => {
 });
 
 it('still adds the exercise when the prefill lookup fails', async () => {
-  searchResults.length = 0;
   searchResults.push(curlRow);
   const onLoadExercise = fakeLoad({
     input: {

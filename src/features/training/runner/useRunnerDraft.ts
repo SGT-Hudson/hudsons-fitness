@@ -95,9 +95,15 @@ export function useRunnerDraftMirror(state: RunnerState | null): void {
   }, [state]);
 }
 
-/** Mirror added-exercise display data alongside the draft — see `RunnerExtras`. */
-export function useRunnerExtrasMirror(stamp: ExtrasStamp, extras: RunnerExtras): void {
+/** Mirror added-exercise display data alongside the draft — see `RunnerExtras`.
+ *  Takes the stamp's two primitive fields rather than the whole live
+ *  `RunnerState` object: that object's identity changes on every reducer
+ *  action (e.g. `RECORD_SET`), and each extras entry carries a full
+ *  `coach.history`, so keying the effect on the object would re-serialize
+ *  that potentially-large map on every dispatch instead of only when the
+ *  session identity or the extras themselves actually change. */
+export function useRunnerExtrasMirror(routineId: string | null, startedAtMs: number, extras: RunnerExtras): void {
   useEffect(() => {
-    saveExtras(stamp, extras);
-  }, [stamp, extras]);
+    saveExtras({ routineId, startedAtMs }, extras);
+  }, [routineId, startedAtMs, extras]);
 }

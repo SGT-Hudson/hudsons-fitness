@@ -6,6 +6,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import type { CoachContext } from '@/core/training';
+import { classifyError, errorMessageKey } from '@/lib/errors';
 import {
   runnerReducer,
   nextPendingIndex,
@@ -52,6 +53,7 @@ export function Runner({
   initialState, names, coachContextByExercise, lastTimeByExercise, onSave, onExit, onSaved, onLoadExercise,
 }: Props) {
   const { t } = useTranslation('entrenamiento');
+  const { t: tCommon } = useTranslation('common');
   const [state, dispatch] = useReducer(runnerReducer, initialState);
   const [begun, setBegun] = useState(false); // exercise-start gate (per active exercise)
   const [skipAck, setSkipAck] = useState(false); // user chose to save without remaining skipped
@@ -61,6 +63,7 @@ export function Runner({
   const [error, setError] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
   // Added exercises aren't in the props keyed by id, so keep their display data
   // here and merge it over the props. One record, not three parallel maps.
   // Seeded from storage so a resumed draft doesn't lose an added exercise's
@@ -86,7 +89,7 @@ export function Runner({
   }, [coachContextByExercise, extras]);
 
   useRunnerDraftMirror(state);
-  useRunnerExtrasMirror(state, extras);
+  useRunnerExtrasMirror(state.routineId, state.startedAtMs, extras);
   useWakeLock(state.phase !== 'finishing');
 
   const timer = useRestTimer(state.restStartedAtMs, state.restTargetSeconds, fireRestAlarm);
@@ -129,7 +132,7 @@ export function Runner({
 
   async function handleAddExercise(exercise: Exercise) {
     setAdding(true);
-    setError(null);
+    setAddError(null);
     try {
       const data = await onLoadExercise(exercise);
       setExtras((prev) => ({
@@ -137,11 +140,14 @@ export function Runner({
         [exercise.id]: { name: data.name, lastTime: data.lastTimeLabel, coach: data.coachContext },
       }));
       dispatch({ type: 'ADD_EXERCISE', exercise: data.input, nowMs: Date.now() });
+      setAddOpen(false);
     } catch (e) {
-      setError((e as Error).message);
+      // Keep the dialog open so the failure is visible where it happened,
+      // instead of closing silently and surfacing a stray message later
+      // under the (unrelated) save button on the review screen.
+      setAddError(tCommon(errorMessageKey(classifyError(e))));
     } finally {
       setAdding(false);
-      setAddOpen(false);
     }
   }
 
@@ -197,7 +203,7 @@ export function Runner({
           onSkipCurrent={() => { dispatch({ type: 'SKIP_CURRENT', nowMs: Date.now() }); setShowOverview(false); }}
           onFinishEarly={() => { dispatch({ type: 'FINISH_EARLY', nowMs: Date.now() }); setShowOverview(false); }}
           onClose={() => setShowOverview(false)}
-          onAddExercise={() => setAddOpen(true)}
+          onAddExercise={() => { setAddError(null); setAddOpen(true); }}
         />
         <Dialog open={pendingJump !== null} onOpenChange={(o) => { if (!o) setPendingJump(null); }}>
           <DialogContent>
@@ -217,12 +223,16 @@ export function Runner({
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <Dialog open={addOpen} onOpenChange={(o) => { if (!adding) setAddOpen(o); }}>
+        <Dialog
+          open={addOpen}
+          onOpenChange={(o) => { if (!adding) { setAddOpen(o); setAddError(null); } }}
+        >
           <DialogContent className="overflow-visible">
             <DialogHeader>
               <DialogTitle>{t('runner.addExerciseTitle')}</DialogTitle>
               <DialogDescription>{t('runner.addExerciseBody')}</DialogDescription>
             </DialogHeader>
+            {addError && <p className="text-center text-sm text-destructive">{addError}</p>}
             {adding ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
                 {t('runner.addExerciseLoading')}
