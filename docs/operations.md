@@ -47,7 +47,9 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
   + shared-core type-check), and `db-test` (Tier-3 pgTAP — `supabase start`
   applies the migration history from zero into the real Supabase Postgres
   image, then `supabase test db` runs `supabase/tests/*.test.sql`; then Tier-4
-  runs `pnpm test:integration` against the same stack). R-16, R-32.
+  runs `pnpm test:integration` against the same stack; then the R-32 e2e
+  smoke sweeps the spine routes with Playwright against the same stack).
+  R-16, R-32.
 - **`develop` = integration + staging.** Short-lived `claude/*` branch → PR
   into `develop` → `lint-build` green → `.github/workflows/auto-merge.yml`
   arms GitHub-native squash auto-merge → merged hands-off; branch
@@ -68,8 +70,9 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
   auto-opened back-merge PR `main`→`develop` so the fix survives the next
   promotion.
 - **Branch protection on `develop`:** required status checks `lint-build` and
-  `db-test` (Tier-3 pgTAP + Tier-4 select-string guard — R-16, R-32); `strict`
-  false; force-push/deletion blocked; 0 required reviews.
+  `db-test` (Tier-3 pgTAP + Tier-4 select-string guard + R-32 e2e smoke —
+  R-16, R-32); `strict` false; force-push/deletion blocked; 0 required
+  reviews.
 - **Branch protection on `main`:** required status check `lint-build`;
   `strict` false; a PR is required before merging (0 required reviews —
   solo); force-push/deletion blocked; `enforce_admins` false (the solo
@@ -909,3 +912,14 @@ in the setup file) and, in CI, extracts the anon key with
 `eval "$(supabase status -o env | sed -n 's/^ANON_KEY=/SUPABASE_TEST_ANON_KEY=/p')"`.
 On Node 20 the setup polyfills `globalThis.WebSocket` from `ws` (a
 devDependency) — delete that block when the project moves to Node 22.
+
+### R-32 e2e smoke (Playwright)
+
+The same `db-test` job also runs the e2e half of R-32: a Playwright smoke
+suite (Chromium, mobile viewport) that builds the app against the job's own
+stack, seeds `supabase/seed/e2e-fixture.sql`, logs in as the seeded QA user,
+and sweeps the 11 spine routes asserting each renders an `<h1>` with no
+ErrorBoundary fallback and no console/page errors. Failure artifacts (trace +
+screenshots) are uploaded as the `playwright-report` workflow artifact. Local
+run: `pnpm test:e2e:local` with the stack up (`pnpm test:e2e` alone assumes
+the stack and env vars are already set).
