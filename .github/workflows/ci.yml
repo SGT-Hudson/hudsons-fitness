@@ -108,12 +108,16 @@ jobs:
 
       # R-32 e2e smoke: build the app against this job's stack and sweep the
       # spine routes with Playwright. The fixture is applied by psql (present
-      # on the runner); Chromium is cached on the Playwright version.
+      # on the runner); Chromium is cached on the lockfile hash, falling back
+      # to the newest cache for this OS so a dep bump doesn't force a full
+      # ~150 MB re-download.
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium

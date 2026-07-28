@@ -29,11 +29,18 @@ for (const route of ROUTES) {
     page.on('pageerror', (err) => errors.push(`pageerror: ${String(err)}`));
 
     await page.goto(route);
+    // The router has a catch-all (path="*" -> / -> /diary): a renamed or
+    // removed route would silently redirect there and still render an h1,
+    // laundering a missing route into a pass. Pin the pathname too.
+    expect(new URL(page.url()).pathname).toBe(route);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.getByTestId('error-boundary-fallback')).toHaveCount(0);
 
     // Let data queries land so late console errors are caught too.
     await page.waitForLoadState('networkidle');
+    // Repeat: a crash triggered by query results rendering (the exact shape
+    // of bug this suite exists for) can happen after first paint.
+    await expect(page.getByTestId('error-boundary-fallback')).toHaveCount(0);
     expect(errors, `console/page errors on ${route}:\n${errors.join('\n')}`).toEqual([]);
   });
 }

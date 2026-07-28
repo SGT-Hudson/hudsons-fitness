@@ -143,4 +143,19 @@ values
    current_date - 1, 80.6, 18.2)
 on conflict do nothing;
 
+-- Verify: the `update` above is a silent no-op (0 rows, exit 0) if the
+-- trigger-created profile row is missing — e.g. the auth.users insert was
+-- skipped by an email conflict against a pre-existing row with a different
+-- id. Without this, the failure only surfaces much later as an opaque
+-- waitForURL('**/diary') timeout in auth.setup.ts.
+do $$
+begin
+  if not exists (
+    select 1 from public.profiles
+    where id = '00000000-0000-4000-8000-0000000e2e00' and sex is not null
+  ) then
+    raise exception 'e2e fixture: the QA profile was not created — check for a conflicting auth.users row';
+  end if;
+end $$;
+
 commit;

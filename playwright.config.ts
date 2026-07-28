@@ -25,7 +25,11 @@ export default defineConfig({
   use: {
     // localStorage-based Supabase session ⇒ storageState is origin-scoped.
     // localhost and 127.0.0.1 are DIFFERENT origins — everything uses localhost.
-    baseURL: 'http://localhost:4173',
+    // Deliberately NOT the `pnpm preview` default (4173): a dev's already-
+    // running preview — built from .env.local, which may point at production
+    // — would otherwise be silently reused (reuseExistingServer below), and
+    // the shell-env fail-closed guard above cannot see a server it didn't start.
+    baseURL: 'http://localhost:4183',
     // The PWA service worker registers in production builds (vite preview
     // included) and would cache the shell across tests.
     serviceWorkers: 'block',
@@ -45,8 +49,8 @@ export default defineConfig({
   webServer: {
     // Vite bakes VITE_* env in at build time, so the build happens here, with
     // the shell env this config just validated.
-    command: 'pnpm build && pnpm preview --port 4173 --strictPort',
-    url: 'http://localhost:4173',
+    command: 'pnpm build && pnpm preview --port 4183 --strictPort',
+    url: 'http://localhost:4183',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },
