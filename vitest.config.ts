@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { configDefaults } from 'vitest/config';
 import path from 'node:path';
 
 // Tiered tests (D-F1 ruling, R-16):
@@ -30,5 +31,6 @@ export default defineConfig({
       'supabase/functions/**/*.test.ts',
       'scripts/**/*.test.ts',
     ],
+    exclude: [...configDefaults.exclude, 'e2e/**'],
   },
 });
