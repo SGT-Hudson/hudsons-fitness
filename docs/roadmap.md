@@ -39,7 +39,7 @@ reference shard carries it (never edit the decision entry).
 - R-29 — In-app feature-discovery onboarding (post-V1 item 5) — deferred until after R-33
 - R-30 — Responsive desktop density, per-feature (REMOVED 2026-06-11 — folded into R-33)
 - R-31 — Exercise search/browse follow-ups (lay-term aliases, group-name search, add-from-detail) — SHIPPED
-- R-32 — DB-integration test tier / e2e guard for PostgREST select strings — PARTIAL (Tier-4 select guard shipped 2026-07-24; agent-browser e2e still open)
+- R-32 — DB-integration test tier / e2e guard for PostgREST select strings — SHIPPED (Tier-4 select guard 2026-07-24; Playwright e2e smoke 2026-07-28)
 - R-33 — UI redesign: design system + nutrition screens — SHIPPED (released to `main` 2026-07-15, `v2026-07-15`)
 - R-34 — Gym screens redesign (blocked on gym design convergence)
 - R-35 — Shopping list from the planned week — SHIPPED
@@ -1130,19 +1130,35 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 ## R-32 — DB-integration test tier / e2e guard for PostgREST select strings
 - **decision:** D-F28
 - **blocked-by:** —
-- **status:** **partially done** (2026-07-24) — scope item 1 (the integration
-  tier) is built and **required in CI**; scope item 2 (agent-browser e2e over
-  planner load / apply-template) is **not built**, so R-32 stays open for it.
-  Item 1 ships as **Tier-4** (`*.itest.ts`, own Vitest config, run inside the
-  existing `db-test` job): the 20 fetch helpers that carry an explicit
-  column/embed select are invoked against the local stack with ids that match
-  nothing, so an invalid `.select(...)` fails CI (PostgREST validates the select
-  before filtering, so no seed or auth is needed). A coverage meta-test fails the
-  build when a helper with an explicit select is missing from the registry.
-  **Inventory:** 20 guarded helpers; bare `select('*')` / `select('*', {count})`
-  and `select()` are out of scope (they name no column and cannot break);
-  mutations are out of scope (they use `select()`/`select('*')`). See D-F28 and
+- **status:** **done** (2026-07-28) — both scope items are built and
+  **required in CI**. Item 1 shipped 2026-07-24 as **Tier-4** (`*.itest.ts`,
+  own Vitest config, run inside the existing `db-test` job): the 20 fetch
+  helpers that carry an explicit column/embed select are invoked against the
+  local stack with ids that match nothing, so an invalid `.select(...)` fails
+  CI (PostgREST validates the select before filtering, so no seed or auth is
+  needed). A coverage meta-test fails the build when a helper with an
+  explicit select is missing from the registry. **Inventory:** 20 guarded
+  helpers; bare `select('*')` / `select('*', {count})` and `select()` are out
+  of scope (they name no column and cannot break); mutations are out of scope
+  (they use `select()`/`select('*')`). See D-F28 and
   `docs/superpowers/specs/2026-07-23-r32-select-guard-design.md`.
+  Item 2 shipped 2026-07-28 as a **Playwright e2e smoke** (own `playwright.config.ts`,
+  excluded from Vitest) run in the same `db-test` job, after Tier-4: an
+  idempotent SQL fixture (`supabase/seed/e2e-fixture.sql`) seeds a QA user
+  plus one representative row per spine table, `e2e/auth.setup.ts` logs in
+  once and persists storage state, then `e2e/smoke.spec.ts` sweeps 11 spine
+  routes (diary, planner, templates, recipes, ingredients, training, routine,
+  exercises, progress, goals, settings) on a mobile viewport, asserting each
+  renders an `<h1>`, shows no ErrorBoundary fallback, and logs no
+  console/page errors. It deliberately does not assert on data correctness,
+  visual regressions, or the planner/apply-template mutation flow itself —
+  those stay covered by Tier-3/Tier-4 and manual soak on the `develop`
+  preview. Mutation-tested (see spec): an injected `throw` fails the h1
+  assertion with the ErrorBoundary fallback confirmed in the screenshot; an
+  injected `console.error` fails the console-errors assertion with the exact
+  message; reverting both returns 12/12 green. Failure artifacts (trace +
+  screenshots) upload as the `playwright-report` CI artifact. Local run:
+  `pnpm test:e2e:local`.
 - **origin:** a planner regression shipped to prod on 2026-05-24: a bad PostgREST
   `.select(...)` string (selected `meal_times` from `meal_plan_weeks`, which has
   no such column) broke the planner and nothing caught it. Typecheck is blind —
@@ -1159,7 +1175,10 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
      deterministically.
   2. Extend the **agent-browser e2e harness** (seeded QA user) to cover critical
      flows (planner load + apply template) against a real backend, in the gate.
-     **← the still-open half of R-32.**
+     **← shipped 2026-07-28**, as a Playwright smoke suite (not the
+     agent-browser harness — that stays a manual/local tool) covering render
+     health across the 11 spine routes rather than the planner mutation flow
+     specifically; see the status note above.
 - **superseded standing rule:** the former "verify every `.select(...)` against a
   real DB before merge" rule is now enforced by Tier-4 for the 20 guarded helpers
   — the gate replaces the manual discipline. It still applies by hand only to the
