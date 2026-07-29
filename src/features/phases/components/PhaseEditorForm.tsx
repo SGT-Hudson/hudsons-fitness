@@ -1,13 +1,20 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
+import { Calculator } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NumberField } from '@/components/ui/NumberField';
+import { ResponsiveDialog } from '@/components/ui/ResponsiveDialog';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  TdeeCalculator,
+  type TdeeCalculatorData,
+} from '@/features/tdee/components/TdeeCalculator';
 import { todayInTZ } from '@/lib/dates';
 import { parseDecimalInput } from '@/lib/number';
 import {
@@ -141,7 +148,16 @@ interface Props {
    * inline card above the fields on mobile. A render prop, because only this
    * component can watch the fields as they are typed.
    */
-  preview?: (draft: PhaseDraft) => ReactNode;
+  preview?: (
+    draft: PhaseDraft,
+    ctx: { openTdeeCalculator: () => void },
+  ) => ReactNode;
+  /**
+   * R-37: everything the TDEE calculator needs, read by the PAGE and passed
+   * through. The form itself calls no data hook — same division of labour as
+   * the preview slot.
+   */
+  tdeeCalculator?: TdeeCalculatorData;
 }
 
 export function PhaseEditorForm({
@@ -150,6 +166,7 @@ export function PhaseEditorForm({
   submitError,
   onSubmit,
   preview,
+  tdeeCalculator,
 }: Props) {
   const { t } = useTranslation('objetivos');
 
@@ -173,6 +190,8 @@ export function PhaseEditorForm({
     defaultValues: phase ? phaseToForm(phase) : blankForm(),
   });
 
+  const [tdeeOpen, setTdeeOpen] = useState(false);
+
   const values = watch();
   const { phase_type: phaseType, kcal_mode: kcalMode, fiber_mode: fiberMode } = values;
 
@@ -188,6 +207,19 @@ export function PhaseEditorForm({
     if (dirtyFields.protein_g_per_kg) return;
     setValue('protein_g_per_kg', toInput(tableDefault));
   }, [notesOnly, phase, phaseType, tableDefault, dirtyFields, setValue]);
+
+  /**
+   * Apply writes BOTH fields, together. In `tdee_delta` mode `kcal_value` is
+   * the delta, so dropping a TDEE into it would be plain wrong — and the
+   * situation that brings the user here is precisely "no adaptive TDEE, so
+   * delta mode is unusable". The button's label names the consequence, so the
+   * mode switch is disclosed rather than silent.
+   */
+  function applyTdee(tdeeKcal: number) {
+    setValue('kcal_mode', 'absolute', { shouldDirty: true });
+    setValue('kcal_value', String(tdeeKcal), { shouldDirty: true });
+    setTdeeOpen(false);
+  }
 
   // `parsed` is the PARSED form (numbers) — the schema turned each raw input
   // string into a number via `parseDecimalInput`. `pctToFraction` still owns the
@@ -247,7 +279,9 @@ export function PhaseEditorForm({
           fields on mobile (an inline card you can see while typing); `md:order-2`
           moves it into the right column on desktop, where it sticks. ── */}
       {preview && (
-        <aside className="md:order-2 md:sticky md:top-4">{preview(draft)}</aside>
+        <aside className="md:order-2 md:sticky md:top-4">
+          {preview(draft, { openTdeeCalculator: () => setTdeeOpen(true) })}
+        </aside>
       )}
 
       <div className="space-y-3 md:order-1 md:space-y-3.5">
@@ -385,6 +419,22 @@ export function PhaseEditorForm({
                 {...register('kcal_value')}
               />
               <span className="pb-2 text-xs text-muted-foreground">{kcalSuffix}</span>
+              {/* Present in BOTH kcal modes: a new phase starts in `absolute`,
+                  so a first-time user never meets the delta dead end and would
+                  otherwise never find the tool. */}
+              {tdeeCalculator && !notesOnly && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTdeeOpen(true)}
+                  data-testid="phase-open-tdee"
+                  className="ml-auto h-9"
+                >
+                  <Calculator className="h-4 w-4" aria-hidden="true" />
+                  {t('tdee.open')}
+                </Button>
+              )}
             </div>
             {errors.kcal_value && (
               <p className="text-xs text-destructive">{t('phases.form.errors.kcalValue')}</p>
@@ -484,6 +534,23 @@ export function PhaseEditorForm({
           </p>
         )}
       </div>
+
+      {/* Both triggers open this one sheet. `variant="panel"` hands padding to
+          the caller, and `ResponsiveDialog`'s `title` is sr-only — hence the
+          wrapping div and the visible h2 (an h2: the page owns the h1). */}
+      {tdeeCalculator && (
+        <ResponsiveDialog
+          open={tdeeOpen}
+          onOpenChange={setTdeeOpen}
+          title={t('tdee.title')}
+          variant="panel"
+        >
+          <div className="overflow-y-auto p-4">
+            <h2 className="mb-3 text-[15px] font-semibold">{t('tdee.title')}</h2>
+            <TdeeCalculator data={tdeeCalculator} onApply={applyTdee} />
+          </div>
+        </ResponsiveDialog>
+      )}
     </form>
   );
 }

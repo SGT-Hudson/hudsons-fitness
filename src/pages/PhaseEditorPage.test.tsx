@@ -52,9 +52,20 @@ vi.mock('@/features/phases/hooks', () => ({
 // keeps the preview visible, and the delta mode's needs-TDEE state testable).
 vi.mock('@/features/measurements/hooks', () => ({
   useLatestMeasurement: () => ({ data: { weight_kg: 80, body_fat_pct: 25 } }),
+  // R-37: the page also reads the recent history, for the calculator sheet's
+  // Katch line (the newest reading that carries a body fat %).
+  useRecentMeasurements: () => ({
+    data: [{ weight_kg: 80, body_fat_pct: 25, measured_on: '2026-05-10' }],
+  }),
 }));
 vi.mock('@/features/tdee/hooks', () => ({
   useLatestTdee: () => ({ data: null }),
+}));
+// R-37: same reason — the calculator's sex / age / height come off the profile.
+vi.mock('@/features/profile/hooks', () => ({
+  useProfile: () => ({
+    data: { sex: 'male', birth_date: '1990-03-01', height_cm: 180 },
+  }),
 }));
 
 import { PhaseEditorPage } from './PhaseEditorPage';
