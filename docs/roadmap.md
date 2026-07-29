@@ -45,7 +45,7 @@ reference shard carries it (never edit the decision entry).
 - R-35 — Shopping list from the planned week — SHIPPED
 - R-36 — Recipe steps & notes (structured steps + private notes) — SHIPPED
 - R-36b — Recipe cover photo (split off R-36, scope changed from per-step to one cover photo) — SHIPPED
-- R-37 — Interactive TDEE calculator linked from the phase editor
+- R-37 — Interactive TDEE calculator linked from the phase editor — SHIPPED
 - R-38 — Progress analytics extras (adherence heatmap, ETA banner, energy balance, custom range)
 - R-39 — Measurement extras (progress photos, streak, smart-scale source toggle)
 - R-40 — cmd-K command palette (navigate-only)
@@ -1297,11 +1297,38 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
   schedule firing early is a silent no-op, not a visible failure).
 
 ## R-37 — Interactive TDEE calculator
-- **decision:** (D-id at spec time)
+- **decision:** (D-id at spec time; design doc
+  `docs/superpowers/specs/2026-07-29-r37-tdee-calculator-design.md`)
 - **blocked-by:** —
-- **status:** todo (spawned by R-33 spec, 2026-07-02)
-- **scope:** Mifflin-St Jeor + Katch-McArdle with activity multipliers,
-  linked from the phase editor. Derived-only (hard invariant 5).
+- **status:** **shipped** — the gap it closes is the adaptive filter's cold
+  start, not the formula itself: R-07's Kalman estimate beats any formula, but
+  `recalculate-tdee` only runs for profiles with at least one row in `phases`,
+  and the phase editor refuses to compute targets in `tdee_delta` mode without
+  an estimate (the amber `needsTdee` dead end). So a first phase must be
+  `absolute`, and nothing told the user what number to put there.
+- **shipped:** one pure module (`src/features/tdee/formulas.ts` — activity
+  table, Katch-McArdle, compose-with-guards, reusing `mifflinStJeor` from
+  `src/lib/macros.ts`), one shared body (`TdeeCalculator`, props-in and hook-free
+  so its Tier-2 test needs no Supabase), and two frames: the `/tdee` route from
+  More (scenario play, no apply) and a `ResponsiveDialog` in the phase editor
+  with an apply action, opened either from beside the kcal field (in **both**
+  kcal modes — `blankForm()` starts in `absolute`, so a first-time user never
+  sees the amber notice) or from inside that notice.
+- **shipped:** applying sets `kcal_mode='absolute'` **and** `kcal_value`
+  together — in `tdee_delta` mode `kcal_value` is the delta, so writing a TDEE
+  there would be wrong; the button's label names the consequence instead of
+  switching the mode silently. Mifflin is the headline, Katch-McArdle a smaller
+  secondary reading shown only when a `body_fat_pct` measurement exists and
+  labelled with that measurement's date (the date *is* the caveat — no
+  invented staleness cutoff). When an adaptive estimate exists, a comparison
+  strip says plainly that the measured number wins, carrying its confidence
+  band.
+- **scope (closed):** nothing is stored — no migration, no RPC, no activity-level
+  column, no new fetcher (the Katch reading scans the `useRecentMeasurements(30)`
+  list the app already loads). The edge function's hardcoded `1.4` activity seed
+  stays: persisting an activity level to improve a value the filter self-corrects
+  within ~2 weeks is not worth the schema.
+- **scope (open):** none.
 
 ## R-38 — Progress analytics extras
 - **decision:** (D-id at spec time)

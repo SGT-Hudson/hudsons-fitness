@@ -409,7 +409,10 @@ export function PhaseEditorForm({
                 )}
               />
             </div>
-            <div className="flex items-end gap-2">
+            {/* Wraps: the delta suffix is long, and on a phone it and the
+                calculator trigger do not fit on one line — unwrapped, the
+                suffix was squeezed under the button. */}
+            <div className="flex flex-wrap items-end gap-x-2 gap-y-1.5">
               <NumberField
                 id="ph-kcal"
                 label={t('phases.form.kcal')}
@@ -418,7 +421,7 @@ export function PhaseEditorForm({
                 disabled={notesOnly}
                 {...register('kcal_value')}
               />
-              <span className="pb-2 text-xs text-muted-foreground">{kcalSuffix}</span>
+              <span className="min-w-0 pb-2 text-xs text-muted-foreground">{kcalSuffix}</span>
               {/* Present in BOTH kcal modes: a new phase starts in `absolute`,
                   so a first-time user never meets the delta dead end and would
                   otherwise never find the tool. */}
@@ -429,7 +432,7 @@ export function PhaseEditorForm({
                   size="sm"
                   onClick={() => setTdeeOpen(true)}
                   data-testid="phase-open-tdee"
-                  className="ml-auto h-9"
+                  className="ml-auto h-9 shrink-0"
                 >
                   <Calculator className="h-4 w-4" aria-hidden="true" />
                   {t('tdee.open')}

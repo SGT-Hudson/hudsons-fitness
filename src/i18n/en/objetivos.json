@@ -174,7 +174,7 @@
     "kcalUnit": "kcal",
     "incomplete": "Fill in weight, height and age to see the estimate.",
     "katch": "Katch-McArdle: {{n, number}} kcal",
-    "katchNote": "Uses the body-fat % measured on {{date}}.",
+    "katchNote": "using the body-fat % measured on {{date}}.",
     "adaptiveTitle": "Your measured TDEE: {{n, number}} kcal",
     "adaptiveAbove": "{{n, number}} kcal above this formula.",
     "adaptiveBelow": "{{n, number}} kcal below this formula.",
