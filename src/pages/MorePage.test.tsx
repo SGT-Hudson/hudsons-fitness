@@ -36,7 +36,7 @@ describe('MorePage', () => {
     expect(link).toHaveAttribute('href', '/settings/profile');
   });
 
-  it('renders hub rows: Ingredientes, Plantillas, Objetivos, Ajustes', () => {
+  it('renders hub rows: Ingredientes, Plantillas, Objetivos, Calculadora de TDEE, Ajustes', () => {
     renderMorePage();
     expect(screen.getByRole('link', { name: 'Ingredientes' })).toHaveAttribute(
       'href',
@@ -46,6 +46,10 @@ describe('MorePage', () => {
     expect(screen.getByRole('link', { name: 'Objetivos' })).toHaveAttribute(
       'href',
       '/progress/goals',
+    );
+    expect(screen.getByRole('link', { name: 'Calculadora de TDEE' })).toHaveAttribute(
+      'href',
+      '/tdee',
     );
     expect(screen.getByRole('link', { name: 'Ajustes' })).toHaveAttribute('href', '/settings');
   });
