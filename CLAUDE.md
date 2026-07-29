@@ -14,7 +14,7 @@ pnpm lint         # eslint .
 pnpm build        # tsc -b && vite build (to ./dist)
 pnpm test         # vitest run (Tier-1 + Tier-2; hermetic, no stack)
 pnpm test:integration  # Tier-4 select-string guard — needs a running local stack (R-32)
-pnpm test:e2e:local    # Playwright smoke over 11 spine routes — needs a running local stack (R-32)
+pnpm test:e2e:local    # Playwright smoke over 12 spine routes — needs a running local stack (R-32)
 pnpm preview      # preview ./dist locally
 ```
 

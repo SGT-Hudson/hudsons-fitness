@@ -138,5 +138,53 @@
         "fat": "G"
       }
     }
+  },
+  "tdee": {
+    "title": "Calculadora de TDEE",
+    "intro": "Una estimación de partida, calculada con una fórmula. Cuando lleves un par de semanas registrando comidas y peso, la app calculará tu gasto real y este número pasará a segundo plano.",
+    "yourData": "Tus datos",
+    "dataHint": "Puedes cambiarlos aquí para probar escenarios: solo viven en esta pantalla y no tocan tu perfil. Para cambiarlos de verdad, ve a Ajustes.",
+    "reset": "Volver a mis datos",
+    "sexLabel": "Sexo",
+    "sexMale": "Hombre",
+    "sexFemale": "Mujer",
+    "sexOther": "Otro",
+    "age": "Edad",
+    "ageUnit": "años",
+    "height": "Altura",
+    "weight": "Peso",
+    "activityLabel": "Nivel de actividad",
+    "activity": {
+      "sedentary": "Sedentario",
+      "light": "Ligero",
+      "moderate": "Moderado",
+      "active": "Activo",
+      "very_active": "Muy activo"
+    },
+    "activityDescription": {
+      "sedentary": "Trabajo sentado y poco más: nada de ejercicio estructurado.",
+      "light": "Ejercicio suave 1-3 días por semana, o un trabajo de pie.",
+      "moderate": "Entreno 3-5 días por semana, o bastante movimiento diario.",
+      "active": "Entreno duro 6-7 días por semana, o trabajo físico.",
+      "very_active": "Trabajo físico duro más entreno diario, o doble sesión."
+    },
+    "multiplier": "× {{n, number}}",
+    "bmr": "Metabolismo basal (Mifflin-St Jeor)",
+    "tdeeLabel": "Gasto diario estimado",
+    "kcalUnit": "kcal",
+    "incomplete": "Completa peso, altura y edad para ver la estimación.",
+    "katch": "Katch-McArdle: {{n, number}} kcal",
+    "katchNote": "con el % de grasa medido el {{date}}.",
+    "adaptiveTitle": "Tu TDEE medido: {{n, number}} kcal",
+    "adaptiveAbove": "{{n, number}} kcal por encima de esta fórmula.",
+    "adaptiveBelow": "{{n, number}} kcal por debajo de esta fórmula.",
+    "adaptiveSame": "Coincide con esta fórmula.",
+    "adaptiveBody": "Este número sale de tu ingesta y tu peso reales, no de una fórmula de población: cuando existe, manda él.",
+    "adaptiveLow": "Aún en calentamiento: el número medido se sigue ajustando.",
+    "adaptiveMedium": "Precisión media: el número medido todavía se está afinando.",
+    "noAdaptive": "Todavía no hay un TDEE medido. Con un par de semanas de registro, la app calculará el tuyo y este pasará a segundo plano.",
+    "apply": "Usar {{n, number}} kcal como objetivo fijo",
+    "applyHint": "Cambia la fase a modo «kcal fijas» con este valor.",
+    "open": "Calcular mi TDEE"
   }
 }

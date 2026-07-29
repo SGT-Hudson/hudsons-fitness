@@ -16,12 +16,20 @@ import {
   usePhases,
   useUpdatePhase,
 } from '@/features/phases/hooks';
-import { useLatestMeasurement } from '@/features/measurements/hooks';
+import {
+  useLatestMeasurement,
+  useRecentMeasurements,
+} from '@/features/measurements/hooks';
+import { useProfile } from '@/features/profile/hooks';
 import { useLatestTdee } from '@/features/tdee/hooks';
+import { tdeeConfidenceBand } from '@/features/tdee/api';
 import { isPhaseOverlapError, type PhaseInput } from '@/features/phases/api';
 import { OBJETIVOS_LIST } from '@/features/phases/editorRoute';
 import { isPhaseFrozen } from '@/features/phases/status';
 import { isoDate } from '@/lib/dates';
+import { ageYearsFromBirthDate } from '@/lib/macros';
+import type { TdeeCalculatorData } from '@/features/tdee/components/TdeeCalculator';
+import type { TdeeSex } from '@/features/tdee/formulas';
 
 /**
  * The phase editor as a PAGE — one component behind two routes
@@ -54,6 +62,11 @@ export function PhaseEditorPage() {
   const latestMeasurement = useLatestMeasurement();
   const latestTdee = useLatestTdee();
 
+  // R-37: the calculator sheet's data, read HERE so `PhaseEditorForm` stays
+  // free of data hooks (and so its component test needs no supabase mock).
+  const profile = useProfile();
+  const recentMeasurements = useRecentMeasurements(30);
+
   const createPhase = useCreatePhase();
   const updatePhase = useUpdatePhase();
   const deletePhase = useDeletePhase();
@@ -64,6 +77,24 @@ export function PhaseEditorPage() {
   // the grace window is notes-only because the freeze RULE says so, wherever the
   // user came from (the row's "editar notas", a bookmark, a typed URL).
   const notesOnly = !!phase && isPhaseFrozen(phase, today);
+
+  const sex = profile.data?.sex;
+  // The newest reading that actually carries a body fat %, for the Katch line.
+  const withBodyFat = recentMeasurements.data?.find((m) => m.body_fat_pct != null) ?? null;
+  const tdeeCalculator: TdeeCalculatorData = {
+    sex: sex === 'male' || sex === 'female' || sex === 'other' ? (sex as TdeeSex) : null,
+    ageYears: profile.data?.birth_date
+      ? ageYearsFromBirthDate(profile.data.birth_date, today)
+      : null,
+    heightCm: profile.data?.height_cm ?? null,
+    weightKg: latestMeasurement.data?.weight_kg ?? null,
+    bodyFat:
+      withBodyFat?.body_fat_pct != null
+        ? { pct: withBodyFat.body_fat_pct, measuredOn: withBodyFat.measured_on }
+        : null,
+    adaptiveTdeeKcal: latestTdee.data?.estimated_tdee_kcal ?? null,
+    adaptiveConfidence: tdeeConfidenceBand(latestTdee.data),
+  };
 
   if (!isNew && phases.isLoading) {
     return <div className="text-muted-foreground">{tCommon('loading')}</div>;
@@ -171,15 +202,19 @@ export function PhaseEditorPage() {
           // B2 — the live phase-tinted preview. Hidden in notes-only mode: a
           // frozen phase's targets are history, and today's weight would
           // repaint them as if they were live.
+          // R-37: a notes-only phase gets neither trigger — its targets are
+          // history and nothing in it is editable.
+          tdeeCalculator={notesOnly ? undefined : tdeeCalculator}
           preview={
             notesOnly
               ? undefined
-              : (draft) => (
+              : (draft, ctx) => (
                   <PhasePreview
                     draft={draft}
                     weightKg={latestMeasurement.data?.weight_kg}
                     bodyFatPct={latestMeasurement.data?.body_fat_pct}
                     estimatedTdeeKcal={latestTdee.data?.estimated_tdee_kcal ?? null}
+                    onOpenTdeeCalculator={ctx.openTdeeCalculator}
                   />
                 )
           }

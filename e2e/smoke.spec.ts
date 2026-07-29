@@ -11,6 +11,7 @@ const ROUTES = [
   '/exercises',
   '/progress',
   '/progress/goals',
+  '/tdee',
   '/settings',
 ] as const;
 

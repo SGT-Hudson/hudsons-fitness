@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PhaseChip } from '@/components/ui/PhaseChip';
 import { useNum } from '@/hooks/useNum';
@@ -27,6 +28,12 @@ interface Props {
   weightKg?: number | null;
   bodyFatPct?: number | null;
   estimatedTdeeKcal?: number | null;
+  /**
+   * R-37: an exit from the `needsTdee` dead end. Rendered only inside that
+   * amber notice — the other two hints (no weight, incomplete fields) are not
+   * things a TDEE estimate fixes.
+   */
+  onOpenTdeeCalculator?: () => void;
 }
 
 /**
@@ -41,7 +48,13 @@ interface Props {
  * not the kcal target: when the carb remainder clips at 0 g the segments must
  * still add up to 100 %, or the bar lies.
  */
-export function PhasePreview({ draft, weightKg, bodyFatPct, estimatedTdeeKcal }: Props) {
+export function PhasePreview({
+  draft,
+  weightKg,
+  bodyFatPct,
+  estimatedTdeeKcal,
+  onOpenTdeeCalculator,
+}: Props) {
   const { t } = useTranslation('objetivos');
   const num = useNum();
 
@@ -65,6 +78,11 @@ export function PhasePreview({ draft, weightKg, bodyFatPct, estimatedTdeeKcal }:
         : !complete
           ? t('phases.preview.incomplete')
           : t('phases.hero.needsTdee');
+
+  // The one hint the calculator can actually resolve: delta mode, everything
+  // filled in, and no adaptive TDEE to subtract the delta from.
+  const needsTdee =
+    targets == null && weightKg != null && complete && draft.kcal_mode === 'tdee_delta';
 
   const split =
     targets == null
@@ -139,12 +157,24 @@ export function PhasePreview({ draft, weightKg, bodyFatPct, estimatedTdeeKcal }:
       {/* ── The derived split — or the honest reason there is none ── */}
       <div className="px-3.5 py-3 md:px-4">
         {targets == null ? (
-          <p
+          <div
             role="status"
-            className="rounded-md bg-amber-soft px-3 py-2 text-xs leading-[1.45] text-amber-ink"
+            className="space-y-2 rounded-md bg-amber-soft px-3 py-2 text-xs leading-[1.45] text-amber-ink"
           >
-            {hint}
-          </p>
+            <p>{hint}</p>
+            {needsTdee && onOpenTdeeCalculator && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onOpenTdeeCalculator}
+                data-testid="phase-preview-open-tdee"
+                className="h-8 border-amber-line bg-card text-[12px] text-amber-ink"
+              >
+                {t('tdee.open')}
+              </Button>
+            )}
+          </div>
         ) : (
           <>
             <div className="flex h-3 overflow-hidden rounded-[6px]">

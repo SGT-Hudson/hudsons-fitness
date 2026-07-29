@@ -26,6 +26,7 @@ import { PhaseEditorPage } from '@/pages/PhaseEditorPage';
 import { MeasurementHistoryPage } from '@/pages/MeasurementHistoryPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { MorePage } from '@/pages/MorePage';
+import { TdeePage } from '@/pages/TdeePage';
 import { SettingsProfilePage } from '@/pages/settings/SettingsProfilePage';
 import { SettingsBiometricsPage } from '@/pages/settings/SettingsBiometricsPage';
 import { SettingsAccountPage } from '@/pages/settings/SettingsAccountPage';
@@ -171,6 +172,9 @@ export function AppRoutes() {
           <Route path="/settings/biometrics" element={<SettingsBiometricsPage />} />
           <Route path="/settings/account" element={<SettingsAccountPage />} />
           <Route path="/more" element={<MorePage />} />
+          {/* R-37: the standing TDEE calculator. A route, not a sheet on More,
+              so the back button closes it instead of leaving the hub. */}
+          <Route path="/tdee" element={<TdeePage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

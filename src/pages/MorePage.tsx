@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Apple, ChevronRight, LayoutTemplate, Settings, Target } from 'lucide-react';
+import { Apple, Calculator, ChevronRight, LayoutTemplate, Settings, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { PageShell } from '@/components/layout/PageShell';
@@ -11,6 +11,7 @@ const ROWS = [
   { key: 'ingredients', route: '/recipes/ingredients', icon: Apple, chip: 'bg-nutri-soft text-nutri-ink' },
   { key: 'templates', route: '/templates', icon: LayoutTemplate, chip: 'bg-gym-soft text-gym-ink' },
   { key: 'goals', route: '/progress/goals', icon: Target, chip: 'bg-amber-soft text-amber-ink' },
+  { key: 'tdee', route: '/tdee', icon: Calculator, chip: 'bg-accent-soft text-accent-ink' },
   { key: 'settings', route: '/settings', icon: Settings, chip: 'bg-muted text-muted-foreground' },
 ] as const;
 
