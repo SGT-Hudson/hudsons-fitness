@@ -138,5 +138,53 @@
         "fat": "F"
       }
     }
+  },
+  "tdee": {
+    "title": "TDEE calculator",
+    "intro": "A formula-based starting point. Once you have logged meals and weight for a couple of weeks, the app works out your real expenditure and this number moves to second place.",
+    "yourData": "Your data",
+    "dataHint": "Change them here to try scenarios: they only live on this screen and never touch your profile. To change them for real, go to Settings.",
+    "reset": "Back to my data",
+    "sexLabel": "Sex",
+    "sexMale": "Male",
+    "sexFemale": "Female",
+    "sexOther": "Other",
+    "age": "Age",
+    "ageUnit": "years",
+    "height": "Height",
+    "weight": "Weight",
+    "activityLabel": "Activity level",
+    "activity": {
+      "sedentary": "Sedentary",
+      "light": "Light",
+      "moderate": "Moderate",
+      "active": "Active",
+      "very_active": "Very active"
+    },
+    "activityDescription": {
+      "sedentary": "Seated work and little else: no structured exercise.",
+      "light": "Easy exercise 1-3 days a week, or a job on your feet.",
+      "moderate": "Training 3-5 days a week, or plenty of daily movement.",
+      "active": "Hard training 6-7 days a week, or physical work.",
+      "very_active": "Hard physical work plus daily training, or two-a-days."
+    },
+    "multiplier": "× {{n, number}}",
+    "bmr": "Basal metabolic rate (Mifflin-St Jeor)",
+    "tdeeLabel": "Estimated daily expenditure",
+    "kcalUnit": "kcal",
+    "incomplete": "Fill in weight, height and age to see the estimate.",
+    "katch": "Katch-McArdle: {{n, number}} kcal",
+    "katchNote": "Uses the body-fat % measured on {{date}}.",
+    "adaptiveTitle": "Your measured TDEE: {{n, number}} kcal",
+    "adaptiveAbove": "{{n, number}} kcal above this formula.",
+    "adaptiveBelow": "{{n, number}} kcal below this formula.",
+    "adaptiveSame": "Matches this formula.",
+    "adaptiveBody": "That number comes from your real intake and weight, not a population formula: when it exists, it wins.",
+    "adaptiveLow": "Still warming up: the measured number is still settling.",
+    "adaptiveMedium": "Medium confidence: the measured number is still being refined.",
+    "noAdaptive": "There is no measured TDEE yet. After a couple of weeks of logging, the app will work out yours and this one moves to second place.",
+    "apply": "Use {{n, number}} kcal as a fixed target",
+    "applyHint": "Switches the phase to fixed-kcal mode with this value.",
+    "open": "Work out my TDEE"
   }
 }
