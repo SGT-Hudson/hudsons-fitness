@@ -11,13 +11,18 @@ import { MeasurementDialog } from '@/features/measurements/components/Measuremen
 import { RecentMeasurementsCard } from '@/features/measurements/components/RecentMeasurementsCard';
 import { WeightChart } from '@/features/measurements/components/WeightChart';
 import { MacrosChart } from '@/features/progreso/components/MacrosChart';
+import { AdherenceHeatmap } from '@/features/progreso/components/AdherenceHeatmap';
 import {
   useLatestMeasurement,
   useRecentMeasurements,
   useSmoothedMeasurements,
+  fromDateForRange,
 } from '@/features/measurements/hooks';
-import { useActivePhase } from '@/features/phases/hooks';
+import { useDailyNutritionHistory } from '@/features/progreso/hooks';
+import { buildAdherenceDays } from '@/features/progreso/adherence';
+import { useActivePhase, usePhases } from '@/features/phases/hooks';
 import { useGoal } from '@/features/objetivos/hooks';
+import { useTdeeEstimates } from '@/features/tdee/hooks';
 import { computeTargetWeightKg } from '@/lib/macros';
 import type { BodyMeasurement } from '@/features/measurements/api';
 import type { PhaseType } from '@/features/measurements/trend';
@@ -32,6 +37,29 @@ export function ProgresoPage() {
   const smoothedQuery = useSmoothedMeasurements('6m');
   const activePhase = useActivePhase();
   const goal = useGoal();
+
+  // The heatmap's window: 26 weeks, fixed, no control of its own.
+  // `fromDateForRange('6m')` is today − 182 days = exactly 26 weeks, and this
+  // is MacrosChart's default query key — the grid costs no extra request.
+  const adherenceFrom = fromDateForRange('6m');
+  const nutritionHistory = useDailyNutritionHistory('6m');
+  const phases = usePhases();
+  const tdeeEstimates = useTdeeEstimates(adherenceFrom);
+
+  const adherenceDays = useMemo(() => {
+    const rows = nutritionHistory.data ?? [];
+    if (adherenceFrom == null) return [];
+    return buildAdherenceDays({
+      from: adherenceFrom,
+      to: today,
+      firstSnapshotDate: rows[0]?.logged_on ?? null,
+      consumedByDate: new Map(rows.map((r) => [r.logged_on, r.consumed_kcal])),
+      phases: phases.data ?? [],
+      tdeeByDate: new Map(
+        (tdeeEstimates.data ?? []).map((e) => [e.computed_on, e.estimated_tdee_kcal]),
+      ),
+    });
+  }, [nutritionHistory.data, phases.data, tdeeEstimates.data, adherenceFrom, today]);
 
   const todayEntry = useMemo<BodyMeasurement | null>(() => {
     const entry = recentQuery.data?.find((m) => m.measured_on === today);
@@ -129,6 +157,11 @@ export function ProgresoPage() {
         />
 
         <MacrosChart />
+
+        <AdherenceHeatmap
+          days={adherenceDays}
+          loading={nutritionHistory.isLoading || phases.isLoading || tdeeEstimates.isLoading}
+        />
 
         <MeasurementDialog
           open={dialogOpen}
