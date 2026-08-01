@@ -51,7 +51,12 @@ export function EnergyBalanceCard({ data }: { data: EnergyBalanceData }) {
           {signedBalance} {t('energyBalance.unit')}
         </span>
       </CardHeader>
-      <CardContent className="space-y-2">
+      {/* `max-w-md` caps the row width: without it, a bar normalized to
+          `tdeeKcal` grows with the card, and at the 1280px content-max a
+          single-column page gives it, the fill becomes an ~1000px hairline —
+          the same unbounded-desktop issue as the heatmap grid, just on the
+          other axis. */}
+      <CardContent className="max-w-md space-y-2">
         {rows.map((row) => {
           // `tdeeKcal` is the normalization base for every bar (including its
           // own). Guard division by a non-positive value — implausible for a

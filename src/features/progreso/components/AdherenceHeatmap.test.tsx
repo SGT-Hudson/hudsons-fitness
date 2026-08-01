@@ -41,6 +41,19 @@ describe('AdherenceHeatmap', () => {
     expect(screen.getAllByRole('button')).toHaveLength(4);
   });
 
+  // Pins the component's consumption of `toWeekGrid`'s shape: `columns` must
+  // come from a row's length (the week count), not from `grid.length` (which
+  // is always 7, the fixed weekday-row count). DAYS is 4 consecutive days
+  // starting on a Monday, so `toWeekGrid` returns a single week column — a
+  // `grid.length` mix-up would render 7 columns instead and silently ship a
+  // rotated grid. See the fix-wave report for the red/green mutation proof.
+  it('sizes the grid to the real week-column count, not the row count', () => {
+    render(<AdherenceHeatmap days={DAYS} />);
+    expect(screen.getByTestId('adherence-grid')).toHaveStyle({
+      gridTemplateColumns: 'repeat(1, minmax(14px, 1fr))',
+    });
+  });
+
   it('does not draw a button for a sinDatos day', () => {
     render(
       <AdherenceHeatmap

@@ -7,7 +7,6 @@
     "tdee": "Gasto · TDEE",
     "intake": "Ingesta media",
     "bmr": "Metabolismo basal",
-    "balance": "{{n, number}} kcal/día",
     "unit": "kcal"
   },
   "fields": {

@@ -172,6 +172,15 @@ describe('ProgresoPage', () => {
     expect(screen.getByText('Adherencia')).toBeInTheDocument();
   });
 
+  // The card is a conditional render (`{energyBalance && ...}`), gated on the
+  // `useLatestTdee` mock above returning an estimate — nothing else in this
+  // file exercises that branch, so without this it can stop rendering with
+  // CI still green.
+  it('renders the energy-balance card', () => {
+    renderPage();
+    expect(screen.getByText('Balance energético')).toBeInTheDocument();
+  });
+
   it('keeps the ETA line and a row-level edit on the recent list', () => {
     renderPage();
 

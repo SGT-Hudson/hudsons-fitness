@@ -91,41 +91,56 @@ export function AdherenceHeatmap({ days, loading = false }: Props) {
         ) : (
           <>
             <div className="flex gap-1.5">
-              <div className="flex flex-col justify-between py-px text-[9px] leading-none text-muted-foreground">
+              {/* Same row geometry as the scrolling grid: 7 rows, same gap, and
+                  the same vertical padding as the scroll container below, so a
+                  label's row is exactly as tall as the cell row it names —
+                  never an eyeballed flex distribution. */}
+              <div className="grid shrink-0 grid-rows-[repeat(7,minmax(0,1fr))] gap-[2px] py-0.5 text-[9px] leading-none text-muted-foreground">
                 {WEEKDAY_KEYS.map((k) => (
-                  <span key={k} className="h-[1em]">
+                  <span key={k} className="flex items-center">
                     {t(`adherence.weekdays.${k}`)}
                   </span>
                 ))}
               </div>
               {/* Explicit column count from the JS-built grid: no auto-flow, no
-                  measured pixels. The cells scale with the card. */}
-              <div
-                className="grid min-w-0 flex-1 gap-[2px]"
-                style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-              >
-                {grid.map((row, rowIndex) =>
-                  row.map((d, colIndex) =>
-                    d == null || d.state === 'sinDatos' ? (
-                      <div key={`${rowIndex}-${colIndex}`} className="aspect-square" />
-                    ) : (
-                      <button
-                        key={d.date}
-                        type="button"
-                        aria-label={cellLabel(d)}
-                        aria-pressed={selected?.date === d.date}
-                        onClick={() => setSelected(d)}
-                        style={{ backgroundColor: FILL[d.state] }}
-                        className={cn(
-                          'aspect-square rounded-[2px] transition-shadow',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          d.state === 'sinRegistrar' && 'border border-dashed border-border',
-                          selected?.date === d.date && 'ring-2 ring-ring',
-                        )}
-                      />
+                  measured pixels. `minmax(14px, 1fr)` floors each cell at the
+                  WCAG 2.5.8 tap-target size; below that the row overflows into
+                  this container's own horizontal scroll (GitHub's contribution
+                  graph, mobile) instead of shrinking cells further.
+                  `max-w-[42rem]` caps the other direction, so a wide desktop
+                  doesn't blow the cells up either. `py-0.5` matches the label
+                  column's padding (so the two stay aligned) and gives the
+                  focus ring room — overflow-x-auto also computes overflow-y as
+                  auto, so a ring flush with the edge would otherwise clip. */}
+              <div className="min-w-0 flex-1 overflow-x-auto py-0.5">
+                <div
+                  data-testid="adherence-grid"
+                  className="grid max-w-[42rem] gap-[2px]"
+                  style={{ gridTemplateColumns: `repeat(${columns}, minmax(14px, 1fr))` }}
+                >
+                  {grid.map((row, rowIndex) =>
+                    row.map((d, colIndex) =>
+                      d == null || d.state === 'sinDatos' ? (
+                        <div key={`${rowIndex}-${colIndex}`} className="aspect-square" />
+                      ) : (
+                        <button
+                          key={d.date}
+                          type="button"
+                          aria-label={cellLabel(d)}
+                          aria-pressed={selected?.date === d.date}
+                          onClick={() => setSelected(d)}
+                          style={{ backgroundColor: FILL[d.state] }}
+                          className={cn(
+                            'aspect-square rounded-[2px] transition-shadow',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            d.state === 'sinRegistrar' && 'border border-dashed border-border',
+                            selected?.date === d.date && 'ring-2 ring-ring',
+                          )}
+                        />
+                      ),
                     ),
-                  ),
-                )}
+                  )}
+                </div>
               </div>
             </div>
 
