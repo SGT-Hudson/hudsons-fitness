@@ -8,8 +8,7 @@ import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
 import { formatDecimal } from '@/lib/number';
 import { computeTargetWeightKg, estimatedBmr } from '@/lib/macros';
 import { useProfile } from '@/features/profile/hooks';
-import { useLatestTdee, useTdeeState } from '@/features/tdee/hooks';
-import { computeGoalEta } from '../eta';
+import { useGoalEta } from '@/features/measurements/useGoalEta';
 import type { BodyMeasurement, SmoothedMeasurement } from '../api';
 import {
   deltaTone,
@@ -61,8 +60,6 @@ export function LatestMeasurementCard({
   const { t, i18n } = useTranslation('metricas');
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
   const profile = useProfile();
-  const latestTdee = useLatestTdee();
-  const tdeeState = useTdeeState();
 
   const bmr = estimatedBmr({
     sex: profile.data?.sex,
@@ -71,6 +68,20 @@ export function LatestMeasurementCard({
     weightKg: latest?.weight_kg,
     asOfISO: isoDate(),
   });
+
+  // Hoisted above the early returns: useGoalEta is a hook and must run
+  // unconditionally, so targetWeight has to be safe to compute before we
+  // know `latest` is non-null (hence the optional chaining here — the
+  // downstream, post-return `targetWeight` reads are on the narrowed `latest`).
+  const targetWeight =
+    targetBodyFatPct != null && latest?.body_fat_pct != null && latest?.weight_kg != null
+      ? computeTargetWeightKg({
+          currentWeightKg: latest.weight_kg,
+          currentBodyFatPct: latest.body_fat_pct,
+          targetBodyFatPct,
+        })
+      : null;
+  const eta = useGoalEta(targetWeight);
 
   if (loading) {
     return (
@@ -127,14 +138,6 @@ export function LatestMeasurementCard({
   const sinceStart =
     latestMa5 != null && initial != null ? latestMa5 - initial : null;
 
-  const targetWeight =
-    targetBodyFatPct != null && latest.body_fat_pct != null && latest.weight_kg != null
-      ? computeTargetWeightKg({
-          currentWeightKg: latest.weight_kg,
-          currentBodyFatPct: latest.body_fat_pct,
-          targetBodyFatPct,
-        })
-      : null;
   const toGoal =
     targetWeight != null && latestMa5 != null ? latestMa5 - targetWeight : null;
 
@@ -149,21 +152,6 @@ export function LatestMeasurementCard({
         )
       : null;
 
-  // Goal-date ETA from the adaptive filter's own dynamics (chosen 2026-05-19:
-  // the Kalman trend-weight rate). Anchored at the filter's de-noised trend
-  // weight; rate = (avgIntake − expenditure)/7700. Purely derived, never
-  // stored — same rule as targetWeight / estimatedBmr.
-  const ts = tdeeState.data;
-  const te = latestTdee.data;
-  const eta =
-    targetWeight != null && ts != null && te != null
-      ? computeGoalEta({
-          currentWeightKg: ts.trend_weight_kg,
-          targetWeightKg: targetWeight,
-          avgIntakeKcal: te.avg_kcal_intake,
-          expenditureKcal: te.estimated_tdee_kcal,
-        })
-      : null;
   let etaText: string | null = null;
   if (eta && eta.status !== 'reached') {
     if (eta.status === 'on_track' && eta.daysToTarget != null) {
