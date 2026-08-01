@@ -8,7 +8,7 @@ import { daysBetween, formatDate, isoDate, type Locale } from '@/lib/dates';
 import { formatDecimal } from '@/lib/number';
 import { computeTargetWeightKg, estimatedBmr } from '@/lib/macros';
 import { useProfile } from '@/features/profile/hooks';
-import { useGoalEta } from '@/features/measurements/useGoalEta';
+import { useGoalEta } from '../useGoalEta';
 import type { BodyMeasurement, SmoothedMeasurement } from '../api';
 import {
   deltaTone,

@@ -32,6 +32,13 @@ interface Point {
   ma5: number | null;
 }
 
+/** `points`, plus the dashed-ray series. Every row carries `projected` —
+ * `null` on the real rows, a number only on the anchor row and the
+ * appended end-of-ray row — so the last-row checks below never need a cast. */
+interface ChartRow extends Point {
+  projected: number | null;
+}
+
 /**
  * Weight over time: the raw daily points, the MA5 line over them, and the
  * dashed target line.
@@ -89,17 +96,22 @@ export function WeightChart({
   /**
    * The dashed ray from today's trend weight to the target.
    *
-   * Horizon cap: an ETA may legitimately land 700 days out
-   * (`MAX_HORIZON_DAYS = 730`), which would squeeze months of real data into a
-   * sliver. The projection extends the axis by at most the span the range
-   * already covers. Inside that window the ray ends on the target; beyond it,
-   * the ray runs to the edge with no end dot and the hero's ETA line keeps
-   * carrying the date.
+   * Horizon cap: the x-axis is categorical, so an extra point 700 days out
+   * would just occupy one more slot — it would not visually squeeze
+   * anything. What it *would* do is give that one slot a wildly
+   * disproportionate implied time step: a single category gap silently
+   * standing in for months while every other gap on the axis stands in for
+   * days. So the ray is capped at, at most, the span the real data already
+   * covers: inside that window it ends on the target; beyond it, it is
+   * truncated to the edge of the visible history with no end dot, and the
+   * hero's ETA line keeps carrying the actual date.
    */
-  const chartData = useMemo(() => {
-    if (!projection || points.length === 0) return points;
+  const chartData = useMemo<ChartRow[]>(() => {
+    const withNoProjection = points.map((p) => ({ ...p, projected: null as number | null }));
+    if (!projection || points.length === 0) return withNoProjection;
     const lastReal = [...points].reverse().find((p) => p.ma5 != null);
-    if (!lastReal?.ma5) return points;
+    if (!lastReal?.ma5) return withNoProjection;
+    const lastRealIndex = points.indexOf(lastReal);
 
     const firstDate = new Date(`${points[0].date}T00:00:00Z`);
     const lastDate = new Date(`${lastReal.date}T00:00:00Z`);
@@ -109,7 +121,7 @@ export function WeightChart({
     );
     const etaDate = new Date(`${projection.etaDate}T00:00:00Z`);
     const etaDays = Math.round((etaDate.getTime() - lastDate.getTime()) / 86_400_000);
-    if (etaDays <= 0) return points;
+    if (etaDays <= 0) return withNoProjection;
     const withinHorizon = etaDays <= spanDays;
 
     const endDate = withinHorizon
@@ -120,18 +132,30 @@ export function WeightChart({
       : lastReal.ma5 + ((projection.toWeightKg - lastReal.ma5) * spanDays) / etaDays;
 
     return [
-      ...points.map((p) => ({ ...p, projected: null as number | null })),
+      // Anchor the dashed line at the last real MA5 so it starts on the
+      // curve instead of floating — anchored on the last point *with* an
+      // MA5, not just the last point in the array (the two can differ: a
+      // trailing raw weight with no MA5 yet would otherwise pull the anchor
+      // past where the trend line actually ends).
+      ...withNoProjection.map((row, i) =>
+        i === lastRealIndex ? { ...row, projected: lastReal.ma5 } : row,
+      ),
       { date: endDate, weight: null, ma5: null, projected: endWeight },
-    ].map((row, i, all) =>
-      // Anchor the dashed line at the last real MA5 so it starts on the curve
-      // instead of floating.
-      i === all.length - 2 ? { ...row, projected: lastReal.ma5 } : row,
-    );
+    ];
   }, [points, projection]);
 
+  // Gates the target end-dot. Requires both the date match *and* a numeric
+  // `projected` on that row — the date alone can coincidentally match (e.g.
+  // when the memo bails via `withNoProjection` and the real last row's date
+  // happens to equal `projection.etaDate`), which would otherwise draw a
+  // stray dot with no ray behind it.
   const projectionEndsOnTarget = useMemo(() => {
-    const last = chartData[chartData.length - 1] as { date?: string } | undefined;
-    return projection != null && last?.date === projection.etaDate;
+    const last = chartData[chartData.length - 1];
+    return (
+      projection != null &&
+      last?.date === projection.etaDate &&
+      typeof last?.projected === 'number'
+    );
   }, [chartData, projection]);
 
   const rangeControl = (className?: string) => (

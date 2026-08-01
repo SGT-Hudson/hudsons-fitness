@@ -6,6 +6,7 @@
 // anything that consumes `useGoalEta` stays testable with just the tdee
 // hooks mocked, no Supabase env required.
 
+import { useMemo } from 'react';
 import { useLatestTdee, useTdeeState } from '@/features/tdee/hooks';
 import { computeGoalEta, type GoalEta } from './eta';
 
@@ -20,13 +21,28 @@ import { computeGoalEta, type GoalEta } from './eta';
 export function useGoalEta(targetWeightKg: number | null | undefined): GoalEta | null {
   const tdeeState = useTdeeState();
   const latestTdee = useLatestTdee();
-  const ts = tdeeState.data;
-  const te = latestTdee.data;
-  if (targetWeightKg == null || ts == null || te == null) return null;
-  return computeGoalEta({
-    currentWeightKg: ts.trend_weight_kg,
-    targetWeightKg,
-    avgIntakeKcal: te.avg_kcal_intake,
-    expenditureKcal: te.estimated_tdee_kcal,
-  });
+  const trendWeightKg = tdeeState.data?.trend_weight_kg;
+  const avgIntakeKcal = latestTdee.data?.avg_kcal_intake;
+  const expenditureKcal = latestTdee.data?.estimated_tdee_kcal;
+
+  // Memoized on the real, primitive inputs — `computeGoalEta` otherwise
+  // returns a fresh object every render, and callers that hand the result
+  // straight to a chart (WeightChart's `projection` prop) would recompute
+  // that chart's own data/domain memos on every render for no reason.
+  return useMemo(() => {
+    if (
+      targetWeightKg == null ||
+      trendWeightKg == null ||
+      avgIntakeKcal == null ||
+      expenditureKcal == null
+    ) {
+      return null;
+    }
+    return computeGoalEta({
+      currentWeightKg: trendWeightKg,
+      targetWeightKg,
+      avgIntakeKcal,
+      expenditureKcal,
+    });
+  }, [targetWeightKg, trendWeightKg, avgIntakeKcal, expenditureKcal]);
 }
