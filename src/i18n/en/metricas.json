@@ -2,6 +2,14 @@
   "pageTitle": "Progress",
   "subtitle": "Body and composition",
   "newMeasurement": "New measurement",
+  "energyBalance": {
+    "title": "Energy balance",
+    "tdee": "Expenditure · TDEE",
+    "intake": "Average intake",
+    "bmr": "Basal metabolic rate",
+    "balance": "{{n, number}} kcal/day",
+    "unit": "kcal"
+  },
   "fields": {
     "date": "Date",
     "weightKg": "Weight (kg)",

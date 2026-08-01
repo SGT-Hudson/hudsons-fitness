@@ -2,6 +2,14 @@
   "pageTitle": "Progreso",
   "subtitle": "Cuerpo y composición",
   "newMeasurement": "Nueva medición",
+  "energyBalance": {
+    "title": "Balance energético",
+    "tdee": "Gasto · TDEE",
+    "intake": "Ingesta media",
+    "bmr": "Metabolismo basal",
+    "balance": "{{n, number}} kcal/día",
+    "unit": "kcal"
+  },
   "fields": {
     "date": "Fecha",
     "weightKg": "Peso (kg)",

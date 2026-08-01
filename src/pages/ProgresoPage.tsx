@@ -12,6 +12,7 @@ import { RecentMeasurementsCard } from '@/features/measurements/components/Recen
 import { WeightChart } from '@/features/measurements/components/WeightChart';
 import { MacrosChart } from '@/features/progreso/components/MacrosChart';
 import { AdherenceHeatmap } from '@/features/progreso/components/AdherenceHeatmap';
+import { EnergyBalanceCard } from '@/features/tdee/components/EnergyBalanceCard';
 import {
   useLatestMeasurement,
   useRecentMeasurements,
@@ -22,8 +23,9 @@ import { useDailyNutritionHistory } from '@/features/progreso/hooks';
 import { buildAdherenceDays } from '@/features/progreso/adherence';
 import { useActivePhase, usePhases } from '@/features/phases/hooks';
 import { useGoal } from '@/features/objetivos/hooks';
-import { useTdeeEstimates } from '@/features/tdee/hooks';
-import { computeTargetWeightKg } from '@/lib/macros';
+import { useLatestTdee, useTdeeEstimates } from '@/features/tdee/hooks';
+import { useProfile } from '@/features/profile/hooks';
+import { computeTargetWeightKg, estimatedBmr } from '@/lib/macros';
 import type { BodyMeasurement } from '@/features/measurements/api';
 import type { PhaseType } from '@/features/measurements/trend';
 import { isoDate } from '@/lib/dates';
@@ -37,6 +39,8 @@ export function ProgresoPage() {
   const smoothedQuery = useSmoothedMeasurements('6m');
   const activePhase = useActivePhase();
   const goal = useGoal();
+  const latestTdee = useLatestTdee();
+  const profile = useProfile();
 
   // The heatmap's window: 26 weeks, fixed, no control of its own.
   // `fromDateForRange('6m')` is today − 182 days = exactly 26 weeks, and this
@@ -60,6 +64,22 @@ export function ProgresoPage() {
       ),
     });
   }, [nutritionHistory.data, phases.data, tdeeEstimates.data, adherenceFrom, today]);
+
+  const energyBalance = useMemo(() => {
+    const e = latestTdee.data;
+    if (!e) return null;
+    return {
+      tdeeKcal: e.estimated_tdee_kcal,
+      avgIntakeKcal: e.avg_kcal_intake,
+      bmrKcal: estimatedBmr({
+        sex: profile.data?.sex,
+        birthDate: profile.data?.birth_date,
+        heightCm: profile.data?.height_cm,
+        weightKg: latestQuery.data?.weight_kg,
+        asOfISO: today,
+      }),
+    };
+  }, [latestTdee.data, profile.data, latestQuery.data, today]);
 
   const todayEntry = useMemo<BodyMeasurement | null>(() => {
     const entry = recentQuery.data?.find((m) => m.measured_on === today);
@@ -140,6 +160,8 @@ export function ProgresoPage() {
           phaseType={phaseType}
           onExpand={() => setCompositionExpanded(true)}
         />
+
+        {energyBalance && <EnergyBalanceCard data={energyBalance} />}
 
         <WeightChart targetWeightKg={targetWeightKg} />
 
