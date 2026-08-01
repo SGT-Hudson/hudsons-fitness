@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { addDays, parseISO, subDays } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { ProgressTabs } from './ProgressTabs';
 import { PageShell } from '@/components/layout/PageShell';
@@ -7,18 +8,26 @@ import { Button } from '@/components/ui/button';
 import { CompositionCard } from '@/features/measurements/components/CompositionCard';
 import { CompositionChart } from '@/features/measurements/components/CompositionChart';
 import { LatestMeasurementCard } from '@/features/measurements/components/LatestMeasurementCard';
+import { useGoalEta } from '@/features/measurements/useGoalEta';
 import { MeasurementDialog } from '@/features/measurements/components/MeasurementDialog';
 import { RecentMeasurementsCard } from '@/features/measurements/components/RecentMeasurementsCard';
 import { WeightChart } from '@/features/measurements/components/WeightChart';
 import { MacrosChart } from '@/features/progreso/components/MacrosChart';
+import { AdherenceHeatmap } from '@/features/progreso/components/AdherenceHeatmap';
+import { EnergyBalanceCard } from '@/features/tdee/components/EnergyBalanceCard';
 import {
   useLatestMeasurement,
   useRecentMeasurements,
   useSmoothedMeasurements,
+  fromDateForRange,
 } from '@/features/measurements/hooks';
-import { useActivePhase } from '@/features/phases/hooks';
+import { useDailyNutritionHistory } from '@/features/progreso/hooks';
+import { buildAdherenceDays, MAX_ESTIMATE_CARRY_DAYS } from '@/features/progreso/adherence';
+import { useActivePhase, usePhases } from '@/features/phases/hooks';
 import { useGoal } from '@/features/objetivos/hooks';
-import { computeTargetWeightKg } from '@/lib/macros';
+import { useLatestTdee, useTdeeEstimates } from '@/features/tdee/hooks';
+import { useProfile } from '@/features/profile/hooks';
+import { computeTargetWeightKg, estimatedBmr } from '@/lib/macros';
 import type { BodyMeasurement } from '@/features/measurements/api';
 import type { PhaseType } from '@/features/measurements/trend';
 import { isoDate } from '@/lib/dates';
@@ -32,6 +41,58 @@ export function ProgresoPage() {
   const smoothedQuery = useSmoothedMeasurements('6m');
   const activePhase = useActivePhase();
   const goal = useGoal();
+  const latestTdee = useLatestTdee();
+  const profile = useProfile();
+
+  // The heatmap's window: 26 weeks, fixed, no control of its own.
+  // `fromDateForRange('6m')` is today − 182 days = exactly 26 weeks, and this
+  // is MacrosChart's default query key — the grid costs no extra request.
+  const adherenceFrom = fromDateForRange('6m');
+  const nutritionHistory = useDailyNutritionHistory('6m');
+  const phases = usePhases();
+  // `targetKcalOnDate`'s carry-forward rule can look up to
+  // MAX_ESTIMATE_CARRY_DAYS before a given day for a stale-but-usable
+  // estimate — so the estimates query has to start that many days earlier
+  // than the grid, or the carry-forward can never reach across the grid's own
+  // left edge and the first days render sinObjetivo for no real reason. The
+  // grid's own `from` (`adherenceFrom`, passed to `buildAdherenceDays` below)
+  // is unaffected — only how far back this one query reaches.
+  const estimatesFrom =
+    adherenceFrom == null
+      ? null
+      : isoDate(subDays(parseISO(adherenceFrom), MAX_ESTIMATE_CARRY_DAYS));
+  const tdeeEstimates = useTdeeEstimates(estimatesFrom);
+
+  const adherenceDays = useMemo(() => {
+    const rows = nutritionHistory.data ?? [];
+    if (adherenceFrom == null) return [];
+    return buildAdherenceDays({
+      from: adherenceFrom,
+      to: today,
+      firstSnapshotDate: rows[0]?.logged_on ?? null,
+      consumedByDate: new Map(rows.map((r) => [r.logged_on, r.consumed_kcal])),
+      phases: phases.data ?? [],
+      tdeeByDate: new Map(
+        (tdeeEstimates.data ?? []).map((e) => [e.computed_on, e.estimated_tdee_kcal]),
+      ),
+    });
+  }, [nutritionHistory.data, phases.data, tdeeEstimates.data, adherenceFrom, today]);
+
+  const energyBalance = useMemo(() => {
+    const e = latestTdee.data;
+    if (!e) return null;
+    return {
+      tdeeKcal: e.estimated_tdee_kcal,
+      avgIntakeKcal: e.avg_kcal_intake,
+      bmrKcal: estimatedBmr({
+        sex: profile.data?.sex,
+        birthDate: profile.data?.birth_date,
+        heightCm: profile.data?.height_cm,
+        weightKg: latestQuery.data?.weight_kg,
+        asOfISO: today,
+      }),
+    };
+  }, [latestTdee.data, profile.data, latestQuery.data, today]);
 
   const todayEntry = useMemo<BodyMeasurement | null>(() => {
     const entry = recentQuery.data?.find((m) => m.measured_on === today);
@@ -57,6 +118,17 @@ export function ProgresoPage() {
       targetBodyFatPct,
     });
   }, [latestQuery.data, targetBodyFatPct]);
+
+  const goalEta = useGoalEta(targetWeightKg);
+  const projection = useMemo(() => {
+    if (goalEta?.status !== 'on_track' || goalEta.daysToTarget == null || targetWeightKg == null) {
+      return null;
+    }
+    return {
+      toWeightKg: targetWeightKg,
+      etaDate: isoDate(addDays(new Date(), goalEta.daysToTarget)),
+    };
+  }, [goalEta, targetWeightKg]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<BodyMeasurement | null>(null);
@@ -113,7 +185,9 @@ export function ProgresoPage() {
           onExpand={() => setCompositionExpanded(true)}
         />
 
-        <WeightChart targetWeightKg={targetWeightKg} />
+        {energyBalance && <EnergyBalanceCard data={energyBalance} />}
+
+        <WeightChart targetWeightKg={targetWeightKg} projection={projection} />
 
         <CompositionChart
           expanded={compositionExpanded}
@@ -129,6 +203,11 @@ export function ProgresoPage() {
         />
 
         <MacrosChart />
+
+        <AdherenceHeatmap
+          days={adherenceDays}
+          loading={nutritionHistory.isLoading || phases.isLoading || tdeeEstimates.isLoading}
+        />
 
         <MeasurementDialog
           open={dialogOpen}

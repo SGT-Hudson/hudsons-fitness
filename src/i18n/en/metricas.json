@@ -2,6 +2,13 @@
   "pageTitle": "Progress",
   "subtitle": "Body and composition",
   "newMeasurement": "New measurement",
+  "energyBalance": {
+    "title": "Energy balance",
+    "tdee": "Expenditure · TDEE",
+    "intake": "Average intake",
+    "bmr": "Basal metabolic rate",
+    "unit": "kcal"
+  },
   "fields": {
     "date": "Date",
     "weightKg": "Weight (kg)",
@@ -147,6 +154,31 @@
         "low": "Target uses a warming-up TDEE estimate (limited data) — treat as approximate.",
         "medium": "TDEE estimate still settling — target is approximate."
       }
+    }
+  },
+  "adherence": {
+    "title": "Adherence",
+    "subtitle": "Last 26 weeks · kcal against the phase target",
+    "empty": "No recorded days yet.",
+    "loading": "Loading…",
+    "weekdays": { "mon": "M", "tue": "T", "wed": "W", "thu": "T", "fri": "F", "sat": "S", "sun": "S" },
+    "state": {
+      "enObjetivo": "On target",
+      "cerca": "Close",
+      "lejos": "Off",
+      "sinRegistrar": "Not logged",
+      "sinObjetivo": "No target"
+    },
+    "cell": {
+      "logged": "{{date}}: {{consumed, number}} of {{target, number}} kcal, {{state}}",
+      "unlogged": "{{date}}: not logged, target {{target, number}} kcal",
+      "noTarget": "{{date}}: no target"
+    },
+    "detail": {
+      "logged": "{{date}} · {{consumed, number}} / {{target, number}} kcal · {{deviation}} %",
+      "unlogged": "{{date}} · not logged · target {{target, number}} kcal",
+      "noTarget": "{{date}} · no active phase",
+      "hint": "Tap a day to see the detail."
     }
   }
 }
