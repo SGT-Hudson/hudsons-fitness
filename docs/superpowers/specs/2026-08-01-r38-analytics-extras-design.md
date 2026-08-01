@@ -128,6 +128,7 @@ extra lookups.
 | `lejos` | target exists, logged, \|deviation\| > 20 % |
 | `sinRegistrar` | target exists, `consumed_kcal` is null |
 | `sinObjetivo` | no phase in force that day (or a `tdee_delta` phase with no estimate for that date) |
+| `sinDatos` | the date precedes the first `daily_nutrition_history` row |
 
 `deviation = (consumed − target) / target`. Bands are **symmetric**: falling
 short in a cut is not free, and an asymmetric band cannot be explained in a
@@ -141,7 +142,12 @@ is what a calendar measures. The precision instruments already exist elsewhere:
 `MacrosChart` with its target line, and the Kalman filter, which folds actual
 daily intake with no band at all.
 
-Days before the first `daily_nutrition_history` row are **not drawn**.
+`sinDatos` was not in the design draft; it surfaced while planning. A day before
+the first snapshot row is not "you did not log" — the snapshot did not exist
+yet — so it is a hole in the grid, not a colour. `toWeekGrid` pads with it and
+`AdherenceHeatmap` renders no button for it.
+
+The `sinDatos` state marks days before the first `daily_nutrition_history` row; they are **not drawn**.
 
 ### 4.3 Data
 
