@@ -217,22 +217,43 @@ by lightness, which no form of colour blindness collapses.
 
 | State | Light | Dark |
 |---|---|---|
-| `enObjetivo` | `--tone-good` `oklch(0.52 0.13 148)` | `oklch(0.74 0.14 148)` |
+| `enObjetivo` | `oklch(0.46 0.13 148)` | `oklch(0.68 0.14 148)` |
 | `cerca` | `oklch(0.78 0.13 75)` | `oklch(0.60 0.12 75)` |
-| `lejos` | `oklch(0.62 0.13 75)` | `oklch(0.80 0.14 75)` |
+| `lejos` | `oklch(0.62 0.13 75)` | `oklch(0.83 0.14 75)` |
 | `sinRegistrar` | `--heat-zero` + 1px dashed `--border` | idem |
 | `sinObjetivo` | `--heat-part`, no border | idem |
+
+`enObjetivo` no longer aliases `--tone-good` — the two tokens started at the
+same values by coincidence, and re-stepping `enObjetivo` for the CVD fix below
+diverged them. `--tone-good` is unchanged.
 
 **The amber ramp's direction flips between modes on purpose.** On white, "far
 off" is the *darker* amber; on near-black, "far off" is the *brighter* one. Dark
 mode is selected, never an automatic inversion of light.
 
-Validator results (`scripts/validate_palette.js`, surfaces `#ffffff` / `#15191d`):
+Validator results (`scripts/validate_palette.js`, surfaces `#ffffff` / `#15191d`,
+**`--pairs all`, not just adjacent** — a calendar grid can put any two states
+side by side, so the extreme pair (`enObjetivo↔lejos`) has to clear the same
+bar as the adjacent ones):
 
-- **Light** — CVD separation PASS (worst adjacent ΔE 15.9 protan), normal-vision
-  PASS (15.9), chroma PASS. Contrast WARN on the mid amber (2.04:1).
-- **Dark** — CVD PASS (14.4 deutan), normal-vision PASS (20.1), chroma PASS,
-  contrast PASS.
+- **Light** — CVD separation PASS, worst pair `enObjetivo↔lejos` ΔE 10.4
+  (protan), clears the 8.0 target. Normal-vision floor PASS (15.9, worst pair
+  `cerca↔lejos`). Chroma PASS. Contrast WARN on the mid amber (2.04:1),
+  unchanged from before.
+- **Dark** — CVD PASS, worst pair `enObjetivo↔cerca` ΔE 9.0 (deutan), clears
+  the 8.0 target. Normal-vision floor PASS (17.4). Chroma PASS, contrast PASS.
+
+**A first validation pass checked only sequence-adjacent pairs** (`enObjetivo↔
+cerca`, `cerca↔lejos`) and reported them PASS at ΔE 15.9 / 14.4 — correct as
+far as it went, but it never measured the extreme pair. Re-validation with
+`--pairs all` found `enObjetivo↔lejos` at ΔE 5.5 (light) / 4.9 (dark) under
+protanopia — below the 6.0 floor, and effectively the same failure mode the
+three-hue redesign above was meant to eliminate, just resurfacing on the
+extreme pair instead of the adjacent one. The values above were re-stepped by
+widening the `enObjetivo`↔`lejos` raw OKLCH-L gap — light 0.10→0.16 (`0.52` to
+`0.46`, `lejos` unchanged at `0.62`), dark 0.06→0.15 (`0.74` to `0.68`, `lejos`
+`0.80` to `0.83`) — and re-checked against **all three pairs**, not just the
+adjacent two, before being accepted.
 
 Two results are deliberately accepted:
 

@@ -184,11 +184,19 @@
   --heat-part:      oklch(0.92 0.004 250);
   /* R-38 adherence heatmap. ORDINAL, not categorical: one accent for the hit,
      one amber hue in two lightness steps for the misses. Validated with the
-     dataviz palette validator — worst adjacent pair ΔE 15.9 (protan), 15.9
-     (normal). Three separate hues were tried first and scored ΔE 4.9 protan in
-     dark mode between --adh-on and --adh-near. Do not re-hue these.
-     The amber ramp's direction is inverted in .dark on purpose. */
-  --adh-on:    oklch(0.52 0.13 148);
+     dataviz palette validator across ALL THREE pairs (light + dark blocks
+     below), not just sequence-adjacent ones — this is a calendar grid, so
+     any two states can end up side by side. Worst pair light is on↔far,
+     ΔE 10.4 (protan), normal-vision floor 15.9; worst pair dark is on↔near,
+     ΔE 9.0 (deutan), normal-vision floor 17.4 — both clear the 8.0 CVD
+     target. A first validation pass checked only adjacent pairs and missed
+     an on↔far protanopia failure (ΔE 5.5 light / 4.9 dark) at the previous
+     on-far L gap (0.10 light / 0.06 dark) — always re-run with --pairs all
+     after moving these. Three separate hues were tried before that and
+     scored ΔE 4.9 protan in dark mode between --adh-on and --adh-near.
+     Do not re-hue these. The amber ramp's direction is inverted in .dark
+     on purpose. */
+  --adh-on:    oklch(0.46 0.13 148);
   --adh-near:  oklch(0.78 0.13 75);
   --adh-far:   oklch(0.62 0.13 75);
 
@@ -299,9 +307,9 @@
   --amber-ink:      oklch(0.85 0.12 75);
   --heat-zero:      oklch(0.30 0.008 250);
   --heat-part:      oklch(0.35 0.008 250);
-  --adh-on:    oklch(0.74 0.14 148);
+  --adh-on:    oklch(0.68 0.14 148);
   --adh-near:  oklch(0.60 0.12 75);
-  --adh-far:   oklch(0.80 0.14 75);
+  --adh-far:   oklch(0.83 0.14 75);
 
   --on-accent: var(--bg); /* canvas: .theme-dark .btn-primary { color: var(--bg) } */
   --destructive-foreground: var(--bg);
