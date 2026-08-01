@@ -81,6 +81,25 @@ describe('targetKcalOnDate', () => {
     expect(targetKcalOnDate([DELTA], '2026-04-10', new Map([['2026-04-11', 2600]]))).toBeNull();
   });
 
+  it('prefers the more recent of two estimates inside the carry window', () => {
+    // Both 2026-04-05 (5 days stale) and 2026-04-09 (1 day stale) are within
+    // MAX_ESTIMATE_CARRY_DAYS of 2026-04-10 — the walk must stop at the
+    // nearer one (2600), not the farther one (3000). A cron that ran on
+    // several days with different estimates is the common case, not an edge
+    // case: getting this backwards silently picks the stalest number in the
+    // window instead of the freshest.
+    expect(
+      targetKcalOnDate(
+        [DELTA],
+        '2026-04-10',
+        new Map([
+          ['2026-04-05', 3000],
+          ['2026-04-09', 2600],
+        ]),
+      ),
+    ).toBe(2100);
+  });
+
   it('ignores a stale estimate in absolute mode too', () => {
     expect(targetKcalOnDate([ABS], '2026-03-10', new Map([['2026-03-09', 9999]]))).toBe(2000);
   });

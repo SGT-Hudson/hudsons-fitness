@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, type Locale } from '@/lib/dates';
@@ -36,10 +36,21 @@ export function AdherenceHeatmap({ days, loading = false }: Props) {
   const num = useNum();
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
   const [selected, setSelected] = useState<AdherenceDay | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const grid = useMemo(() => toWeekGrid(days), [days]);
   const columns = grid[0]?.length ?? 0;
   const hasAnyData = days.some((d) => d.state !== 'sinDatos');
+
+  // Open scrolled to today (the right end), not wherever a fresh scroll
+  // container defaults to (its left edge, i.e. ~26 weeks ago). Keyed to
+  // `days` — the day set — so this fires on mount and whenever the window
+  // changes, but never on a mere selection (`selected` isn't a dependency),
+  // so it doesn't fight a user who has scrolled back to look at an old week.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [days]);
 
   function cellLabel(d: AdherenceDay): string {
     const date = formatDate(d.date, 'd MMM yyyy', locale);
@@ -111,8 +122,12 @@ export function AdherenceHeatmap({ days, loading = false }: Props) {
                   doesn't blow the cells up either. `py-0.5` matches the label
                   column's padding (so the two stay aligned) and gives the
                   focus ring room — overflow-x-auto also computes overflow-y as
-                  auto, so a ring flush with the edge would otherwise clip. */}
-              <div className="min-w-0 flex-1 overflow-x-auto py-0.5">
+                  auto, so a ring flush with the edge would otherwise clip.
+                  `px-0.5` does the same for the first/last column: `ring-2` is
+                  a box-shadow, which doesn't add to scrollable overflow, so
+                  without it the ring on column 1 or the last column is cut off
+                  by the scrollport edge. */}
+              <div ref={scrollRef} className="min-w-0 flex-1 overflow-x-auto px-0.5 py-0.5">
                 <div
                   data-testid="adherence-grid"
                   className="grid max-w-[42rem] gap-[2px]"

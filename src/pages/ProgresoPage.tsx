@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { addDays } from 'date-fns';
+import { addDays, parseISO, subDays } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { ProgressTabs } from './ProgressTabs';
 import { PageShell } from '@/components/layout/PageShell';
@@ -22,7 +22,7 @@ import {
   fromDateForRange,
 } from '@/features/measurements/hooks';
 import { useDailyNutritionHistory } from '@/features/progreso/hooks';
-import { buildAdherenceDays } from '@/features/progreso/adherence';
+import { buildAdherenceDays, MAX_ESTIMATE_CARRY_DAYS } from '@/features/progreso/adherence';
 import { useActivePhase, usePhases } from '@/features/phases/hooks';
 import { useGoal } from '@/features/objetivos/hooks';
 import { useLatestTdee, useTdeeEstimates } from '@/features/tdee/hooks';
@@ -50,7 +50,18 @@ export function ProgresoPage() {
   const adherenceFrom = fromDateForRange('6m');
   const nutritionHistory = useDailyNutritionHistory('6m');
   const phases = usePhases();
-  const tdeeEstimates = useTdeeEstimates(adherenceFrom);
+  // `targetKcalOnDate`'s carry-forward rule can look up to
+  // MAX_ESTIMATE_CARRY_DAYS before a given day for a stale-but-usable
+  // estimate — so the estimates query has to start that many days earlier
+  // than the grid, or the carry-forward can never reach across the grid's own
+  // left edge and the first days render sinObjetivo for no real reason. The
+  // grid's own `from` (`adherenceFrom`, passed to `buildAdherenceDays` below)
+  // is unaffected — only how far back this one query reaches.
+  const estimatesFrom =
+    adherenceFrom == null
+      ? null
+      : isoDate(subDays(parseISO(adherenceFrom), MAX_ESTIMATE_CARRY_DAYS));
+  const tdeeEstimates = useTdeeEstimates(estimatesFrom);
 
   const adherenceDays = useMemo(() => {
     const rows = nutritionHistory.data ?? [];

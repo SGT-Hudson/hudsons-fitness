@@ -46,7 +46,9 @@ describe('AdherenceHeatmap', () => {
   // is always 7, the fixed weekday-row count). DAYS is 4 consecutive days
   // starting on a Monday, so `toWeekGrid` returns a single week column — a
   // `grid.length` mix-up would render 7 columns instead and silently ship a
-  // rotated grid. See the fix-wave report for the red/green mutation proof.
+  // rotated grid. Confirmed by mutation: swapping `grid[0]?.length` for
+  // `grid.length` in the component turns this assertion red (expected
+  // `repeat(1, ...)`, got `repeat(7, ...)`); reverting turns it green again.
   it('sizes the grid to the real week-column count, not the row count', () => {
     render(<AdherenceHeatmap days={DAYS} />);
     expect(screen.getByTestId('adherence-grid')).toHaveStyle({
