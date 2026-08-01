@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { addDays } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { ProgressTabs } from './ProgressTabs';
 import { PageShell } from '@/components/layout/PageShell';
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { CompositionCard } from '@/features/measurements/components/CompositionCard';
 import { CompositionChart } from '@/features/measurements/components/CompositionChart';
 import { LatestMeasurementCard } from '@/features/measurements/components/LatestMeasurementCard';
+import { useGoalEta } from '@/features/measurements/useGoalEta';
 import { MeasurementDialog } from '@/features/measurements/components/MeasurementDialog';
 import { RecentMeasurementsCard } from '@/features/measurements/components/RecentMeasurementsCard';
 import { WeightChart } from '@/features/measurements/components/WeightChart';
@@ -106,6 +108,17 @@ export function ProgresoPage() {
     });
   }, [latestQuery.data, targetBodyFatPct]);
 
+  const goalEta = useGoalEta(targetWeightKg);
+  const projection = useMemo(() => {
+    if (goalEta?.status !== 'on_track' || goalEta.daysToTarget == null || targetWeightKg == null) {
+      return null;
+    }
+    return {
+      toWeightKg: targetWeightKg,
+      etaDate: isoDate(addDays(new Date(), goalEta.daysToTarget)),
+    };
+  }, [goalEta, targetWeightKg]);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<BodyMeasurement | null>(null);
 
@@ -163,7 +176,7 @@ export function ProgresoPage() {
 
         {energyBalance && <EnergyBalanceCard data={energyBalance} />}
 
-        <WeightChart targetWeightKg={targetWeightKg} />
+        <WeightChart targetWeightKg={targetWeightKg} projection={projection} />
 
         <CompositionChart
           expanded={compositionExpanded}

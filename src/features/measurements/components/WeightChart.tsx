@@ -41,7 +41,14 @@ interface Point {
  * derived by the caller from `computeTargetWeightKg`; this component only draws
  * the number it is handed.
  */
-export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null }) {
+export function WeightChart({
+  targetWeightKg,
+  projection,
+}: {
+  targetWeightKg?: number | null;
+  /** Drawn only for an `on_track` ETA; the page passes null otherwise. */
+  projection?: { toWeightKg: number; etaDate: string } | null;
+}) {
   const { t, i18n } = useTranslation('metricas');
   const num = useNum();
   const locale: Locale = i18n.language?.startsWith('en') ? 'en' : 'es';
@@ -65,18 +72,67 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
       .flatMap((p) => [p.weight, p.ma5])
       .filter((v): v is number => v != null);
     if (targetWeightKg != null) values.push(targetWeightKg);
+    if (projection?.toWeightKg != null) values.push(projection.toWeightKg);
     if (values.length === 0) return undefined;
     const min = Math.min(...values);
     const max = Math.max(...values);
     const pad = Math.max(0.5, (max - min) * 0.1);
     return [Math.floor(min - pad), Math.ceil(max + pad)];
-  }, [points, targetWeightKg]);
+  }, [points, targetWeightKg, projection]);
 
   /** The canvas's end dot: the trend line terminates in a filled circle. */
   const lastMa5 = useMemo(
     () => [...points].reverse().find((p) => p.ma5 != null) ?? null,
     [points],
   );
+
+  /**
+   * The dashed ray from today's trend weight to the target.
+   *
+   * Horizon cap: an ETA may legitimately land 700 days out
+   * (`MAX_HORIZON_DAYS = 730`), which would squeeze months of real data into a
+   * sliver. The projection extends the axis by at most the span the range
+   * already covers. Inside that window the ray ends on the target; beyond it,
+   * the ray runs to the edge with no end dot and the hero's ETA line keeps
+   * carrying the date.
+   */
+  const chartData = useMemo(() => {
+    if (!projection || points.length === 0) return points;
+    const lastReal = [...points].reverse().find((p) => p.ma5 != null);
+    if (!lastReal?.ma5) return points;
+
+    const firstDate = new Date(`${points[0].date}T00:00:00Z`);
+    const lastDate = new Date(`${lastReal.date}T00:00:00Z`);
+    const spanDays = Math.max(
+      1,
+      Math.round((lastDate.getTime() - firstDate.getTime()) / 86_400_000),
+    );
+    const etaDate = new Date(`${projection.etaDate}T00:00:00Z`);
+    const etaDays = Math.round((etaDate.getTime() - lastDate.getTime()) / 86_400_000);
+    if (etaDays <= 0) return points;
+    const withinHorizon = etaDays <= spanDays;
+
+    const endDate = withinHorizon
+      ? projection.etaDate
+      : new Date(lastDate.getTime() + spanDays * 86_400_000).toISOString().slice(0, 10);
+    const endWeight = withinHorizon
+      ? projection.toWeightKg
+      : lastReal.ma5 + ((projection.toWeightKg - lastReal.ma5) * spanDays) / etaDays;
+
+    return [
+      ...points.map((p) => ({ ...p, projected: null as number | null })),
+      { date: endDate, weight: null, ma5: null, projected: endWeight },
+    ].map((row, i, all) =>
+      // Anchor the dashed line at the last real MA5 so it starts on the curve
+      // instead of floating.
+      i === all.length - 2 ? { ...row, projected: lastReal.ma5 } : row,
+    );
+  }, [points, projection]);
+
+  const projectionEndsOnTarget = useMemo(() => {
+    const last = chartData[chartData.length - 1] as { date?: string } | undefined;
+    return projection != null && last?.date === projection.etaDate;
+  }, [chartData, projection]);
 
   const rangeControl = (className?: string) => (
     <SegmentedControl
@@ -103,7 +159,7 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
     return (
       <div className={heightClass}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={points} margin={{ top: 12, right: 10, left: -18, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 12, right: 10, left: -18, bottom: 0 }}>
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="date"
@@ -184,6 +240,32 @@ export function WeightChart({ targetWeightKg }: { targetWeightKg?: number | null
                 r={3.4}
                 fill="var(--primary)"
                 stroke="none"
+                isFront
+              />
+            )}
+            {projection && (
+              <Line
+                data-testid="weight-projection"
+                type="linear"
+                dataKey="projected"
+                stroke="var(--primary)"
+                strokeWidth={1.6}
+                strokeDasharray="2 5"
+                strokeLinecap="round"
+                dot={false}
+                connectNulls
+                tooltipType="none"
+                isAnimationActive={false}
+              />
+            )}
+            {projection && projectionEndsOnTarget && (
+              <ReferenceDot
+                x={projection.etaDate}
+                y={projection.toWeightKg}
+                r={3}
+                fill="var(--card)"
+                stroke="var(--primary)"
+                strokeWidth={1.6}
                 isFront
               />
             )}

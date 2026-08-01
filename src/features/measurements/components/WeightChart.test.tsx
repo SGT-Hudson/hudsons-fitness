@@ -77,4 +77,16 @@ describe('WeightChart', () => {
     expect(container.querySelectorAll('.recharts-wrapper').length).toBe(1);
     expect(sheet.querySelectorAll('.recharts-line-curve')).toHaveLength(2);
   });
+
+  it('appends the projection points when the target is inside the horizon', () => {
+    render(
+      <WeightChart targetWeightKg={78} projection={{ toWeightKg: 78, etaDate: '2026-06-01' }} />,
+    );
+    expect(screen.getByTestId('weight-projection')).toBeInTheDocument();
+  });
+
+  it('draws no projection when none is supplied', () => {
+    render(<WeightChart targetWeightKg={78} />);
+    expect(screen.queryByTestId('weight-projection')).not.toBeInTheDocument();
+  });
 });
