@@ -5,8 +5,10 @@
 // the phase target is the number the user signed up for. It is cheap to
 // reconstruct historically because `computeDailyMacroTargets` derives kcal from
 // the phase alone — `kcal_value` in absolute mode, `estimate + kcal_value` in
-// tdee_delta mode. Neither weight nor body fat enters kcal (they only enter
-// protein), so no per-day weight lookup is needed.
+// tdee_delta mode, where the estimate is the most recent one on or before that
+// day (carried forward up to `MAX_ESTIMATE_CARRY_DAYS`, see `targetKcalOnDate`).
+// Neither weight nor body fat enters kcal (they only enter protein), so no
+// per-day weight lookup is needed.
 //
 // Dependency-free and deterministic, so it is unit-tested in isolation (Tier-1).
 
@@ -19,7 +21,8 @@ export type AdherenceState =
   | 'lejos'
   /** A target existed but nothing was logged that day. */
   | 'sinRegistrar'
-  /** No phase was in force (or a tdee_delta phase had no estimate for the date). */
+  /** No phase was in force (or a tdee_delta phase had no estimate within
+   *  MAX_ESTIMATE_CARRY_DAYS of the date). */
   | 'sinObjetivo'
   /** Before the first snapshot row: the app was not recording yet. Not drawn. */
   | 'sinDatos';
@@ -53,7 +56,8 @@ export interface AdherenceInput {
    *  "the snapshot ran and found nothing logged". */
   consumedByDate: Map<string, number | null>;
   phases: AdherencePhase[];
-  /** `estimated_tdee_kcal` by `computed_on`. Only tdee_delta phases read it. */
+  /** `estimated_tdee_kcal` by `computed_on`. Only tdee_delta phases read it,
+   *  and they may read a prior date's entry — see `targetKcalOnDate`. */
   tdeeByDate: Map<string, number>;
 }
 
@@ -61,6 +65,13 @@ export interface AdherenceInput {
 export const ON_TARGET_PCT = 10;
 /** Beyond this percent, the day is a clear miss. */
 export const NEAR_PCT = 20;
+/** How many days a `tdee_estimates` row may be carried forward as "today's"
+ *  estimate in tdee_delta mode. The estimator runs daily, so a gap under a
+ *  week is just a missed cron run — the last estimate is still the number
+ *  the app itself was showing at the time. Past a week the trail has gone
+ *  cold and inventing a target would be worse than admitting there isn't
+ *  one. */
+export const MAX_ESTIMATE_CARRY_DAYS = 7;
 
 /** ISO date strings sort lexicographically, so plain comparison is a date
  *  comparison — no Date objects and no timezone in the boundary test. */
@@ -76,6 +87,32 @@ export function phaseOnDate(
   );
 }
 
+/** `date` minus `days`, in UTC — same day-arithmetic convention as
+ *  `eachDayISO` below, for the same DST reason. */
+function isoDateMinusDays(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** The most recent `tdee_estimates` row on or before `date`, walking
+ *  backward day by day and stopping at `MAX_ESTIMATE_CARRY_DAYS`. The live
+ *  app reads the *latest* estimate when it shows today's target — reading
+ *  only that exact date's row when reconstructing history would be a
+ *  stricter rule than what the user actually experienced, so this carries
+ *  the last known estimate forward, capped so a long gap still reports
+ *  honestly instead of inventing a target. */
+function latestEstimateOnOrBefore(
+  tdeeByDate: Map<string, number>,
+  date: string,
+): number | null {
+  for (let back = 0; back <= MAX_ESTIMATE_CARRY_DAYS; back += 1) {
+    const estimate = tdeeByDate.get(isoDateMinusDays(date, back));
+    if (estimate != null) return estimate;
+  }
+  return null;
+}
+
 export function targetKcalOnDate(
   phases: AdherencePhase[],
   date: string,
@@ -84,7 +121,7 @@ export function targetKcalOnDate(
   const phase = phaseOnDate(phases, date);
   if (!phase) return null;
   if (phase.kcal_mode === 'absolute') return phase.kcal_value;
-  const tdee = tdeeByDate.get(date);
+  const tdee = latestEstimateOnOrBefore(tdeeByDate, date);
   if (tdee == null) return null;
   return tdee + phase.kcal_value;
 }

@@ -4,6 +4,7 @@ import {
   phaseOnDate,
   targetKcalOnDate,
   toWeekGrid,
+  MAX_ESTIMATE_CARRY_DAYS,
   type AdherencePhase,
 } from './adherence';
 
@@ -62,8 +63,26 @@ describe('targetKcalOnDate', () => {
     expect(targetKcalOnDate([DELTA], '2026-04-10', new Map([['2026-04-10', 2600]]))).toBe(2100);
   });
 
-  it('returns null for a tdee_delta day with no estimate for that date', () => {
-    expect(targetKcalOnDate([DELTA], '2026-04-10', new Map([['2026-04-09', 2600]]))).toBeNull();
+  it('carries an estimate that is one day stale forward', () => {
+    expect(targetKcalOnDate([DELTA], '2026-04-10', new Map([['2026-04-09', 2600]]))).toBe(2100);
+  });
+
+  it(`carries an estimate exactly ${MAX_ESTIMATE_CARRY_DAYS} days stale (inclusive boundary)`, () => {
+    // 2026-04-03 is exactly MAX_ESTIMATE_CARRY_DAYS (7) days before 2026-04-10.
+    expect(targetKcalOnDate([DELTA], '2026-04-10', new Map([['2026-04-03', 2600]]))).toBe(2100);
+  });
+
+  it('does not use an estimate one day past the carry cap', () => {
+    // 2026-04-02 is 8 days before 2026-04-10 — one past the cap.
+    expect(targetKcalOnDate([DELTA], '2026-04-10', new Map([['2026-04-02', 2600]]))).toBeNull();
+  });
+
+  it('never borrows a later estimate backwards for an earlier day', () => {
+    expect(targetKcalOnDate([DELTA], '2026-04-10', new Map([['2026-04-11', 2600]]))).toBeNull();
+  });
+
+  it('ignores a stale estimate in absolute mode too', () => {
+    expect(targetKcalOnDate([ABS], '2026-03-10', new Map([['2026-03-09', 9999]]))).toBe(2000);
   });
 });
 
@@ -118,6 +137,19 @@ describe('buildAdherenceDays — the non-numeric states', () => {
       to: '2026-02-01',
       firstSnapshotDate: '2026-01-01',
       consumedByDate: new Map([['2026-02-01', 2000]]),
+    });
+    expect(d.state).toBe('sinObjetivo');
+    expect(d.targetKcal).toBeNull();
+  });
+
+  it('marks a tdee_delta day whose nearest estimate is past the carry cap as sinObjetivo', () => {
+    const [d] = build({
+      from: '2026-04-10',
+      to: '2026-04-10',
+      firstSnapshotDate: '2026-01-01',
+      phases: [DELTA],
+      consumedByDate: new Map([['2026-04-10', 2000]]),
+      tdeeByDate: new Map([['2026-04-02', 2600]]), // 8 days stale
     });
     expect(d.state).toBe('sinObjetivo');
     expect(d.targetKcal).toBeNull();

@@ -113,9 +113,22 @@ kcal = phase.kcal_mode === 'absolute' ? phase.kcal_value
 
 **Neither weight nor body-fat enters the kcal target** (they only enter
 protein). So a per-day kcal target needs the phase in force on that date, plus —
-only for `tdee_delta` phases — that date's `tdee_estimates` row. The expensive
+only for `tdee_delta` phases — an estimate to add it to. The expensive
 version of this idea was full per-day macros; the kcal-only version is two
 extra lookups.
+
+**The estimate is carried forward, not read exactly.** `recalculate-tdee`
+writes one `tdee_estimates` row per run, for the day it ran; days the cron
+missed have no row. Reading only that exact date's row would make a day with
+a genuinely active phase and a real target render as `sinObjetivo`,
+indistinguishable from "no phase at all" — and it would be a stricter rule
+than the live app follows, since the running app always shows *today's
+target* using the latest estimate on hand, not one pinned to today. So
+`targetKcalOnDate` uses the most recent estimate on or before the date,
+capped at `MAX_ESTIMATE_CARRY_DAYS` (7) days old. The estimator runs daily, so
+a gap under a week is just a missed run — the last estimate is still the
+number the app was showing at the time. Past a week the trail has gone cold
+enough that inventing a target would be worse than admitting there isn't one.
 
 **Only kcal.** One cell holds one number.
 
@@ -127,7 +140,7 @@ extra lookups.
 | `cerca` | target exists, logged, 10 % < \|deviation\| ≤ 20 % |
 | `lejos` | target exists, logged, \|deviation\| > 20 % |
 | `sinRegistrar` | target exists, `consumed_kcal` is null |
-| `sinObjetivo` | no phase in force that day (or a `tdee_delta` phase with no estimate for that date) |
+| `sinObjetivo` | no phase in force that day (or a `tdee_delta` phase with no estimate within `MAX_ESTIMATE_CARRY_DAYS` days on or before it) |
 | `sinDatos` | the date precedes the first `daily_nutrition_history` row |
 
 `deviation = (consumed − target) / target`. Bands are **symmetric**: falling
@@ -170,10 +183,12 @@ buildAdherenceDays({ from, to, history, phases, tdeeByDate }): AdherenceDay[]
 ```
 
 Tests must **bite** ([[prove-assertions-bite-by-mutation]]): exact boundaries at
-10 % and 20 %, both signs, a `tdee_delta` day with and without an estimate,
-a day on a phase boundary (`start_date` and `end_date` inclusive), a gap between
-phases, and a logged day with `consumed_kcal = 0` (which is a real zero, not a
-null).
+10 % and 20 %, both signs, a `tdee_delta` day with an estimate carried forward
+from a stale-but-in-cap date, one exactly at the `MAX_ESTIMATE_CARRY_DAYS`
+boundary, one past the cap (no estimate, `sinObjetivo`), and a later estimate
+that must never be borrowed backwards for an earlier day; also a day on a
+phase boundary (`start_date` and `end_date` inclusive), a gap between phases,
+and a logged day with `consumed_kcal = 0` (which is a real zero, not a null).
 
 ### 4.5 Grid
 
