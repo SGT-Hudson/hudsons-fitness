@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import {
   buildAdherenceDays,
   phaseOnDate,
@@ -139,6 +139,21 @@ describe('buildAdherenceDays — the non-numeric states', () => {
 });
 
 describe('buildAdherenceDays — the date walk', () => {
+  // Pinned to a DST-observing zone: under TZ=UTC (CI's default) a broken
+  // local-time walk produces the same output as the correct UTC walk, so the
+  // DST test below can't tell them apart without a zone that actually shifts.
+  let previousTZ: string | undefined;
+
+  beforeAll(() => {
+    previousTZ = process.env.TZ;
+    process.env.TZ = 'Europe/Madrid';
+  });
+
+  afterAll(() => {
+    if (previousTZ === undefined) delete process.env.TZ;
+    else process.env.TZ = previousTZ;
+  });
+
   it('emits every day in the inclusive range, in order', () => {
     const days = build({ from: '2026-03-01', to: '2026-03-03' });
     expect(days.map((d) => d.date)).toEqual(['2026-03-01', '2026-03-02', '2026-03-03']);
