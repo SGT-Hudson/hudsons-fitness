@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
         with:
           version: 10
 
@@ -89,7 +89,7 @@ jobs:
       # Tier-4 (R-32): the client's PostgREST select strings, run against the
       # stack this job already started. Node/pnpm are set up here rather than
       # in a new job so the stack is not stood up twice.
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
         with:
           version: 10
 
