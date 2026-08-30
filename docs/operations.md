@@ -97,9 +97,11 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
 
 - **Vercel project** `hudsonfitness` (`prj_69QdEbnDr836rfFwd24J9ISFuXqv`,
   team `team_EDiBxgsadwU6GbSqodEH0G3Q`), framework Vite.
-- **Production branch** `main` (Vercel Production deploy-on-merge); alias
-  `hudsonfitness.vercel.app`. `develop` and feature branches get Preview
-  deploys; the `develop` preview is the staging soak surface (D-F7).
+- **Production branch** `main` (Vercel Production deploy-on-merge); production
+  domain `fit.hudsn.app` (DNS in Cloudflare: unproxied CNAME `fit` →
+  `cname.vercel-dns.com`); the old alias `hudsonfitness.vercel.app` 308-redirects
+  to it. `develop` and feature branches get Preview deploys; the `develop`
+  preview is the staging soak surface (D-F7).
 - **PR previews** auto-deploy for every pull request.
 - `vercel.json` carries the SPA fallback rewrite so client-side routes
   resolve on hard navigation.
