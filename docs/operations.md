@@ -459,6 +459,14 @@ snapshot is also the free-tier keep-alive, so a silent death is double-impact.
   `cron.job_run_details` — exactly where the "how to tell crons are dead"
   manual check above looks — so a silent under-run becomes a loud, queryable
   one. A healthy run logs `cron-healthcheck OK …` and returns 200.
+- **External alert (hudsn-ops, 2026-10).** The function also pings the
+  Healthchecks.io check `hfit-cron` (`HC_PING_URL` edge secret): a plain ping
+  on the healthy path, `/fail` on both alert paths (body = the alert payload).
+  Healthchecks notifies Telegram when the check fails or when no run arrives
+  within 26 h (period 1 day + grace 2 h). Without the secret the function
+  behaves exactly as before. Set it with
+  `supabase secrets set HC_PING_URL=<url> --project-ref upvraruehzurbetzrxov`
+  before deploying. Design: hudsn-ops `docs/superpowers/specs/2026-10-04-avisos-design.md`.
 - **Live since 2026-05-18 (ordered).** The cron schedule
   **`supabase/migrations/20260518010000_r18_cron_healthcheck.sql`**
   (`0 6 * * *` UTC — after the three data crons; reuses the existing
