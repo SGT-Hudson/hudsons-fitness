@@ -28,10 +28,18 @@ describe('pingHealthcheck (edge helper)', () => {
   });
 
   it('never throws when fetch fails', async () => {
-    fetchMock.mockRejectedValue(new Error('ECONNRESET'));
+    fetchMock.mockRejectedValue(
+      new Error(
+        'error sending request for url (https://hc-ping.com/SECRETKEY/hfit-cron): client error (Connect)',
+      ),
+    );
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    await expect(pingHealthcheck('https://hc-ping.com/k/hfit-cron')).resolves.toBeUndefined();
-    expect(JSON.stringify(warn.mock.calls)).not.toContain('hc-ping.com');
+    await expect(
+      pingHealthcheck('https://hc-ping.com/SECRETKEY/hfit-cron'),
+    ).resolves.toBeUndefined();
+    const logged = JSON.stringify(warn.mock.calls);
+    expect(logged).not.toContain('hc-ping');
+    expect(logged).not.toContain('SECRETKEY');
     warn.mockRestore();
   });
 });

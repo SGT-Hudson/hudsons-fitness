@@ -14,7 +14,8 @@ export async function pingHealthcheck(
   try {
     await fetch(target, { method: 'POST', body, signal: AbortSignal.timeout(5000) });
   } catch (e) {
-    // No URL: it carries the check key.
-    console.warn('healthchecks: ping failed', suffix || 'ok', e instanceof Error ? e.message : e);
+    // No URL: it carries the check key, and fetch errors embed it in the message.
+    const msg = (e instanceof Error ? e.message : String(e)).replace(/https?:\/\/[^\s)]+/g, '<url>');
+    console.warn('healthchecks: ping failed', suffix || 'ok', msg);
   }
 }
