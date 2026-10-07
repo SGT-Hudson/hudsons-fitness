@@ -581,9 +581,10 @@ but effective at this scale.
   function returning a ZIP of per-table JSON) is **specified but not built** —
   the only GDPR action implemented today is account deletion. Tracked as an
   uncommitted product idea (`features.md#product-ideas-uncommitted`).
-- **Analytics:** none by default. If analytics is ever added it must be an
-  EU-friendly, self-hostable option (Plausible / Umami) — no third-party
-  tracking by default.
+- **Analytics:** Umami self-hosted at stats.hudsn.app (hudsn-ops): pageviews
+  including in-app screens, IDs replaced by `:id` and no query strings
+  (`public/stats.js`); no cookies, so no banner. A privacy policy is still
+  required before a public launch.
 - **Pre-launch:** a privacy policy and a cookie banner are required before any
   public launch beyond the solo user.
 
