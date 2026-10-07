@@ -18,6 +18,9 @@
         } catch (e) {}
       })();
     </script>
+    <!-- Analítica propia, sin cookies (hudsn-ops): primero la limpieza de rutas, luego Umami. -->
+    <script src="/stats.js"></script>
+    <script async src="https://stats.hudsn.app/hs.js" data-website-id="70bc0da6-f24f-47b7-a98f-c6692fda3c66" data-domains="fit.hudsn.app" data-exclude-search="true" data-exclude-hash="true" data-before-send="hudsnStatsBeforeSend"></script>
   </head>
   <body class="bg-background text-foreground antialiased">
     <div id="root"></div>
