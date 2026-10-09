@@ -657,6 +657,7 @@ complete history rather than the lone Sprint-9 file.
 20260719120000_r22_update_with_check.sql            # applied live 2026-07-20 (R-22 follow-up, #214): ALTERs all fourteen public UPDATE policies to add an explicit WITH CHECK repeating each policy's USING verbatim; closes no hole (Postgres already applied USING to the NEW row), states the intent
 20260720120000_r36b_recipe_photos_bucket.sql        # applied live 2026-07-21 (R-36b): recipe-photos Storage bucket (public, 2 MB, image/webp-only) + bucket-scoped SELECT and real-creator INSERT/UPDATE/DELETE RLS on storage.objects — the app's first Storage bucket
 20260720120100_r36b_recipe_photo_reap_cron.sql      # applied live 2026-07-21 (R-36b), AFTER deploying the edge function: weekly recipe-photo-reap cron schedule — an early firing would be a silent no-op, not a visible failure (see Cron)
+20261009074839_ops_usage.sql                         # applied live 2026-10-09 (hudsn-ops panel, no R-item): ops schema + NOLOGIN hudsn_ops role + SECURITY DEFINER ops.usage(); the role's LOGIN and password were set by hand in production (nothing secret in the repo)
 ```
 
 `supabase/migrations/` in the repo is the canonical source for the full,
@@ -871,7 +872,7 @@ stale local state, so a true from-zero migration rebuild (the thing that makes
 `db-test` worth running) needs `supabase stop --no-backup`.
 
 The
-suite (`supabase/tests/00_schema`..`09_recipe_photos.test.sql` — the CI job globs
+suite (`supabase/tests/00_schema`..`10_ops_usage.test.sql` — the CI job globs
 `*.test.sql`, so every numbered file is picked up automatically) creates test users by
 inserting into `auth.users` (the `handle_new_user` trigger makes the profile)
 and switches actor with `set local role authenticated` + a
