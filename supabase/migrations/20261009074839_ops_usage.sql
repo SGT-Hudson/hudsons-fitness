@@ -10,9 +10,12 @@
 -- hide from the caller. It stays safe because it lives in its own schema
 -- (`ops`, not exposed through the Data API), returns aggregates only, pins
 -- `search_path = ''` with every name schema-qualified, and is executable only
--- by `hudsn_ops`. That role is created NOLOGIN here and can run this function
--- and nothing else; its password and LOGIN are set by hand in production, so
--- nothing secret lives in the repo.
+-- by `hudsn_ops`. That role is created NOLOGIN here; it holds no grant on any
+-- table the app owns and has no Data API access. Like every role it inherits
+-- the SELECT that Supabase and its extensions (pg_cron, pg_net,
+-- pg_stat_statements) grant to PUBLIC; those are left as they are (the pg_cron
+-- ones are unreachable: no USAGE on schema cron). Its password and LOGIN are
+-- set by hand in production, so nothing secret lives in the repo.
 --
 -- An account is a confirmed email, minus the library sentinel (R-01). Last
 -- activity is the later of last_sign_in_at and the newest auth.sessions

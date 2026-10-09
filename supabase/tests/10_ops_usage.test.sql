@@ -1,6 +1,7 @@
 -- Tier-3 — ops.usage(p_from, p_to): the usage totals read by the hudsn-ops
--- admin panel through the `hudsn_ops` role. Aggregates only; the role can run
--- this one function and read no table.
+-- admin panel through the `hudsn_ops` role. Aggregates only; the role has no
+-- grant on any app-owned table and inherits only the SELECT that Supabase and
+-- its extensions give PUBLIC (left as is).
 --
 -- The fixture lives in January 2020 so rows already in the local database
 -- (seed users, the library sentinel) fall outside every window asserted here.
@@ -42,7 +43,7 @@ select ok(not has_function_privilege('authenticated', 'ops.usage(timestamptz,tim
 select is((select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
            where n.nspname in ('public', 'auth', 'storage', 'vault', 'private', 'cron', 'ops') and c.relkind in ('r', 'v', 'm', 'p', 'f')
              and not (n.nspname = 'cron' and c.relname in ('job', 'job_run_details'))
-             and has_table_privilege('hudsn_ops', c.oid, 'select')), 0, 'hudsn_ops reads no table');
+             and has_table_privilege('hudsn_ops', c.oid, 'select')), 0, 'hudsn_ops has no table grant beyond the allowlisted PUBLIC ones');
 select ok(not has_schema_privilege('hudsn_ops', 'cron', 'usage'), 'hudsn_ops cannot reach the pg_cron tables');
 
 select * from finish();
