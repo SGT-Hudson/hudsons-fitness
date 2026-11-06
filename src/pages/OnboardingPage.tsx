@@ -25,6 +25,7 @@ import {
   type ParsedOnboardingForm,
 } from '@/features/profile/schema';
 import { todayInTZ } from '@/lib/dates';
+import { track } from '@/lib/stats';
 
 export function OnboardingPage() {
   const { t } = useTranslation('onboarding');
@@ -81,6 +82,7 @@ export function OnboardingPage() {
         height_cm: values.height_cm,
         initial_weight_kg: values.initial_weight_kg,
       });
+      track('completar-onboarding');
       navigate('/diary', { replace: true });
     } catch (err) {
       setError((err as Error).message);

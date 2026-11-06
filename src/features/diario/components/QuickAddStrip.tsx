@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { track } from '@/lib/stats';
 import { Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -54,13 +55,15 @@ export function QuickAddStrip({ mealType, date, items, onAddRecipe }: Props) {
                   quickAdd.mutate(
                     { recipeId: it.recipeId, mealType, loggedOn: date },
                     {
-                      onSuccess: (created) =>
+                      onSuccess: (created) => {
+                        track('registrar-comida', { origen: 'rapida' });
                         toastUndoableQuickAdd(it.name, () => {
                           void deleteMealLog(created.id).then(() => {
                             void qc.invalidateQueries({ queryKey: ['meal_logs'] });
                             void qc.invalidateQueries({ queryKey: ['quick_add'] });
                           });
-                        }),
+                        });
+                      },
                     },
                   )
                 }

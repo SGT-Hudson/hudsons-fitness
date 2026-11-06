@@ -1,4 +1,5 @@
 import { useEffect, useState, useReducer } from 'react';
+import { track } from '@/lib/stats';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Replace } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,9 @@ export function Runner({
         sets: toSaveWorkoutSets(state),
         programId: state.programId,
         routineId: state.routineId,
+      });
+      track('registrar-entreno', {
+        origen: state.programId ? 'programa' : state.routineId ? 'rutina' : 'libre',
       });
       onSaved();
     } catch (e) {

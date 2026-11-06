@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { supabase } from '@/lib/supabase';
+import { track } from '@/lib/stats';
 import { signupFormSchema, type SignupFormValues } from '@/features/auth/schema';
 
 export function SignupPage() {
@@ -27,7 +28,7 @@ export function SignupPage() {
 
   async function onSubmit(values: SignupFormValues) {
     setError(null);
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: { data: { display_name: values.displayName } },
@@ -40,6 +41,8 @@ export function SignupPage() {
       );
       return;
     }
+    // Con confirmación activa, un correo ya registrado devuelve éxito sin identidades: no es un alta.
+    if ((data?.user?.identities?.length ?? 0) > 0) track('registrarse');
     setSuccess(true);
   }
 
