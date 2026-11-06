@@ -15,9 +15,30 @@
       .join("/");
     return (m[1] || "") + (path || "/");
   }
-  window.hudsnStatsBeforeSend = function (type, payload) {
-    if (payload && payload.url) payload.url = clean(payload.url);
-    if (payload && payload.referrer) payload.referrer = clean(payload.referrer);
+  // Identidad de la cuenta (seudónimo): la app la fija con hudsnStatsIdentify. La primera llamada
+  // abre la espera; hasta entonces los envíos aguardan, como mucho 3000 ms, y salen anónimos. Cada
+  // llamada sustituye la identidad, y los envíos posteriores (también tras los 3000 ms) la llevan.
+  var identity = null;
+  var release = null;
+  var gate = new Promise(function (resolve) { release = resolve; });
+  var timer = setTimeout(function () { release(); }, 3000);
+  window.hudsnStatsIdentify = function (value) {
+    // Una promesa rechazada y sustituida antes de enviar nada no debe dejar un rechazo sin atender.
+    if (value && typeof value.then === "function") value.then(null, function () {});
+    identity = value;
+    clearTimeout(timer);
+    release();
+  };
+  window.hudsnStatsBeforeSend = async function (type, payload) {
+    await gate;
+    var id = null;
+    try { id = await identity; } catch (e) { id = null; }
+    if (payload) {
+      if (typeof id === "string" && id) payload.id = id;
+      else delete payload.id;
+      if (payload.url) payload.url = clean(payload.url);
+      if (payload.referrer) payload.referrer = clean(payload.referrer);
+    }
     return payload;
   };
 })();
