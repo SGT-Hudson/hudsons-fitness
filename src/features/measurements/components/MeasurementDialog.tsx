@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { track } from '@/lib/stats';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -137,6 +138,7 @@ export function MeasurementDialog({
         water_pct: values.water_pct,
         notes: values.notes.trim() === '' ? null : values.notes.trim(),
       });
+      if (!existing) track('registrar-medida');
       onOpenChange(false);
     } catch (err) {
       setError((err as Error).message);

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { NumberField } from '@/components/ui/NumberField';
 import { QuantityStepper, roundToStep } from '@/components/ui/QuantityStepper';
 import { parseDecimalInput } from '@/lib/number';
+import { track } from '@/lib/stats';
 import { cn } from '@/lib/utils';
 import { roundMacro, scale, ZERO_MACROS, type Macros } from '@/features/recipes/macros';
 import { useNum } from '@/hooks/useNum';
@@ -40,6 +41,9 @@ interface Props {
    */
   editing?: MealLogWithJoins | null;
 }
+
+// Analytics: how the meal was picked (never the food itself).
+const MEAL_ORIGIN = { recipe: 'receta', ingredient: 'ingrediente', custom: 'propia' } as const;
 
 function customDefaults(mealType: MealType): MealLogFormValues {
   return {
@@ -190,6 +194,7 @@ export function RacionStep({
   async function submit(source: CreateMealLogInput['source']) {
     try {
       await create.mutateAsync({ loggedOn, mealType, source, notes: null });
+      track('registrar-comida', { origen: MEAL_ORIGIN[source.kind] });
       onDone();
     } catch {
       // The mutation's onError already surfaced a toast — stay on the sheet

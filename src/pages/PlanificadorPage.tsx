@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { track } from '@/lib/stats';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { addDays, parseISO } from 'date-fns';
@@ -192,6 +193,7 @@ export function PlanificadorPage() {
 
   async function handleApply(templateId: string) {
     await apply.mutateAsync({ templateId, targetDate: today });
+    track('aplicar-plantilla');
   }
 
   async function handleSaveAs(name: string, phaseType: TemplatePhase | null) {
