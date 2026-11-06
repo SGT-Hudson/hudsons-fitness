@@ -42,6 +42,7 @@ function walkAndSave(programId: string | null, routineId: string | null, onSave:
       onSave={onSave as never}
       onExit={() => {}}
       onSaved={onSaved}
+      onLoadExercise={vi.fn() as never}
     />,
   );
   fireEvent.click(screen.getByText('Begin'));
