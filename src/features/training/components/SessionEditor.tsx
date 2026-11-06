@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { track } from '@/lib/stats';
 import {
   FormProvider,
   useFieldArray,
@@ -199,6 +200,7 @@ export function SessionEditor({ initial, initialExercises = {}, prefill, onSubmi
         programId: prefill?.programId ?? null,
         routineId: prefill?.routineId ?? null,
       });
+      if (initial?.id == null) track('registrar-entreno', { origen: 'manual' });
       onSaved?.(typeof newId === 'string' ? newId : initial?.id ?? null);
     } catch (err) {
       setError((err as Error).message);

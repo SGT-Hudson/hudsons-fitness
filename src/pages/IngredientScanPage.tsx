@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { track } from '@/lib/stats';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -89,6 +90,9 @@ export function IngredientScanPage() {
     setResult({ kind: 'looking', code, source });
     try {
       const product = await lookup.mutateAsync(code);
+      if (source === 'camera') {
+        track('escanear-ingrediente', { resultado: product ? 'encontrado' : 'no-encontrado' });
+      }
       // The answer replaces the typed-code panel — it asked its question.
       setManualOpen(false);
       setManualEan('');
