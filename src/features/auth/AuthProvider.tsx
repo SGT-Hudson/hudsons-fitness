@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { identify } from '@/lib/stats';
 
 interface AuthContextValue {
   session: Session | null;
@@ -27,6 +28,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  const userId = session?.user?.id;
+  useEffect(() => {
+    if (!loading) identify(userId ?? null);
+  }, [loading, userId]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

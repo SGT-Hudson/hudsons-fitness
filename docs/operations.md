@@ -583,8 +583,16 @@ but effective at this scale.
   uncommitted product idea (`features.md#product-ideas-uncommitted`).
 - **Analytics:** Umami self-hosted at stats.hudsn.app (hudsn-ops): pageviews
   including in-app screens, IDs replaced by `:id` and no query strings
-  (`public/stats.js`); no cookies, so no banner. A privacy policy is still
-  required before a public launch.
+  (`public/stats.js`); no cookies, so no banner. Since 2026-11-06 it also
+  records usage events (`src/lib/stats.ts`, `track`): `registrarse`,
+  `completar-onboarding`, `registrar-comida`, `registrar-medida`,
+  `registrar-entreno`, `guardar-receta`, `escanear-ingrediente` and
+  `aplicar-plantilla`, each fired once after the save succeeds and carrying at
+  most a fixed `origen`/`resultado` value (never names, emails, ids or health
+  values). Every send (pageviews and events) carries a per-account pseudonym,
+  the first 16 hex of `sha256("hudsn:hfit:" + user id)`, kept in memory only
+  (nothing is stored on the device). A privacy policy is still required before
+  a public launch.
 - **Pre-launch:** a privacy policy and a cookie banner are required before any
   public launch beyond the solo user.
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { track } from '@/lib/stats';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Copy, Save, Trash2 } from 'lucide-react';
@@ -156,6 +157,7 @@ export function RecetaEditorPage() {
       // view — the thing you were making. The RPC returns the id, so this works
       // for a brand-new recipe too. (Pre-R-33 this went to the list, because
       // `/recipes/:id` was the editor itself and staying there was a no-op.)
+      if (isNew) track('guardar-receta');
       navigate(`/recipes/${savedId}`, { replace: true });
     } catch (err) {
       console.error('Recipe save failed', err);
