@@ -46,7 +46,7 @@ reference shard carries it (never edit the decision entry).
 - R-36 — Recipe steps & notes (structured steps + private notes) — SHIPPED
 - R-36b — Recipe cover photo (split off R-36, scope changed from per-step to one cover photo) — SHIPPED
 - R-37 — Interactive TDEE calculator linked from the phase editor — SHIPPED
-- R-38 — Progress analytics extras (adherence heatmap, ETA banner, energy balance, custom range)
+- R-38 — Progress analytics extras (adherence heatmap, ETA banner, energy balance, custom range) — SHIPPED (custom range back in the backlog)
 - R-39 — Measurement extras (progress photos, streak, smart-scale source toggle)
 - R-40 — cmd-K command palette (navigate-only)
 - R-41 — Planner recipe suggestions by macro fit (add-drawer V2)
@@ -1331,12 +1331,21 @@ attribution credit, and Tier-1 tests on the field-mapping adapter
 - **scope (open):** none.
 
 ## R-38 — Progress analytics extras
-- **decision:** (D-id at spec time)
+- **decision:** (D-id at spec time; design doc
+  `docs/superpowers/specs/2026-08-01-r38-analytics-extras-design.md`)
 - **blocked-by:** —
-- **status:** todo (spawned by R-33 spec, 2026-07-02)
+- **status:** **shipped** (#235) — three of the four filed items, on
+  `/progress`: the energy-balance card (`EnergyBalanceCard`), the goal-ETA
+  projection on the weight chart (`useGoalEta` → `WeightChart`'s `projection`),
+  and the nutrition adherence heatmap (`AdherenceHeatmap`, pure core
+  `src/features/progreso/adherence.ts`). The ETA *banner* was not built —
+  `LatestMeasurementCard` already renders an ETA line, so only the projection
+  carried new information. No migration, no RPC.
 - **scope:** nutrition adherence heatmap calendar, ETA banner + projection
   (eta.ts/trend.ts data largely exists), energy-balance visual, custom
   date-range filter.
+- **scope (open):** the custom date-range filter — dropped back to the backlog
+  (2026-08-01): `1M / 6M / 1A / Todo` covers the real cases.
 
 ## R-39 — Measurement extras
 - **decision:** (D-id at spec time)
