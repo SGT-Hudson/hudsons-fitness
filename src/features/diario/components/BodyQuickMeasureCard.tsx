@@ -34,13 +34,18 @@ function signedRate(n: number, lang: string): string {
 /**
  * Web right-rail "Cuerpo" card (R-33 wave 2, task 6): latest weight + weekly
  * delta, with a button that opens the shared measurement dialog — the same
- * add-measurement flow Progreso uses (no new form).
+ * add-measurement flow Progreso uses (no new form). Like Progreso, when today
+ * already has a measurement the dialog edits it instead of opening as a new one.
  */
 export function BodyQuickMeasureCard({ latest, rate, phaseType }: Props) {
   const { t, i18n } = useTranslation('diario');
   const num = useNum();
   const locale = (i18n.language?.startsWith('en') ? 'en' : 'es') as Locale;
   const [open, setOpen] = useState(false);
+  const today = isoDate();
+  // `latest` is the newest row by `measured_on`, so it is today's row exactly
+  // when its date is today.
+  const todayEntry = latest?.measured_on === today ? latest : null;
   const tone: DeltaTone =
     rate == null ? 'neutral' : deltaTone('weight', Math.sign(rate), phaseType);
 
@@ -90,8 +95,9 @@ export function BodyQuickMeasureCard({ latest, rate, phaseType }: Props) {
       <MeasurementDialog
         open={open}
         onOpenChange={setOpen}
-        defaultDate={isoDate()}
-        prefillFrom={latest ?? null}
+        defaultDate={today}
+        existing={todayEntry}
+        prefillFrom={todayEntry ? null : (latest ?? null)}
       />
     </div>
   );
