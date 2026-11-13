@@ -14,13 +14,12 @@
 Hudson's Fitness is a bilingual (ES/EN) PWA covering body composition, macros, recipes, weekly meal plans, dietary phases, and training (sessions, live runner, exercise catalog, routines, programs). It is a React 18 + Vite + TypeScript single-page app that talks directly to Supabase (PostgREST + Auth + Storage); there is no application server of its own. The schema lives in `data-model.md` and is not restated here.
 
 - **Frontend**: React 18, Vite, TypeScript SPA.
-- **Backend**: Supabase project `upvraruehzurbetzrxov` (EU Frankfurt) — PostgREST data API, Auth, and Storage. Storage's only use is the `recipe-photos` bucket (R-36b): the browser uploads the two renditions and builds public URLs itself, and the bucket's own RLS policies are the security boundary, exactly as for tables. Realtime is available on the project but nothing subscribes to it.
+- **Backend**: Supabase project `upvraruehzurbetzrxov` (EU Frankfurt) — PostgREST data API, Auth, and Storage. Storage's only use is the `recipe-photos` bucket (R-36b): the browser uploads the two renditions and builds public URLs itself, and the bucket's own RLS policies are the security boundary, exactly as for tables. Realtime is available on the project but nothing subscribes to it. Outside the app, the hudsn-ops admin panel reads aggregate usage totals through `ops.usage` — a `SECURITY DEFINER` function in its own `ops` schema (not exposed through the Data API), executable only by the `hudsn_ops` role (migration `20261009074839_ops_usage`; detail in `data-model.md`).
 - **Hosting**: Vercel SPA hosting; production branch `main` deploys on merge. CI, branch-protection, and deploy mechanics are documented in `operations.md`.
 - **PWA**: built with `vite-plugin-pwa` (`registerType: 'autoUpdate'`); Workbox routes all `supabase.co` requests as `NetworkOnly` so data calls are never served from the service-worker cache.
+- **Analytics**: cookieless, self-hosted Umami at `stats.hudsn.app` (operated by hudsn-ops). `index.html` loads `public/stats.js` first (it rewrites id-like path segments to `:id` and drops query and hash before every send), then the async tracker, which reports only from the production domain (`data-domains="fit.hudsn.app"`). `src/lib/stats.ts` is the app-side entry point: `track()` for usage events and `identify()`, which hands `stats.js` an in-memory account pseudonym (salted SHA-256 of the account id, truncated to 16 hex) and clears it on sign-out. Nothing is stored on the device, and a blocked tracker is a silent no-op.
 
 ## Frontend layout
-
-> ⚠ Changing — see R-33
 
 Source lives under `src/` with the path alias `@/*` → `src/*`.
 
@@ -30,7 +29,7 @@ src/
 ├── core/                 # pure, runtime-agnostic, dependency-free domain logic (shared client + edge)
 ├── features/<name>/      # api.ts + hooks.ts + components/  (per-feature slice)
 ├── pages/                # one file per route
-├── lib/                  # supabase client, dates, cn(), toast-helpers
+├── lib/                  # supabase client, dates, cn(), toast-helpers, stats (analytics)
 ├── components/ui/        # shadcn primitives
 ├── components/layout/    # app-shell layout pieces
 ├── hooks/                # cross-feature hooks
@@ -44,7 +43,7 @@ Each `features/<name>` slice follows a fixed shape:
 - `hooks.ts` — TanStack Query wrappers over `api.ts` (queries, mutations, cache keys).
 - `components/` — feature-scoped UI.
 
-`pages/` holds one file per route and composes feature components. `lib/` holds the shared Supabase client, date helpers, the `cn()` class helper, and toast helpers. `components/ui/` holds shadcn primitives.
+`pages/` holds one file per route and composes feature components. `lib/` holds the shared Supabase client, date helpers, the `cn()` class helper, toast helpers, and the analytics wrapper (`stats.ts`). `components/ui/` holds shadcn primitives.
 
 ## State model
 
@@ -62,14 +61,16 @@ See D-C1 for the full ruling and rationale.
 
 The guided active-workout runner (`/training/run`) is the app's one non-trivial
 client state machine, and it deliberately stays within the D-C1 boundary — it is
-**local UI state via `useReducer`**, not a new store, and touches **no server
-state during the workout**.
+**local UI state via `useReducer`**, not a new store, and **writes no workout
+data to the server until finish**.
 
 - **Pure core.** `src/core/runner.ts` holds the entire model as a clock-free,
   I/O-free reducer: `buildRunnerState(input)` seeds it from the routine + per-set
   prefill, `runnerReducer(state, action)` advances it (actions: `SET_WORKING_WEIGHT`,
   `EDIT_CURRENT_SET`, `START_REST` / `RECORD_SET` / `ADJUST_REST` / `CLEAR_REST`,
-  `ADD_SET`, `END_EXERCISE`, `JUMP_TO`, `SKIP_CURRENT`, `CONTINUE`, `FINISH_EARLY`),
+  `ADD_SET`, `ADD_EXERCISE`, `END_EXERCISE`, `JUMP_TO`, `SKIP_CURRENT`, `CONTINUE`,
+  `FINISH_EARLY`; `ADD_EXERCISE` (R-46) appends at `max(position) + 1` without
+  moving the cursor and refuses a duplicate `exerciseId`),
   and selectors derive views (`nextPendingIndex`, `focusIndex`,
   `skippedUndoneIndices`, `toSaveWorkoutSets`) plus `computeTimerView`. Actions
   carry `nowMs` so the reducer never reads a clock. Fully Tier-1 tested.
@@ -79,15 +80,23 @@ state during the workout**.
   so it's never stranded (D-F9e).
 - **Thin hooks bridge to the browser** (`src/features/training/runner/`):
   `useRunnerDraft` mirrors state to `localStorage` (`hf:runner:draft:v1`) on every
-  change and restores it via a resume prompt; `useRestTimer` derives remaining time
+  change and restores it via a resume prompt (exercises added mid-workout keep
+  their display data alongside it in `hf:runner:extras:v1`, stamped with the
+  session's `routineId` + `startedAtMs`); `useRestTimer` derives remaining time
   from a stored target timestamp (survives backgrounding — wall-clock math, not a
   decrementing counter); `useWakeLock` holds a Screen Wake Lock while active;
   `fireRestAlarm` is the capability-guarded sound+vibration. The orchestrator
   `Runner.tsx` owns the `useReducer` + a little view-local state (begin gate,
   overview, save) and renders one screen per phase.
-- **Persistence boundary.** No DB writes mid-workout and no cross-device resume
-  (D-F9a); the only server interaction is the single atomic `save_workout` at
-  finish (the F-2 RPC, unchanged). On success the draft is cleared.
+- **Persistence boundary.** No workout writes mid-workout and no cross-device
+  resume (D-F9a); the session and its sets reach the server only through the
+  single atomic `save_workout` at finish (the F-2 RPC, unchanged). On success
+  the draft is cleared. The one mid-workout server contact is the optional
+  add-exercise picker (R-46): it searches the catalog (and can create a custom
+  exercise through the usual catalog dialog), and `loadAddedExercise` makes a
+  best-effort history read for the working-weight prefill — any failure or a
+  request that outlives 4 s (`HISTORY_TIMEOUT_MS`) degrades to 0 kg, never
+  blocking the addition.
 
 ## Client↔edge boundary
 
@@ -113,7 +122,7 @@ This is a behavioral overview of the nutrition math as it runs today. Column/DDL
 
 - **TDEE** — the adaptive estimate is produced by the `recalculate-tdee` edge function as a daily incremental update of a persistent per-user 2-state linear Kalman filter on `[trend_weight, expenditure]` (`src/core/tdee.ts`, pure/dual-runtime/tested): each day it predicts the smoothed weight change from `intake − expenditure`, compares it to the observed raw weigh-in, and the residual self-corrects expenditure. 7700 kcal/kg is only an internal conversion prior; the old 14d/10d/±3d window gating is retired. Filter variance → a low/medium/high confidence band surfaced in the UI. This estimate is what feeds the `tdee_delta` kcal path above (Sprint-17 reader contract unchanged — additive confidence only). Live in prod since 2026-05-18 (`tdee_state` + `tdee_estimates.confidence`/`is_warmup` migration applied; `recalculate-tdee` deployed).
 
-- **BMR / Mifflin-St Jeor** — `mifflinStJeor` in `src/lib/macros.ts` (`10·weightKg + 6.25·heightCm − 5·ageYears + sex constant`) is surfaced as `estimatedBmr`, a derived never-stored display on `/progress` (latest-measurement card); it never feeds protein/TDEE/targets (D-B5). The 4 dead `tdee_estimates` BMR/breakdown columns were dropped 2026-05-18 (R-08).
+- **BMR / Mifflin-St Jeor** — `mifflinStJeor` in `src/lib/macros.ts` (`10·weightKg + 6.25·heightCm − 5·ageYears + sex constant`) is surfaced as `estimatedBmr`, a derived never-stored display on `/progress` (the R-38 energy-balance card, `EnergyBalanceCard`); it never feeds protein or the adaptive estimate's daily updates (D-B5) — `recalculate-tdee` keeps its own copy only to seed the filter's cold-start expenditure (Mifflin × 1.4). The R-37 interactive TDEE calculator (`src/features/tdee/formulas.ts`; the `/tdee` route and a sheet in the phase editor) reuses `mifflinStJeor` × an activity factor, plus a secondary Katch-McArdle line, recomputed on render and never stored — except that the phase editor's explicit "apply" writes the rounded formula TDEE into the phase as `kcal_mode: 'absolute'` + `kcal_value`. The 4 dead `tdee_estimates` BMR/breakdown columns were dropped 2026-05-18 (R-08).
 
 - **Target weight** — `computeTargetWeightKg` in `src/lib/macros.ts` derives the goal weight from current lean mass and a target body-fat %: `leanMass = currentWeightKg × (1 − currentBodyFatPct/100)`, then `targetWeight = leanMass / (1 − targetBodyFatPct/100)`.
 
@@ -121,7 +130,7 @@ This is a behavioral overview of the nutrition math as it runs today. Column/DDL
 
 ## Body-art skin abstraction (F-4)
 
-The muscle heatmap's artwork is decoupled from its data so the body drawing is swappable without touching the volume logic. A `BodyArtSkin` (`src/features/training/muscleMap/skins/types.ts`) exposes only `id`, `viewBox(gender, side)`, and `parts(gender, side)` (the SVG paths) — there is **no** `slugToMuscle` map on the skin. The slug→code mapping now lives in `src/core/muscles.ts`: each fine code carries a `bodyRegionSlug`, and `codesForBodyRegion(slug)` returns the fine codes that map to a given region slug. `MuscleBody.tsx` shades each part by calling `codesForBodyRegion(slug)`, summing those fine codes' volume, and mapping the total through `muscleColor` (grey→amber→red); slugs with no codes render neutral. Because multiple fine codes can map to one region slug, region slugs aggregate **up** to the fine-24 taxonomy (rather than down to a coarse 12). The ranked `Muscle · N sets` list renders at **fine** resolution even where the drawing co-shades.
+The muscle heatmap's artwork is decoupled from its data so the body drawing is swappable without touching the volume logic. A `BodyArtSkin` (`src/features/training/muscleMap/skins/types.ts`) exposes only `id`, `viewBox(gender, side)`, and `parts(gender, side)` (the SVG paths) — there is **no** `slugToMuscle` map on the skin. The slug→code mapping now lives in `src/core/muscles.ts`: each fine code carries a `bodyRegionSlug`, and `codesForBodyRegion(slug)` returns the fine codes that map to a given region slug. `MuscleBody.tsx` shades each part by calling `codesForBodyRegion(slug)`, summing those fine codes' volume, and mapping the total through `muscleColor` (token-driven gym-blue ramp, `--heat-zero` → `--gym`); slugs with no codes render neutral. Because multiple fine codes can map to one region slug, region slugs aggregate **up** to the fine-24 taxonomy (rather than down to a coarse 12). The ranked `Muscle · N sets` list renders at **fine** resolution even where the drawing co-shades.
 
 v1 is `mitSkin` — vendored MIT-licensed art (react-native-body-highlighter lineage; the `LICENSE` is kept in-repo at `skins/mitSkin/`), whose region slugs the core maps the 24 fine codes onto. Proprietary art (MuscleWiki) was rejected because the repo is public (D-F10c). Per the P1(a) body-art decision (R-26 / D-F11), the fine data lands **now** and renders on the current vendored art — core, back, and legs gain visible detail, while shoulders, chest, and triceps co-shade until license-clean finer art exists (at which point only the skin's region map changes, not the data); within legs the `gluteal` region itself co-shades two fine codes (`glutes` + `abductors`) under the current art. The view (`MuscleActivityView`) is rendered **inline on `/training`** — no separate route — with the window pills, the gender toggle (default from `profiles.sex`, reactive once the profile loads), the ranked `Muscle · N sets` list, and the full-body footnote.
 
@@ -137,10 +146,10 @@ Locale-aware formatting follows the active language: dates are formatted via `da
 
 ## Theme model
 
-> ⚠ Changing — see R-33
-
 Theming is owned by `ThemeProvider` in `src/features/theme/ThemeProvider.tsx`. It exposes `theme` ∈ `'light' | 'dark' | 'system'`, resolving `system` via `window.matchMedia('(prefers-color-scheme: dark)')` and toggling the `dark` class on `<html>`. The selected value is persisted **only** to `localStorage` under the key `hf-theme` — never to `profiles`.
 
 To prevent a flash of unstyled / wrong-theme content (FOUC), `index.html` runs a synchronous inline IIFE in `<head>` that reads the same `hf-theme` key (defaulting to `system`), applies the same OS `prefers-color-scheme: dark` resolution, and adds the `dark` class before first paint. This couples the two: the `index.html` script and `ThemeProvider` must use the **identical** storage key (`hf-theme`) and identical system-resolution logic, or the pre-paint and React-rendered themes diverge.
+
+R-33 (released 2026-07-15) kept this mechanism byte-identical and changed only token values: the design tokens live in `src/index.css` (`:root` / `.dark`, wired to Tailwind v4 through `@theme`). The section accent is a separate axis — `AppLayout` (`src/components/layout/AppLayout.tsx`) sets `.section-nutri` / `.section-gym` on `<html>` from the active route after boot, so the pre-paint script does not need to know about it.
 
 This is a deliberate contrast with the i18n model (D-F6, D-E1): language is intentionally cross-device-authoritative (it belongs on the profile), whereas theme is intentionally **not**. A device's `system`/OS default is the correct theme behavior, and keeping theme in `localStorage` only is precisely what allows the synchronous pre-paint script to resolve it without waiting on a network/profile fetch. Confirmed as-is.
