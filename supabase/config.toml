@@ -1,6 +1,8 @@
-# Supabase local config — used only for the Tier-3 pgTAP test DB
+# Supabase local config — used for the Tier-3 pgTAP test DB
 # (`supabase start` + `supabase test db`). Production is managed via the
-# dashboard/MCP; this file is NOT a deploy surface. See
+# dashboard/MCP; the one deploy-time setting read from here is `verify_jwt`
+# for the edge functions (the `[functions.*]` blocks at the end), which
+# `supabase functions deploy` applies. See
 # docs/superpowers/specs/2026-06-03-tier3-pgtap-ci-design.md.
 #
 # Kept intentionally minimal: only project_id + the Postgres major version
@@ -40,3 +42,26 @@ port = 56324
 
 [analytics]
 port = 56327
+
+# Edge functions called by pg_cron (`private.invoke_edge_function`). The cron
+# sends a `sb_secret_` key on the `apikey` header; it is not a JWT, so the
+# gateway's JWT check is off for these and each function checks the key in
+# code (`isServerCall`, supabase/functions/_shared/keys.ts). Never turn
+# verify_jwt off for a function without that check: it would be public.
+# Guarded by supabase/functions/_shared/cron-auth-wiring.test.ts.
+# `delete-account` is called by signed-in users and keeps the default (true).
+
+[functions.cron-healthcheck]
+verify_jwt = false
+
+[functions.daily-nutrition-snapshot]
+verify_jwt = false
+
+[functions.recalculate-tdee]
+verify_jwt = false
+
+[functions.recipe-photo-reap]
+verify_jwt = false
+
+[functions.weekly-rollover]
+verify_jwt = false

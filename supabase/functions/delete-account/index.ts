@@ -26,6 +26,7 @@
 
 // Version pinned once in supabase/functions/deno.json (D-F3 / R-17).
 import { createClient } from '@supabase/supabase-js';
+import { publishableKey, secretKey } from '../_shared/keys.ts';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -48,10 +49,11 @@ Deno.serve(async (req) => {
     return json({ error: 'method_not_allowed' }, 405);
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
-  if (!supabaseUrl || !serviceRoleKey || !anonKey) {
+  const env = (name: string) => Deno.env.get(name);
+  const supabaseUrl = env('SUPABASE_URL');
+  const serverKey = secretKey(env);
+  const userKey = publishableKey(env);
+  if (!supabaseUrl || !serverKey || !userKey) {
     return json({ error: 'missing_env' }, 500);
   }
 
@@ -60,8 +62,8 @@ Deno.serve(async (req) => {
     return json({ error: 'missing_authorization' }, 401);
   }
 
-  // Verify the caller's JWT against auth.users using the anon key client.
-  const userClient = createClient(supabaseUrl, anonKey, {
+  // Verify the caller's JWT against auth.users using the publishable key client.
+  const userClient = createClient(supabaseUrl, userKey, {
     global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false },
   });
@@ -71,10 +73,10 @@ Deno.serve(async (req) => {
   }
   const userId = userResult.user.id;
 
-  // Service-role client; needed for both the reconciliation RPC and the
-  // auth-admin delete. Service role bypasses RLS and the `private` schema
-  // grants on `reconcile_account_delete`.
-  const admin = createClient(supabaseUrl, serviceRoleKey, {
+  // Secret-key (service-role) client; needed for both the reconciliation RPC
+  // and the auth-admin delete. Service role bypasses RLS and the `private`
+  // schema grants on `reconcile_account_delete`.
+  const admin = createClient(supabaseUrl, serverKey, {
     auth: { persistSession: false },
   });
 

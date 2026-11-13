@@ -15,11 +15,13 @@
 import { createClient } from '@supabase/supabase-js';
 // Date/TZ helper from the shared pure core, re-exported via _shared (D-F3 / R-17).
 import { mondayOfTodayInTZ } from '../_shared/macros.ts';
+import { isServerCall, secretKey, unauthorized } from '../_shared/keys.ts';
 
 Deno.serve(async (req) => {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  const env = (name: string) => Deno.env.get(name);
+  if (!isServerCall(req, env)) return unauthorized();
+  const supabaseUrl = env('SUPABASE_URL')!;
+  const supabase = createClient(supabaseUrl, secretKey(env)!, {
     auth: { persistSession: false },
   });
 
