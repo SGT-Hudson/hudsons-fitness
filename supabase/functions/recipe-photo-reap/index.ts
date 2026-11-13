@@ -58,6 +58,7 @@
 
 // Version pinned once in supabase/functions/deno.json (D-F3 / R-17).
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { isServerCall, secretKey, unauthorized } from '../_shared/keys.ts';
 
 const BUCKET = 'recipe-photos';
 // Storage `list()` and Postgres `.in()` both tolerate far more than this, but
@@ -122,17 +123,19 @@ async function existingRecipeIds(
   return found;
 }
 
-Deno.serve(async () => {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!supabaseUrl || !serviceRoleKey) {
+Deno.serve(async (req) => {
+  const env = (name: string) => Deno.env.get(name);
+  if (!isServerCall(req, env)) return unauthorized();
+  const supabaseUrl = env('SUPABASE_URL');
+  const serverKey = secretKey(env);
+  if (!supabaseUrl || !serverKey) {
     return new Response(JSON.stringify({ error: 'missing_env' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  const supabase = createClient(supabaseUrl, serverKey, {
     auth: { persistSession: false },
   });
 

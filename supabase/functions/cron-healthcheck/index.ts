@@ -38,24 +38,27 @@
 import { createClient } from '@supabase/supabase-js';
 import { todayInTZ } from '../_shared/macros.ts';
 import { pingHealthcheck } from '../_shared/healthchecks.ts';
+import { isServerCall, secretKey, unauthorized } from '../_shared/keys.ts';
 import {
   evaluateFreshness,
   decideAlert,
   type FreshnessInput,
 } from '../../../src/core/liveness.ts';
 
-Deno.serve(async () => {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const hcPingUrl = Deno.env.get('HC_PING_URL') ?? undefined;
-  if (!supabaseUrl || !serviceRoleKey) {
+Deno.serve(async (req) => {
+  const env = (name: string) => Deno.env.get(name);
+  if (!isServerCall(req, env)) return unauthorized();
+  const supabaseUrl = env('SUPABASE_URL');
+  const serverKey = secretKey(env);
+  const hcPingUrl = env('HC_PING_URL') ?? undefined;
+  if (!supabaseUrl || !serverKey) {
     return new Response(JSON.stringify({ error: 'missing_env' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  const supabase = createClient(supabaseUrl, serverKey, {
     auth: { persistSession: false },
   });
 

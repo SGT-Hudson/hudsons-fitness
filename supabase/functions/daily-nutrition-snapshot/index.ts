@@ -40,6 +40,7 @@ import {
   type PartialSub,
   type Numeric,
 } from '../_shared/macros.ts';
+import { isServerCall, secretKey, unauthorized } from '../_shared/keys.ts';
 
 // snake_case row shapes as PostgREST returns them, plus a mapper into the
 // camelCase core shape (the core is runtime-agnostic; the DB rows are snake).
@@ -142,9 +143,10 @@ const INGREDIENT_SELECT =
   'ingredient:ingredients(unit_type, kcal_per_unit, protein_g_per_unit, carbs_g_per_unit, fat_g_per_unit, fiber_g_per_unit, sugar_g_per_unit, saturated_fat_g_per_unit)';
 
 Deno.serve(async (req) => {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  const env = (name: string) => Deno.env.get(name);
+  if (!isServerCall(req, env)) return unauthorized();
+  const supabaseUrl = env('SUPABASE_URL')!;
+  const supabase = createClient(supabaseUrl, secretKey(env)!, {
     auth: { persistSession: false },
   });
 
