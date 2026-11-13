@@ -141,27 +141,36 @@ function buildSets(ex: RunnerInputExercise, workingWeightKg: number, incrementKg
   return sets;
 }
 
+/** The runner-exercise shape a caller adds mid-workout: same as a routine
+ *  exercise minus the position, which the reducer assigns. */
+export type AddedExerciseInput = Omit<RunnerInputExercise, 'position'>;
+
+function buildRunnerExercise(
+  ex: RunnerInputExercise,
+  status: ExerciseStatus,
+): RunnerExercise {
+  const workingWeightKg = ex.lastWorkingWeightKg ?? 0;
+  const defaultIncrementKg = ex.defaultIncrementKg > 0 ? ex.defaultIncrementKg : 2.5;
+  return {
+    exerciseId: ex.exerciseId,
+    position: ex.position,
+    targetSets: ex.targetSets,
+    targetRepsMin: ex.targetRepsMin,
+    targetRepsMax: ex.targetRepsMax,
+    restSeconds: ex.restSeconds,
+    targetRpe: ex.targetRpe,
+    defaultIncrementKg,
+    workingWeightKg,
+    warmupPrescriptions: ex.warmupSets,
+    sets: buildSets(ex, workingWeightKg, defaultIncrementKg),
+    status,
+  } satisfies RunnerExercise;
+}
+
 export function buildRunnerState(input: RunnerInput): RunnerState {
   const exercises: RunnerExercise[] = [...input.exercises]
     .sort((a, b) => a.position - b.position)
-    .map((ex, i) => {
-      const workingWeightKg = ex.lastWorkingWeightKg ?? 0;
-      const defaultIncrementKg = ex.defaultIncrementKg > 0 ? ex.defaultIncrementKg : 2.5;
-      return {
-        exerciseId: ex.exerciseId,
-        position: ex.position,
-        targetSets: ex.targetSets,
-        targetRepsMin: ex.targetRepsMin,
-        targetRepsMax: ex.targetRepsMax,
-        restSeconds: ex.restSeconds,
-        targetRpe: ex.targetRpe,
-        defaultIncrementKg,
-        workingWeightKg,
-        warmupPrescriptions: ex.warmupSets,
-        sets: buildSets(ex, workingWeightKg, defaultIncrementKg),
-        status: i === 0 ? 'active' : 'pending',
-      } satisfies RunnerExercise;
-    });
+    .map((ex, i) => buildRunnerExercise(ex, i === 0 ? 'active' : 'pending'));
 
   return {
     programId: input.programId,
@@ -189,6 +198,7 @@ export type RunnerAction =
   | { type: 'START_REST'; nowMs: number }
   | { type: 'RECORD_SET'; nowMs: number }
   | { type: 'ADD_SET'; nowMs: number }
+  | { type: 'ADD_EXERCISE'; exercise: AddedExerciseInput; nowMs: number }
   | { type: 'CONTINUE'; nowMs: number }
   | { type: 'JUMP_TO'; exerciseIndex: number; nowMs: number }
   | { type: 'SKIP_CURRENT'; nowMs: number }
@@ -302,6 +312,18 @@ function navigationReducer(
         sets: [...e.sets, newSet],
       }));
       return touch({ ...state, exercises, currentSetIndex: ex.sets.length, phase: 'ready' });
+    }
+    case 'ADD_EXERCISE': {
+      // Session-only (spec decision 1): the routine behind the workout is never
+      // touched. Duplicates are refused because workout_sets is unique on
+      // (session_id, exercise_id, set_index) — a second block would restart
+      // set_index at 1 and fail the whole end-of-workout save.
+      if (state.exercises.some((e) => e.exerciseId === action.exercise.exerciseId)) return state;
+      // max + 1, not length + 1: routine positions are 1-based but not
+      // guaranteed contiguous, and position is what the overview panel shows.
+      const position = state.exercises.reduce((m, e) => Math.max(m, e.position), 0) + 1;
+      const added = buildRunnerExercise({ ...action.exercise, position }, 'pending');
+      return touch({ ...state, exercises: [...state.exercises, added] });
     }
     case 'CONTINUE':
       return touch(advanceOrFinish(state));

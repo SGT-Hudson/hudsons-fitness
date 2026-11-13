@@ -1,13 +1,19 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useNum } from '@/hooks/useNum';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { useSaveWorkout } from '@/features/training/hooks';
+import { fetchExerciseHistory } from '@/features/training/api';
 import { Runner } from '@/features/training/runner/Runner';
 import { ResumePrompt } from '@/features/training/runner/ResumePrompt';
 import { loadDraft, clearDraft } from '@/features/training/runner/useRunnerDraft';
+import { loadAddedExercise } from '@/features/training/runner/loadAddedExercise';
 import { buildRunnerState, type RunnerInput, type RunnerState } from '@/core/runner';
 import type { CoachContext, CoreSessionSet } from '@/core/training';
 import { lastWorkingSetForExercise } from '@/core/training';
+import { todayInTZ } from '@/lib/dates';
+import type { Exercise } from '@/features/training/exercises/api';
 
 export interface RunnerRouteState {
   programId: string | null;
@@ -24,6 +30,8 @@ export function RunnerPage() {
   const location = useLocation();
   const save = useSaveWorkout();
   const num = useNum();
+  const { user } = useAuth();
+  const { i18n } = useTranslation();
   const route = (location.state as { runner?: RunnerRouteState } | null)?.runner ?? null;
 
   const draft = useMemo(() => loadDraft(), []);
@@ -68,6 +76,19 @@ export function RunnerPage() {
     lastTimeByExercise[id] = last ? `${last.reps} × ${num.qty(Number(last.weightKg))} kg` : null;
   }
 
+  const lang: 'es' | 'en' = (i18n.language || 'es').startsWith('en') ? 'en' : 'es';
+
+  function handleLoadExercise(exercise: Exercise) {
+    return loadAddedExercise({
+      exercise,
+      lang,
+      todayISO: todayInTZ(),
+      formatWeight: (kg) => num.qty(kg),
+      fetchHistory: (exerciseId) =>
+        user ? fetchExerciseHistory(user.id, exerciseId) : Promise.resolve([]),
+    });
+  }
+
   return (
     <Runner
       initialState={initialState}
@@ -77,6 +98,7 @@ export function RunnerPage() {
       onSave={(payload) => save.mutateAsync(payload)}
       onExit={() => navigate('/training')}
       onSaved={() => { clearDraft(); navigate('/training'); }}
+      onLoadExercise={handleLoadExercise}
     />
   );
 }

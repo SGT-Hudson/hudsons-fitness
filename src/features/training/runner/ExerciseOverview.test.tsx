@@ -29,6 +29,7 @@ function renderOverview(onJump = vi.fn()) {
       onSkipCurrent={vi.fn()}
       onFinishEarly={vi.fn()}
       onClose={vi.fn()}
+      onAddExercise={vi.fn()}
     />,
   );
   return onJump;

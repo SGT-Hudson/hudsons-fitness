@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
       // a language switch — acceptable for a crash screen, which the user
       // leaves by reloading anyway.
       return (
-        <div className="min-h-dvh flex items-center justify-center p-4">
+        <div data-testid="error-boundary-fallback" className="min-h-dvh flex items-center justify-center p-4">
           <Card className="w-full max-w-lg">
             <CardHeader>
               <CardTitle>{i18n.t('common:errors.boundary.title')}</CardTitle>

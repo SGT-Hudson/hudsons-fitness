@@ -21,6 +21,9 @@ interface Props {
   selected: Exercise | null;
   onSelect: (exercise: Exercise) => void;
   onClear: () => void;
+  /** Ids to hide from the results — e.g. exercises already in the running
+   *  session, which the DB would reject at save time. */
+  excludeIds?: string[];
 }
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
@@ -32,7 +35,7 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
-export function ExercisePicker({ selected, onSelect, onClear }: Props) {
+export function ExercisePicker({ selected, onSelect, onClear, excludeIds = [] }: Props) {
   const { t, i18n } = useTranslation('entrenamiento');
   const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
   const otherLang: 'es' | 'en' = lang === 'es' ? 'en' : 'es';
@@ -61,6 +64,7 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
     groupMuscles: groupKey ? (codesInGroup(groupKey) as PrimaryMuscle[]) : [],
     textMuscles,
   });
+  const results = (search.data ?? []).filter((ex) => !excludeIds.includes(ex.id));
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -128,12 +132,12 @@ export function ExercisePicker({ selected, onSelect, onClear }: Props) {
                   {t('picker.searching')}
                 </li>
               )}
-              {!search.isLoading && (search.data ?? []).length === 0 && query.trim() !== '' && (
+              {!search.isLoading && results.length === 0 && query.trim() !== '' && (
                 <li className="px-3 py-2 text-sm text-muted-foreground">
                   {t('picker.noResults')}
                 </li>
               )}
-              {(search.data ?? []).map((ex) => {
+              {results.map((ex) => {
                 const subtitle = otherLang === 'en' ? ex.name_en : ex.name_es;
                 const primary = exerciseDisplayName(ex, lang);
                 return (

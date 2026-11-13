@@ -10,8 +10,9 @@
 //
 // The component is pure (the page owns the hooks), so no supabase mock and no
 // QueryClientProvider are needed here.
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import i18n from '@/i18n';
 import { PhasePreview } from './PhasePreview';
 import type { PhaseDraft } from './PhaseEditorForm';
@@ -108,5 +109,34 @@ describe('PhasePreview — the honest empty states (never zeros)', () => {
       i18n.t('objetivos:phases.hero.needsTdee'),
     );
     expect(screen.queryByTestId('preview-kcal')).not.toBeInTheDocument();
+  });
+
+  it('offers the TDEE calculator only from the needsTdee dead end', async () => {
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+
+    // No weight → a different hint, no exit.
+    const { unmount } = render(
+      <PhasePreview
+        draft={draft({ kcal_mode: 'tdee_delta', kcal_value: -300 })}
+        weightKg={undefined}
+        estimatedTdeeKcal={null}
+        onOpenTdeeCalculator={onOpen}
+      />,
+    );
+    expect(screen.queryByTestId('phase-preview-open-tdee')).toBeNull();
+    unmount();
+
+    // Delta mode with no estimate → the dead end, with a way out.
+    render(
+      <PhasePreview
+        draft={draft({ kcal_mode: 'tdee_delta', kcal_value: -300 })}
+        weightKg={80}
+        estimatedTdeeKcal={null}
+        onOpenTdeeCalculator={onOpen}
+      />,
+    );
+    await user.click(screen.getByTestId('phase-preview-open-tdee'));
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 });

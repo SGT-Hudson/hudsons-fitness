@@ -77,4 +77,33 @@ describe('WeightChart', () => {
     expect(container.querySelectorAll('.recharts-wrapper').length).toBe(1);
     expect(sheet.querySelectorAll('.recharts-line-curve')).toHaveLength(2);
   });
+
+  it('appends the projection points when the target is inside the horizon', () => {
+    const { container } = render(
+      <WeightChart targetWeightKg={78} projection={{ toWeightKg: 78, etaDate: '2026-06-01' }} />,
+    );
+    expect(screen.getByTestId('weight-projection')).toBeInTheDocument();
+    // The MA5 end dot plus the target dot: the ETA (2026-06-01, 14 days past
+    // the last real point) lands exactly at the edge of the 14-day span the
+    // fixture covers, so it counts as inside the horizon and gets an end dot.
+    expect(container.querySelectorAll('.recharts-reference-dot')).toHaveLength(2);
+  });
+
+  it('caps the ray and drops the end dot when the target is beyond the horizon', () => {
+    const { container } = render(
+      <WeightChart targetWeightKg={78} projection={{ toWeightKg: 78, etaDate: '2027-06-01' }} />,
+    );
+    // The ray itself still draws, truncated to the data span...
+    expect(screen.getByTestId('weight-projection')).toBeInTheDocument();
+    // ...but only the MA5 end dot remains — the target dot is suppressed
+    // because the ETA is far beyond the span the real data covers.
+    expect(container.querySelectorAll('.recharts-reference-dot')).toHaveLength(1);
+  });
+
+  it('draws no projection when none is supplied', () => {
+    const { container } = render(<WeightChart targetWeightKg={78} />);
+    expect(screen.queryByTestId('weight-projection')).not.toBeInTheDocument();
+    // Just the MA5 end dot — no ray, no target dot.
+    expect(container.querySelectorAll('.recharts-reference-dot')).toHaveLength(1);
+  });
 });

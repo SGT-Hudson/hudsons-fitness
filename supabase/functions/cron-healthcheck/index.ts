@@ -15,7 +15,8 @@
 // applying the shared pure freshness predicate. If `daily_nutrition_history`
 // is stale-or-empty it ALERTS.
 //
-// Alert channel (dependency-light, no new secret/webhook — per D-F5 / R-18):
+// Alert channel (dependency-light, no new webhook — per D-F5 / R-18; the only
+// secret is the optional HC_PING_URL below):
 //  1. `console.error` a single structured `CRON_LIVENESS_ALERT …` line — this
 //     lands in the Edge function logs and is the matchable signal for any
 //     future log-drain alert without adding a dependency now.
@@ -24,6 +25,9 @@
 //     `cron.job_run_details` (the exact place operations.md's "how to tell
 //     crons are dead" manual check looks), turning a silent under-run into a
 //     loud, queryable one. A healthy run returns 200.
+//  3. Optional: if the `HC_PING_URL` secret is set, also ping Healthchecks.io
+//     (hudsn-ops): plain ping when healthy, `/fail` on both alert paths.
+//     Without the secret behaviour is unchanged.
 //
 // The freshness math is the single shared pure core (R-17 pattern):
 // `src/core/liveness.ts` (deterministic Vitest cover) + `todayInTZ()` from
@@ -33,6 +37,7 @@
 // Version pinned once in supabase/functions/deno.json (D-F3 / R-17).
 import { createClient } from '@supabase/supabase-js';
 import { todayInTZ } from '../_shared/macros.ts';
+import { pingHealthcheck } from '../_shared/healthchecks.ts';
 import {
   evaluateFreshness,
   decideAlert,
@@ -42,6 +47,7 @@ import {
 Deno.serve(async () => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const hcPingUrl = Deno.env.get('HC_PING_URL') ?? undefined;
   if (!supabaseUrl || !serviceRoleKey) {
     return new Response(JSON.stringify({ error: 'missing_env' }), {
       status: 500,
@@ -94,6 +100,7 @@ Deno.serve(async () => {
     if (decision.alert) {
       // Single structured line — the matchable log-drain signal.
       console.error(`CRON_LIVENESS_ALERT ${JSON.stringify(payload)}`);
+      await pingHealthcheck(hcPingUrl, 'fail', JSON.stringify(payload));
       // 503 so the failed run is visible in cron.job_run_details.
       return new Response(JSON.stringify(payload), {
         status: 503,
@@ -102,6 +109,7 @@ Deno.serve(async () => {
     }
 
     console.log(`cron-healthcheck OK ${decision.message}`);
+    await pingHealthcheck(hcPingUrl, '', decision.message);
     return new Response(JSON.stringify(payload), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -110,6 +118,7 @@ Deno.serve(async () => {
     const msg = err instanceof Error ? err.message : String(err);
     // A query error is itself a liveness failure — alert on it.
     console.error(`CRON_LIVENESS_ALERT {"error":${JSON.stringify(msg)}}`);
+    await pingHealthcheck(hcPingUrl, 'fail', JSON.stringify({ error: msg }));
     return new Response(JSON.stringify({ alert: true, error: msg }), {
       status: 503,
       headers: { 'Content-Type': 'application/json' },

@@ -531,6 +531,125 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
   would pollute history and e1RM. Adding from inside the live runner is split
   out as R-46.
 
+### 2026-07-27 — R-46 add an exercise mid-workout
+
+- **The live runner can add an exercise that wasn't planned (#231).** A new
+  pure `ADD_EXERCISE` action on the runner reducer (`src/core/runner.ts`)
+  appends it at `max(position) + 1` without moving the cursor, and refuses a
+  duplicate `exerciseId`; the picker hides exercises already in the session
+  (`excludeIds`) for the same reason — `workout_sets` is unique on
+  `(session_id, exercise_id, set_index)`, and a duplicate would fail the whole
+  end-of-workout save. The working weight prefills from the last logged
+  session for that exercise; any failure — offline, an error, a request that
+  never settles (4 s timeout), or no history at all — degrades silently to
+  0 kg rather than blocking the add or throwing a toast. The addition is
+  **session-only**: the routine behind the workout is never touched. Saving it
+  back to the routine was deliberately deferred, not forgotten — it needs the
+  full `RoutineWithExercises` aggregate mid-workout and only applies when the
+  session came from a routine at all; R-31 already covers adding an exercise to
+  a routine from the catalogue. No migration, no RPC, no new write path — the
+  added exercise's sets ride the existing `save_workout` call.
+
+### 2026-07-23 → 2026-11-13 — R-32 test tiers, R-37, R-38, hudsn-ops hooks, two hotfixes (backfill)
+
+- **Released `v2026-07-23` (#229).** Promotion of #226, #227 and their
+  changelog entry (#228) to `main`, tagged by `release-tag.yml`.
+- **R-32 Tier-4: a broken select string fails CI, not production (#230).** A
+  fourth test tier (`*.itest.ts`, own `vitest.integration.config.ts`,
+  `pnpm test:integration`) runs inside the existing `db-test` job and calls the
+  real fetch helpers against the local stack with ids that match nothing —
+  PostgREST validates the select before it filters, so no seed and no session
+  are needed. 20 helpers with explicit selects, one case each; only `PGRST116`
+  passes; a case that issues no request fails, so an early return can't sit
+  green; a coverage meta-test fails on an unregistered helper or a stale
+  registry entry; it refuses any non-local host. Excluded from `pnpm test`,
+  which stays stack-free. D-F28.
+- **R-32 e2e smoke (#233).** A Playwright suite (`e2e/`, `playwright.config.ts`,
+  `pnpm test:e2e`) in the same `db-test` job, after the Tier-4 guard: logs in
+  once as a seeded QA user (`supabase/seed/e2e-fixture.sql`, idempotent) and
+  sweeps 11 spine routes on a mobile viewport, asserting an `<h1>`, no
+  ErrorBoundary fallback and no `console.error`/`pageerror`. Render health
+  only — data correctness and mutation flows stay with pgTAP, Tier-4 and the
+  `develop` preview soak. Closes R-32 (a Playwright smoke in place of the
+  agent-browser harness the original scope named).
+- **R-37 interactive TDEE calculator (#234).** Closes the adaptive filter's
+  cold start: `recalculate-tdee` only runs once a phase exists, and a
+  `tdee_delta` target needs its estimate, so a first phase had to be `absolute`
+  with nothing suggesting the number. Pure `src/features/tdee/formulas.ts`
+  (activity table, Katch-McArdle; reuses `mifflinStJeor` from
+  `src/lib/macros.ts`) behind one `TdeeCalculator` body in two frames: `/tdee`
+  from More (scenario play, nothing applied) and a `ResponsiveDialog` in the
+  phase editor whose apply sets `kcal_mode='absolute'` and `kcal_value`
+  together. Mifflin is the headline; Katch-McArdle appears only with a
+  `body_fat_pct` measurement, labelled with its date; when an adaptive estimate
+  exists, a strip says the measured number wins. Nothing is stored — no
+  migration, RPC or new fetcher. `/tdee` joined the e2e sweep.
+- **R-38 Progreso analytics extras (#235).** An energy-balance card
+  (expenditure / average intake / BMR as bars normalised to the TDEE estimate,
+  with the signed daily balance); the Kalman goal ETA drawn on the weight chart
+  (`useGoalEta` now holds the only copy of that calculation); and a 26-week
+  adherence heatmap of kcal against the *phase* target, not the meal plan
+  (`src/features/progreso/adherence.ts`: within 10 % on target, within 20 %
+  near). In `tdee_delta` mode a day uses the latest `tdee_estimates` row up to
+  `MAX_ESTIMATE_CARRY_DAYS = 7` back, so a missed cron run no longer reads as
+  "no target". The palette was re-stepped after its extreme pair failed the
+  protanopia ΔE floor. No schema change; the custom date-range filter went back
+  to the backlog.
+- **Production domain `fit.hudsn.app` (#242).** Docs only: `operations.md`
+  records the Cloudflare unproxied CNAME → `cname.vercel-dns.com` and the
+  308 redirect from the old `hudsonfitness.vercel.app` alias.
+- **`cron-healthcheck` pings Healthchecks.io (#250).** New
+  `supabase/functions/_shared/healthchecks.ts`: a plain ping on the healthy
+  path and `/fail` (body = the alert payload) on both alert paths, to the
+  hudsn-ops check `hfit-cron`, which alerts Telegram on a failure or a missed
+  run. Best effort (5 s timeout, never throws) and a no-op without the optional
+  `HC_PING_URL` edge secret. #252 and #253 keep the ping URL (it carries the
+  check key) out of the failure log — Supabase's edge runtime embeds the URL in
+  `fetch` error messages, so URLs are scrubbed from the message. The function
+  was redeployed with the ping on 2026-10-07, from `develop`: until this
+  release `main` did not hold the code production runs, and a deploy from
+  `main` would have dropped the ping.
+- **Own cookieless analytics (#252, #253; hotfix #254 on `main`).** Self-hosted
+  Umami at `stats.hudsn.app` (hudsn-ops). The tracker loads `async` from
+  `index.html` and sends only from `fit.hudsn.app` (`data-domains` — CI had
+  already logged localhost visits); `public/stats.js` replaces id-like path
+  segments with `:id` and drops query strings and `#`. No cookies, so no
+  banner. The web half went straight to production as hotfix #254 on
+  2026-10-07 (back-merged to `develop` via #217).
+- **`ops.usage` totals for the hudsn-ops admin panel (#255).** Migration
+  `20261009074839_ops_usage.sql`: schema `ops` (not exposed through the Data
+  API), function `ops.usage(p_from, p_to)` returning one jsonb of aggregate
+  counts only — accounts, new and active accounts, hand-logged meals, workouts,
+  measurements; the library sentinel and unconfirmed accounts never count — and
+  role `hudsn_ops` as its only executor (NOLOGIN in the migration; LOGIN and
+  password set by hand in production). The fifth sanctioned `SECURITY DEFINER`
+  function (`search_path = ''`, every name schema-qualified), listed in
+  `data-model.md`; pgTAP `10_ops_usage.test.sql`. Applied to production on
+  2026-10-09; nothing in the app calls it.
+- **Usage events + account pseudonym (hotfix #269 on `main`, 2026-11-06).**
+  `track()` in `src/lib/stats.ts` fires once after a successful create, never
+  on edit or failure: `registrarse`, `completar-onboarding`, `registrar-comida`
+  (`origen`), `registrar-medida`, `registrar-entreno` (`origen`),
+  `guardar-receta`, `escanear-ingrediente` (`resultado`, camera only) and
+  `aplicar-plantilla` — never names, emails, ids or health values. Every send
+  carries a per-account pseudonym, the first 16 hex of
+  `sha256("hudsn:hfit:" + user id)`, set by `AuthProvider` through
+  `window.hudsnStatsIdentify` and kept in memory only; the first send waits up
+  to 3 s for the session and goes out anonymous without one. Back-merged by
+  #271, which replaced the conflicting automated #270 (resolved the
+  `Runner.tsx` import; the new runner test passes R-46's `onLoadExercise`).
+- **Dependencies.** 28 Dependabot PRs (#232, #236–#273): 16 npm-minor-patch
+  group bumps, 8 single-package transitive bumps (undici ×2, fast-uri ×2,
+  js-yaml, postcss, serialize-javascript, source-map-js) and 4 GitHub Actions
+  bumps (#236, #238, #244, #272). No majors — #246 (vitest 4) and #264 (zod 4)
+  are still open and not in this release.
+- **To production with release `v2026-11-13`.** Everything that was on
+  `develop` only — R-46 (#231), #230–#235, #242, the `develop` side of #250,
+  #252, #253 and #255, and the dependency bumps — reaches `main` with this
+  release. Already live before it: the analytics and events (#254, #269), the
+  `ops.usage` function (2026-10-09) and the pinging `cron-healthcheck`
+  (2026-10-07).
+
 ## PR table
 
 | #   | Sprint                               | Content                                                                                                  |
@@ -615,4 +734,24 @@ layers over ~20 PRs. Shipped to `develop`; promoted to `main` in this release.
 | 225 | Release `v2026-07-22` | Promotion of #218–#224 to `main` |
 | 226 | i18n — language flash at startup | Language was applied post-commit in a `useEffect`; `ProfileLanguageSync` now holds the loader until it is applied, and `<html lang>` follows the active language |
 | 227 | R-31 — exercise search follow-ups + add-from-detail | Lay-term/group-name search expansion shared by browse + picker; add sheet on `/exercises/:id` (append to a routine, or start a pre-filled session). Live-runner half split out as R-46 |
+| 231 | R-46 — add an exercise mid-workout | New `ADD_EXERCISE` runner-reducer action (append at `max(position)+1`, cursor untouched, no duplicate `exerciseId`); picker `excludeIds` hides exercises already in the session; working-weight prefill from last logged session with a silent 0 kg fallback (offline/error/4 s timeout/no history); session-only — the routine behind the workout is never modified |
+| 205 | R-33 — changelog | Record the R-33 UI redesign ahead of `v2026-07-15` |
+| 206 | Release `v2026-07-15` | Promotion of #179–#205 (R-33 UI redesign, its doc-reconcile and changelog) to `main` — the redesign's first release to production |
+| 208 | Docs — D-F24 + programs slot-fn reconcile | D-F24 corrected to shipped (the `?q=`-scoped `IngredientSearchPage`, no detail page); programs reference `getTodaySlot` → `scheduledSlotForDate` |
+| 228 | Docs — changelog | Record #224–#227 ahead of `v2026-07-23` |
+| 229 | Release `v2026-07-23` | Promotion of #226–#228 to `main` |
+| 230 | R-32 — Tier-4 select-string guard | `*.itest.ts` tier in `db-test` calls 20 real fetch helpers against the local stack with ids that match nothing; only `PGRST116` passes; no-request and coverage meta-checks; local host only; kept out of `pnpm test`. D-F28 |
+| 233 | R-32 — Playwright e2e smoke | Seeded QA user (`supabase/seed/e2e-fixture.sql`) + 11 spine routes on a mobile viewport in `db-test`: `<h1>` renders, no ErrorBoundary fallback, no console/page errors. Render health only; closes R-32 |
+| 234 | R-37 — interactive TDEE calculator | Pure `features/tdee/formulas.ts` (activity table, Katch-McArdle, shared Mifflin) + `TdeeCalculator` at `/tdee` and in a phase-editor dialog whose apply sets `kcal_mode='absolute'` + `kcal_value`; Katch line only with a dated body-fat measurement; nothing stored |
+| 235 | R-38 — Progreso analytics extras | Energy-balance card, Kalman goal ETA on the weight chart (`useGoalEta`), 26-week kcal adherence heatmap vs the phase target (±10 % / ±20 %, estimates carried up to 7 days); no schema change; custom date range back to backlog |
+| 242 | Docs — production domain | `operations.md`: production serves at `fit.hudsn.app` (Cloudflare unproxied CNAME → Vercel); `hudsonfitness.vercel.app` 308-redirects there |
+| 250 | Ops — cron-healthcheck pings Healthchecks.io | `_shared/healthchecks.ts`: plain ping when healthy, `/fail` with the alert payload on both alert paths, to hudsn-ops check `hfit-cron`; 5 s timeout, never throws, no-op without the optional `HC_PING_URL` secret. Redeployed to production 2026-10-07 |
+| 252 | Ops — own cookieless analytics | Umami at `stats.hudsn.app` in `index.html`; `public/stats.js` rewrites id-like path segments to `:id` and drops query strings; ping-failure log no longer prints the ping URL |
+| 253 | Ops — analytics review fixes | Tracker sends from `fit.hudsn.app` only (`data-domains`), ignores `#`, loads `async`; URLs scrubbed from `fetch` error messages in the ping log |
+| 254 | Hotfix — cookieless analytics on `main` | Web half of #252/#253 (tracker, `stats.js`, operations line) straight to production on 2026-10-07, without the rest of `develop` |
+| 217 | Back-merge `main` → `develop` | Automated reconvergence after hotfix #254 (merge commit, D-F7) |
+| 255 | Ops — `ops.usage` totals | `20261009074839_ops_usage.sql`: schema `ops` + `ops.usage(p_from, p_to)` (aggregate counts only, sentinel and unconfirmed accounts excluded) + NOLOGIN role `hudsn_ops` as sole executor; fifth sanctioned `SECURITY DEFINER`; pgTAP `10_ops_usage`. Applied to production 2026-10-09 |
+| 269 | Hotfix — usage events + account pseudonym | Eight create-only Umami events via `track()` (`src/lib/stats.ts`) and a per-account pseudonym (first 16 hex of `sha256("hudsn:hfit:" + user id)`, memory only) on every send; to production 2026-11-06 |
+| 271 | Back-merge `main` → `develop` (#269) | Replaces the conflicting automated #270: `Runner.tsx` import resolved by hand, the new runner test passes R-46's `onLoadExercise` |
+| 232, 236–273 | Dependencies | 28 Dependabot PRs: 16 npm-minor-patch group bumps, 8 single-package transitive bumps, 4 GitHub Actions bumps; no majors (#246 vitest 4 and #264 zod 4 still open) |
 

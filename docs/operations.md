@@ -46,7 +46,10 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
   `pnpm build` + `pnpm test` — Vitest Tier-1 + Tier-2), `edge-check` (Deno lint
   + shared-core type-check), and `db-test` (Tier-3 pgTAP — `supabase start`
   applies the migration history from zero into the real Supabase Postgres
-  image, then `supabase test db` runs `supabase/tests/*.test.sql`). R-16.
+  image, then `supabase test db` runs `supabase/tests/*.test.sql`; then Tier-4
+  runs `pnpm test:integration` against the same stack; then the R-32 e2e
+  smoke sweeps the spine routes with Playwright against the same stack).
+  R-16, R-32.
 - **`develop` = integration + staging.** Short-lived `claude/*` branch → PR
   into `develop` → `lint-build` green → `.github/workflows/auto-merge.yml`
   arms GitHub-native squash auto-merge → merged hands-off; branch
@@ -67,8 +70,9 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
   auto-opened back-merge PR `main`→`develop` so the fix survives the next
   promotion.
 - **Branch protection on `develop`:** required status checks `lint-build` and
-  `db-test` (Tier-3 pgTAP — R-16); `strict` false; force-push/deletion blocked;
-  0 required reviews.
+  `db-test` (Tier-3 pgTAP + Tier-4 select-string guard + R-32 e2e smoke —
+  R-16, R-32); `strict` false; force-push/deletion blocked; 0 required
+  reviews.
 - **Branch protection on `main`:** required status check `lint-build`;
   `strict` false; a PR is required before merging (0 required reviews —
   solo); force-push/deletion blocked; `enforce_admins` false (the solo
@@ -93,9 +97,11 @@ Two-tier flow (D-F7). CI and the merge gate are real and enforced (D-F1, D-F2, D
 
 - **Vercel project** `hudsonfitness` (`prj_69QdEbnDr836rfFwd24J9ISFuXqv`,
   team `team_EDiBxgsadwU6GbSqodEH0G3Q`), framework Vite.
-- **Production branch** `main` (Vercel Production deploy-on-merge); alias
-  `hudsonfitness.vercel.app`. `develop` and feature branches get Preview
-  deploys; the `develop` preview is the staging soak surface (D-F7).
+- **Production branch** `main` (Vercel Production deploy-on-merge); production
+  domain `fit.hudsn.app` (DNS in Cloudflare: unproxied CNAME `fit` →
+  `cname.vercel-dns.com`); the old alias `hudsonfitness.vercel.app` 308-redirects
+  to it. `develop` and feature branches get Preview deploys; the `develop`
+  preview is the staging soak surface (D-F7).
 - **PR previews** auto-deploy for every pull request.
 - `vercel.json` carries the SPA fallback rewrite so client-side routes
   resolve on hard navigation.
@@ -150,6 +156,7 @@ supabase/
 │   └── 20260518020000_r07_adaptive_tdee_state.sql  # applied 2026-05-18
 └── functions/
     ├── _shared/macros.ts
+    ├── _shared/healthchecks.ts             # Healthchecks.io ping (cron-healthcheck)
     ├── daily-nutrition-snapshot/index.ts   # 0 1 * * *  UTC (≈02:00 CET)
     ├── weekly-rollover/index.ts            # 0 2 * * 1  UTC (≈03:00 CET Mon)
     ├── recalculate-tdee/index.ts           # 0 3 * * *  UTC (≈04:00 CET)
@@ -274,7 +281,7 @@ redeploy/rollback:
 - **Ordering invariant.** Deploy the rewritten `recalculate-tdee` edge
   function FIRST
   (`supabase functions deploy recalculate-tdee --use-api --project-ref
-  upvraruehzurbetzrxov`), THEN apply
+  upvraruehzurbetzrxov --import-map supabase/functions/deno.json`), THEN apply
   `20260518020000_r07_adaptive_tdee_state.sql`. Reversed, the first
   post-migration scheduled run finds an empty `tdee_state` / unpopulated
   new columns with the old two-endpoint function still live, so no run
@@ -307,7 +314,7 @@ redeploy/rollback:
   would try to re-apply them. (2) THEN merge the R-12 PR (the client/edge
   code that calls the RPC). (3) THEN redeploy the edge function
   (`supabase functions deploy daily-nutrition-snapshot --use-api
-  --project-ref upvraruehzurbetzrxov`) so the cron uses the RPC instead of
+  --project-ref upvraruehzurbetzrxov --import-map supabase/functions/deno.json`) so the cron uses the RPC instead of
   its now-deleted mirrored copy. Reversed (code merged / edge redeployed
   before the migration is applied) prod plan-materialization breaks:
   `supabase.rpc(...)` 404s on every Diario open and every snapshot run. This
@@ -453,6 +460,14 @@ snapshot is also the free-tier keep-alive, so a silent death is double-impact.
   `cron.job_run_details` — exactly where the "how to tell crons are dead"
   manual check above looks — so a silent under-run becomes a loud, queryable
   one. A healthy run logs `cron-healthcheck OK …` and returns 200.
+- **External alert (hudsn-ops, 2026-10).** The function also pings the
+  Healthchecks.io check `hfit-cron` (`HC_PING_URL` edge secret): a plain ping
+  on the healthy path, `/fail` on both alert paths (body = the alert payload).
+  Healthchecks notifies Telegram when the check fails or when no run arrives
+  within 26 h (period 1 day + grace 2 h). Without the secret the function
+  behaves exactly as before. Set it with
+  `supabase secrets set HC_PING_URL=<url> --project-ref upvraruehzurbetzrxov`
+  before deploying. Design: hudsn-ops `docs/superpowers/specs/2026-10-04-avisos-design.md`.
 - **Live since 2026-05-18 (ordered).** The cron schedule
   **`supabase/migrations/20260518010000_r18_cron_healthcheck.sql`**
   (`0 6 * * *` UTC — after the three data crons; reuses the existing
@@ -460,7 +475,7 @@ snapshot is also the free-tier keep-alive, so a silent death is double-impact.
   secret/helper) is applied. Ordering invariant (honour on any
   redeploy/rollback): deploy the edge function FIRST
   (`supabase functions deploy cron-healthcheck --use-api --project-ref
-  upvraruehzurbetzrxov`), THEN apply the migration — otherwise the first
+  upvraruehzurbetzrxov --import-map supabase/functions/deno.json`), THEN apply the migration — otherwise the first
   scheduled run 404s and self-reports as an alert. Rollback:
   `select cron.unschedule('cron-healthcheck');`.
 
@@ -519,7 +534,8 @@ Read that rule literally, because it is narrower than "reaps orphaned photos":
 ## Data seeding
 
 System/library seed data is committed as SQL migrations, not as a separate seed
-bundle — there is no `supabase/seed/` directory. The committed seed migrations are
+bundle — `supabase/seed/` holds only the R-32 e2e test fixture
+(`e2e-fixture.sql`), never applied to prod. The committed seed migrations are
 `20260520120000_r01_library_anon_seed.sql` (R-01 library anon owner + founding
 seed rows), `20260523120100_f1_whole_foods_seed.sql` (F-1 whole-foods set,
 generated by the `scripts/whole-foods/` pipeline),
@@ -651,6 +667,7 @@ complete history rather than the lone Sprint-9 file.
 20260719120000_r22_update_with_check.sql            # applied live 2026-07-20 (R-22 follow-up, #214): ALTERs all fourteen public UPDATE policies to add an explicit WITH CHECK repeating each policy's USING verbatim; closes no hole (Postgres already applied USING to the NEW row), states the intent
 20260720120000_r36b_recipe_photos_bucket.sql        # applied live 2026-07-21 (R-36b): recipe-photos Storage bucket (public, 2 MB, image/webp-only) + bucket-scoped SELECT and real-creator INSERT/UPDATE/DELETE RLS on storage.objects — the app's first Storage bucket
 20260720120100_r36b_recipe_photo_reap_cron.sql      # applied live 2026-07-21 (R-36b), AFTER deploying the edge function: weekly recipe-photo-reap cron schedule — an early firing would be a silent no-op, not a visible failure (see Cron)
+20261009074839_ops_usage.sql                         # applied live 2026-10-09 (hudsn-ops panel, no R-item): ops schema + NOLOGIN hudsn_ops role + SECURITY DEFINER ops.usage(); the role's LOGIN and password were set by hand in production (nothing secret in the repo)
 ```
 
 `supabase/migrations/` in the repo is the canonical source for the full,
@@ -784,10 +801,12 @@ equal the full pre-Wave-3 live schema with no double-create error; the
 baseline file itself is a **pre-Wave-3 snapshot** — it intentionally does not
 contain the R-06 CHECK, R-18 cron, R-07 `tdee_state`, R-03/R-08/R-14 drops, or
 the R-12 RPC; those live in their own `20260518*` files. Current prod =
-baseline + sprint9 + all `20260518*`.
+baseline + sprint9 + all `20260518*` + every later file in the sequence above
+(through `20261009074839_ops_usage`).
 
 **Baseline re-apply is a guarded no-op (R-00 verification still open).** CI
-does not run migrations and prod already contains every baseline object, so
+never applies migrations to prod (`db-test` applies them only to its throwaway
+local stack) and prod already contains every baseline object, so
 the baseline file is not applied by its PR; it is written with
 `create … if not exists` / guarded DDL so applying it to prod is a safe
 no-op. Verifying that no-op against prod via the Supabase CLI
@@ -865,7 +884,7 @@ stale local state, so a true from-zero migration rebuild (the thing that makes
 `db-test` worth running) needs `supabase stop --no-backup`.
 
 The
-suite (`supabase/tests/00_schema`..`09_recipe_photos.test.sql` — the CI job globs
+suite (`supabase/tests/00_schema`..`10_ops_usage.test.sql` — the CI job globs
 `*.test.sql`, so every numbered file is picked up automatically) creates test users by
 inserting into `auth.users` (the `handle_new_user` trigger makes the profile)
 and switches actor with `set local role authenticated` + a
@@ -891,3 +910,40 @@ command** block above). There is no dedicated workflow or script for this on
 `develop`; the from-zero migration apply is exercised by the `db-test` job in
 `.github/workflows/ci.yml`, while the prod-diff confirmation stays a hands-on CLI
 step.
+
+### Tier-4 select-string guard (R-32, D-F28)
+
+The same `db-test` job also runs **Tier-4**: the real client fetch helpers
+against the stack it already started, so an invalid PostgREST `.select(...)`
+string fails CI rather than production. It is a separate Vitest config
+(`vitest.integration.config.ts`, files `src/test/integration/*.itest.ts`) and is
+**excluded from `pnpm test`** — that suite stays hermetic and stack-free.
+
+```bash
+# needs a running local stack (see Tier-3 above)
+export SUPABASE_TEST_ANON_KEY="$(supabase status -o env | sed -n 's/^ANON_KEY="\(.*\)"$/\1/p')"
+pnpm test:integration
+```
+
+Each of the 20 guarded helpers is invoked with ids that match nothing; PostgREST
+validates the select before applying filters, so no seed or auth session is
+needed. The error policy is an **allow-list — only `PGRST116`** ("0 rows" from a
+`.single()`) passes; any other code (`42703` undefined column, `PGRST200` bad
+embed, `PGRST100` parse error) fails the build. A coverage meta-test fails when a
+helper carrying an explicit column/embed select is missing from the registry.
+The tier **refuses to run against a non-local host** (fail-closed host assertion
+in the setup file) and, in CI, extracts the anon key with
+`eval "$(supabase status -o env | sed -n 's/^ANON_KEY=/SUPABASE_TEST_ANON_KEY=/p')"`.
+On Node 20 the setup polyfills `globalThis.WebSocket` from `ws` (a
+devDependency) — delete that block when the project moves to Node 22.
+
+### R-32 e2e smoke (Playwright)
+
+The same `db-test` job also runs the e2e half of R-32: a Playwright smoke
+suite (Chromium, mobile viewport) that builds the app against the job's own
+stack, seeds `supabase/seed/e2e-fixture.sql`, logs in as the seeded QA user,
+and sweeps the 12 spine routes asserting each renders an `<h1>` with no
+ErrorBoundary fallback and no console/page errors. Failure artifacts (trace +
+screenshots) are uploaded as the `playwright-report` workflow artifact. Local
+run: `pnpm test:e2e:local` with the stack up (`pnpm test:e2e` alone assumes
+the stack and env vars are already set).

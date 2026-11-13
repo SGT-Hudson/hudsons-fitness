@@ -53,6 +53,7 @@ vi.mock('@/pages/MeasurementHistoryPage', () => ({
 }));
 vi.mock('@/pages/SettingsPage', () => ({ SettingsPage: () => <div>SettingsPage</div> }));
 vi.mock('@/pages/MorePage', () => ({ MorePage: () => <div>MorePage</div> }));
+vi.mock('@/pages/TdeePage', () => ({ TdeePage: () => <div>TdeePage</div> }));
 vi.mock('@/pages/settings/SettingsProfilePage', () => ({ SettingsProfilePage: () => <div>SettingsProfilePage</div> }));
 vi.mock('@/pages/settings/SettingsBiometricsPage', () => ({ SettingsBiometricsPage: () => <div>SettingsBiometricsPage</div> }));
 vi.mock('@/pages/settings/SettingsAccountPage', () => ({ SettingsAccountPage: () => <div>SettingsAccountPage</div> }));
@@ -196,5 +197,11 @@ describe('AppRoutes', () => {
   it('routes /more to the More hub page', () => {
     render(<MemoryRouter initialEntries={['/more']}><AppRoutes /></MemoryRouter>);
     expect(screen.getByText('MorePage')).toBeInTheDocument();
+  });
+
+  // R-37: the standing calculator is a route of its own, reached from More.
+  it('routes /tdee to the TDEE calculator page', () => {
+    render(<MemoryRouter initialEntries={['/tdee']}><AppRoutes /></MemoryRouter>);
+    expect(screen.getByText('TdeePage')).toBeInTheDocument();
   });
 });

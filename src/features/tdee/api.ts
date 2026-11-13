@@ -58,3 +58,23 @@ export function tdeeConfidenceBand(
   if (c === 'low' || c === 'medium' || c === 'high') return c;
   return null;
 }
+
+/**
+ * Every estimate the filter has emitted since `fromDate`, oldest first
+ * (R-38): the adherence heatmap needs the estimate *of each day* to rebuild a
+ * `tdee_delta` phase's historical kcal target. `null` means "all of them".
+ */
+export async function fetchTdeeEstimatesSince(
+  userId: string,
+  fromDate: string | null,
+): Promise<TdeeEstimate[]> {
+  let query = supabase
+    .from('tdee_estimates')
+    .select('*')
+    .eq('user_id', userId)
+    .order('computed_on', { ascending: true });
+  if (fromDate) query = query.gte('computed_on', fromDate);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}

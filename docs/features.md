@@ -16,6 +16,7 @@ decision will replace — it describes reality now, not the target design.
 - [Meal plans (templates ↔ active week)](#meal-plans-templates--active-week)
 - [Diario & materialization](#diario--materialization)
 - [TDEE](#tdee)
+- [Entrenamiento (training)](#entrenamiento-training)
 - [Product ideas (uncommitted)](#product-ideas-uncommitted)
 
 ## Background (origin)
@@ -80,19 +81,25 @@ it says so rather than printing a date. **Estimated BMR** (Mifflin-St Jeor) is
 shown as a quiet, delta-free line — it is a deterministic function of current weight, so a
 BMR "Δ" would merely restate the weight trend.
 
-Below the weight headline the card shows body-fat, muscle, and water
-percentages with a **≥7-day delta** (`compositionDelta`, same 7-day lookback)
+Below that card a separate **`CompositionCard`** shows body-fat, muscle, and
+water percentages with a **≥7-day delta** (`compositionDelta`, same 7-day lookback)
 colored by `deltaTone`: **phase-aware** — weight and body-fat are colored
 toward the active phase's goal (cut: down=good; bulk: up=good for weight;
 body-fat down is always good when any phase is set); muscle up is always good;
-water is always neutral; **everything is neutral when no active phase is set**.
+water is always neutral; **everything except muscle is neutral when no active
+phase is set**.
 `ProgresoPage` reads the active phase via `useActivePhase()` and the user's
 goal via `useGoal()` read-only for this coloring and target-weight derivation
 — no writes.
 
 The weight chart (raw + smoothed) draws a **dashed reference line** at the
 derived target weight, but only when it is computable (requires
-`goal.target_body_fat_pct` + current `body_fat_pct` + `weight_kg`). All of
+`goal.target_body_fat_pct` + current `body_fat_pct` + `weight_kg`). When the
+goal ETA is on track it also draws a dashed **projection ray** (R-38) from the
+last smoothed point to the target at the ETA date — the same `useGoalEta`
+number the hero's ETA line uses — capped at the span of history already on
+screen; a target beyond that is truncated to the chart edge with no end dot,
+leaving the date to the hero. All of
 the above is **derived/presentational only** — never stored, never feeds
 protein/TDEE/targets; no schema, RPC, or edge function was added or changed.
 
@@ -114,6 +121,20 @@ kilogram decomposition derived on the frontend from the stored `weight_kg`
 (`pctToKg` in `composition.ts`); the Y-axis auto-scales (unclamped) in kg mode.
 This whole view is **presentational only** — it reads measurements for display
 and never feeds protein/TDEE/targets.
+
+Two more `/progress` cards came with R-38, equally derived-only (no migration,
+no RPC). An **energy-balance card** (`EnergyBalanceCard`) sets the latest
+adaptive TDEE estimate, the average intake the filter folded
+(`avg_kcal_intake`), and the estimated BMR side by side as bars normalized to
+the TDEE, headed by the signed intake − expenditure balance; it is not rendered
+at all without an estimate. An **adherence heatmap** (`AdherenceHeatmap`, pure
+core `src/features/progreso/adherence.ts`) is a fixed 26-week calendar grid
+scoring each day's logged kcal (`daily_nutrition_history`) against the kcal
+target of the phase in force *that day* — `kcal_value` in absolute mode, or in
+`tdee_delta` mode the delta plus the most recent `tdee_estimates` row on or
+before the date (carried forward at most 7 days): on target (≤ 10 %), close
+(≤ 20 %), off, not logged, or no target; days before the first snapshot are
+left blank.
 
 ## Recipes
 
@@ -274,9 +295,11 @@ over target on a non-bulk phase is the sole red "over budget" state; carbs and
 fat are informational/neutral only. The card is **presentational only** — it
 reads logged totals and the active phase's targets and feeds nothing back (no
 protein/TDEE/target writes). The active phase is resolved as "today's phase
-only" — no consumer reconstructs which phase was active on a past date.
-Editing a past phase's macros therefore changes nothing downstream: past
-phases are computationally **inert**. `/progress/goals` lists and manages all
+only" — the one consumer that reconstructs which phase was active on a past
+date is the `/progress` adherence heatmap (R-38), and only for display (kcal
+only, nothing stored). Editing a past phase's macros therefore changes nothing
+stored and no current target — at most it repaints that phase's heatmap cells:
+past phases are computationally **inert**. `/progress/goals` lists and manages all
 phases.
 
 Past phases follow a **grace-window** model (D-A5), not a hard
@@ -298,8 +321,9 @@ freeze-at-`end_date` cliff. The grace constant is
   Retrospective annotations affect no computation, so this is always allowed.
 
 The freeze is a UX stance ("history is closed"), **not** a data invariant —
-the inert-past-phases finding (no consumer reconstructs a historical active
-phase) means it protects nothing integrity-critical, which is why a forgiving
+the inert-past-phases finding (nothing that stores or sets a target
+reconstructs a historical active phase; the heatmap's per-day lookup is
+display-only) means it protects nothing integrity-critical, which is why a forgiving
 late-correction window and forever-editable notes are safe and the change is
 UI-only with no DB backstop.
 
@@ -410,13 +434,31 @@ Live in prod since 2026-05-18: the `tdee_state` table +
 `tdee_estimates.confidence`/`is_warmup` migration is applied and the
 rewritten `recalculate-tdee` edge function is deployed.
 
+An **interactive TDEE calculator** (R-37) covers the filter's cold start: with
+no estimate yet the phase editor cannot compute a `tdee_delta` target, so a
+first phase has to be `absolute` with nothing saying what number to type. It
+shows Mifflin-St Jeor × an activity factor (sedentary 1.2 … very active 1.9) as
+the headline, plus a smaller Katch-McArdle reading when a `body_fat_pct`
+measurement exists, labelled with that measurement's date; when an adaptive
+estimate exists, a comparison strip says the measured number wins and carries
+its confidence band. Inputs are seeded from the profile and latest measurements
+and can be changed in place to try scenarios without touching the profile. One
+shared body (`TdeeCalculator`, pure math in `src/features/tdee/formulas.ts`)
+has two frames: the standing `/tdee` route, linked from More, with no apply
+action; and a dialog in the phase editor, opened from beside the kcal field (in
+either kcal mode) or from the preview's needs-an-estimate notice, whose apply
+button sets `kcal_mode = 'absolute'` and `kcal_value` together. Nothing is
+stored — no migration, no RPC, no activity-level column.
+
 ## Entrenamiento (training)
 
 The training area (`/training` "Hoy" planner, `/routine` + child builder routes)
 lets the user define routines, schedule them as a cycle, and run a workout
 guided. `/exercises` is a full browse/catalog page (`ExercisesPage` — debounced
 search + equipment/category/level/muscle filters + pagination + `ExerciseCard`
-grid) and `/exercises/:id` is a real detail page (`ExerciseDetailPage`).
+grid) and `/exercises/:id` is a real detail page (`ExerciseDetailPage`) whose
+add sheet appends the exercise to a routine or starts a fresh session
+pre-filled with it (R-31).
 Exercise creation and muscle tagging also happen via the `ExercisePicker` →
 `ExerciseDialog` flow inside the routine/session editors.
 
@@ -445,7 +487,12 @@ Exercise creation and muscle tagging also happen via the `ExercisePicker` →
   button reads "Empezar serie" while a rest runs (stops it) then "Iniciar descanso".
   Escape hatches: **jump** to any exercise, **skip** (drops it, recoverable at
   finish), **end exercise early** (keeps the sets you did — no fake 0/0), **add a
-  set**. Leaving an exercise mid-way keeps it **partial** and resumable. The whole
+  set**, and **add an exercise** (R-46) from the overview via the exercise
+  picker — appended at the end with a plain 3 × 8-12 plan and no warm-ups, its
+  working weight prefilled from your last logged session of it (0 kg if that
+  lookup fails or you are offline); exercises already in the session are hidden
+  from the picker, and the routine itself is never modified. Leaving an exercise
+  mid-way keeps it **partial** and resumable. The whole
   workout is held in a pure reducer mirrored to `localStorage` (resume prompt on
   reopen; Screen Wake Lock keeps the alarm alive), with **no DB writes until
   finish** and no cross-device resume. See R-23 / D-F9 and

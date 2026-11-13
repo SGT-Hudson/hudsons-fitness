@@ -63,6 +63,7 @@ vi.mock('@/features/measurements/hooks', async (importActual) => ({
 
 vi.mock('@/features/phases/hooks', () => ({
   useActivePhase: () => ({ data: { phase_type: 'cut' } }),
+  usePhases: () => ({ data: [], isLoading: false }),
 }));
 vi.mock('@/features/objetivos/hooks', () => ({
   useGoal: () => ({ data: { target_body_fat_pct: 12 } }),
@@ -75,6 +76,7 @@ vi.mock('@/features/profile/hooks', () => ({
 vi.mock('@/features/tdee/hooks', () => ({
   useLatestTdee: () => ({ data: { avg_kcal_intake: 2000, estimated_tdee_kcal: 2350 } }),
   useTdeeState: () => ({ data: { trend_weight_kg: 78.0 } }),
+  useTdeeEstimates: () => ({ data: [], isLoading: false }),
 }));
 vi.mock('@/features/progreso/hooks', () => ({
   useDailyNutritionHistory: () => ({ data: [], isLoading: false }),
@@ -163,6 +165,20 @@ describe('ProgresoPage', () => {
     await user.click(screen.getByTestId('comp-tile-bodyFat'));
 
     expect(await screen.findByRole('dialog')).toHaveTextContent('Grasa · músculo · agua · 6M');
+  });
+
+  it('renders the adherence heatmap under the macros chart', () => {
+    renderPage();
+    expect(screen.getByText('Adherencia')).toBeInTheDocument();
+  });
+
+  // The card is a conditional render (`{energyBalance && ...}`), gated on the
+  // `useLatestTdee` mock above returning an estimate — nothing else in this
+  // file exercises that branch, so without this it can stop rendering with
+  // CI still green.
+  it('renders the energy-balance card', () => {
+    renderPage();
+    expect(screen.getByText('Balance energético')).toBeInTheDocument();
   });
 
   it('keeps the ETA line and a row-level edit on the recent list', () => {

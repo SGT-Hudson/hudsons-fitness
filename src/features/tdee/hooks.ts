@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { fetchLatestTdee, fetchTdeeState } from './api';
+import { fetchLatestTdee, fetchTdeeEstimatesSince, fetchTdeeState } from './api';
 
 export function useLatestTdee() {
   const { user } = useAuth();
@@ -17,5 +17,14 @@ export function useTdeeState() {
     enabled: !!user,
     queryKey: ['tdee', 'state', user?.id] as const,
     queryFn: () => fetchTdeeState(user!.id),
+  });
+}
+
+export function useTdeeEstimates(fromDate: string | null) {
+  const { user } = useAuth();
+  return useQuery({
+    enabled: !!user,
+    queryKey: ['tdee', 'estimates', user?.id, fromDate] as const,
+    queryFn: () => fetchTdeeEstimatesSince(user!.id, fromDate),
   });
 }
