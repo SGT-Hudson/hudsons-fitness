@@ -632,8 +632,8 @@ but effective at this scale.
   the first 16 hex of `sha256("hudsn:hfit:" + user id)`, kept in memory only
   (nothing is stored on the device). A privacy policy is still required before
   a public launch.
-- **Pre-launch:** a privacy policy and a cookie banner are required before any
-  public launch beyond the solo user.
+- **Pre-launch:** a privacy policy is required before any public launch beyond
+  the solo user. No cookie banner: the analytics above sets no cookies.
 
 ## Schema-in-migrations status
 
