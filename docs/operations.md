@@ -193,32 +193,57 @@ supabase functions deploy <function-name> --project-ref upvraruehzurbetzrxov \
 
 Both flags are **required**: `--use-api` does Docker-free server-side bundling and
 follows the cross-root `src/core/*.ts` imports (R-17); `--import-map
-supabase/functions/deno.json` is needed because `supabase/config.toml` (which
-exists, but is Tier-3-local-DB only and has no `[functions]`
-`import_map` key — it carries only `project_id`, the Postgres major version and
-the local port map) does **not** point the CLI at the import map, so the bare
+supabase/functions/deno.json` is needed because `supabase/config.toml` has no
+`[functions]` `import_map` key (it carries `project_id`, the Postgres major
+version, the local port map and the per-function `verify_jwt` blocks), so it
+does **not** point the CLI at the import map, and the bare
 `@supabase/supabase-js` specifier otherwise fails to bundle (HTTP 400). Run from
-the repo root.
+the repo root. The deploy **does** read `verify_jwt` from `config.toml`: run it
+from a checkout that has those blocks, or a cron function comes back with the
+gateway JWT check on and every cron call fails with 401.
+
+**API keys and auth (since 2026-11-13).** The functions run on the new API
+keys, not the legacy JWT `anon`/`service_role` ones (which Supabase retires at
+the end of 2026). Supabase injects `SUPABASE_SECRET_KEYS` and
+`SUPABASE_PUBLISHABLE_KEYS` (JSON maps keyed by key name, e.g.
+`{"default":"sb_secret_..."}`); `supabase/functions/_shared/keys.ts` reads
+them (`secretKey` / `publishableKey`, the `default` entry first) and falls back
+to the legacy `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` only if the map
+is missing. The five **cron** functions are deployed with `verify_jwt = false`
+(`[functions.*]` blocks in `config.toml`), because the key pg_cron sends is a
+`sb_secret_` key, which is not a JWT. Each one calls `isServerCall` first and
+answers 401 unless the request carries one of the project's secret keys on
+the `apikey` header (or as a Bearer token); during the transition it also
+accepts the legacy `SUPABASE_SERVICE_ROLE_KEY` value. A function with
+`verify_jwt = false` and no such check is **public**:
+`_shared/cron-auth-wiring.test.ts` fails if any function turns `verify_jwt`
+off without the check, or a cron function keeps it on. `delete-account` is
+called by signed-in users with their session JWT and keeps `verify_jwt = true`.
 
 **Manual invocation (smoke tests).** Each function returns a JSON array with
 one entry per profile and a status (`ok` / `already_exists` / `no_template` /
-`insufficient_intake` / etc.):
+`insufficient_intake` / etc.). Send the project's secret key (`sb_secret_...`,
+Dashboard → Settings → API Keys) on the `apikey` header — not as
+`Authorization: Bearer`, where the gateway rejects it because it is not a JWT.
+Without it the cron functions answer 401. The simplest path, and the one that
+exercises the real cron auth, is `select private.invoke_edge_function('<fn>');`
+(then read `net._http_response`).
 
 ```bash
 # Specific date (otherwise defaults to yesterday in Europe/Madrid)
 curl -X POST \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "apikey: $SUPABASE_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{"date":"2026-05-13"}' \
   https://upvraruehzurbetzrxov.supabase.co/functions/v1/daily-nutrition-snapshot
 
 curl -X POST \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "apikey: $SUPABASE_SECRET_KEY" \
   -d '{}' \
   https://upvraruehzurbetzrxov.supabase.co/functions/v1/weekly-rollover
 
 curl -X POST \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "apikey: $SUPABASE_SECRET_KEY" \
   -d '{}' \
   https://upvraruehzurbetzrxov.supabase.co/functions/v1/recalculate-tdee
 ```
@@ -266,9 +291,8 @@ the deployed functions execute them correctly). The vendor/relocate fallback
 was **not** needed; the D-F3 shared core stays single-source at `src/core/`.
 Operational note: deploys must use `--use-api` (server-side bundling) — the
 default path needs Docker, which is not available in the deploy environment —
-**and** `--import-map supabase/functions/deno.json` (`config.toml` exists but is
-minimal — Tier-3-local-DB only — with no `[functions]` `import_map` key, so the
-import map is not pointed at; without the flag the `@supabase/supabase-js` bare
+**and** `--import-map supabase/functions/deno.json` (`config.toml` has no
+`[functions]` `import_map` key, so the import map is not pointed at; without the flag the `@supabase/supabase-js` bare
 specifier fails to bundle with HTTP 400). Confirmed re-deploying
 `daily-nutrition-snapshot` on 2026-05-23 (U-1).
 
@@ -342,7 +366,8 @@ redeploy/rollback:
 ## Cron
 
 Five jobs are scheduled via `pg_cron`, each invoking an edge function through
-`private.invoke_edge_function` (which reads the service-role key from Vault).
+`private.invoke_edge_function` (which reads the project's secret key from Vault
+and sends it on the `apikey` header).
 Schedules are in UTC (D-F4, D-F5):
 
 | Schedule (UTC) | Job | Edge function |
@@ -367,41 +392,53 @@ The single-timezone (`Europe/Madrid`) assumption is a known limitation; the
 concrete multi-TZ implementation path is pre-specced — see D-F4 (not restated
 here).
 
-**Auth: one-time setup.** The cron jobs read the `service_role` key from
-Vault. Once per project, after the migration is applied:
+**Auth: one-time setup.** The cron jobs read the project's **secret key**
+(`sb_secret_...`) from the Vault secret `cron_service_role_key` (the name
+predates the new keys and was kept; until 2026-11-13 it held the legacy
+`service_role` JWT, sent as `Authorization: Bearer`). Since migration
+`20261113200000_cron_invoke_apikey_header.sql`, `private.invoke_edge_function`
+sends it on the `apikey` header, and the cron functions check it in code (see
+[Edge functions](#edge-functions) → API keys and auth). Once per project:
 
 ```sql
 select vault.create_secret(
-  '<paste service_role key here>',
+  '<paste sb_secret key here>',
   'cron_service_role_key'
 );
 ```
 
 The key must be passed as a single-quoted string literal — pasting the raw
 key unquoted is a Postgres syntax error (the error text shows it unquoted).
+Never put the key in a migration: migration history stores the statement text.
 
 Until this is set, each scheduled run raises
 `Vault secret cron_service_role_key not set` (visible via
 `select * from cron.job_run_details order by start_time desc limit 5;`).
 
-**Auth: rotation.** After rotating the `service_role` key in the Supabase
-dashboard, update the Vault secret. `vault.update_secret` is id-based, so look
-the id up by name first:
+**Auth: rotation.** After creating a new secret key in the dashboard (and
+before revoking the old one), update the Vault secret. `vault.update_secret` is
+id-based, so look the id up by name first:
 
 ```sql
--- Rotate cron_service_role_key after rotating the service-role key in the Supabase dashboard.
 -- 1) find the secret id:
 select id from vault.secrets where name = 'cron_service_role_key';
 -- 2a) update in place:
-select vault.update_secret('<secret-uuid>', '<new service_role key>');
+select vault.update_secret('<secret-uuid>', '<new sb_secret key>');
 -- 2b) OR delete + recreate under the same name:
 -- select vault.delete_secret('<secret-uuid>');
--- select vault.create_secret('<new service_role key>', 'cron_service_role_key');
+-- select vault.create_secret('<new sb_secret key>', 'cron_service_role_key');
 ```
 
-Then verify the next scheduled run succeeds via the diagnostics below. The
-migration references the secret by name, never by value, so the repo stays
-clean by design.
+To do it without the key ever appearing on screen or in a file (how it was
+done on 2026-11-13): read the key from the Management API
+(`GET /v1/projects/<ref>/api-keys?reveal=true`, Supabase CLI access token)
+into a shell variable, build the `select vault.update_secret(...)` body with
+`jq --arg`, and `POST` it to `/v1/projects/<ref>/database/query`. Then invoke
+`cron-healthcheck` the way pg_cron does
+(`select private.invoke_edge_function('cron-healthcheck');`) and check
+`net._http_response` for a 200, and confirm the next scheduled runs via the
+diagnostics below. The migration references the secret by name, never by
+value, so the repo stays clean by design.
 
 **How to tell crons are dead.** Two manual checks: (1) inspect the pg_cron
 run history; (2) check the freshest `daily_nutrition_history` row (and
