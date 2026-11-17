@@ -203,18 +203,19 @@ from a checkout that has those blocks, or a cron function comes back with the
 gateway JWT check on and every cron call fails with 401.
 
 **API keys and auth (since 2026-11-13).** The functions run on the new API
-keys, not the legacy JWT `anon`/`service_role` ones (which Supabase retires at
-the end of 2026). Supabase injects `SUPABASE_SECRET_KEYS` and
+keys, not the legacy JWT `anon`/`service_role` ones, which are **disabled** in
+the project since 2026-11-17. Supabase injects `SUPABASE_SECRET_KEYS` and
 `SUPABASE_PUBLISHABLE_KEYS` (JSON maps keyed by key name, e.g.
 `{"default":"sb_secret_..."}`); `supabase/functions/_shared/keys.ts` reads
-them (`secretKey` / `publishableKey`, the `default` entry first) and falls back
-to the legacy `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` only if the map
-is missing. The five **cron** functions are deployed with `verify_jwt = false`
+only them (`secretKey` / `publishableKey`, the `default` entry first, else the
+first one). There is no fallback to the legacy `SUPABASE_SERVICE_ROLE_KEY` /
+`SUPABASE_ANON_KEY` any more: if the map is missing, the key is undefined.
+The five **cron** functions are deployed with `verify_jwt = false`
 (`[functions.*]` blocks in `config.toml`), because the key pg_cron sends is a
 `sb_secret_` key, which is not a JWT. Each one calls `isServerCall` first and
-answers 401 unless the request carries one of the project's secret keys on
-the `apikey` header (or as a Bearer token); during the transition it also
-accepts the legacy `SUPABASE_SERVICE_ROLE_KEY` value. A function with
+answers 401 unless the request carries one of the project's secret keys (a
+value of `SUPABASE_SECRET_KEYS`) on the `apikey` header (or as a Bearer
+token); the legacy `service_role` key is not accepted. A function with
 `verify_jwt = false` and no such check is **public**:
 `_shared/cron-auth-wiring.test.ts` fails if any function turns `verify_jwt`
 off without the check, or a cron function keeps it on. `delete-account` is

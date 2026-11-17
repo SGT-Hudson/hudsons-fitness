@@ -3,10 +3,9 @@
 //
 // Keys: Supabase injects the new keys as JSON maps keyed by key name
 // (`SUPABASE_SECRET_KEYS`, `SUPABASE_PUBLISHABLE_KEYS`, e.g.
-// `{"default":"sb_secret_..."}`) next to the legacy single-value
-// `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY`, which retire with the
-// legacy JWT keys. The new map is read first; the legacy variable is only a
-// fallback.
+// `{"default":"sb_secret_..."}`). Only these maps are read. The legacy JWT keys
+// were disabled on 2026-11-17, so the legacy single-value
+// `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` are ignored even if set.
 //
 // Cron gate: a `sb_secret_` key is not a JWT, so the gateway's `verify_jwt`
 // cannot check it. The cron functions are deployed with `verify_jwt = false`
@@ -37,19 +36,20 @@ function parseKeyMap(raw: string | undefined): Record<string, string> {
   }
 }
 
-function pickKey(env: EnvGet, mapVar: string, legacyVar: string): string | undefined {
+/** The map's `default` entry, else its first value; undefined when empty. */
+function pickKey(env: EnvGet, mapVar: string): string | undefined {
   const map = parseKeyMap(env(mapVar));
-  return map['default'] ?? Object.values(map)[0] ?? (env(legacyVar) || undefined);
+  return map['default'] ?? Object.values(map)[0];
 }
 
-/** The secret key for admin (RLS-bypassing) clients. */
+/** The secret key for admin (RLS-bypassing) clients, from `SUPABASE_SECRET_KEYS`. */
 export function secretKey(env: EnvGet): string | undefined {
-  return pickKey(env, 'SUPABASE_SECRET_KEYS', 'SUPABASE_SERVICE_ROLE_KEY');
+  return pickKey(env, 'SUPABASE_SECRET_KEYS');
 }
 
-/** The publishable key for user-scoped clients. */
+/** The publishable key for user-scoped clients, from `SUPABASE_PUBLISHABLE_KEYS`. */
 export function publishableKey(env: EnvGet): string | undefined {
-  return pickKey(env, 'SUPABASE_PUBLISHABLE_KEYS', 'SUPABASE_ANON_KEY');
+  return pickKey(env, 'SUPABASE_PUBLISHABLE_KEYS');
 }
 
 /** Constant-time string equality (the time depends only on the lengths). */
@@ -64,14 +64,11 @@ export function timingSafeEqual(a: string, b: string): boolean {
 
 /**
  * True when the request carries one of the project's secret keys: any value of
- * `SUPABASE_SECRET_KEYS`, or the legacy `SUPABASE_SERVICE_ROLE_KEY` while the
- * legacy keys are still enabled. Fails closed when no key is configured.
+ * `SUPABASE_SECRET_KEYS`. The legacy `SUPABASE_SERVICE_ROLE_KEY` is not accepted
+ * (legacy keys disabled 2026-11-17). Fails closed when no key is configured.
  */
 export function isServerCall(req: Request, env: EnvGet): boolean {
-  const accepted = [
-    ...keyMapValues(env('SUPABASE_SECRET_KEYS')),
-    env('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-  ].filter((k) => k.length > 0);
+  const accepted = keyMapValues(env('SUPABASE_SECRET_KEYS')).filter((k) => k.length > 0);
   const auth = req.headers.get('Authorization') ?? '';
   const bearer = /^bearer\s+/i.test(auth) ? auth.replace(/^bearer\s+/i, '').trim() : '';
   const presented = [req.headers.get('apikey') ?? '', bearer].filter((k) => k.length > 0);
