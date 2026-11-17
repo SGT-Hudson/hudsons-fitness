@@ -54,7 +54,7 @@ describe('keyMapValues', () => {
 });
 
 describe('secretKey / publishableKey', () => {
-  it('prefers the "default" entry of the new map over the legacy variable', () => {
+  it('reads the "default" entry of the new map, never the legacy variable', () => {
     expect(secretKey(fullEnv)).toBe(SECRET);
     expect(publishableKey(fullEnv)).toBe(PUBLISHABLE);
   });
@@ -69,17 +69,20 @@ describe('secretKey / publishableKey', () => {
     expect(secretKey(env)).toBe(SECRET_OPS);
   });
 
-  it('falls back to the legacy variable when the map is missing or malformed', () => {
-    expect(secretKey(envOf({ SUPABASE_SERVICE_ROLE_KEY: LEGACY_SERVICE }))).toBe(LEGACY_SERVICE);
+  it('ignores the legacy variable when the map is missing or malformed (legacy keys disabled)', () => {
+    expect(secretKey(envOf({ SUPABASE_SERVICE_ROLE_KEY: LEGACY_SERVICE }))).toBeUndefined();
     expect(
       secretKey(envOf({ SUPABASE_SECRET_KEYS: '{oops', SUPABASE_SERVICE_ROLE_KEY: LEGACY_SERVICE })),
-    ).toBe(LEGACY_SERVICE);
-    expect(publishableKey(envOf({ SUPABASE_ANON_KEY: LEGACY_ANON }))).toBe(LEGACY_ANON);
+    ).toBeUndefined();
+    expect(publishableKey(envOf({ SUPABASE_ANON_KEY: LEGACY_ANON }))).toBeUndefined();
+    expect(
+      publishableKey(envOf({ SUPABASE_PUBLISHABLE_KEYS: '{oops', SUPABASE_ANON_KEY: LEGACY_ANON })),
+    ).toBeUndefined();
   });
 
   it('is undefined when nothing is configured', () => {
     expect(secretKey(envOf({}))).toBeUndefined();
-    expect(secretKey(envOf({ SUPABASE_SERVICE_ROLE_KEY: '' }))).toBeUndefined();
+    expect(secretKey(envOf({ SUPABASE_SECRET_KEYS: '' }))).toBeUndefined();
     expect(publishableKey(envOf({}))).toBeUndefined();
   });
 });
@@ -111,9 +114,11 @@ describe('isServerCall (cron gate)', () => {
     expect(isServerCall(req({ Authorization: `bearer ${SECRET}` }), fullEnv)).toBe(true);
   });
 
-  it('accepts the legacy service_role key while it is configured (transition)', () => {
-    expect(isServerCall(req({ Authorization: `Bearer ${LEGACY_SERVICE}` }), fullEnv)).toBe(true);
-    expect(isServerCall(req({ apikey: LEGACY_SERVICE }), fullEnv)).toBe(true);
+  it('rejects the legacy service_role key even when the variable is set (legacy keys disabled)', () => {
+    expect(isServerCall(req({ Authorization: `Bearer ${LEGACY_SERVICE}` }), fullEnv)).toBe(false);
+    expect(isServerCall(req({ apikey: LEGACY_SERVICE }), fullEnv)).toBe(false);
+    const legacyOnly = envOf({ SUPABASE_SERVICE_ROLE_KEY: LEGACY_SERVICE });
+    expect(isServerCall(req({ apikey: LEGACY_SERVICE }), legacyOnly)).toBe(false);
   });
 
   it('rejects a request with no credentials', () => {
